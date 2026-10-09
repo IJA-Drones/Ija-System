@@ -3,7 +3,6 @@ import os
 import unicodedata
 from datetime import date, datetime, timedelta
 from urllib.parse import quote
-from zoneinfo import ZoneInfo
 
 import requests
 from flask import current_app
@@ -29,13 +28,18 @@ from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
     apply_solicitacao_prefeitura_scope,
     can_access_regiao,
+    is_veiculos_supervisor,
+    normalize_role,
+    VEICULOS_SUPERVISOR_USER_TYPES,
 )
+from app.shared.vehicle_supervisor import get_supervisor_operational_equipe
 from app.shared.query_filters import aplicar_filtros_base, id_search_clause
 from app.shared.os_history_filters import (
     apply_os_history_filters,
     apply_retorno_automatico_filter,
     get_os_history_filters,
 )
+from app.shared.place_id import resolve_google_place_id_for_address
 from app.shared.retorno_ciclo import (
     build_retorno_ciclo_context,
     build_retorno_ciclo_summaries,
@@ -50,6 +54,7 @@ from app.shared.skybox import (
     skybox_enabled,
     upload_file_to_skybox,
 )
+from app.shared.timezone import current_brazil_date, datetime_local_input_value, now_brazil_naive
 
 
 STATUS_OS_APROVADAS = [
@@ -71,7 +76,6 @@ OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
 OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v", "lrf"}
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 UVIS_MEDIA_VIEW_TYPES = {"uvis", "equipe_uvis"}
-BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 DRONE_CATEGORY_PULVERIZACAO = "pulverizacao"
 DRONE_CATEGORY_MONITORAMENTO = "monitoramento"
 WEBDAV_MARKER_PREFIX = "webdav://"
@@ -296,7 +300,11 @@ def _get_valid_os_drone(user, solicitacao, drone_id, expected_category, field_la
 
 
 def is_piloto_os_user(user):
-    return getattr(user, "tipo_usuario", None) in {"piloto", EQUIPE_OCEANO_USER_TYPE}
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {
+        "piloto",
+        EQUIPE_OCEANO_USER_TYPE,
+        *VEICULOS_SUPERVISOR_USER_TYPES,
+    }
 
 
 def _parse_equipe_id_from_user(user):
@@ -325,16 +333,21 @@ def _buscar_equipe_operacional_usuario(user):
 
 
 def _buscar_equipe_do_usuario_na_os(user, equipe_id):
-    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    if role == EQUIPE_OCEANO_USER_TYPE:
         equipe = _buscar_equipe_operacional_usuario(user)
         return equipe if equipe.id == equipe_id else None
+
+    if role in VEICULOS_SUPERVISOR_USER_TYPES:
+        equipe = get_supervisor_operational_equipe(user)
+        return equipe if equipe and equipe.id == equipe_id else None
 
     vinculo = _buscar_vinculo_piloto_na_equipe(getattr(user, "piloto_id", None), equipe_id)
     return vinculo.equipe if vinculo else None
 
 
 def current_piloto_dashboard_date():
-    return datetime.now(BRAZIL_TZ).date()
+    return current_brazil_date()
 
 
 def build_piloto_os_context(user, args, google_maps_key):
@@ -342,7 +355,8 @@ def build_piloto_os_context(user, args, google_maps_key):
     busca = (args.get("q") or "").strip()
 
     is_equipe_oceano = getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
-    if not is_equipe_oceano and not getattr(user, "piloto_id", None):
+    is_supervisor = is_veiculos_supervisor(user)
+    if not is_equipe_oceano and not is_supervisor and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     piloto = getattr(user, "piloto", None)
@@ -350,6 +364,8 @@ def build_piloto_os_context(user, args, google_maps_key):
     equipe = None
     if is_equipe_oceano:
         equipe = _buscar_equipe_operacional_usuario(user)
+    elif is_supervisor:
+        equipe = get_supervisor_operational_equipe(user)
     else:
         vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
         equipe = vinculo.equipe if vinculo else None
@@ -424,7 +440,7 @@ def build_piloto_os_context(user, args, google_maps_key):
         "status_ok": STATUS_OS_APROVADAS_COM_ACENTO,
         "pilot_team_nome": equipe.nome_equipe,
         "pilot_team_regiao": equipe.regiao,
-        "pilot_team_papel": "equipe" if is_equipe_oceano else (vinculo.papel or "").lower(),
+        "pilot_team_papel": "equipe" if is_equipe_oceano else "supervisor" if is_supervisor else (vinculo.papel or "").lower(),
         "pilot_regiao_principal": getattr(piloto, "regiao", None),
         "pilot_regiao_alternativa": getattr(piloto, "regiao_alternativa", None),
         "google_maps_key": google_maps_key,
@@ -458,6 +474,9 @@ def build_piloto_os_historico_context(user, args):
     if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
         equipe = _buscar_equipe_operacional_usuario(user)
         equipes_filter = Solicitacao.equipe_id == equipe.id
+    elif is_veiculos_supervisor(user):
+        equipe = get_supervisor_operational_equipe(user)
+        equipes_filter = Solicitacao.equipe_id == equipe.id if equipe else db.false()
     elif not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
     else:
@@ -513,7 +532,7 @@ def build_piloto_os_historico_context(user, args):
 
 
 def concluir_os_piloto(user, os_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = Solicitacao.query.get_or_404(os_id)
@@ -544,7 +563,7 @@ def concluir_os_piloto(user, os_id):
 
 
 def build_piloto_os_form_context(user, os_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     query = (
@@ -619,9 +638,8 @@ def build_piloto_os_form_context(user, os_id):
             equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
         ) if equipe else "",
         "respondido_por_padrao": respondido_por_padrao,
-        "respondido_em_value": (
-            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
-            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        "respondido_em_value": datetime_local_input_value(
+            ordem.respondido_em if ordem and ordem.respondido_em else now_brazil_naive()
         ),
         "calculo_dosagem_planejado": calculo_dosagem_planejado,
         "calculo_dosagem_planejado_json": (
@@ -680,7 +698,7 @@ def salvar_piloto_os_form(user, os_id, form_data, files_data, root_path):
 
 
 def get_piloto_drone_payload(user, drone_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo.", "danger")
 
     drone = Drones.query.get_or_404(drone_id)
@@ -775,9 +793,8 @@ def build_admin_os_form_context(user, os_id):
             equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
         ) if equipe else "",
         "respondido_por_padrao": getattr(user, "nome_uvis", "") or "",
-        "respondido_em_value": (
-            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
-            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        "respondido_em_value": datetime_local_input_value(
+            ordem.respondido_em if ordem and ordem.respondido_em else now_brazil_naive()
         ),
         "calculo_dosagem_planejado": calculo_dosagem_planejado,
         "calculo_dosagem_planejado_json": (
@@ -893,6 +910,15 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
     nova_data = data_base + timedelta(days=7)
 
     nova_observacao = (solicitacao_original.observacao or "").strip() or None
+    place_id = resolve_google_place_id_for_address(
+        place_id=solicitacao_original.place_id,
+        cep=solicitacao_original.cep,
+        logradouro=solicitacao_original.logradouro,
+        numero=solicitacao_original.numero,
+        bairro=solicitacao_original.bairro,
+        cidade=solicitacao_original.cidade,
+        uf=solicitacao_original.uf,
+    )
 
     nova_solicitacao = Solicitacao(
         data_agendamento=nova_data,
@@ -915,6 +941,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
         complemento=solicitacao_original.complemento,
         latitude=solicitacao_original.latitude,
         longitude=solicitacao_original.longitude,
+        place_id=place_id,
         perimetro_planejado=solicitacao_original.perimetro_planejado,
         perimetro_executado=None,
         anexo_path=solicitacao_original.anexo_path,
@@ -1065,7 +1092,7 @@ def _aplicar_campos_formulario(
 
     ordem.identificador_os = _clean_os_text_marker(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao
-    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
+    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or now_brazil_naive()
     ordem.situacao_aplicacao = _clean_str(form_data.get("situacao_aplicacao"))
     ordem.larva_visualizada = _clean_str(form_data.get("larva_visualizada"))
     ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(form_data.get("retornar_proxima_semana_monitorar_larvas"))
@@ -1099,9 +1126,9 @@ def _aplicar_campos_formulario(
     ordem.velocidade_vento_kmh = _to_float(form_data.get("velocidade_vento_kmh"))
     ordem.motivo_nao_realizacao = _clean_str(form_data.get("motivo_nao_realizacao"))
     ordem.observacoes = _clean_str(form_data.get("observacoes"))
-    ordem.piloto = _clean_str(form_data.get("piloto")) or piloto_padrao
+    ordem.piloto = _clean_str(piloto_padrao)
     ordem.assinatura_piloto = _clean_str(form_data.get("assinatura_piloto"))
-    ordem.auxiliar = _clean_str(form_data.get("auxiliar")) or auxiliar_padrao
+    ordem.auxiliar = _clean_str(auxiliar_padrao)
     ordem.proprietario_ou_preposto = _clean_str(form_data.get("proprietario_ou_preposto"))
     ordem.assinatura_proprietario_ou_preposto = _clean_str(form_data.get("assinatura_proprietario_ou_preposto"))
     _aplicar_midias_os(

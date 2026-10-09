@@ -1,0 +1,88 @@
+/* =========================================
+   SWEETALERT2
+   ========================================= */
+
+.swal2-dark-mode {
+  background-color: #152233 !important;
+  color: var(--color-text-main) !important;
+  border: 1px solid #233549 !important;
+  box-shadow: var(--shadow-lg) !important;
+  font-family: "Poppins", sans-serif !important;
+}
+
+.swal2-dark-mode .swal2-title,
+.swal2-dark-mode .swal2-html-container {
+  color: #ffffff !important;
+}
+
+body.dark-mode .swal2-popup.swal2-toast {
+  background-color: #152233 !important;
+  color: var(--color-text-main) !important;
+  border: 1px solid #233549 !important;
+}
+
+.swal2-dark-mode .swal2-icon,
+.swal2-dark-mode .swal2-icon *,
+.swal2-dark-mode .swal2-icon *::before,
+.swal2-dark-mode .swal2-icon *::after {
+  background-color: transparent !important;
+}
+
+.swal2-dark-mode .swal2-success-circular-line-left,
+.swal2-dark-mode .swal2-success-circular-line-right,
+.swal2-dark-mode .swal2-success-fix,
+.swal2-dark-mode .swal2-success-circular-line-left::before,
+.swal2-dark-mode .swal2-success-circular-line-left::after,
+.swal2-dark-mode .swal2-success-circular-line-right::before,
+.swal2-dark-mode .swal2-success-circular-line-right::after {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.swal2-dark-mode .swal2-success-line-tip,
+.swal2-dark-mode .swal2-success-line-long,
+.swal2-dark-mode .swal2-x-mark-line-left,
+.swal2-dark-mode .swal2-x-mark-line-right {
+  background-color: currentColor !important;
+  display: block !important;
+}
+
+.swal2-dark-mode .swal2-success-ring {
+  border: .25em solid rgba(56, 161, 105, 0.3) !important;
+}
+
+.swal2-dark-mode .swal2-timer-progress-bar {
+  background: var(--color-accent) !important;
+}
+
+.swal2-dark-mode .swal2-confirm {
+  background-color: var(--color-danger) !important;
+}
+
+.swal2-dark-mode .swal2-icon.swal2-success {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
+}
+
+.swal2-dark-mode .swal2-icon.swal2-error {
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+.swal2-dark-mode .swal2-icon.swal2-warning {
+  border-color: var(--color-warning) !important;
+  color: var(--color-warning) !important;
+}
+
+body.dark-mode .swal2-popup.swal2-toast .swal2-icon {
+  background-color: transparent !important;
+}
+
+body.dark-mode .swal2-popup.swal2-toast .swal2-success-ring {
+  border-color: rgba(56, 161, 105, 0.2) !important;
+}
+
+body.dark-mode .swal2-popup.swal2-toast [class^="swal2-success-circular-line"],
+body.dark-mode .swal2-popup.swal2-toast .swal2-success-fix {
+  background-color: transparent !important;
+}

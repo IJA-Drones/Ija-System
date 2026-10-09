@@ -1,0 +1,61 @@
+/* =========================================
+   FORMULARIO DO ESTOQUE
+   ========================================= */
+
+body.dark-mode .estoque-form-page .estoque-form-toolbar h2,
+body.dark-mode .estoque-form-page .estoque-form-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.22) !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-label,
+body.dark-mode .estoque-form-page .estoque-form-fields .text-muted {
+  color: #a6b8cc !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control,
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select {
+  color: #e5eef8;
+  background-color: #132132;
+  border-color: #334a63;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control::placeholder {
+  color: #7f93aa;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control:focus,
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select:focus {
+  color: #f1f6fc;
+  background-color: #152538;
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select option {
+  color: #e5eef8;
+  background: #172536;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control.is-invalid,
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select.is-invalid {
+  border-color: #e98787;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .invalid-feedback {
+  color: #f2a0a0;
+}

@@ -17,20 +17,27 @@ from app.modules.clientes import register_routes as register_clientes_routes
 from app.modules.dashboard import register_routes as register_dashboard_routes
 from app.modules.dev_dashboard import register_routes as register_dev_dashboard_routes
 from app.modules.dji_flight_logs import register_routes as register_dji_flight_logs_routes
+from app.modules.denuncias import register_routes as register_denuncias_routes
 from app.modules.drones_import import register_routes as register_drones_import_routes
 from app.modules.equipamentos import register_routes as register_equipamentos_routes
 from app.modules.equipe_uvis_dashboard import register_routes as register_equipe_uvis_dashboard_routes
 from app.modules.equipes import register_routes as register_equipes_routes
+from app.modules.estoque import register_routes as register_estoque_routes
 from app.modules.feedback import register_routes as register_feedback_routes
+from app.modules.financeiro import register_routes as register_financeiro_routes
+from app.modules.gestao_ti import register_routes as register_gestao_ti_routes
 from app.modules.mapas import register_routes as register_mapas_routes
+from app.modules.painel_operacional import register_routes as register_painel_operacional_routes
 from app.modules.piloto_checklists import register_routes as register_piloto_checklists_routes
 from app.modules.piloto_os import register_routes as register_piloto_os_routes
 from app.modules.pilotos import register_routes as register_pilotos_routes
+from app.modules.portal_cidadao import register_routes as register_portal_cidadao_routes
 from app.modules.relatorios import register_routes as register_relatorios_routes
 from app.modules.solicitacoes import register_routes as register_solicitacoes_routes
 from app.modules.uvis_equipes import register_routes as register_uvis_equipes_routes
 from app.modules.usuarios import register_routes as register_usuarios_routes
 from app.modules.veiculos import register_routes as register_veiculos_routes
+from app.modules.vigilancia import register_routes as register_vigilancia_routes
 
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
@@ -54,17 +61,24 @@ register_clientes_routes(bp)
 register_dashboard_routes(bp)
 register_dev_dashboard_routes(bp)
 register_dji_flight_logs_routes(bp)
+register_denuncias_routes(bp)
 register_drones_import_routes(bp)
 register_equipamentos_routes(bp)
 register_equipe_uvis_dashboard_routes(bp)
 register_equipes_routes(bp)
+register_estoque_routes(bp)
 register_feedback_routes(bp)
+register_financeiro_routes(bp)
+register_gestao_ti_routes(bp)
 register_mapas_routes(bp)
+register_painel_operacional_routes(bp)
 register_piloto_checklists_routes(bp)
 register_piloto_os_routes(bp)
 register_pilotos_routes(bp)
+register_portal_cidadao_routes(bp)
 register_relatorios_routes(bp)
 register_solicitacoes_routes(bp)
 register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)
 register_veiculos_routes(bp)
+register_vigilancia_routes(bp)

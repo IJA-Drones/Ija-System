@@ -145,7 +145,6 @@
       type="password"
       class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
       name="senha"
-      value="{{ form.get('senha','') }}"
       placeholder="Crie uma senha"
       required
     />
@@ -162,7 +161,6 @@
       type="password"
       class="form-control {% if errors.get('senha2') %}is-invalid{% endif %}"
       name="senha2"
-      value="{{ form.get('senha2','') }}"
       placeholder="Repita a senha"
       required
     />

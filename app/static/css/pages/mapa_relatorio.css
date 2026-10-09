@@ -1,0 +1,192 @@
+.mapa-relatorio-page {
+  --mapa-glass-bg: rgba(255, 255, 255, 0.85);
+  --mapa-glass-text: var(--color-text-main);
+  --mapa-glass-border: rgba(0, 0, 0, 0.1);
+  --mapa-accent: var(--color-accent);
+  max-width: 1200px;
+}
+
+
+.mapa-relatorio-page .map-container {
+  width: 100%;
+  height: 65vh;
+  background-color: #f8f9fa;
+  border-radius: 0 0 16px 16px;
+}
+
+.mapa-relatorio-page .glass-panel {
+  background: var(--mapa-glass-bg) !important;
+  backdrop-filter: blur(10px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
+  border: 1px solid var(--mapa-glass-border) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 12px !important;
+  color: var(--mapa-glass-text) !important;
+  transition: all 0.3s ease;
+}
+
+.mapa-relatorio-page .focos-counter-card {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  position: absolute;
+  z-index: 1000;
+  min-width: 150px;
+  padding: 8px 16px;
+  text-align: center;
+}
+
+.mapa-relatorio-page .focos-counter-card h3 {
+  color: var(--mapa-accent) !important;
+  font-weight: 800;
+  margin-bottom: 0;
+  line-height: 1.1;
+}
+
+.mapa-relatorio-page .focos-counter-card small {
+  color: var(--mapa-glass-text) !important;
+  opacity: 0.8;
+  font-size: 0.6rem;
+}
+
+.mapa-relatorio-page .map-legend-overlay,
+.mapa-relatorio-page .map-category-legend {
+  position: absolute;
+  bottom: 25px;
+  left: 20px;
+  z-index: 1000;
+  padding: 12px;
+}
+
+.mapa-relatorio-page .map-legend-overlay {
+  width: 170px;
+}
+
+.mapa-relatorio-page .map-category-legend {
+  bottom: 20px;
+  width: min(340px, calc(100% - 40px));
+  max-height: min(48vh, 420px);
+  overflow-y: auto;
+}
+
+.mapa-relatorio-page .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: var(--mapa-glass-text) !important;
+  opacity: 0.65;
+  transition: all .2s ease;
+}
+
+.mapa-relatorio-page .legend-item.is-active {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.mapa-relatorio-page .legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  flex-shrink: 0;
+  background: var(--mapa-foco-color);
+}
+
+.mapa-relatorio-page .legend-label {
+  min-width: 0;
+  flex: 1;
+}
+
+.mapa-relatorio-page .legend-count {
+  color: var(--mapa-accent) !important;
+  font-size: 0.68rem;
+  font-weight: 800;
+  opacity: 0.95;
+}
+
+.mapa-relatorio-page #mapTabs {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  border-radius: 50px;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mapa-relatorio-page #mapTabs::-webkit-scrollbar { display: none; }
+
+.mapa-relatorio-page #mapTabs .nav-link.active {
+  background: var(--color-bg-surface) !important;
+  color: var(--mapa-accent) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 50px;
+}
+
+.mapa-relatorio-page .logistics-footer {
+  background: var(--color-bg-surface);
+  border-top: 1px solid var(--mapa-glass-border);
+  padding: 15px 20px;
+  border-radius: 0 0 16px 16px;
+  color: var(--mapa-glass-text);
+}
+
+.mapa-relatorio-page .cursor-pointer { cursor: pointer; }
+
+.mapa-relatorio-page .gradient-bar {
+  height: 10px;
+  border-radius: 999px;
+  margin: 8px 0 6px 0;
+  background: var(--legenda-gradiente, linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000));
+}
+
+.mapa-relatorio-page #filterBadge {
+  width: 8px;
+  height: 8px;
+}
+
+.mapa-relatorio-page #mapTabs .nav-link {
+  color: var(--color-text-muted);
+  transition: var(--transition-base);
+}
+
+.mapa-relatorio-page #mapTabs .nav-link.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.mapa-relatorio-page .focos-counter-card .mapa-counter-label {
+  font-size: 0.55rem;
+  min-width: 100px;
+  min-height: 40px;
+  letter-spacing: 1px;
+}
+
+.mapa-relatorio-page .mapa-density-scale {
+  font-size: 0.6rem;
+  opacity: 0.8;
+}
+
+.mapa-relatorio-page .mapa-legend-label {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.mapa-relatorio-page .mapa-legend-total {
+  color: var(--mapa-accent) !important;
+}
+
+.mapa-relatorio-page .mapa-logistics-label {
+  font-size: 0.6rem;
+}
+
+.mapa-relatorio-page .mapa-heat-canvas {
+  position: absolute;
+  pointer-events: none;
+}

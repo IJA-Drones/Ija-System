@@ -1,0 +1,11 @@
+/* =========================================
+   REGISTRO DE PECAS DA MANUTENCAO
+   ========================================= */
+
+.equipamento-manutencao-pecas-page {
+  max-width: 1100px;
+}
+
+.registro-pecas-quantidade-col {
+  width: 160px;
+}

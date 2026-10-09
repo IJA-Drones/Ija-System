@@ -1,0 +1,20 @@
+/* =========================================
+   BANCO DE TALENTOS AGRO
+   ========================================= */
+
+body.dark-mode.agro-mode .talent-chip {
+  color: #bcebd0;
+  background: rgba(89, 189, 130, 0.12);
+  border-color: rgba(145, 223, 177, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-talent-upload-panel {
+  color: #dfece7;
+  background: #192d37 !important;
+  border-color: #304750 !important;
+}
+
+body.dark-mode.agro-mode .agro-talent-upload-icon {
+  color: #91dfb1 !important;
+  background: rgba(89, 189, 130, 0.13) !important;
+}

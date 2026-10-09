@@ -1,0 +1,10 @@
+body.dark-mode .mapa-relatorio-page,
+html.dark-mode .mapa-relatorio-page {
+  --mapa-glass-bg: rgba(15, 23, 42, 0.75);
+  --mapa-glass-border: rgba(255, 255, 255, 0.15);
+}
+
+body.dark-mode .mapa-relatorio-page #mapTabs,
+html.dark-mode .mapa-relatorio-page #mapTabs {
+  background: rgba(255, 255, 255, 0.1);
+}

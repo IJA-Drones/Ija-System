@@ -6,103 +6,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <style>
-    .rel-chart-card,
-    .rel-table-card {
-      border: 0;
-      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
-    }
-
-    .rel-chart-card {
-      cursor: zoom-in;
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
-    }
-
-    .rel-chart-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
-    }
-
-    .chart-expand-hint {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #2c5282;
-      background: rgba(13, 110, 253, 0.08);
-      border-radius: 999px;
-      padding: 0.24rem 0.55rem;
-      white-space: nowrap;
-    }
-
-    .rel-chart-modal-wrap {
-      height: min(72vh, 720px);
-      min-height: 380px;
-      position: relative;
-    }
-
-    .rel-chart-card .chart-wrap {
-      height: 320px;
-    }
-
-    .rel-chart-card .chart-wrap.chart-wrap-sm {
-      height: 280px;
-    }
-
-    .rel-section-title {
-      min-height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 0.75rem;
-    }
-
-    .rel-section-title h4,
-    .rel-section-title h5 {
-      margin: 0;
-      line-height: 1.25;
-    }
-
-    .rel-table-card .table {
-      margin-bottom: 0;
-      table-layout: fixed;
-    }
-
-    .rel-table-card th,
-    .rel-table-card td {
-      vertical-align: middle;
-    }
-
-    .rel-table-card th:first-child,
-    .rel-table-card td:first-child {
-      width: 72%;
-      word-break: break-word;
-    }
-
-    .rel-table-card th:last-child,
-    .rel-table-card td:last-child {
-      width: 28%;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 991.98px) {
-      .rel-section-title {
-        min-height: 0;
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .rel-chart-card .chart-wrap,
-      .rel-chart-card .chart-wrap.chart-wrap-sm {
-        height: 280px;
-      }
-
-      .rel-chart-modal-wrap {
-        height: 68vh;
-        min-height: 340px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/relatorios.css') }}">
 {% endblock %}
 
 
@@ -183,7 +87,7 @@
             <span class="text-dark">Filtros de busca</span>
 
             {# bolinha vermelha se houver filtros ativos #}
-            {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or foco_values_selecionados %}
+            {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or regiao_selecionada or equipe_id_selecionado or foco_values_selecionados %}
                 <span class="badge bg-danger rounded-circle p-1"
                       style="width: 8px; height: 8px;"></span>
             {% endif %}
@@ -230,6 +134,32 @@
                     </div>
 
                     <div class="col-md-3">
+                        <label class="small text-muted">Região:</label>
+                        {% if pode_filtrar_regiao %}
+                            <select name="regiao" class="form-select form-select-sm">
+                                <option value="">Todas as regiões</option>
+                                {% for regiao in regioes_disponiveis %}
+                                    <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text" class="form-control form-control-sm" value="{{ regiao_selecionada or 'Todas as regiÃµes' }}" disabled>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="small text-muted">Equipe:</label>
+                        <select name="equipe_id" class="form-select form-select-sm">
+                            <option value="">Todas as equipes</option>
+                            {% for equipe in equipes_disponiveis %}
+                                <option value="{{ equipe.id }}" {% if equipe_id_selecionado|string == equipe.id|string %}selected{% endif %}>
+                                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
                         <label class="small text-muted">Foco:</label>
                         {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, foco_values_selecionados, 'Adicionar foco') }}
                     </div>
@@ -239,7 +169,7 @@
                             <i class="bi bi-funnel"></i> Filtrar
                         </button>
 
-                        {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or foco_values_selecionados %}
+                        {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or regiao_selecionada or equipe_id_selecionado or foco_values_selecionados %}
                             <a href="{{ url_for(request.endpoint) }}"
                                class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-x-lg"></i> Limpar

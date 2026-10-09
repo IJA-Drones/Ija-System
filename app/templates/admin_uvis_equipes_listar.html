@@ -4,51 +4,11 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_uvis_equipes_listar.css') }}">
 {% endblock %}
 
 {% block content %}
-<style>
-  .operacional-table-wrap { width: 100%; }
 
-  @media (max-width: 991.98px) {
-    .operacional-table-wrap .table-responsive { overflow-x: visible !important; }
-    .operacional-table-wrap table thead { display: none; }
-    .operacional-table-wrap table,
-    .operacional-table-wrap tbody,
-    .operacional-table-wrap tr,
-    .operacional-table-wrap td { display: block; width: 100%; }
-    .operacional-table-wrap tbody tr {
-      margin-bottom: 16px;
-      border: 1px solid rgba(0, 0, 0, .08);
-      border-radius: 16px;
-      overflow: hidden;
-      background: var(--bs-body-bg);
-    }
-    .operacional-table-wrap tbody td {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px !important;
-      border: 0 !important;
-      text-align: right !important;
-    }
-    .operacional-table-wrap tbody td + td {
-      border-top: 1px solid rgba(0, 0, 0, .06) !important;
-    }
-    .operacional-table-wrap tbody td::before {
-      flex: 0 0 110px;
-      text-align: left;
-      font-size: .8rem;
-      font-weight: 700;
-      color: var(--bs-secondary-color);
-    }
-    .operacional-table-wrap tbody td:nth-child(1)::before { content: "UVIS"; }
-    .operacional-table-wrap tbody td:nth-child(2)::before { content: "Regiao"; }
-    .operacional-table-wrap tbody td:nth-child(3)::before { content: "Login"; }
-    .operacional-table-wrap tbody td:nth-child(4)::before { content: "Status"; }
-    .operacional-table-wrap tbody td:nth-child(5)::before { content: "Acao"; }
-  }
-</style>
 
 <div class="container-fluid py-4" style="max-width: 1200px;">
   <div class="d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap">

@@ -1,0 +1,86 @@
+/* =========================================
+   CLIENTES MENU - DARK MODE
+   ========================================= */
+
+body.dark-mode .clientes-menu-page h2.text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .clientes-menu-page h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .clientes-menu-page > .d-flex .text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .clientes-menu-card {
+  background: linear-gradient(
+    180deg,
+    rgba(26, 38, 54, 0.96) 0%,
+    rgba(20, 30, 42, 0.92) 100%
+  );
+  border-color: rgba(126, 180, 255, 0.12) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16) !important;
+}
+
+body.dark-mode .clientes-menu-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .clientes-menu-card h6.text-muted {
+  color: rgba(162, 188, 216, 0.7) !important;
+}
+
+body.dark-mode .clientes-menu-card h3.text-dark {
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .clientes-menu-card .fs-1 {
+  opacity: 0.58;
+}
+
+body.dark-mode .clientes-menu-card--uvis {
+  border-left-color: rgba(124, 184, 255, 0.45) !important;
+}
+
+body.dark-mode .clientes-menu-card--uvis .text-primary {
+  color: #8abcf2 !important;
+}
+
+body.dark-mode .clientes-menu-card--uvis .text-primary.opacity-75 {
+  opacity: 0.58 !important;
+}
+
+body.dark-mode .clientes-menu-card--uvis .badge.bg-primary-subtle {
+  color: #acd4ff !important;
+  background: rgba(76, 163, 255, 0.14) !important;
+  border: 1px solid rgba(126, 180, 255, 0.16);
+}
+
+body.dark-mode .clientes-menu-card--uvis .mt-3.text-primary {
+  color: #94c3fb !important;
+}
+
+body.dark-mode .clientes-menu-card--clientes {
+  border-left-color: rgba(115, 191, 145, 0.42) !important;
+}
+
+body.dark-mode .clientes-menu-card--clientes .text-success {
+  color: #82c49e !important;
+}
+
+body.dark-mode .clientes-menu-card--clientes .text-success.opacity-75 {
+  opacity: 0.58 !important;
+}
+
+body.dark-mode .clientes-menu-card--clientes .badge.bg-success-subtle {
+  color: #aee3c4 !important;
+  background: rgba(51, 154, 107, 0.15) !important;
+  border: 1px solid rgba(115, 191, 145, 0.16);
+}
+
+body.dark-mode .clientes-menu-card--clientes .mt-3.text-success {
+  color: #8fd0aa !important;
+}

@@ -1,0 +1,356 @@
+/* =========================================
+   RELATORIO DE COLETA DE IMAGENS
+   ========================================= */
+
+.media-report-page {
+  max-width: 1280px;
+}
+
+.media-report-card {
+  border: 1px solid #dbe4f0;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  height: 100%;
+  position: relative;
+}
+
+.media-report-thumb {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  background: #eff5fb;
+}
+
+.media-report-empty {
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem;
+  background: #f7fbff;
+  color: #6a7b91;
+  border-bottom: 1px solid #dbe4f0;
+}
+
+.media-report-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.media-report-meta-item {
+  background: #f8fbff;
+  border: 1px solid #e3ebf5;
+  border-radius: 0.85rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.media-report-meta-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7a8798;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.media-report-meta-value {
+  font-size: 0.92rem;
+  color: #193b62;
+  font-weight: 700;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.media-report-address {
+  min-height: 72px;
+}
+
+.media-summary-card {
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  height: 100%;
+}
+
+.media-summary-card .card-body {
+  padding: 1.15rem;
+}
+
+.media-summary-label {
+  color: #7a8798;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}
+
+.media-summary-value {
+  color: #0aa8c3;
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.media-table-card {
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.media-table-card .table th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6e7f94;
+}
+
+.media-table-card .table td {
+  vertical-align: middle;
+}
+
+.media-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.media-filter-actions .btn {
+  min-width: 120px;
+}
+
+.media-export-status {
+  border: 1px solid #dbe4f0;
+  border-radius: 0.75rem;
+  background: #f8fbff;
+}
+
+.media-export-status .progress {
+  height: 0.45rem;
+  background: #e4edf7;
+}
+
+.media-report-uvis-review {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.62rem 0.82rem;
+  border-bottom: 1px solid #dbe4f0;
+  background: #f8fbff;
+}
+
+.media-report-uvis-review.is-ok {
+  background: #f3fbf6;
+  border-bottom-color: #cbeed6;
+}
+
+.media-report-uvis-review-copy {
+  min-width: 0;
+}
+
+.media-report-uvis-review-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #193b62;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.media-report-uvis-review.is-ok .media-report-uvis-review-label {
+  color: #0f7a34;
+}
+
+.media-report-uvis-review-detail {
+  color: #7a8798;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 0.12rem;
+}
+
+.media-report-ok-form {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.media-report-ok-button {
+  min-height: 31px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.68rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid #1f5b94;
+  background: #fff;
+  color: #1f5b94;
+}
+
+.media-report-ok-button:hover,
+.media-report-ok-button:focus {
+  background: #1f5b94;
+  color: #fff;
+}
+
+.media-report-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.media-report-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.media-report-ok-button i {
+  font-size: 0.86rem;
+}
+
+@media (max-width: 767.98px) {
+  .media-report-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .media-filter-actions .btn {
+    width: 100%;
+  }
+
+  .media-report-action-buttons {
+    flex: 1 1 auto;
+  }
+}
+
+body.dark-mode .media-report-page .media-report-card {
+  background: #152233;
+  border-color: #233549;
+  box-shadow: var(--shadow-md);
+}
+
+body.dark-mode .media-report-page .media-report-thumb {
+  background: #1f2a3e;
+}
+
+body.dark-mode .media-report-page .media-report-empty {
+  background: #1f2a3e;
+  color: var(--color-text-muted);
+  border-bottom-color: #233549;
+}
+
+body.dark-mode .media-report-page .media-report-meta-item {
+  background: #1c2b3f;
+  border-color: #233549;
+}
+
+body.dark-mode .media-report-page .media-report-meta-label {
+  color: #9fb0c8;
+}
+
+body.dark-mode .media-report-page .media-report-meta-value {
+  color: #eef4ff;
+}
+
+body.dark-mode .media-report-page .media-summary-card {
+  background: #152233;
+  border-color: #233549;
+}
+
+body.dark-mode .media-report-page .media-summary-label {
+  color: #9fb0c8;
+}
+
+body.dark-mode .media-report-page .media-summary-value {
+  color: #12e3ff;
+}
+
+body.dark-mode .media-report-page .media-table-card {
+  background: #152233;
+  border-color: #233549;
+}
+
+body.dark-mode .media-report-page .media-table-card .table th {
+  color: #9fb0c8;
+}
+
+body.dark-mode .media-report-page .media-table-card .text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+body.dark-mode .media-report-page .media-export-status {
+  background: #1f2a3e;
+  border-color: #233549;
+}
+
+body.dark-mode .media-report-page .media-export-status .progress {
+  background: rgba(18, 227, 255, 0.12);
+}
+
+body.dark-mode .media-report-page .media-report-uvis-review {
+  background: #1f2a3e;
+  border-bottom-color: #233549;
+}
+
+body.dark-mode .media-report-page .media-report-uvis-review.is-ok {
+  background: rgba(46, 133, 89, 0.12);
+  border-bottom-color: #2e8559;
+}
+
+body.dark-mode .media-report-page .media-report-uvis-review-label {
+  color: #e8f2ff;
+}
+
+body.dark-mode .media-report-page .media-report-uvis-review.is-ok .media-report-uvis-review-label {
+  color: #86e3a8;
+}
+
+body.dark-mode .media-report-page .media-report-uvis-review-detail {
+  color: #9aacbf;
+}
+
+body.dark-mode .media-report-page .media-report-ok-button {
+  background: #172334;
+  border-color: #3d5f86;
+  color: #b9d7ff;
+}
+
+body.dark-mode .media-report-page .media-report-ok-button:hover,
+body.dark-mode .media-report-page .media-report-ok-button:focus {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #101927;
+}
+
+body.dark-mode .media-report-page .badge.bg-light.text-dark {
+  background: #172334 !important;
+  border-color: #233549 !important;
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .media-report-page .badge.bg-primary-subtle.text-primary {
+  background: rgba(76, 163, 255, 0.14) !important;
+  color: #b8dbff !important;
+}
+
+body.dark-mode .media-report-page .text-dark {
+  color: #eef4ff !important;
+}
+
+body.dark-mode .media-report-page .text-muted {
+  color: var(--color-text-muted) !important;
+}

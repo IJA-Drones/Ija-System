@@ -1,22 +1,28 @@
 from sqlalchemy import and_, func, or_
+from flask import current_app, has_app_context
 
 from app.extensions import db
-from app.models import Notificacao, Usuario
+from app.models import Notificacao, Usuario, Pilotos
 from app.shared.access import (
     DEV_USER_TYPE,
+    DIRECTOR_USER_TYPE,
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
     REGIONAL_USER_TYPE,
+    VEICULOS_SUPERVISOR_USER_TYPES,
     is_admin_global_user,
     is_dev_user,
     normalize_regiao,
 )
 from app.shared.query_filters import id_search_clause
+from app.shared.password_policy import validate_password
 
 
+TI_MANAGER_USER_TYPE = "gestor_ti"
 ADMIN_USER_TYPES = (
     DEV_USER_TYPE,
+    DIRECTOR_USER_TYPE,
     "admin",
     "operario",
     REGIONAL_USER_TYPE,
@@ -24,6 +30,8 @@ ADMIN_USER_TYPES = (
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
     "covisa",
+    "sup_veiculos",
+    TI_MANAGER_USER_TYPE,
 )
 LEGACY_COVISA_USER_TYPE = "visualizar"
 LEGACY_COVISA_REGIAO = "COVISA"
@@ -33,6 +41,8 @@ def normalize_admin_user_type(tipo_usuario: str | None) -> str:
     tipo_normalizado = (tipo_usuario or "").strip().lower()
     if tipo_normalizado == "covisa":
         return LEGACY_COVISA_USER_TYPE
+    if tipo_normalizado in VEICULOS_SUPERVISOR_USER_TYPES:
+        return "sup_veiculos"
     return tipo_normalizado
 
 
@@ -54,23 +64,42 @@ def admin_user_types():
 
 
 def is_admin_managed_user(usuario) -> bool:
-    return getattr(usuario, "tipo_usuario", None) in ADMIN_USER_TYPES or is_legacy_covisa_user(usuario)
+    tipo = getattr(usuario, "tipo_usuario", None)
+    return tipo in ADMIN_USER_TYPES or tipo in VEICULOS_SUPERVISOR_USER_TYPES or is_legacy_covisa_user(usuario)
 
 
 def can_assign_dev_role(actor) -> bool:
     if is_dev_user(actor):
         return True
-    return is_admin_global_user(actor) and not Usuario.query.filter_by(tipo_usuario=DEV_USER_TYPE).first()
+    return (
+        getattr(actor, "tipo_usuario", None) == "admin"
+        and not Usuario.query.filter_by(tipo_usuario=DEV_USER_TYPE).first()
+    )
+
+
+def can_assign_director_role(actor) -> bool:
+    return is_dev_user(actor)
+
+
+def can_assign_ti_manager_role(actor) -> bool:
+    return (
+        is_dev_user(actor) and has_app_context()
+        and bool(current_app.config.get("CENTRAL_TI_ENABLED", False))
+    )
 
 
 def can_manage_admin_user(actor, usuario) -> bool:
-    return getattr(usuario, "tipo_usuario", None) != DEV_USER_TYPE or is_dev_user(actor)
+    target_type = getattr(usuario, "tipo_usuario", None)
+    if target_type in {DEV_USER_TYPE, DIRECTOR_USER_TYPE, TI_MANAGER_USER_TYPE}:
+        return is_dev_user(actor)
+    return True
 
 
 def get_admin_user_type_form_value(usuario) -> str:
     if is_legacy_covisa_user(usuario):
         return "covisa"
-    return (getattr(usuario, "tipo_usuario", None) or "").strip().lower()
+    tipo = (getattr(usuario, "tipo_usuario", None) or "").strip().lower()
+    return "sup_veiculos" if tipo in VEICULOS_SUPERVISOR_USER_TYPES else tipo
 
 
 def login_em_uso(login: str, exclude_user_id=None):
@@ -89,12 +118,15 @@ def build_admin_users_query(q: str, tipo: str):
             Usuario.tipo_usuario.in_(
                 (
                     DEV_USER_TYPE,
+                    DIRECTOR_USER_TYPE,
                     "admin",
                     "operario",
                     REGIONAL_USER_TYPE,
                     PREFEITURA_ADMIN_USER_TYPE,
                     FINANCEIRO_ADMIN_USER_TYPE,
                     FINANCEIRO_USER_TYPE,
+                    TI_MANAGER_USER_TYPE,
+                    *VEICULOS_SUPERVISOR_USER_TYPES,
                 )
             ),
             and_(
@@ -110,6 +142,8 @@ def build_admin_users_query(q: str, tipo: str):
                 Usuario.tipo_usuario == LEGACY_COVISA_USER_TYPE,
                 func.upper(func.coalesce(Usuario.regiao, "")) == LEGACY_COVISA_REGIAO,
             )
+        elif tipo in VEICULOS_SUPERVISOR_USER_TYPES:
+            query = query.filter(Usuario.tipo_usuario.in_(VEICULOS_SUPERVISOR_USER_TYPES))
         else:
             query = query.filter(Usuario.tipo_usuario == tipo)
 
@@ -143,12 +177,16 @@ def validate_new_admin_user(
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
         errors["tipo_usuario"] = "Selecione um tipo valido."
+    if tipo_usuario == TI_MANAGER_USER_TYPE and not current_app.config.get("CENTRAL_TI_ENABLED", False):
+        errors["tipo_usuario"] = "Ative a Central de TI antes de criar esse perfil."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
     if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
     if not senha:
         errors["senha"] = "Informe uma senha."
+    elif password_error := validate_password(senha):
+        errors["senha"] = password_error
     if not senha2:
         errors["senha2"] = "Confirme a senha."
     if senha and senha2 and senha != senha2:
@@ -177,6 +215,8 @@ def validate_edit_admin_user(
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
         errors["tipo_usuario"] = "Tipo invalido."
+    if tipo_usuario == TI_MANAGER_USER_TYPE and not current_app.config.get("CENTRAL_TI_ENABLED", False):
+        errors["tipo_usuario"] = "A Central de TI está desativada."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
     if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
@@ -185,6 +225,8 @@ def validate_edit_admin_user(
     if senha or senha2:
         if len(senha) < 4:
             errors["senha"] = "Senha muito curta (min. 4)."
+        if senha and (password_error := validate_password(senha)):
+            errors["senha"] = password_error
         if senha != senha2:
             errors["senha2"] = "As senhas nao conferem."
 
@@ -201,9 +243,34 @@ def validate_password_reset(senha: str, senha2: str, **_kwargs):
     if senha != senha2:
         return "As senhas nao conferem."
 
-    return None
+    return validate_password(senha)
 
 
 def delete_admin_user(usuario):
     Notificacao.query.filter(Notificacao.usuario_id == usuario.id).delete(synchronize_session=False)
     db.session.delete(usuario)
+
+
+def garantir_piloto_para_supervisor(usuario):
+    """Usa a identidade de piloto existente para registrar autoria sem equipe."""
+    tipo_normalizado = (usuario.tipo_usuario or "").strip().lower()
+    if tipo_normalizado not in VEICULOS_SUPERVISOR_USER_TYPES:
+        return
+    if getattr(usuario, "piloto_id", None):
+        compartilhado = Usuario.query.filter(
+            Usuario.piloto_id == usuario.piloto_id,
+            Usuario.id != usuario.id,
+        ).first()
+        if not compartilhado:
+            piloto = db.session.get(Pilotos, usuario.piloto_id)
+            if piloto:
+                piloto.nome_piloto = usuario.nome_uvis or usuario.login
+                piloto.prefeitura_id = usuario.prefeitura_id
+                return
+    novo_piloto = Pilotos(
+        nome_piloto=usuario.nome_uvis or usuario.login,
+        prefeitura_id=getattr(usuario, "prefeitura_id", None),
+    )
+    db.session.add(novo_piloto)
+    db.session.flush()
+    usuario.piloto_id = novo_piloto.id

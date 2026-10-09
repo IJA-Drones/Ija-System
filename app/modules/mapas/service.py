@@ -11,6 +11,7 @@ from app.shared.access import (
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
     apply_solicitacao_regiao_scope,
+    is_admin_global_user,
 )
 
 
@@ -53,7 +54,7 @@ def build_heatmap_query(user, *, uvis_id=None, mes=None, ano=None, larva_visuali
 
     if getattr(user, "tipo_usuario", None) == "uvis":
         query = query.filter(Solicitacao.usuario_id == user.id)
-    elif getattr(user, "tipo_usuario", None) in {"dev", "admin", "regional", "prefeitura_admin"} and uvis_id:
+    elif (is_admin_global_user(user) or getattr(user, "tipo_usuario", None) in {"regional", "prefeitura_admin"}) and uvis_id:
         query = query.filter(Solicitacao.usuario_id == uvis_id)
 
     larva_filter = normalize_larva_filter(larva_visualizada)
@@ -105,7 +106,7 @@ def build_heatmap_points(user, *, uvis_id=None, mes=None, ano=None, larva_visual
 
 
 def build_uvis_disponiveis(user):
-    if getattr(user, "tipo_usuario", None) not in {"dev", "admin", "regional", "prefeitura_admin"}:
+    if not is_admin_global_user(user) and getattr(user, "tipo_usuario", None) not in {"regional", "prefeitura_admin"}:
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")

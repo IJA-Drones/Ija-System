@@ -68,6 +68,7 @@
     </div>
 
     <form method="POST" class="d-grid gap-3">
+      {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
       <div>
         <label class="form-label fw-semibold text-muted small">Login</label>
         <input

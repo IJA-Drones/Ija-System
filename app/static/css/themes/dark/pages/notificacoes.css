@@ -1,0 +1,115 @@
+/* =========================================
+   NOTIFICACOES - DARK MODE
+   ========================================= */
+
+body.dark-mode .notificacoes-toolbar h2.text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .notificacoes-toolbar .text-primary {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .notificacoes-card {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .notificacoes-banner {
+  background:
+    rgba(23, 36, 52, 0.96) !important;
+
+  color:
+    rgba(162, 188, 216, 0.86) !important;
+
+  border-bottom:
+    1px solid rgba(126, 180, 255, 0.08) !important;
+}
+
+body.dark-mode .notificacoes-list .list-group-item {
+  background:
+    rgba(18, 28, 40, 0.94) !important;
+
+  color:
+    var(--color-text-main) !important;
+
+  border-color:
+    rgba(126, 180, 255, 0.08) !important;
+
+  padding:
+    1rem 1.25rem;
+}
+
+body.dark-mode .notificacoes-list .list-group-item:hover {
+  background:
+    rgba(21, 33, 46, 0.98) !important;
+}
+
+body.dark-mode .notificacoes-list .notificacoes-item-unread {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.98) 0%, rgba(20, 30, 42, 0.96) 100%) !important;
+
+  border-left:
+    4px solid var(--color-primary) !important;
+}
+
+body.dark-mode .notificacoes-list .notificacoes-item-unread .fw-bold.text-dark {
+  color:
+    var(--color-primary-dark) !important;
+}
+
+body.dark-mode .notificacoes-list .notificacoes-item-read .fw-bold.text-muted {
+  color:
+    rgba(237, 243, 251, 0.9) !important;
+}
+
+body.dark-mode .notificacoes-list .text-muted {
+  color:
+    rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .notificacoes-list .badge.bg-warning.text-dark {
+  background:
+    rgba(255, 193, 7, 0.16) !important;
+
+  color:
+    #ffe08a !important;
+}
+
+body.dark-mode .notificacoes-list .badge.bg-danger {
+  background:
+    rgba(220, 53, 69, 0.88) !important;
+
+  color:
+    #fff !important;
+}
+
+body.dark-mode .notificacoes-delete-btn {
+  border-color:
+    rgba(255, 107, 129, 0.45);
+
+  color:
+    #ff8ea0;
+}
+
+body.dark-mode .notificacoes-delete-btn:hover {
+  background:
+    rgba(220, 53, 69, 0.12);
+
+  border-color:
+    rgba(255, 107, 129, 0.7);
+
+  color:
+    #ffd0d7;
+}
+
+body.dark-mode .notificacoes-empty {
+  color:
+    rgba(162, 188, 216, 0.82) !important;
+}

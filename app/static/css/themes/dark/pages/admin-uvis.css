@@ -1,0 +1,165 @@
+/* =========================================
+   LISTAGEM DE UVIS
+   ========================================= */
+
+body.dark-mode .uvis-listing-page .listing-header h2,
+body.dark-mode .uvis-listing-page .listing-header h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .uvis-listing-page .listing-header h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .uvis-listing-page .listing-header .text-muted {
+  color: rgba(174, 195, 218, 0.82) !important;
+}
+
+body.dark-mode .uvis-listing-page .listing-header .text-muted strong {
+  color: #dce9f8;
+}
+
+body.dark-mode .uvis-listing-page .listing-header .bg-filter-custom {
+  color: #b9dcff !important;
+  background: rgba(76, 163, 255, 0.14) !important;
+  border: 1px solid rgba(126, 180, 255, 0.18);
+}
+
+/* O filtro usa uma superficie mais clara que a tabela. */
+body.dark-mode .uvis-listing-page .uvis-filter-card {
+  overflow: hidden;
+  background: #19283a;
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 10px 26px rgba(2, 8, 20, 0.2) !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-header {
+  color: #dce9f8;
+  background: linear-gradient(135deg, #1d2e42, #1a2a3c) !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-header[aria-expanded="true"] {
+  background: #203248 !important;
+  border-bottom-color: #30465f !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-header .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-header .text-primary,
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-header .bi-funnel-fill {
+  color: #6db0fb !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-header .text-muted {
+  color: #91a5bd !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .listing-filter-body {
+  background: #19283a;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card label.text-muted {
+  color: #aebed1 !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-control,
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-select {
+  color: #e8f1fb;
+  background: #213249;
+  border-color: #3a5069;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-control::placeholder {
+  color: #8498af;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-control:hover,
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-select:hover {
+  border-color: #52708f;
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-control:focus,
+body.dark-mode .uvis-listing-page .uvis-filter-card .form-select:focus {
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .uvis-listing-page .uvis-filter-card option {
+  color: #e8f1fb;
+  background: #213249;
+}
+
+body.dark-mode .uvis-listing-page .uvis-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .uvis-listing-page .uvis-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table .fw-semibold {
+  color: #dce9f8;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .uvis-listing-page .admin-uvis-table code {
+  color: #a9d2ff;
+  background: rgba(76, 163, 255, 0.12);
+  border: 1px solid rgba(126, 180, 255, 0.16);
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+}
+
+body.dark-mode .uvis-listing-page .uvis-table-card .card-footer {
+  background: #172536 !important;
+  border-color: #2a3d53;
+}
+
+@media (max-width: 991.98px) {
+  body.dark-mode .uvis-listing-page .uvis-table-card .admin-uvis-table tbody tr {
+    color: #edf3fb !important;
+    background: linear-gradient(180deg, #19293b, #172536) !important;
+    border-color: #30465f !important;
+    box-shadow: 0 10px 24px rgba(2, 8, 20, 0.24) !important;
+  }
+
+  body.dark-mode .uvis-listing-page .uvis-table-card .admin-uvis-table tbody td,
+  body.dark-mode .uvis-listing-page .uvis-table-card .admin-uvis-table tbody tr:nth-child(even) td {
+    background: transparent !important;
+  }
+
+  body.dark-mode .uvis-listing-page .uvis-table-card .admin-uvis-table tbody td + td {
+    border-top-color: #2a3d53 !important;
+  }
+
+  body.dark-mode .uvis-listing-page .uvis-table-card .admin-uvis-table tbody td::before {
+    color: #91a5bd !important;
+  }
+}

@@ -1,0 +1,24 @@
+/* =========================================
+   RESET GLOBAL
+   ========================================= */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  background: var(--color-bg-body);
+  color: var(--color-text-main);
+  scroll-behavior: smooth;
+}
+
+/* Prevents content from sitting beneath the navbar before JS measures it. */
+body:not(.is-loaded) {
+  padding-top: 70px !important;
+}

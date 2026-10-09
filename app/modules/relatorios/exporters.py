@@ -1,6 +1,8 @@
 import gc
 import os
 import tempfile
+import unicodedata
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
@@ -18,6 +20,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.platypus import Image as RLImage
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
@@ -31,7 +34,10 @@ from app.modules.piloto_os.exporters import (
     _try_prepare_pdf_image_for_canvas,
 )
 from app.modules.relatorios.service import (
+    _apply_relatorio_solicitacoes_filters,
+    _resolve_relatorio_solicitacoes_filters,
     _coleta_imagens_max_export_items,
+    build_coleta_imagens_uvis_ids_com_registro,
     build_relatorio_coleta_imagens_export_data,
     build_relatorio_os_export_data,
 )
@@ -39,19 +45,30 @@ from app.shared.access import (
     apply_prefeitura_scope,
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
-    apply_solicitacao_regiao_scope,
 )
-from app.shared.query_filters import aplicar_filtros_base, get_multi_int_values, get_multi_values, multi_value_to_query
+from app.shared.query_filters import multi_value_to_query
 
-try:
-    import matplotlib
+_MATPLOTLIB_PYPLOT = None
+_MATPLOTLIB_IMPORT_ATTEMPTED = False
 
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
 
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
+def _get_matplotlib_pyplot():
+    global _MATPLOTLIB_IMPORT_ATTEMPTED, _MATPLOTLIB_PYPLOT
+
+    if _MATPLOTLIB_IMPORT_ATTEMPTED:
+        return _MATPLOTLIB_PYPLOT
+
+    _MATPLOTLIB_IMPORT_ATTEMPTED = True
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as pyplot
+    except ImportError:
+        return None
+
+    _MATPLOTLIB_PYPLOT = pyplot
+    return _MATPLOTLIB_PYPLOT
 
 
 def _env_int(name, default, minimum=None, maximum=None):
@@ -82,48 +99,62 @@ COLETA_IMAGENS_PDF_REMOTE_PREFETCH = _env_int(
     maximum=3,
 )
 COLETA_IMAGENS_PDF_PREFETCH_MISS = object()
+PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS_LABEL = "Aprovadas/Concluidas"
+PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS = {"APROVADO", "CONCLUIDO"}
+
+
+def _normalize_pdf_solicitacoes_status(value):
+    text = str(value or "").strip().upper()
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFD", text)
+        if unicodedata.category(char) != "Mn"
+    )
+
+
+def _pdf_solicitacoes_status_label(status):
+    if _normalize_pdf_solicitacoes_status(status) in PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS:
+        return PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS_LABEL
+    return status or "Nao informado"
+
+
+def _merge_pdf_solicitacoes_status_counts(rows):
+    totals = {}
+    order = []
+    for status, total in rows:
+        label = _pdf_solicitacoes_status_label(status)
+        if label not in totals:
+            totals[label] = 0
+            order.append(label)
+        totals[label] += total or 0
+    return [(label, totals[label]) for label in order]
 
 
 def _resolve_filters(user, args):
-    mes = args.get("mes", datetime.now().month, type=int)
-    ano = args.get("ano", datetime.now().year, type=int)
-    filtro_data = f"{ano}-{mes:02d}"
-
-    if getattr(user, "tipo_usuario", None) == "uvis":
-        uvis_ids = [user.id]
-    else:
-        uvis_ids = get_multi_int_values(args, "uvis_id")
-
-    return mes, ano, filtro_data, uvis_ids, get_multi_values(args, "foco")
-
-
-def _apply_foco_filter(query, foco_values):
-    if foco_values:
-        return query.filter(Solicitacao.foco.in_(foco_values))
-    return query
+    filtros = _resolve_relatorio_solicitacoes_filters(user, args)
+    return (
+        filtros["mes"],
+        filtros["ano"],
+        filtros["filtro_data"],
+        filtros["uvis_ids"],
+        filtros["foco_values"],
+        filtros["regiao"],
+        filtros["equipe_id"],
+        filtros,
+    )
 
 
 def _build_pdf_export_data(user, args):
-    mes, ano, filtro_data, uvis_ids, foco_values = _resolve_filters(user, args)
+    mes, ano, filtro_data, uvis_ids, foco_values, regiao, equipe_id, filtros = _resolve_filters(user, args)
     orient = args.get("orient", default="portrait")
 
-    base_query = aplicar_filtros_base(
-        db.session.query(Solicitacao),
-        filtro_data,
-        uvis_ids,
-    )
-    base_query = apply_solicitacao_prefeitura_scope(base_query, user)
-    base_query = apply_solicitacao_regiao_scope(base_query, user)
-    base_query = _apply_foco_filter(base_query, foco_values)
+    base_query = _apply_relatorio_solicitacoes_filters(db.session.query(Solicitacao), user, filtros)
 
-    query_detalhe = aplicar_filtros_base(
+    query_detalhe = _apply_relatorio_solicitacoes_filters(
         db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id),
-        filtro_data,
-        uvis_ids,
+        user,
+        filtros,
     )
-    query_detalhe = apply_solicitacao_prefeitura_scope(query_detalhe, user)
-    query_detalhe = apply_regiao_scope(query_detalhe, user, Usuario.regiao)
-    query_detalhe = _apply_foco_filter(query_detalhe, foco_values)
 
     query_results_total = query_detalhe.count()
     query_results = (
@@ -134,7 +165,17 @@ def _build_pdf_export_data(user, args):
     )
 
     total_solicitacoes = base_query.count()
-    total_aprovadas = base_query.filter(Solicitacao.status == "APROVADO").count()
+    status_count_rows = (
+        base_query
+        .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
+        .group_by(Solicitacao.status)
+        .all()
+    )
+    total_aprovadas = sum(
+        total or 0
+        for status, total in status_count_rows
+        if _normalize_pdf_solicitacoes_status(status) in PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS
+    )
     total_aprovadas_com_recomendacoes = base_query.filter(
         Solicitacao.status == "APROVADO COM RECOMENDAÇÕES"
     ).count()
@@ -145,32 +186,17 @@ def _build_pdf_export_data(user, args):
     dados_regiao = [
         (regiao or "Não informado", total)
         for regiao, total in (
-            apply_regiao_scope(
-                apply_solicitacao_prefeitura_scope(
-                    aplicar_filtros_base(
-                        db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
-                        filtro_data,
-                        uvis_ids,
-                    ),
-                    user,
-                ),
+            _apply_relatorio_solicitacoes_filters(
+                db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
                 user,
-                Usuario.regiao,
+                filtros,
             )
             .group_by(Usuario.regiao)
             .all()
         )
     ]
 
-    dados_status = [
-        (status or "Não informado", total)
-        for status, total in (
-            base_query
-            .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
-            .group_by(Solicitacao.status)
-            .all()
-        )
-    ]
+    dados_status = _merge_pdf_solicitacoes_status_counts(status_count_rows)
 
     dados_foco = [
         (foco or "Não informado", total)
@@ -225,19 +251,12 @@ def _build_pdf_export_data(user, args):
     dados_unidade = [
         (uvis_nome or "Não informado", total)
         for uvis_nome, total in (
-            apply_regiao_scope(
-                apply_solicitacao_prefeitura_scope(
-                    aplicar_filtros_base(
-                        db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
-                        .join(Usuario)
-                        .filter(Usuario.tipo_usuario == "uvis"),
-                        filtro_data,
-                        uvis_ids,
-                    ),
-                    user,
-                ),
+            _apply_relatorio_solicitacoes_filters(
+                db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                .join(Usuario)
+                .filter(Usuario.tipo_usuario == "uvis"),
                 user,
-                Usuario.regiao,
+                filtros,
             )
             .group_by(Usuario.nome_uvis)
             .all()
@@ -275,14 +294,13 @@ def _build_pdf_export_data(user, args):
     dados_mensais = [
         tuple(row)
         for row in (
-            apply_solicitacao_regiao_scope(
-                apply_solicitacao_prefeitura_scope(
-                    db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
-                        Solicitacao.data_agendamento.isnot(None)
-                    ),
-                    user,
+            _apply_relatorio_solicitacoes_filters(
+                db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
+                    Solicitacao.data_agendamento.isnot(None)
                 ),
                 user,
+                filtros,
+                include_month=False,
             )
             .group_by("mes")
             .order_by("mes")
@@ -298,6 +316,8 @@ def _build_pdf_export_data(user, args):
         "uvis_id": uvis_ids[0] if uvis_ids else None,
         "uvis_ids": uvis_ids,
         "foco_values": foco_values,
+        "regiao": regiao,
+        "equipe_id": equipe_id,
         "query_results": query_results,
         "query_results_total": query_results_total,
         "query_results_limit": RELATORIO_PDF_DETALHE_MAX_ROWS,
@@ -324,6 +344,7 @@ def build_relatorio_pdf_export(user, args):
     data = _build_pdf_export_data(user, args)
 
     status_colors = {
+        PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS_LABEL: "#198754",
         "APROVADO": "#2f855a",
         "APROVADO COM RECOMENDAÇÕES": "#F7630C",
         "EM ANÁLISE": "#f3e526",
@@ -400,6 +421,10 @@ def build_relatorio_pdf_export(user, args):
         filtro_txt += f" | UVIS IDs: {multi_value_to_query(data['uvis_ids'])}"
     else:
         filtro_txt += " | UVIS: Todas"
+    if data["regiao"]:
+        filtro_txt += f" | Regiao: {data['regiao']}"
+    if data["equipe_id"]:
+        filtro_txt += f" | Equipe ID: {data['equipe_id']}"
     if data["foco_values"]:
         filtro_txt += f" | Focos: {', '.join(data['foco_values'])}"
     story.append(Paragraph(filtro_txt, subtitle_style))
@@ -407,7 +432,7 @@ def build_relatorio_pdf_export(user, args):
     def resumo_cards():
         cards = [
             ("Total", data["total_solicitacoes"], "#0d6efd"),
-            ("Aprovadas", data["total_aprovadas"], "#198754"),
+            ("Aprovadas/Concluidas", data["total_aprovadas"], "#198754"),
             ("Aprov. c/ Recom.", data["total_aprovadas_com_recomendacoes"], "#F7630C"),
             ("Negadas", data["total_recusadas"], "#dc3545"),
             ("Em Análise", data["total_analise"], "#ffc107"),
@@ -502,6 +527,8 @@ def build_relatorio_pdf_export(user, args):
     story.append(Paragraph("Os gráficos abaixo representam visualmente os dados apresentados nas tabelas anteriores.", normal))
     story.append(Spacer(1, 8))
 
+    plt = _get_matplotlib_pyplot()
+
     def safe_img_from_plt(fig, width_mm=170):
         bio = BytesIO()
         fig.tight_layout()
@@ -510,7 +537,7 @@ def build_relatorio_pdf_export(user, args):
         bio.seek(0)
         return RLImage(bio, width=width_mm * mm)
 
-    if MATPLOTLIB_AVAILABLE:
+    if plt is not None:
         try:
             labels = [status for status, _ in data["dados_status"]]
             values = [count for _, count in data["dados_status"]]
@@ -615,7 +642,7 @@ def build_relatorio_pdf_export(user, args):
         unidade = getattr(usuario, "nome_uvis", "") or "Não informado"
         regiao = getattr(usuario, "regiao", "") or "Não informado"
         protocolo = getattr(solicitacao, "protocolo", "") or ""
-        status = getattr(solicitacao, "status", "") or ""
+        status = _pdf_solicitacoes_status_label(getattr(solicitacao, "status", "") or "")
         foco = getattr(solicitacao, "foco", "") or ""
         tipo_operacao = getattr(solicitacao, "tipo_operacao", "") or ""
         tipo_visita = getattr(solicitacao, "tipo_visita", "") or ""
@@ -710,7 +737,7 @@ def _montar_endereco(row):
 
 
 def build_relatorio_excel_export(user, args):
-    mes, ano, filtro_data, uvis_ids, foco_values = _resolve_filters(user, args)
+    mes, ano, filtro_data, uvis_ids, foco_values, regiao, equipe_id, filtros = _resolve_filters(user, args)
 
     query_dados = db.session.query(
         Solicitacao.id,
@@ -733,23 +760,7 @@ def build_relatorio_excel_export(user, args):
         Usuario.nome_uvis,
         Usuario.regiao,
     ).join(Usuario, Usuario.id == Solicitacao.usuario_id)
-    query_dados = apply_solicitacao_prefeitura_scope(query_dados, user)
-    query_dados = apply_regiao_scope(query_dados, user, Usuario.regiao)
-
-    if db.engine.name == "postgresql":
-        query_dados = query_dados.filter(
-            Solicitacao.data_agendamento.isnot(None),
-            db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_data,
-        )
-    else:
-        query_dados = query_dados.filter(
-            Solicitacao.data_agendamento.isnot(None),
-            db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_data,
-        )
-
-    if uvis_ids:
-        query_dados = query_dados.filter(Solicitacao.usuario_id.in_(uvis_ids))
-    query_dados = _apply_foco_filter(query_dados, foco_values)
+    query_dados = _apply_relatorio_solicitacoes_filters(query_dados, user, filtros)
 
     dados = query_dados.order_by(
         Solicitacao.data_agendamento.desc(),
@@ -870,6 +881,10 @@ def build_relatorio_excel_export(user, args):
     if uvis_ids:
         safe_nome = (nome_uvis_filtro or f"IDs_{multi_value_to_query(uvis_ids)}").replace(" ", "_").replace(",", "_")
         nome_arquivo += f"_UVIS_{safe_nome}"
+    if regiao:
+        nome_arquivo += f"_regiao_{str(regiao).replace(' ', '_').lower()}"
+    if equipe_id:
+        nome_arquivo += f"_equipe_{equipe_id}"
 
     return output, f"{nome_arquivo}.xlsx"
 
@@ -1537,11 +1552,11 @@ def _os_short_label(value, max_chars=32):
     return value if len(value) <= max_chars else f"{value[:max_chars - 3]}..."
 
 
-def _os_chart_image(fig, *, width_mm=170):
+def _os_chart_image(fig, *, pyplot, width_mm=170):
     bio = BytesIO()
     fig.tight_layout()
     fig.savefig(bio, format="png", dpi=220, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
+    pyplot.close(fig)
     bio.seek(0)
     image_width, image_height = ImageReader(bio).getSize()
     bio.seek(0)
@@ -1550,8 +1565,8 @@ def _os_chart_image(fig, *, width_mm=170):
     return RLImage(bio, width=draw_width, height=draw_height)
 
 
-def _os_no_data_chart(title):
-    fig, ax = plt.subplots(figsize=(7.0, 2.6))
+def _os_no_data_chart(title, *, pyplot):
+    fig, ax = pyplot.subplots(figsize=(7.0, 2.6))
     ax.set_title(title, fontsize=11, pad=10)
     ax.text(0.5, 0.5, "Sem dados para o gráfico", ha="center", va="center", fontsize=10, color="#6c757d")
     ax.axis("off")
@@ -1583,14 +1598,15 @@ def _os_pdf_chart_section(data, styles):
         Paragraph("Visualização dos mesmos indicadores apresentados na tela do relatório de OS.", note),
     ]
 
-    if not MATPLOTLIB_AVAILABLE:
+    plt = _get_matplotlib_pyplot()
+    if plt is None:
         story.append(Paragraph("Matplotlib não disponível; gráficos foram omitidos.", note))
         return story
 
     palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"]
 
     def append_chart(fig, width_mm=170):
-        story.append(_os_chart_image(fig, width_mm=width_mm))
+        story.append(_os_chart_image(fig, pyplot=plt, width_mm=width_mm))
         story.append(Spacer(1, 10))
 
     try:
@@ -1625,7 +1641,7 @@ def _os_pdf_chart_section(data, styles):
             ax1.axis("equal")
             append_chart(fig1)
         else:
-            append_chart(_os_no_data_chart("Situação da Aplicação"))
+            append_chart(_os_no_data_chart("Situação da Aplicação", pyplot=plt))
 
         tipo = _os_chart_rows(data["dados_tipo_aplicacao"], limit=15)
         tipo_labels = [_os_short_label(label, 36) for label, _ in tipo]
@@ -1695,6 +1711,10 @@ def build_relatorio_os_excel_export(user, args):
     nome = f"atividades_os_{data['ano']}_{data['mes']:02d}"
     if data["uvis_id"]:
         nome += f"_uvis_{data['uvis_id']}"
+    if data["regiao"]:
+        nome += f"_regiao_{str(data['regiao']).replace(' ', '_').lower()}"
+    if data["equipe_id"]:
+        nome += f"_equipe_{data['equipe_id']}"
     nome += ".xlsx"
     return output, nome
 
@@ -1735,10 +1755,18 @@ def build_relatorio_os_pdf_export(user, args):
         spaceAfter=12,
     )
 
+    filtro_partes = [
+        f"Filtro: {data['mes']:02d}/{data['ano']}",
+        f"Unidade: {data['uvis_nome']}",
+        f"Regiao: {data['regiao_nome']}",
+        f"Equipe: {data['equipe_nome']}",
+        f"Gerado em {_os_fmt_dt(_os_now_brazil())}",
+    ]
+
     story = [
         Paragraph("Relatório Geral de OS", title_style),
         Paragraph(
-            f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(_os_now_brazil())}",
+            " | ".join(filtro_partes),
             subtitle_style,
         ),
     ]
@@ -1805,6 +1833,10 @@ def build_relatorio_os_pdf_export(user, args):
     nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
     if data["uvis_id"]:
         nome += f"_uvis_{data['uvis_id']}"
+    if data["regiao"]:
+        nome += f"_regiao_{str(data['regiao']).replace(' ', '_').lower()}"
+    if data["equipe_id"]:
+        nome += f"_equipe_{data['equipe_id']}"
     nome += ".pdf"
     return path, nome
 
@@ -1848,6 +1880,9 @@ def _coleta_imagens_pdf_name(data):
 
     if data.get("regiao_selecionada"):
         nome += f"_regiao_{_slug_filename(data['regiao_selecionada'])}"
+
+    if data.get("equipe_id_selecionado"):
+        nome += f"_equipe_{data['equipe_id_selecionado']}"
 
     uvis_ids = data.get("uvis_ids_selecionados") or ([] if not data.get("uvis_id_selecionado") else [data.get("uvis_id_selecionado")])
     if len(uvis_ids) > 1:
@@ -2164,6 +2199,78 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
         max_items=_coleta_imagens_max_export_items(),
     )
     return _build_relatorio_coleta_imagens_pdf_export_streamed(data, args)
+
+
+def _coleta_imagens_zip_name(data):
+    nome = os.path.splitext(_coleta_imagens_pdf_name(data))[0]
+    return f"{nome}_por_uvis.zip"
+
+
+def build_relatorio_coleta_imagens_pdf_zip_export(user, args, *, progress_callback=None):
+    data = build_relatorio_coleta_imagens_export_data(user, args, max_items=1)
+    uvis_ids = build_coleta_imagens_uvis_ids_com_registro(user, args)
+    db.session.remove()
+
+    tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    zip_path = tmp_zip.name
+    tmp_zip.close()
+
+    total_uvis = len(uvis_ids)
+    written = 0
+    used_names = set()
+
+    if progress_callback:
+        progress_callback(30, "Separando levantamentos por UVIS.")
+
+    try:
+        with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+            for index, uvis_id in enumerate(uvis_ids, start=1):
+                item_args = MultiDict(args)
+                item_args.setlist("uvis_id", [str(uvis_id)])
+
+                item_data = build_relatorio_coleta_imagens_export_data(
+                    user,
+                    item_args,
+                    max_items=_coleta_imagens_max_export_items(),
+                )
+                db.session.remove()
+                if item_data.get("total_levantamentos", 0) <= 0:
+                    continue
+
+                if progress_callback:
+                    uvis_nome = item_data.get("uvis_nome_selecionado") or f"UVIS {uvis_id}"
+                    progress = 30 + int((index - 1) / max(total_uvis, 1) * 60)
+                    progress_callback(progress, f"Gerando PDF de {uvis_nome}.")
+
+                pdf_path, pdf_name = _build_relatorio_coleta_imagens_pdf_export_streamed(item_data, item_args)
+                arcname = os.path.basename(pdf_name)
+                if arcname in used_names:
+                    base, ext = os.path.splitext(arcname)
+                    arcname = f"{base}_{uvis_id}{ext}"
+                used_names.add(arcname)
+
+                try:
+                    zip_file.write(pdf_path, arcname)
+                    written += 1
+                finally:
+                    try:
+                        os.unlink(pdf_path)
+                    except OSError:
+                        pass
+
+        if written <= 0:
+            raise ValueError("Nenhuma UVIS possui levantamentos com foto principal para os filtros selecionados.")
+
+        if progress_callback:
+            progress_callback(95, "Compactando PDFs em ZIP.")
+
+        return zip_path, _coleta_imagens_zip_name(data)
+    except Exception:
+        try:
+            os.unlink(zip_path)
+        except OSError:
+            pass
+        raise
 
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     path = tmp_pdf.name

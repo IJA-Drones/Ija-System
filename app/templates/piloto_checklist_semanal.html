@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% macro bool_choice(name, label, group_field_id) %}
+{% macro bool_choice(name, label, group_field_id, ok_label='FUNCIONAL', bad_label='DEFEITUOSO') %}
 <div class="check-row-container">
   <div class="check-row shadow-sm">
     <div class="check-row-title">
@@ -17,7 +17,7 @@
         data-group="{{ group_field_id }}"
         onchange="checkGroupStatus('{{ group_field_id }}')"
       >
-      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">FUNCIONAL</label>
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">{{ ok_label }}</label>
 
       <input
         class="btn-check group-monitor"
@@ -28,7 +28,7 @@
         data-group="{{ group_field_id }}"
         onchange="checkGroupStatus('{{ group_field_id }}')"
       >
-      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">DEFEITUOSO</label>
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">{{ bad_label }}</label>
     </div>
   </div>
 </div>
@@ -37,318 +37,7 @@
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
-<style>
-  :root {
-    --color-primary-dark-local: #1a365d;
-    --color-text-muted-local: #64748b;
-  }
-
-  .checklist-page {
-    width: 100%;
-  }
-
-  .checklist-topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .checklist-intro {
-    background: linear-gradient(180deg, rgba(44, 82, 130, 0.05), rgba(0, 163, 196, 0.03));
-    border: 1px solid rgba(44, 82, 130, 0.08);
-    border-radius: 18px;
-    padding: 1rem 1.15rem;
-  }
-
-  .checklist-intro-title {
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--color-primary-dark-local);
-  }
-
-  .checklist-intro-text {
-    font-size: 0.84rem;
-    color: var(--color-text-muted-local);
-    margin-top: 0.2rem;
-    line-height: 1.45;
-  }
-
-  .text-dark-blue {
-    color: var(--color-primary-dark-local);
-  }
-
-  .summary-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .summary-card {
-    padding: 0.85rem 0.95rem;
-    border-radius: 14px;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-left: 4px solid var(--color-primary);
-    box-shadow: var(--shadow-sm);
-    min-height: 84px;
-  }
-
-  .summary-card .label {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--color-text-muted-local);
-    letter-spacing: 0.04em;
-  }
-
-  .summary-card .value {
-    font-size: 0.92rem;
-    font-weight: 800;
-    color: var(--color-primary-dark-local);
-    margin-top: 0.15rem;
-    line-height: 1.25;
-  }
-
-  .section-box {
-    background: #fff;
-    border-radius: 18px;
-    padding: 1.15rem 1.2rem;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .section-title-line {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 1rem;
-    padding-bottom: 0.9rem;
-    border-bottom: 2px solid #edf2f7;
-  }
-
-  .section-title-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(44, 82, 130, 0.08);
-    color: var(--color-primary);
-    flex: 0 0 42px;
-  }
-
-  .section-head-copy {
-    min-width: 0;
-  }
-
-  .section-subtitle {
-    font-size: 0.8rem;
-    color: var(--color-text-muted-local);
-    margin-top: 0.1rem;
-    line-height: 1.4;
-  }
-
-  .topic-divider {
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: var(--color-primary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 1.1rem 0 0.55rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .topic-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
-  }
-
-  .check-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 7px;
-  }
-
-  .check-row-container {
-    min-width: 0;
-  }
-
-  .check-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 10px;
-    background: #f8fafc;
-    border-radius: 9px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .check-row-title {
-    min-width: 0;
-    font-size: 0.75rem;
-    line-height: 1.2;
-  }
-
-  .check-toggle .btn {
-    min-width: 96px;
-    justify-content: center;
-    box-shadow: none;
-    padding: 0.3rem 0.65rem;
-    font-size: 0.72rem;
-  }
-
-  .check-toggle .btn-check:checked + .btn-outline-primary {
-    background-color: var(--color-primary) !important;
-    border-color: var(--color-primary) !important;
-    color: #fff !important;
-  }
-
-  .form-control,
-  .form-select {
-    padding: 0.5rem 0.85rem;
-    font-size: 0.92rem;
-  }
-
-  textarea.form-control {
-    min-height: 84px;
-  }
-
-  .obs-container {
-    display: none;
-    animation: slideIn 0.25s ease-out;
-    background: #ebf8ff;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid #bee3f8;
-    margin-top: 8px;
-    margin-bottom: 4px;
-  }
-
-  .pilot-info-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 0.95rem;
-    height: 100%;
-  }
-
-  .signature-container {
-    background: #fff;
-    border: 2px dashed var(--color-primary);
-    border-radius: 12px;
-    padding: 8px;
-  }
-
-  #signature-pad {
-    width: 100%;
-    height: 160px;
-    background: #fff;
-    border-radius: 12px;
-    border: 1px solid #cbd5e0;
-    touch-action: none;
-    cursor: crosshair;
-  }
-
-  .checklist-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  body.dark-mode .section-box,
-  body.dark-mode .summary-card,
-  body.dark-mode .check-row,
-  body.dark-mode .signature-container,
-  body.dark-mode .pilot-info-box,
-  body.dark-mode .checklist-intro {
-    background: #1a2634;
-    border-color: rgba(255, 255, 255, 0.06);
-  }
-
-  body.dark-mode .summary-card .value,
-  body.dark-mode .text-dark-blue,
-  body.dark-mode .checklist-intro-title {
-    color: #e2e8f0;
-  }
-
-  body.dark-mode .checklist-intro-text,
-  body.dark-mode .section-subtitle,
-  body.dark-mode .summary-card .label {
-    color: rgba(255, 255, 255, 0.68);
-  }
-
-  body.dark-mode .obs-container {
-    background: #1a365d;
-    border-color: #2c5282;
-  }
-
-  @media (max-width: 991.98px) {
-    .summary-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .check-toggle .btn {
-      min-width: 110px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .checklist-page.container-fluid.py-4 {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
-
-    .checklist-topbar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .summary-row {
-      grid-template-columns: 1fr;
-    }
-
-    .check-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .check-row {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .check-toggle {
-      width: 100%;
-    }
-
-    .check-toggle .btn {
-      min-width: 0;
-      width: 50%;
-    }
-
-    .checklist-actions > * {
-      width: 100%;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_checklist_semanal.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -446,6 +135,17 @@
       <div id="group_manutencao" class="obs-container shadow-sm">
         <label class="form-label small fw-bold text-primary">CONDICAO ITENS MANUTENCAO</label>
         <textarea class="form-control border-2" name="condicao_itens_manutencao"></textarea>
+      </div>
+
+      <div class="topic-divider">Embreagem e freios</div>
+      <div class="check-grid">
+        {{ bool_choice('embreagem', 'Embreagem', 'group_embreagem_freios') }}
+        {{ bool_choice('freio_mao', 'Freio de mão', 'group_embreagem_freios') }}
+        {{ bool_choice('freio_pe', 'Freio do pé', 'group_embreagem_freios') }}
+      </div>
+      <div id="group_embreagem_freios" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDIÇÃO DA EMBREAGEM E DOS FREIOS</label>
+        <textarea class="form-control border-2" name="condicao_embreagem_freios" placeholder="Descreva o defeito observado..."></textarea>
       </div>
 
       <div class="topic-divider">Vidros e retrovisores</div>
@@ -576,9 +276,11 @@
         <textarea class="form-control border-2" name="condicao_helices"></textarea>
       </div>
 
-      <div class="topic-divider">Tanque, trem de pouso e cameras</div>
-      <div class="check-grid">
-        {{ bool_choice('tanque', 'Tanque', 'group_estrutura') }}
+      <div class="topic-divider" id="estrutura-title">Tanque, trem de pouso e cameras</div>
+      <div class="check-grid" id="estrutura-check-grid">
+        <div id="tanque-check-item">
+          {{ bool_choice('tanque', 'Tanque', 'group_estrutura') }}
+        </div>
         {{ bool_choice('trem_pouso', 'Trem de pouso', 'group_estrutura') }}
         {{ bool_choice('cameras', 'Cameras', 'group_estrutura') }}
       </div>
@@ -658,6 +360,7 @@
   const veiculoBoolFields = {{ [
     'farois_funcionando', 'setas_funcionando', 'lanternas_funcionando', 'piscaalerta_funcionando',
     'luz_painel', 'limpador_parabrisa', 'agua_radiador', 'fluido_freio', 'oleo_motor',
+    'embreagem', 'freio_mao', 'freio_pe',
     'vidros', 'retrovisores', 'pneus', 'estepe', 'macaco', 'triangulo', 'chave_roda',
     'extintor', 'cinto_seguranca', 'alarme', 'ar_condicionado', 'radio', 'giroflex',
     'isqueiro', 'carregador', 'lataria_frontal', 'lataria_lateral', 'lataria_traseira',
@@ -667,6 +370,7 @@
 
   const veiculoTextFields = {{ [
     'condicao_luzes_direcao', 'condicao_luz_painel', 'condicao_itens_manutencao',
+    'condicao_embreagem_freios',
     'condicao_vidros_retrovisores', 'condicao_pneus_estepe', 'condicao_itens_seguranca',
     'condicao_itens_carro_interno', 'condicao_giroflex_isqueiro_carregador',
     'condicao_lataria', 'condicao_lataria_portas', 'condicao_itens_carro_externo'
@@ -686,6 +390,7 @@
     'group_luzes',
     'group_painel',
     'group_manutencao',
+    'group_embreagem_freios',
     'group_vidros',
     'group_pneus',
     'group_seg',
@@ -709,7 +414,10 @@
     const textarea = container.querySelector("textarea");
 
     container.style.display = hasIssue ? "block" : "none";
-    if (textarea) textarea.required = hasIssue;
+    if (textarea) {
+      textarea.required = hasIssue;
+      if (!hasIssue) textarea.value = "";
+    }
   }
 
   function setRadioValue(name, value, defaultValue = true) {
@@ -744,6 +452,7 @@ function applyVehiclePrefill() {
     // mantém o reaproveitamento dos demais campos do checklist anterior
     veiculoBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
     veiculoTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
+    groupIds.forEach(checkGroupStatus);
   }
 
   function applyDronePrefill() {
@@ -753,6 +462,13 @@ function applyVehiclePrefill() {
     const droneId = select.value;
     const meta = droneMeta[droneId] || null;
     const prefill = dronePrefill[droneId] || {};
+    const hasTanque = !meta || meta.has_tanque !== false;
+    const tanqueItem = document.getElementById("tanque-check-item");
+    const estruturaTitle = document.getElementById("estrutura-title");
+    if (tanqueItem) tanqueItem.style.display = hasTanque ? "" : "none";
+    if (estruturaTitle) estruturaTitle.textContent = hasTanque
+      ? "Tanque, trem de pouso e cameras"
+      : "Trem de pouso e cameras";
 
     document.getElementById("summary-drone").textContent = meta ? meta.label : "Selecione";
     document.getElementById("summary-baterias").textContent = meta ? `${prefill.num_baterias ?? meta.num_baterias ?? 0}` : "-";
@@ -763,6 +479,7 @@ function applyVehiclePrefill() {
 
     droneBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
     droneTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
+    groupIds.forEach(checkGroupStatus);
   }
 
   const canvas = document.getElementById("signature-pad");

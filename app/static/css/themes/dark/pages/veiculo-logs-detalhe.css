@@ -1,0 +1,239 @@
+/* =========================================
+   VEICULO LOGS DETALHE - DARK MODE
+   ========================================= */
+
+body.dark-mode .veiculo-detalhe-page .detail-header h2.text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .detail-header .text-muted,
+body.dark-mode .veiculo-detalhe-page .small.text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .summary-card,
+body.dark-mode .veiculo-detalhe-page .km-check-card,
+body.dark-mode .veiculo-detalhe-page .vehicle-day-card {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+  border-color: rgba(126, 180, 255, 0.12);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .veiculo-detalhe-page .summary-card {
+  border-left-color: rgba(124, 184, 255, 0.68);
+}
+
+body.dark-mode .veiculo-detalhe-page .summary-card span {
+  color: rgba(162, 188, 216, 0.78);
+}
+
+body.dark-mode .veiculo-detalhe-page .summary-card strong {
+  color: var(--color-text-main);
+}
+
+body.dark-mode .veiculo-detalhe-page .summary-card strong.text-info {
+  color: #7ac7d8 !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-chip {
+  background: rgba(76, 163, 255, 0.1);
+  border-color: rgba(126, 180, 255, 0.16);
+  color: #cfe8ff;
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-chip-cleaning {
+  background: rgba(35, 192, 214, 0.1);
+  border-color: rgba(35, 192, 214, 0.2);
+  color: #9de3ec;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-header,
+body.dark-mode .veiculo-detalhe-page .vehicle-day-header {
+  background: rgba(23, 36, 52, 0.96);
+  border-bottom-color: rgba(126, 180, 255, 0.08);
+  color: var(--color-text-main);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-header:hover,
+body.dark-mode .veiculo-detalhe-page .km-check-header:focus,
+body.dark-mode .veiculo-detalhe-page .vehicle-day-header:hover,
+body.dark-mode .veiculo-detalhe-page .vehicle-day-header:focus {
+  background: rgba(28, 43, 60, 0.98);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-title,
+body.dark-mode .veiculo-detalhe-page .vehicle-day-header .text-dark,
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-toggle .text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-subtitle {
+  color: rgba(162, 188, 216, 0.82);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-action-chip,
+body.dark-mode .veiculo-detalhe-page .vehicle-day-action-chip {
+  background: rgba(18, 28, 40, 0.72);
+  color: var(--color-primary-dark);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-table th {
+  background: rgba(27, 45, 65, 0.98);
+  color: rgba(237, 243, 251, 0.92);
+  border-color: rgba(126, 180, 255, 0.08);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-table td {
+  background: rgba(18, 28, 40, 0.94);
+  border-color: rgba(126, 180, 255, 0.08);
+  color: rgba(237, 243, 251, 0.88);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-table .text-dark,
+body.dark-mode .veiculo-detalhe-page .km-check-km {
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-table.table-hover > tbody > tr:hover > * {
+  background-color: rgba(35, 192, 214, 0.06) !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-row-perdido td {
+  background: rgba(255, 193, 7, 0.07);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-check-row-sobreposto td {
+  background: rgba(220, 53, 69, 0.07);
+}
+
+body.dark-mode .veiculo-detalhe-page .km-status-primeiro {
+  background: rgba(162, 188, 216, 0.12);
+  color: #c4d1e0;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-status-ok {
+  background: rgba(51, 154, 107, 0.16);
+  color: #9dd9ba;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-status-perdido {
+  background: rgba(224, 196, 75, 0.14);
+  color: #eadb91;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-status-sobreposto {
+  background: rgba(228, 96, 96, 0.14);
+  color: #f0abab;
+}
+
+body.dark-mode .veiculo-detalhe-page .km-status-anterior_aberto {
+  background: rgba(234, 131, 52, 0.14);
+  color: #efb98f;
+}
+
+body.dark-mode .veiculo-detalhe-page .vehicle-day-body {
+  background: rgba(16, 25, 36, 0.42);
+}
+
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-card {
+  background: rgba(18, 28, 40, 0.9);
+  border-color: rgba(126, 180, 255, 0.1);
+}
+
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-toggle,
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-actions {
+  background: rgba(20, 30, 42, 0.94);
+  color: var(--color-text-main);
+}
+
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-actions,
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-body {
+  border-color: rgba(126, 180, 255, 0.08);
+}
+
+body.dark-mode .veiculo-detalhe-page .vehicle-turno-body {
+  background: rgba(16, 25, 36, 0.54);
+}
+
+body.dark-mode .veiculo-detalhe-page .vehicle-timeline::before {
+  background: rgba(126, 180, 255, 0.18);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-marker {
+  border-color: #182433;
+  box-shadow: 0 0 0 1px rgba(124, 184, 255, 0.28);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-marker-success {
+  background: var(--color-success);
+  box-shadow: 0 0 0 1px rgba(51, 154, 107, 0.34);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-marker-info {
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px rgba(35, 192, 214, 0.34);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-marker-dark {
+  background: #53657a;
+  box-shadow: 0 0 0 1px rgba(162, 188, 216, 0.24);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-card {
+  background: rgba(20, 30, 42, 0.9);
+  border-color: rgba(126, 180, 255, 0.1);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-kicker,
+body.dark-mode .veiculo-detalhe-page .timeline-time,
+body.dark-mode .veiculo-detalhe-page .timeline-label,
+body.dark-mode .veiculo-detalhe-page .timeline-notes {
+  color: rgba(162, 188, 216, 0.78);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-title,
+body.dark-mode .veiculo-detalhe-page .timeline-value {
+  color: var(--color-text-main);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-metric,
+body.dark-mode .veiculo-detalhe-page .timeline-media {
+  background: rgba(18, 28, 40, 0.82);
+  border-color: rgba(126, 180, 255, 0.1);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-media-title {
+  color: rgba(237, 243, 251, 0.88);
+  border-bottom: 1px solid rgba(126, 180, 255, 0.08);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-media-title a {
+  color: var(--color-primary-dark);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-card .table thead th {
+  background: rgba(27, 45, 65, 0.92) !important;
+  border-color: rgba(126, 180, 255, 0.08);
+  color: rgba(237, 243, 251, 0.9);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-card .table tbody td {
+  background: rgba(18, 28, 40, 0.82);
+  border-color: rgba(126, 180, 255, 0.08);
+  color: rgba(237, 243, 251, 0.86);
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-card .table .text-dark {
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-card .badge.bg-light {
+  background: rgba(76, 163, 255, 0.12) !important;
+  border-color: rgba(126, 180, 255, 0.16) !important;
+  color: #cfe8ff !important;
+}
+
+body.dark-mode .veiculo-detalhe-page .timeline-media img {
+  background: #101927;
+}

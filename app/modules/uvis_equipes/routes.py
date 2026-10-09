@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
+from app.shared.password_policy import password_input
 from app.models import EquipeUvis, Solicitacao, Usuario
 from app.modules.uvis_equipes.service import (
     MAX_MEMBROS_EQUIPE_UVIS,
@@ -21,7 +22,7 @@ from app.modules.uvis_equipes.service import (
     validate_team_login,
     validate_team_password,
 )
-from app.shared.access import is_admin_global_user, normalize_role
+from app.shared.access import is_admin_global_user, is_veiculos_supervisor, normalize_role
 
 
 def _uvis_only():
@@ -35,7 +36,7 @@ def _admin_only():
 
 
 def _admin_or_operario_view_only():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador"}:
         abort(403)
 
 
@@ -53,8 +54,8 @@ def register_routes(bp):
 
         if request.method == "POST":
             login_operacional = (request.form.get("login_operacional") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
             form["login_operacional"] = login_operacional
 
             login_error = validate_team_login(
@@ -119,8 +120,8 @@ def register_routes(bp):
             return redirect(url_for("main.listar_equipes_uvis"))
 
         login_novo = (request.form.get("login_equipe") or "").strip()
-        senha = (request.form.get("senha") or "").strip()
-        senha2 = (request.form.get("senha2") or "").strip()
+        senha = password_input(request.form.get("senha"))
+        senha2 = password_input(request.form.get("senha2"))
 
         login_error = validate_team_login(login_novo, current_login=conta.login)
         if login_error:
@@ -230,8 +231,8 @@ def register_routes(bp):
             form["nome_equipe"] = nome_equipe
 
             login_equipe = (request.form.get("login_equipe") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
             form["login_equipe"] = login_equipe
 
             if not nome_equipe:
@@ -333,6 +334,8 @@ def register_routes(bp):
     @bp.route("/solicitacao/<int:id>/atribuir-equipe-uvis", methods=["POST"], endpoint="atribuir_equipe_uvis_solicitacao")
     @login_required
     def atribuir_equipe_uvis_solicitacao(id):
+        if is_veiculos_supervisor(current_user):
+            abort(403)
         solicitacao = Solicitacao.query.get_or_404(id)
 
         if solicitacao.usuario_id != current_user.id and not is_admin_global_user(current_user):
@@ -378,8 +381,8 @@ def register_routes(bp):
         uvis = Usuario.query.filter_by(id=uvis_id, tipo_usuario="uvis").first_or_404()
         conta = get_operational_uvis_account(uvis.id)
         login_operacional = (request.form.get("login_operacional") or "").strip()
-        senha = (request.form.get("senha") or "").strip()
-        senha2 = (request.form.get("senha2") or "").strip()
+        senha = password_input(request.form.get("senha"))
+        senha2 = password_input(request.form.get("senha2"))
 
         login_error = validate_team_login(
             login_operacional,

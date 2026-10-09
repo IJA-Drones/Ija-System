@@ -1,0 +1,39 @@
+/* =========================================
+   MODALS
+   ========================================= */
+
+body.dark-mode .modal-content {
+  background: var(--color-bg-white);
+  color: var(--color-text-main);
+  border: 1px solid #233549;
+  box-shadow: var(--shadow-lg);
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+  background: #152233;
+  border-color: #233549;
+}
+
+body.dark-mode .modal-title {
+  color: #ffffff;
+}
+
+body.dark-mode .btn-close {
+  filter: invert(1);
+}
+
+body.dark-mode .modal .bg-light {
+  background: #1c2b3f !important;
+  color: var(--color-text-main);
+  border: 1px solid #233549;
+}
+
+body.dark-mode .modal .bg-secondary {
+  background: #233549 !important;
+  color: var(--color-text-main);
+}
+
+body.dark-mode .modal em {
+  color: var(--color-text-muted);
+}

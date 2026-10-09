@@ -1,0 +1,141 @@
+/* =========================================
+   REGISTRO DE PECAS DA MANUTENCAO
+   ========================================= */
+
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar h2,
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.22) !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card h5.text-primary {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card .text-muted,
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card .form-label {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table-wrap {
+  background: #142131;
+  border: 1px solid #2d4057;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .badge.bg-light {
+  color: #bddcff !important;
+  background: rgba(76, 163, 255, 0.12) !important;
+  border-color: rgba(126, 180, 255, 0.22) !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .form-check-input {
+  background-color: #132132;
+  border-color: #536b84;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .form-check-input:checked {
+  background-color: #4d96e8;
+  border-color: #69aaf2;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-observacoes .form-control {
+  background: #132132;
+  border-color: #334a63;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-observacoes .form-control:focus {
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-card .card-header {
+  color: #dce9f4;
+  background: #1b2d41;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table .text-muted {
+  color: #94a8bf !important;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-actions {
+    flex-direction: column-reverse;
+  }
+
+  body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-actions .btn {
+    width: 100%;
+  }
+}

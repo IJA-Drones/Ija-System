@@ -9,6 +9,8 @@ from app.modules.auth.service import (
     get_authenticated_redirect_endpoint,
 )
 from app.shared.presence import record_user_presence
+from app.shared.session_security import start_security_session
+from app.shared.csrf_security import rotate_csrf_token
 
 
 bp = Blueprint("auth", __name__)
@@ -26,11 +28,16 @@ def login():
         user = authenticate_user(login_form, senha_form)
         if user:
             login_user(user)
+            start_security_session()
+            rotate_csrf_token()
             record_user_presence(user, mark_login=True)
             flash(f"Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.", "success")
             return redirect(url_for(get_authenticated_redirect_endpoint(user)))
 
-        piloto_agro = Usuario.query.filter_by(login=login_form, tipo_usuario="piloto_agro").first()
+        piloto_agro = (
+            Usuario.query.filter_by(login=login_form, tipo_usuario="piloto_agro").first()
+            if login_form and senha_form else None
+        )
         if piloto_agro and piloto_agro.check_senha(senha_form):
             flash("Piloto Agro deve acessar pelo login exclusivo do Agro.", "warning")
             return redirect(url_for("auth.login_piloto_agro"))
@@ -55,6 +62,8 @@ def login_uvis_operacional():
         user = authenticate_uvis_operacional(login_form, senha_form)
         if user:
             login_user(user)
+            start_security_session()
+            rotate_csrf_token()
             record_user_presence(user, mark_login=True)
             flash(f"Bem-vindo, {user.nome_uvis}! Acesso operacional UVIS liberado.", "success")
             return redirect(url_for("main.dashboard_equipe_uvis"))
@@ -76,6 +85,8 @@ def login_piloto_agro():
         user, error_code = authenticate_piloto_agro(login_form, senha_form)
         if user:
             login_user(user)
+            start_security_session()
+            rotate_csrf_token()
             record_user_presence(user, mark_login=True)
             flash(f"Bem-vindo, {user.nome_uvis}! Login do Agro realizado com sucesso.", "success")
             return redirect(url_for("main.agro_piloto_dashboard"))

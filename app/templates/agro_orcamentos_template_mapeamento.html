@@ -4,7 +4,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/listing.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_contratos_listar.css') }}">
 {% endblock %}
@@ -24,7 +24,7 @@
     </div>
 
     <div class="listing-actions agro-template-page-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ financeiro_consulta_url('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <div class="dropdown">
@@ -33,15 +33,17 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
           <li>
-            <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="dropdown-item py-2">
+            <a href="{{ financeiro_consulta_url('main.agro_orcamentos_listar') }}" class="dropdown-item py-2">
               <i class="bi bi-file-earmark-text text-primary me-2"></i> Orçamentos
             </a>
           </li>
+          {% if is_editable %}
           <li>
             <a href="{{ url_for('main.agro_contratos_template') }}" class="dropdown-item py-2">
               <i class="bi bi-diagram-3-fill text-primary me-2"></i> Template operacional
             </a>
           </li>
+          {% endif %}
         </ul>
       </div>
     </div>
@@ -64,7 +66,8 @@
 
     <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosTemplateMapeamento">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_orcamentos_template_mapeamento') }}">
+        <form method="GET" action="{{ financeiro_consulta_url('main.agro_orcamentos_template_mapeamento') }}">
+          {% if request.endpoint == "main.financeiro_empresa_comercial" %}<input type="hidden" name="aba" value="mapeamentos">{% endif %}
           <div class="row g-2 align-items-end">
             <div class="col-md-7">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -93,7 +96,7 @@
               </button>
 
               {% if filters.q or filters.equipe_id %}
-                <a href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ financeiro_consulta_url('main.agro_orcamentos_template_mapeamento') }}" class="btn btn-outline-secondary btn-sm">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -113,7 +116,7 @@
               <th>Orçamento</th>
               <th>Operação</th>
               <th>Comercial</th>
-              <th style="min-width: 320px;">Template de mapeamento</th>
+              <th class="agro-template-wide-column">Template de mapeamento</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -156,6 +159,7 @@
                       </div>
                     </div>
 
+                    {% if is_editable %}
                     <form method="POST" action="{{ url_for('main.agro_orcamento_template_mapeamento_salvar', orcamento_id=orcamento.id) }}" class="agro-template-form">
                       <div class="agro-template-field agro-template-field-equipe">
                         <label class="small text-muted mb-1">Equipe</label>
@@ -179,10 +183,12 @@
                         </button>
                       </div>
                     </form>
+                    {% endif %}
                   </div>
                 </td>
 
                 <td data-label="Ações" class="listing-cell-actions">
+                  {% if is_editable %}
                   <div class="dropup agro-actions-dropdown">
                     <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Mais ações">
                       <i class="bi bi-three-dots-vertical"></i>
@@ -207,6 +213,7 @@
                       {% endif %}
                     </ul>
                   </div>
+                  {% endif %}
                 </td>
               </tr>
             {% else %}

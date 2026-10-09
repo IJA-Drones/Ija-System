@@ -35,6 +35,13 @@ class Prefeitura(db.Model):
     equipes_agro = db.relationship("EquipeAgro", back_populates="prefeitura", lazy="select")
     equipamentos = db.relationship("Equipamentos", back_populates="prefeitura", lazy="select")
     equipamentos_agro = db.relationship("EquipamentoAgro", back_populates="prefeitura", lazy="select")
+    estoque_pecas = db.relationship("EstoquePeca", back_populates="prefeitura", lazy="select")
+    manutencoes_equipamentos = db.relationship("ManutencaoEquipamento", back_populates="prefeitura", lazy="select")
+    manutencao_pecas_usadas = db.relationship("ManutencaoPecaUso", back_populates="prefeitura", lazy="select")
+    rastreamento_posicoes = db.relationship("RastreamentoPosicao", back_populates="prefeitura", lazy="select")
+    rastreamento_historicos = db.relationship("RastreamentoHistorico", back_populates="prefeitura", lazy="select")
+    rastreamento_alertas = db.relationship("RastreamentoAlerta", back_populates="prefeitura", lazy="select")
+    denuncias = db.relationship("Denuncia", back_populates="prefeitura", lazy="select")
 
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
@@ -43,6 +50,17 @@ class Prefeitura(db.Model):
 # -------------------------------------------------------------
 class Usuario(UserMixin, db.Model):
     __tablename__ = "usuarios"
+
+    TIPO_DEV = "dev"
+    TIPO_ADMIN = "admin"
+    TIPO_UVIS = "uvis"
+    TIPO_OPERARIO = "operario"
+    TIPO_VISUALIZADOR = "visualizador"
+    TIPO_REGIONAL = "regional"
+    TIPO_PILOTO = "piloto"
+    TIPO_EQUIPE_UVIS = "equipe_uvis"
+    TIPO_EQUIPE_OCEANO = "equipe_oceano"
+    TIPO_ADMIN_SUPERVISOR = "sup_veiculos"
 
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
@@ -55,8 +73,10 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(200), nullable=False)
 
     # + incluir "equipe_uvis" e "regional"
-    # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
+    # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano", "supervisor_veiculos"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
+    trabalha_oceano_azul = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    trabalha_agro = db.Column(db.Boolean, nullable=False, default=False, index=True)
     suporte_operacional = db.Column(db.Boolean, nullable=False, default=False, index=True)
     suporte_tecnico = db.Column(db.Boolean, nullable=False, default=False, index=True)
 
@@ -69,7 +89,7 @@ class Usuario(UserMixin, db.Model):
     piloto_agro = db.relationship("PilotoAgro", back_populates="usuario", lazy="joined", foreign_keys=[piloto_agro_id])
 
     # ----------------------------
-    # Equipe UVIS (NOVO)
+    # Equipe UVIS
     # Essa "conta" representa uma equipe específica de uma UVIS dona.
     # ----------------------------
     equipe_uvis_uvis_usuario_id = db.Column(
@@ -137,11 +157,66 @@ class Usuario(UserMixin, db.Model):
         lazy="select",
     )
 
+    @property
+    def is_admin(self):
+        """Retorna True se for administrador, desenvolvedor ou o novo supervisor de veículos"""
+        return self.tipo_usuario in [self.TIPO_ADMIN, self.TIPO_DEV, self.TIPO_ADMIN_SUPERVISOR]
+
+    @property
+    def is_piloto(self):
+        """Retorna True se for piloto ou o novo supervisor (ganha acesso aos menus do piloto)"""
+        return self.tipo_usuario in [self.TIPO_PILOTO, self.TIPO_ADMIN_SUPERVISOR]
+
     def set_senha(self, senha):
+        from app.shared.password_policy import PasswordPolicyError, validate_password
+
+        error = validate_password(senha)
+        if error:
+            raise PasswordPolicyError(error)
         self.senha_hash = generate_password_hash(senha)
 
     def check_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
+
+
+class CentralTiPerfilConfiguracao(db.Model):
+    """Proposed profile configuration; not consumed by access checks yet."""
+
+    __tablename__ = "central_ti_perfis_configuracoes"
+
+    perfil_codigo = db.Column(db.String(20), primary_key=True)
+    versao = db.Column(db.Integer, nullable=False, server_default="1")
+    atualizado_em = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    __table_args__ = (db.CheckConstraint("versao >= 1", name="ck_central_ti_perfil_versao"),)
+
+
+class CentralTiSelecao(db.Model):
+    __tablename__ = "central_ti_selecoes"
+
+    perfil_codigo = db.Column(
+        db.String(20), db.ForeignKey("central_ti_perfis_configuracoes.perfil_codigo", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    codigo = db.Column(db.String(120), primary_key=True)
+
+
+class CentralTiAuditoria(db.Model):
+    __tablename__ = "central_ti_auditoria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    lote = db.Column(db.String(36), nullable=False, index=True)
+    perfil_codigo = db.Column(db.String(20), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    usuario_login = db.Column(db.String(50), nullable=False)
+    versao_anterior = db.Column(db.Integer, nullable=False)
+    versao_nova = db.Column(db.Integer, nullable=False)
+    antes = db.Column(db.JSON, nullable=False)
+    depois = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
+    __table_args__ = (
+        db.CheckConstraint("versao_anterior >= 0 AND versao_nova > versao_anterior", name="ck_central_ti_auditoria_versao"),
+    )
 
 
 class FeedbackTopico(db.Model):
@@ -445,8 +520,12 @@ class Solicitacao(db.Model):
     # Geolocalização
     latitude = db.Column(db.String(50))
     longitude = db.Column(db.String(50))
+    place_id = db.Column(db.String(255), index=True)
     perimetro_planejado = db.Column(db.Text)   # JSON com as coordenadas do desenho da UVIS
     perimetro_executado = db.Column(db.Text)   # JSON com o log real do drone (telemetria)
+
+    #Trava de endereços para evitar duplicidade de voos em endereços já atendidos
+    endereco_bloqueado = db.Column(db.Boolean, default=False, nullable=False)
 
     # Anexos
     anexo_path = db.Column(db.String(255))
@@ -456,6 +535,9 @@ class Solicitacao(db.Model):
     protocolo = db.Column(db.String(50), index=True)
     justificativa = db.Column(db.String(255))
     equipe_uvis_nome = db.Column(db.String(100), index=True)
+    quadra_confirmada_admin = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    quadra_visualizada_admin = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    quadra_visualizada_admin_em = db.Column(db.DateTime, nullable=True, index=True)
 
     data_criacao = db.Column(db.DateTime, default=datetime.now, index=True)
 
@@ -528,6 +610,90 @@ class Solicitacao(db.Model):
         db.Index("ix_solicitacao_piloto_data", "piloto_id", "data_criacao"),
         db.Index("ix_solicitacao_agenda", "data_agendamento", "hora_agendamento"),
     )
+
+
+class Denuncia(db.Model):
+    __tablename__ = "denuncias"
+
+    STATUS_RECEBIDA = "RECEBIDA"
+    STATUS_EM_TRIAGEM_COVISA = "EM_TRIAGEM_COVISA"
+    STATUS_ENCAMINHADA_COORDENADORIA = "ENCAMINHADA_COORDENADORIA"
+    STATUS_ENCAMINHADA_UVIS = "ENCAMINHADA_UVIS"
+    STATUS_CONVERTIDA_SOLICITACAO = "CONVERTIDA_SOLICITACAO"
+    STATUS_ARQUIVADA = "ARQUIVADA"
+
+    id = db.Column(db.Integer, primary_key=True)
+    protocolo = db.Column(db.String(40), nullable=False, unique=True, index=True)
+    status = db.Column(db.String(40), nullable=False, default=STATUS_RECEBIDA, index=True)
+
+    tipo_visita = db.Column(db.String(50), nullable=False, index=True)
+    tipo_imovel = db.Column(db.String(30), nullable=True, index=True)
+    foco = db.Column(db.String(80), nullable=False, index=True)
+    descricao = db.Column(db.Text)
+
+    cep = db.Column(db.String(9), nullable=True, index=True)
+    logradouro = db.Column(db.String(150), nullable=False)
+    numero = db.Column(db.String(20), nullable=False)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=False, index=True)
+    cidade = db.Column(db.String(100), nullable=False, index=True)
+    uf = db.Column(db.String(2), nullable=False, index=True)
+    latitude = db.Column(db.String(50))
+    longitude = db.Column(db.String(50))
+    place_id = db.Column(db.String(255), index=True)
+
+    cidadao_nome = db.Column(db.String(150), nullable=False)
+    cidadao_cpf = db.Column(db.String(14), nullable=False, index=True)
+    cidadao_rg = db.Column(db.String(30), nullable=False, index=True)
+    cidadao_telefone = db.Column(db.String(30), nullable=False)
+
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    coordenadoria = db.Column(db.String(100), nullable=True, index=True)
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    solicitacao_id = db.Column(db.Integer, db.ForeignKey("solicitacoes.id"), nullable=True, unique=True, index=True)
+    triado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    encaminhado_em = db.Column(db.DateTime, nullable=True, index=True)
+    arquivado_em = db.Column(db.DateTime, nullable=True, index=True)
+    arquivado_motivo = db.Column(db.Text, nullable=True)
+
+    ip_origem = db.Column(db.String(64), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    consentimento = db.Column(db.Boolean, nullable=False, default=False)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="denuncias", lazy="joined")
+    uvis_usuario = db.relationship("Usuario", foreign_keys=[uvis_usuario_id], lazy="joined")
+    solicitacao = db.relationship("Solicitacao", foreign_keys=[solicitacao_id], lazy="joined")
+    triado_por = db.relationship("Usuario", foreign_keys=[triado_por_id], lazy="joined")
+    anexos = db.relationship(
+        "DenunciaAnexo",
+        back_populates="denuncia",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="DenunciaAnexo.id.asc()",
+    )
+
+    __table_args__ = (
+        db.Index("ix_denuncias_status_criado", "status", "criado_em"),
+        db.Index("ix_denuncias_localizacao", "cidade", "uf", "bairro"),
+        db.Index("ix_denuncias_fluxo", "coordenadoria", "uvis_usuario_id", "status"),
+    )
+
+
+class DenunciaAnexo(db.Model):
+    __tablename__ = "denuncia_anexos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    denuncia_id = db.Column(db.Integer, db.ForeignKey("denuncias.id"), nullable=False, index=True)
+    arquivo_path = db.Column(db.String(255), nullable=False)
+    arquivo_nome = db.Column(db.String(255), nullable=False)
+    mime_type = db.Column(db.String(120), nullable=True)
+    tamanho_bytes = db.Column(db.Integer, nullable=True)
+    tipo_midia = db.Column(db.String(20), nullable=False, default="arquivo", index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    denuncia = db.relationship("Denuncia", back_populates="anexos", lazy="joined")
 
 
 # -------------------------------------------------------------
@@ -1922,6 +2088,7 @@ class Equipe(db.Model):
 
     regiao = db.Column(db.String(20), index=True)
     ativa = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    trabalha_oceano_azul = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
     criada_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
@@ -2068,8 +2235,109 @@ class Drones(Equipamentos):
         lazy="select",
         foreign_keys="[Baterias.drone_id]"
     )
+    pecas_estoque = db.relationship(
+        "EstoquePeca",
+        back_populates="drone",
+        lazy="select",
+        foreign_keys="[EstoquePeca.drone_id]",
+    )
+    manutencoes_pecas_usadas = db.relationship(
+        "ManutencaoPecaUso",
+        back_populates="drone",
+        lazy="select",
+        foreign_keys="[ManutencaoPecaUso.drone_id]",
+    )
+    manutencoes = db.relationship(
+        "ManutencaoEquipamento",
+        back_populates="drone",
+        lazy="select",
+        foreign_keys="[ManutencaoEquipamento.drone_id]",
+    )
 
     __mapper_args__ = {"polymorphic_identity": "drones"}
+
+
+class EstoquePeca(db.Model):
+    __tablename__ = "estoque_pecas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+
+    numero_serie = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    modelo_peca = db.Column(db.String(120), nullable=False, index=True)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
+    status = db.Column(db.String(30), nullable=False, default="disponivel_manutencao", index=True)
+    observacoes = db.Column(db.Text, nullable=True)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="estoque_pecas", lazy="joined")
+    drone = db.relationship("Drones", back_populates="pecas_estoque", lazy="joined", foreign_keys=[drone_id])
+    usos_manutencao = db.relationship("ManutencaoPecaUso", back_populates="peca", lazy="select")
+
+    __table_args__ = (
+        db.CheckConstraint("quantidade >= 0", name="ck_estoque_pecas_quantidade_nao_negativa"),
+        db.Index("ix_estoque_pecas_drone_status", "drone_id", "status"),
+    )
+
+
+class ManutencaoPecaUso(db.Model):
+    __tablename__ = "manutencao_pecas_usadas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    manutencao_id = db.Column(db.Integer, db.ForeignKey("manutencoes_equipamentos.id"), nullable=True, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    peca_id = db.Column(db.Integer, db.ForeignKey("estoque_pecas.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+
+    quantidade_usada = db.Column(db.Integer, nullable=False, default=1)
+    observacoes = db.Column(db.Text, nullable=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="manutencao_pecas_usadas", lazy="joined")
+    manutencao = db.relationship("ManutencaoEquipamento", back_populates="pecas_usadas", lazy="joined")
+    drone = db.relationship("Drones", back_populates="manutencoes_pecas_usadas", lazy="joined", foreign_keys=[drone_id])
+    peca = db.relationship("EstoquePeca", back_populates="usos_manutencao", lazy="joined")
+    usuario = db.relationship("Usuario", lazy="joined")
+
+    __table_args__ = (
+        db.CheckConstraint("quantidade_usada > 0", name="ck_manutencao_pecas_usadas_quantidade_positiva"),
+        db.Index("ix_manutencao_pecas_usadas_drone_criado", "drone_id", "criado_em"),
+    )
+
+
+class ManutencaoEquipamento(db.Model):
+    __tablename__ = "manutencoes_equipamentos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    aberta_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    encerrada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+
+    status = db.Column(db.String(30), nullable=False, default="aberta", index=True)
+    aberta_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    encerrada_em = db.Column(db.DateTime, nullable=True, index=True)
+    observacoes = db.Column(db.Text, nullable=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="manutencoes_equipamentos", lazy="joined")
+    drone = db.relationship("Drones", back_populates="manutencoes", lazy="joined", foreign_keys=[drone_id])
+    aberta_por = db.relationship("Usuario", foreign_keys=[aberta_por_id], lazy="joined")
+    encerrada_por = db.relationship("Usuario", foreign_keys=[encerrada_por_id], lazy="joined")
+    pecas_usadas = db.relationship(
+        "ManutencaoPecaUso",
+        back_populates="manutencao",
+        lazy="select",
+        order_by="ManutencaoPecaUso.criado_em.desc()",
+    )
+
+    __table_args__ = (
+        db.Index("ix_manutencoes_equipamentos_drone_status", "drone_id", "status"),
+        db.Index("ix_manutencoes_equipamentos_periodo", "aberta_em", "encerrada_em"),
+    )
 
 
 class Baterias(Equipamentos):
@@ -2105,11 +2373,48 @@ class Veiculos(Equipamentos):
 
     responsavel = db.Column(db.String(120), index=True)
 
+    @property
+    def supervisor_usuario_id(self):
+        marker = (self.responsavel or "").strip()
+        if not marker.startswith("sup_veiculos:"):
+            return None
+        try:
+            return int(marker.split(":", 1)[1])
+        except ValueError:
+            return None
+
+    @property
+    def responsavel_exibicao(self):
+        supervisor_id = self.supervisor_usuario_id
+        if supervisor_id is None:
+            return self.responsavel
+        supervisor = db.session.get(Usuario, supervisor_id)
+        return (supervisor.nome_uvis or supervisor.login) if supervisor else f"Supervisor #{supervisor_id}"
+
     km_atual = db.Column(db.Float, default=0, nullable=False)
     km_prox_revisao = db.Column(db.Float, nullable=True)
 
     revisao_marcada_em = db.Column(db.DateTime, nullable=True, index=True)
     revisao_obs = db.Column(db.String(255))
+
+    rastreamento_posicoes = db.relationship(
+        "RastreamentoPosicao",
+        back_populates="veiculo",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    rastreamento_historicos = db.relationship(
+        "RastreamentoHistorico",
+        back_populates="veiculo",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    rastreamento_alertas = db.relationship(
+        "RastreamentoAlerta",
+        back_populates="veiculo",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
 
     __mapper_args__ = {"polymorphic_identity": "veiculos"}
 
@@ -2123,6 +2428,91 @@ class Veiculos(Equipamentos):
             return None
 
 
+# -------------------------------------------------------------
+# RASTREAMENTO (posição atual, histórico e alertas)
+# -------------------------------------------------------------
+class RastreamentoSincronizacao(db.Model):
+    __tablename__ = "rastreamento_sincronizacao"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tentado_em = db.Column(db.DateTime)
+    sincronizado_em = db.Column(db.DateTime)
+    erro = db.Column(db.String(80))
+
+
+class RastreamentoPosicao(db.Model):
+    __tablename__ = "rastreamento_posicoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    velocidade_kmh = db.Column(db.Float, nullable=True)
+    ignicao = db.Column(db.Boolean, nullable=True)
+    hodometro_km = db.Column(db.Float, nullable=True)
+    endereco = db.Column(db.String(255), nullable=True)
+    reportado_em = db.Column(db.DateTime, nullable=False, index=True)
+    provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    chave_fixture = db.Column(db.String(160), nullable=True, unique=True, index=True)
+
+    veiculo = db.relationship("Veiculos", back_populates="rastreamento_posicoes")
+    prefeitura = db.relationship("Prefeitura", back_populates="rastreamento_posicoes", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rastreamento_posicoes_veiculo_reportado", "veiculo_id", "reportado_em"),
+    )
+
+
+class RastreamentoHistorico(db.Model):
+    __tablename__ = "rastreamento_historicos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    velocidade_kmh = db.Column(db.Float, nullable=True)
+    ignicao = db.Column(db.Boolean, nullable=True)
+    hodometro_km = db.Column(db.Float, nullable=True)
+    reportado_em = db.Column(db.DateTime, nullable=False, index=True)
+    provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    chave_fixture = db.Column(db.String(160), nullable=True, unique=True, index=True)
+
+    veiculo = db.relationship("Veiculos", back_populates="rastreamento_historicos")
+    prefeitura = db.relationship("Prefeitura", back_populates="rastreamento_historicos", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rastreamento_historicos_veiculo_reportado", "veiculo_id", "reportado_em"),
+    )
+
+
+class RastreamentoAlerta(db.Model):
+    __tablename__ = "rastreamento_alertas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    tipo = db.Column(db.String(80), nullable=False, index=True)
+    severidade = db.Column(db.String(20), nullable=False, default="media", index=True)
+    mensagem = db.Column(db.String(255), nullable=False)
+    reportado_em = db.Column(db.DateTime, nullable=False, index=True)
+    resolvido = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    chave_fixture = db.Column(db.String(160), nullable=True, unique=True, index=True)
+
+    veiculo = db.relationship("Veiculos", back_populates="rastreamento_alertas")
+    prefeitura = db.relationship("Prefeitura", back_populates="rastreamento_alertas", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rastreamento_alertas_veiculo_reportado", "veiculo_id", "reportado_em"),
+    )
 # -------------------------------------------------------------
 # LOGS DE VEÍCULO (UNIFICADO: ABS + CCD)
 # -------------------------------------------------------------
@@ -2156,6 +2546,11 @@ class LogVeiculo(db.Model):
         "Abastecimento", 
         back_populates="log_pai", 
         cascade="all, delete-orphan"
+    )
+    limpezas_detalhadas = db.relationship(
+        "LimpezaVeiculo",
+        back_populates="log_pai",
+        cascade="all, delete-orphan",
     )
     
     # Relacionamentos
@@ -2203,11 +2598,35 @@ class LogVeiculo(db.Model):
         return sum((item.valor_total or 0) for item in (self.abastecimentos_detalhados or []))
 
     @property
+    def limpezas_ordenadas(self):
+        return sorted(
+            self.limpezas_detalhadas or [],
+            key=lambda item: item.data_hora or self.data_registro or datetime.min
+        )
+
+    @property
+    def teve_limpeza(self):
+        return bool(self.limpezas_detalhadas)
+
+    @property
+    def qtd_limpezas(self):
+        return len(self.limpezas_detalhadas or [])
+
+    @property
+    def total_valor_limpeza(self):
+        return sum((float(item.valor_total or 0)) for item in (self.limpezas_detalhadas or []))
+
+    @property
     def ultima_movimentacao_em(self):
         datas = [self.data_registro] if self.data_registro else []
         datas.extend(
             item.data_hora
             for item in (self.abastecimentos_detalhados or [])
+            if item.data_hora is not None
+        )
+        datas.extend(
+            item.data_hora
+            for item in (self.limpezas_detalhadas or [])
             if item.data_hora is not None
         )
         return max(datas) if datas else None
@@ -2248,9 +2667,66 @@ class Abastecimento(db.Model):
     
     # Relacionamento
     log_pai = db.relationship("LogVeiculo", back_populates="abastecimentos_detalhados")
+
+
+# -------------------------------------------------------------
+# LIMPEZAS DE VEICULO (registradas dentro do turno)
+# -------------------------------------------------------------
+class LimpezaVeiculo(db.Model):
+    __tablename__ = "limpezas_veiculo"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    log_veiculo_id = db.Column(db.Integer, db.ForeignKey("logs_veiculo.id"), nullable=False, index=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
+
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    data_hora = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    limpeza_realizada = db.Column(db.Boolean, default=True, nullable=False)
+    tipo_limpeza = db.Column(db.String(30), nullable=False)
+    valor_total = db.Column(db.Numeric(10, 2), nullable=True)
+    observacao = db.Column(db.Text)
+
+    log_pai = db.relationship("LogVeiculo", back_populates="limpezas_detalhadas")
+    veiculo = db.relationship("Veiculos", backref=db.backref("limpezas", lazy="select"))
+    piloto = db.relationship("Pilotos", backref=db.backref("limpezas_veiculo", lazy="select"))
+    equipe = db.relationship("Equipe", backref=db.backref("limpezas_veiculo", lazy="select"))
 # -------------------------------------------------------------
 # CHECKLIST SEMANAL DE VEÍCULO
 # -------------------------------------------------------------
+class LimpezaVeiculoAlertaCiencia(db.Model):
+    __tablename__ = "limpezas_veiculo_alertas_ciencia"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
+    referencia_limpeza_em = db.Column(db.DateTime, nullable=False, index=True)
+    prazo_dias = db.Column(db.Integer, nullable=False, default=14, index=True)
+    reconhecido_em = db.Column(db.DateTime, nullable=True, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+    veiculo = db.relationship("Veiculos", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+    usuario = db.relationship("Usuario", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+    piloto = db.relationship("Pilotos", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+    equipe = db.relationship("Equipe", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "veiculo_id",
+            "usuario_id",
+            "referencia_limpeza_em",
+            "prazo_dias",
+            name="uq_limpeza_alerta_ciencia_ref_usuario",
+        ),
+        db.Index("ix_limpeza_alerta_ciencia_veic_ref", "veiculo_id", "referencia_limpeza_em"),
+    )
+
+
 class ChecklistSemanalVeiculo(db.Model):
     __tablename__ = "checklists_semanais_veiculo"
 
@@ -2280,6 +2756,12 @@ class ChecklistSemanalVeiculo(db.Model):
     fluido_freio = db.Column(db.Boolean, default=True)
     oleo_motor = db.Column(db.Boolean, default=True)
     condicao_itens_manutencao = db.Column(db.Text)  
+
+    # Embreagem e freios
+    embreagem = db.Column(db.Boolean, default=True)
+    freio_mao = db.Column(db.Boolean, default=True)
+    freio_pe = db.Column(db.Boolean, default=True)
+    condicao_embreagem_freios = db.Column(db.Text)
 
     # Itens de Segurança motorista
     vidros = db.Column(db.Boolean, default=True)
@@ -2439,6 +2921,7 @@ class DjiFlightRecord(db.Model):
     flight_end = db.Column(db.DateTime, nullable=False, index=True)
 
     location = db.Column(db.Text)
+    place_id = db.Column(db.String(255), index=True)
     aircraft_name = db.Column(db.String(120), index=True)
     task_type = db.Column(db.String(80), index=True)
     sprayed_area_ha = db.Column(db.Float, default=0)
@@ -2530,6 +3013,7 @@ class DjiFlightKmlRoute(db.Model):
     pilot_name = db.Column(db.String(120), index=True)
     flight_controller_id = db.Column(db.String(120), index=True)
     route_timestamp = db.Column(db.DateTime, index=True)
+    place_id = db.Column(db.String(255), index=True)
     mode_selection = db.Column(db.String(40))
     flight_time_raw = db.Column(db.String(40))
     task_area = db.Column(db.Float)
@@ -2690,3 +3174,15 @@ class AgroFlightKmlRoute(db.Model):
     @property
     def has_points(self):
         return bool(self.point_count)
+
+
+class FinanceiroEmpresaPerfil(db.Model):
+    """Branding keyed by the authorized catalog slug; does not grant data access."""
+    __tablename__ = "financeiro_empresa_perfis"
+
+    empresa_slug = db.Column(db.String(80), primary_key=True)
+    nome = db.Column(db.String(120), nullable=True)
+    razao_social = db.Column(db.String(180), nullable=True)
+    cnpj = db.Column(db.String(14), nullable=True, unique=True)
+    logo_path = db.Column(db.String(500), nullable=True)
+    tem_logo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())

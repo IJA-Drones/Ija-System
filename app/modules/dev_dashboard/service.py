@@ -9,6 +9,7 @@ from sqlalchemy import func, text
 
 from app.extensions import db
 from app.models import AuditoriaUsuario, Usuario, UsuarioPresenca, WatchdogDeployEvent
+from app.shared.skybox import test_skybox_roundtrip
 
 
 PRESENCE_ONLINE_WINDOW = timedelta(minutes=5)
@@ -579,6 +580,7 @@ def run_manual_check(slug):
             )
             else "warning",
         ),
+        "skybox": test_skybox_roundtrip,
     }
     check = checks_by_slug.get(slug)
     if not check:

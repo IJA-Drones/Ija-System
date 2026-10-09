@@ -88,6 +88,7 @@ PyJWT==2.12.1
 pyparsing==3.2.5
 pypdf==5.4.0
 pyphen==0.17.2
+pytest==9.1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-multipart==0.0.24

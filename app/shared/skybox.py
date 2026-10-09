@@ -1,5 +1,7 @@
 import mimetypes
 import os
+import time
+import uuid
 from urllib.parse import quote
 
 import requests
@@ -15,8 +17,100 @@ class SkyboxError(RuntimeError):
     pass
 
 
+class SkyboxAuthenticationError(SkyboxError):
+    pass
+
+
 def skybox_enabled():
     return bool(_setting("SKYBOX_WEBDAV_URL") and _setting("SKYBOX_USERNAME") and _setting("SKYBOX_APP_PASSWORD"))
+
+
+def test_skybox_roundtrip():
+    """Executa um teste transacional do WebDAV e remove os artefatos criados."""
+    started_at = time.monotonic()
+    if not skybox_enabled():
+        return {
+            "name": "Skybox",
+            "status": "Não configurado",
+            "detail": "SKYBOX_WEBDAV_URL, SKYBOX_USERNAME e SKYBOX_APP_PASSWORD são necessários.",
+            "severity": "warning",
+            "steps": [],
+        }
+
+    test_path = "/".join([
+        _base_dir(),
+        "_diagnostico",
+        f"dev-{uuid.uuid4().hex}",
+        "skybox-healthcheck.txt",
+    ])
+    parent_path = "/".join(test_path.split("/")[:-1])
+    diagnostic_path = "/".join(parent_path.split("/")[:-1])
+    steps = []
+    remote_artifact_created = False
+    try:
+        _ensure_parent_collections(test_path)
+        steps.append({"name": "Preparar pasta", "status": "ok"})
+
+        response = _request(
+            "PUT",
+            test_path,
+            data=b"IJA System Skybox healthcheck",
+            headers={
+                "Content-Type": "text/plain; charset=utf-8",
+                "Content-Length": str(len(b"IJA System Skybox healthcheck")),
+            },
+        )
+        if response.status_code not in (200, 201, 204):
+            if response.status_code in (401, 403):
+                raise SkyboxAuthenticationError(
+                    f"Autenticação rejeitada pelo Skybox ({response.status_code})."
+                )
+            raise SkyboxError(f"Falha no upload de teste ({response.status_code}).")
+        remote_artifact_created = True
+        steps.append({"name": "Upload de teste", "status": "ok"})
+
+        response = _request("PROPFIND", test_path, headers={"Depth": "0"})
+        if response.status_code not in (200, 207):
+            raise SkyboxError(f"Falha ao confirmar arquivo ({response.status_code}).")
+        steps.append({"name": "Confirmação WebDAV", "status": "ok"})
+        return {
+            "name": "Skybox",
+            "status": "Operacional",
+            "detail": f"Fluxo completo concluído; arquivo de teste removido ({_elapsed_ms(started_at)} ms).",
+            "severity": "success",
+            "steps": steps,
+        }
+    except SkyboxAuthenticationError as exc:
+        current_app.logger.warning("Falha de autenticação no teste transacional do Skybox: %s", exc)
+        return {
+            "name": "Skybox",
+            "status": "Autenticação rejeitada",
+            "detail": f"Confira SKYBOX_USERNAME e SKYBOX_APP_PASSWORD ({_elapsed_ms(started_at)} ms).",
+            "severity": "danger",
+            "steps": steps,
+        }
+    except Exception as exc:
+        current_app.logger.warning("Falha no teste transacional do Skybox: %s", exc)
+        return {
+            "name": "Skybox",
+            "status": "Falha",
+            "detail": f"{str(exc)[:180]} ({_elapsed_ms(started_at)} ms).",
+            "severity": "danger",
+            "steps": steps,
+        }
+    finally:
+        try:
+            if skybox_enabled() and remote_artifact_created:
+                for remote_path in (test_path, parent_path, diagnostic_path):
+                    response = _request("DELETE", remote_path)
+                    if response.status_code not in (200, 202, 204, 404):
+                        current_app.logger.warning("Falha ao limpar artefato do diagnóstico Skybox: %s", response.status_code)
+        except Exception:
+            current_app.logger.exception("Falha ao limpar artefatos do diagnóstico Skybox.")
+
+
+def _elapsed_ms(started_at):
+    return round((time.monotonic() - started_at) * 1000)
 
 
 def is_skybox_path(value):
@@ -91,7 +185,7 @@ def delete_skybox_file(value):
     raise SkyboxError(f"Falha ao remover arquivo do Skybox ({response.status_code}).")
 
 
-def stream_skybox_file(value, range_header=None, *, as_attachment=False):
+def stream_skybox_file(value, range_header=None, *, as_attachment=False, conditional_headers=None):
     if not skybox_enabled():
         raise SkyboxError("Skybox nao esta configurado.")
 
@@ -99,11 +193,21 @@ def stream_skybox_file(value, range_header=None, *, as_attachment=False):
     headers = {}
     if range_header:
         headers["Range"] = range_header
+    for header in ("If-None-Match", "If-Modified-Since"):
+        if conditional_headers and conditional_headers.get(header):
+            headers[header] = conditional_headers[header]
 
     upstream = _request("GET", remote_path, headers=headers, stream=True)
     if upstream.status_code == 404:
         upstream.close()
         raise SkyboxError("Arquivo nao encontrado no Skybox.")
+    if upstream.status_code == 304:
+        upstream.close()
+        response_headers = {"Cache-Control": "private, max-age=86400"}
+        for header in ("Last-Modified", "ETag"):
+            if upstream.headers.get(header):
+                response_headers[header] = upstream.headers[header]
+        return Response(status=304, headers=response_headers)
     if upstream.status_code not in (200, 206):
         status_code = upstream.status_code
         upstream.close()
@@ -128,6 +232,7 @@ def stream_skybox_file(value, range_header=None, *, as_attachment=False):
     response_headers["Content-Type"] = content_type
     response_headers.setdefault("Accept-Ranges", "bytes")
     response_headers["Content-Disposition"] = _content_disposition(remote_path, as_attachment=as_attachment)
+    response_headers["Cache-Control"] = "private, max-age=86400"
 
     def generate():
         with upstream:
@@ -285,6 +390,10 @@ def _ensure_parent_collections(remote_path):
         response = _request("MKCOL", "/".join(current))
         if response.status_code in (201, 405):
             continue
+        if response.status_code in (401, 403):
+            raise SkyboxAuthenticationError(
+                f"Autenticação rejeitada pelo Skybox ({response.status_code})."
+            )
         if response.status_code == 409:
             continue
         raise SkyboxError(f"Falha ao preparar pasta no Skybox ({response.status_code}).")

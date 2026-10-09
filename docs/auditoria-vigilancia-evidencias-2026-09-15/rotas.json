@@ -1,0 +1,2971 @@
+[
+  {
+    "path": "app/__init__.py",
+    "line": 172,
+    "decorator": "app.get('/healthz')",
+    "function": "healthz",
+    "guards": []
+  },
+  {
+    "path": "app/__init__.py",
+    "line": 176,
+    "decorator": "app.get('/healthz/full')",
+    "function": "healthz_full",
+    "guards": []
+  },
+  {
+    "path": "app/core/routes.py",
+    "line": 13,
+    "decorator": "bp.route('/sw.js')",
+    "function": "serve_sw",
+    "guards": []
+  },
+  {
+    "path": "app/core/routes.py",
+    "line": 17,
+    "decorator": "bp.route('/forcar_erro')",
+    "function": "forcar_erro",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/core/routes.py",
+    "line": 24,
+    "decorator": "bp.route('/__test/erro/<int:code>', methods=['GET'], endpoint='test_error_code')",
+    "function": "test_error_code",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 117,
+    "decorator": "bp.route('/veiculos/rastreamento', methods=['GET'], endpoint='veiculos_rastreamento')",
+    "function": "veiculos_rastreamento",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 128,
+    "decorator": "bp.route('/veiculos/rastreamento/dados', methods=['GET'], endpoint='veiculos_rastreamento_dados')",
+    "function": "veiculos_rastreamento_dados",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 138,
+    "decorator": "bp.route('/veiculos/menu', methods=['GET'], endpoint='veiculos_menu')",
+    "function": "veiculos_menu",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 152,
+    "decorator": "bp.route('/veiculos', methods=['GET'], endpoint='listar_veiculos')",
+    "function": "listar_veiculos_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 165,
+    "decorator": "bp.route('/veiculos/equipes', methods=['POST'], endpoint='atualizar_equipes_veiculos')",
+    "function": "atualizar_equipes_veiculos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 189,
+    "decorator": "bp.route('/veiculos/logs', methods=['GET'], endpoint='veiculos_logs')",
+    "function": "veiculos_logs_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 198,
+    "decorator": "bp.route('/veiculos/limpezas', methods=['GET'], endpoint='veiculos_limpezas')",
+    "function": "veiculos_limpezas",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 207,
+    "decorator": "bp.route('/veiculos/limpeza/alertas', methods=['GET'], endpoint='veiculos_alertas_limpeza')",
+    "function": "veiculos_alertas_limpeza",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 218,
+    "decorator": "bp.route('/veiculos/logs/veiculo/<int:veiculo_id>', methods=['GET'], endpoint='veiculo_logs_detalhe')",
+    "function": "veiculo_logs_detalhe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 230,
+    "decorator": "bp.route('/veiculos/logs/exportar', methods=['GET'], endpoint='exportar_logs_veiculos_xlsx')",
+    "function": "exportar_logs_veiculos_xlsx",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 239,
+    "decorator": "bp.route('/admin/veiculos/logs-excluidos', methods=['GET'], endpoint='veiculos_logs_excluidos')",
+    "function": "veiculos_logs_excluidos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 254,
+    "decorator": "bp.route('/veiculos/logs/<int:log_id>/corrigir-km', methods=['POST'], endpoint='corrigir_log_veiculo')",
+    "function": "corrigir_log_veiculo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 300,
+    "decorator": "bp.route('/veiculos/logs/<int:log_id>/deletar', methods=['POST'], endpoint='deletar_log_veiculo')",
+    "function": "deletar_log_veiculo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 347,
+    "decorator": "bp.route('/veiculos/logs/<int:log_id>/midia/<tipo>', methods=['GET'], endpoint='veiculo_log_midia_skybox')",
+    "function": "veiculo_log_midia_skybox",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 368,
+    "decorator": "bp.route('/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>', methods=['GET'], endpoint='veiculo_abastecimento_midia_skybox')",
+    "function": "veiculo_abastecimento_midia_skybox",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 394,
+    "decorator": "bp.route('/veiculos/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_veiculo')",
+    "function": "cadastrar_veiculo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 440,
+    "decorator": "bp.route('/veiculos/<int:veiculo_id>/editar', methods=['GET', 'POST'], endpoint='editar_veiculo')",
+    "function": "editar_veiculo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 490,
+    "decorator": "bp.route('/veiculos/<int:veiculo_id>/deletar', methods=['POST'], endpoint='deletar_veiculo')",
+    "function": "deletar_veiculo_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 505,
+    "decorator": "bp.route('/piloto/veiculos', methods=['GET'], endpoint='piloto_veiculos')",
+    "function": "piloto_veiculos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 522,
+    "decorator": "bp.route('/piloto/caixa-entrada', methods=['GET'], endpoint='piloto_caixa_entrada')",
+    "function": "piloto_caixa_entrada",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 535,
+    "decorator": "bp.route('/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar', methods=['POST'], endpoint='piloto_confirmar_alerta_limpeza')",
+    "function": "piloto_confirmar_alerta_limpeza",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 558,
+    "decorator": "bp.route('/piloto/veiculos/<int:veiculo_id>/km', methods=['POST'], endpoint='piloto_atualizar_km_veiculo')",
+    "function": "piloto_atualizar_km_veiculo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 585,
+    "decorator": "bp.route('/piloto/veiculos/<int:veiculo_id>/abastecimento', methods=['POST'], endpoint='piloto_registrar_abastecimento_turno')",
+    "function": "piloto_registrar_abastecimento_turno",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 616,
+    "decorator": "bp.route('/piloto/veiculos/<int:veiculo_id>/limpeza', methods=['POST'], endpoint='piloto_registrar_limpeza_turno')",
+    "function": "piloto_registrar_limpeza_turno",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/veiculos/routes.py",
+    "line": 645,
+    "decorator": "bp.route('/piloto/veiculos/<int:veiculo_id>/encerrar', methods=['POST'], endpoint='piloto_encerrar_turno')",
+    "function": "piloto_encerrar_turno",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_uvis/routes.py",
+    "line": 38,
+    "decorator": "bp.route('/admin/uvis/novo', methods=['GET', 'POST'], endpoint='admin_uvis_novo')",
+    "function": "admin_uvis_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_uvis/routes.py",
+    "line": 106,
+    "decorator": "bp.route('/admin/uvis', methods=['GET'], endpoint='admin_uvis_listar')",
+    "function": "admin_uvis_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_uvis/routes.py",
+    "line": 150,
+    "decorator": "bp.route('/admin/uvis/<int:id>/editar', methods=['GET', 'POST'], endpoint='admin_uvis_editar')",
+    "function": "admin_uvis_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_uvis/routes.py",
+    "line": 238,
+    "decorator": "bp.route('/admin/uvis/<int:id>/excluir', methods=['POST'], endpoint='admin_uvis_excluir')",
+    "function": "admin_uvis_excluir",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_uvis/routes.py",
+    "line": 271,
+    "decorator": "bp.route('/admin/uvis/exportar', methods=['GET'], endpoint='admin_uvis_exportar')",
+    "function": "admin_uvis_exportar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/solicitacoes/routes.py",
+    "line": 21,
+    "decorator": "bp.route('/api/solicitacao/checar-bloqueio', methods=['GET'], endpoint='api_solicitacao_checar_bloqueio')",
+    "function": "api_solicitacao_checar_bloqueio",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/solicitacoes/routes.py",
+    "line": 45,
+    "decorator": "bp.route('/novo_cadastro', methods=['GET', 'POST'], endpoint='novo')",
+    "function": "novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/solicitacoes/routes.py",
+    "line": 71,
+    "decorator": "bp.route('/solicitacao/editar/<int:id>', methods=['GET', 'POST'], endpoint='editar_solicitacao')",
+    "function": "editar_solicitacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/solicitacoes/routes.py",
+    "line": 97,
+    "decorator": "bp.route('/admin/deletar/<int:id>', methods=['POST'], endpoint='deletar_registro')",
+    "function": "deletar_registro",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/auth/routes.py",
+    "line": 17,
+    "decorator": "bp.route('/login', methods=['GET', 'POST'])",
+    "function": "login",
+    "guards": []
+  },
+  {
+    "path": "app/modules/auth/routes.py",
+    "line": 43,
+    "decorator": "bp.route('/uvis-operacional/login', methods=['GET', 'POST'])",
+    "function": "login_uvis_operacional",
+    "guards": []
+  },
+  {
+    "path": "app/modules/auth/routes.py",
+    "line": 67,
+    "decorator": "bp.route('/agro/login', methods=['GET', 'POST'])",
+    "function": "login_piloto_agro",
+    "guards": []
+  },
+  {
+    "path": "app/modules/auth/routes.py",
+    "line": 91,
+    "decorator": "bp.route('/logout')",
+    "function": "logout",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/chatbot/routes.py",
+    "line": 16,
+    "decorator": "bp.route('/api/uvis/chatbot', methods=['POST'], endpoint='uvis_chatbot')",
+    "function": "uvis_chatbot",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/chatbot/routes.py",
+    "line": 23,
+    "decorator": "bp.route('/api/admin/chatbot', methods=['POST'], endpoint='admin_chatbot')",
+    "function": "admin_chatbot",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/chatbot/routes.py",
+    "line": 33,
+    "decorator": "bp.route('/api/agro/admin/chatbot', methods=['POST'], endpoint='agro_admin_chatbot')",
+    "function": "agro_admin_chatbot",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/chatbot/routes.py",
+    "line": 43,
+    "decorator": "bp.route('/api/agro/piloto/chatbot', methods=['POST'], endpoint='agro_piloto_chatbot')",
+    "function": "agro_piloto_chatbot",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 260,
+    "decorator": "bp.route('/admin')",
+    "function": "admin_dashboard",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 345,
+    "decorator": "bp.route('/admin/exportar_excel')",
+    "function": "exportar_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 398,
+    "decorator": "bp.route('/admin/atualizar/<int:id>', methods=['POST'])",
+    "function": "atualizar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 443,
+    "decorator": "bp.post('/admin/solicitacao/<int:id>/cancelar')",
+    "function": "cancelar_solicitacao_admin",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 461,
+    "decorator": "bp.route('/admin/canceladas')",
+    "function": "admin_canceladas",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 512,
+    "decorator": "bp.route('/admin/historico-os')",
+    "function": "admin_historico_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 560,
+    "decorator": "bp.route('/admin/historico-os/exportar-excel')",
+    "function": "admin_historico_os_exportar_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 594,
+    "decorator": "bp.route('/admin/historico-os/exportar-excel-individuais')",
+    "function": "admin_historico_os_exportar_excel_individuais",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 624,
+    "decorator": "bp.route('/admin/historico-os/exportar-pdf-individuais')",
+    "function": "admin_historico_os_exportar_pdf_individuais",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 640,
+    "decorator": "bp.route('/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>', methods=['GET'], endpoint='admin_historico_os_pdf_job_status')",
+    "function": "admin_historico_os_pdf_job_status",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 656,
+    "decorator": "bp.route('/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>/download', methods=['GET'], endpoint='admin_historico_os_pdf_job_download')",
+    "function": "admin_historico_os_pdf_job_download",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_dashboard/routes.py",
+    "line": 683,
+    "decorator": "bp.route('/admin/os/<int:os_id>/equipe-uvis-formulario', methods=['GET'], endpoint='admin_equipe_uvis_os_formulario_view')",
+    "function": "admin_equipe_uvis_os_formulario_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1239,
+    "decorator": "bp.route('/piloto/os', methods=['GET'], endpoint='piloto_os')",
+    "function": "piloto_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1277,
+    "decorator": "bp.route('/piloto/dosagem', methods=['GET'], endpoint='piloto_dosagem')",
+    "function": "piloto_dosagem",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1283,
+    "decorator": "bp.route('/piloto/os/<int:os_id>/dosagem', methods=['GET', 'POST'], endpoint='piloto_os_dosagem')",
+    "function": "piloto_os_dosagem",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1312,
+    "decorator": "bp.route('/piloto/os/historico', methods=['GET'], endpoint='piloto_os_historico')",
+    "function": "piloto_os_historico",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1328,
+    "decorator": "bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'], endpoint='piloto_concluir_os')",
+    "function": "piloto_concluir_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1341,
+    "decorator": "bp.route('/piloto/os/formulario', methods=['GET'], endpoint='piloto_os_formulario_redirect')",
+    "function": "piloto_os_formulario_redirect",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1353,
+    "decorator": "bp.route('/piloto/os/<int:os_id>/formulario', methods=['GET', 'POST'], endpoint='piloto_os_formulario_view')",
+    "function": "piloto_os_formulario_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1408,
+    "decorator": "bp.route('/os/<int:os_id>/video', methods=['GET'], endpoint='os_video')",
+    "function": "os_video",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1418,
+    "decorator": "bp.route('/os/<int:os_id>/imagem-principal', methods=['GET'], endpoint='os_imagem_principal')",
+    "function": "os_imagem_principal",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1428,
+    "decorator": "bp.route('/os/<int:os_id>/imagem-complementar/<int:image_index>', methods=['GET'], endpoint='os_imagem_complementar')",
+    "function": "os_imagem_complementar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1438,
+    "decorator": "bp.route('/piloto/api/drone/<int:drone_id>', methods=['GET'], endpoint='piloto_api_drone')",
+    "function": "piloto_api_drone",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1448,
+    "decorator": "bp.route('/api/os/<int:os_id>/upload-stream', methods=['PUT'], endpoint='os_upload_stream')",
+    "function": "os_upload_stream",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1493,
+    "decorator": "bp.route('/api/os/<int:os_id>/upload-video-stream', methods=['PUT'], endpoint='os_upload_video_stream')",
+    "function": "os_upload_video_stream",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1538,
+    "decorator": "bp.route('/api/os/<int:os_id>/upload-video-background', methods=['PUT'], endpoint='os_upload_video_background')",
+    "function": "os_upload_video_background",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1617,
+    "decorator": "bp.route('/api/os/<int:os_id>/upload-video-background/init', methods=['POST'], endpoint='os_upload_video_background_init')",
+    "function": "os_upload_video_background_init",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1684,
+    "decorator": "bp.route('/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>', methods=['PUT'], endpoint='video_upload_session_chunk')",
+    "function": "video_upload_session_chunk",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1743,
+    "decorator": "bp.route('/api/video-upload-sessions/<session_id>/complete', methods=['POST'], endpoint='video_upload_session_complete')",
+    "function": "video_upload_session_complete",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1808,
+    "decorator": "bp.route('/api/video-upload-jobs/<job_id>', methods=['GET'], endpoint='video_upload_job_status')",
+    "function": "video_upload_job_status",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1842,
+    "decorator": "bp.route('/api/os/<int:os_id>/upload-complementary-stream', methods=['PUT'], endpoint='os_upload_complementary_stream')",
+    "function": "os_upload_complementary_stream",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1896,
+    "decorator": "bp.route('/api/os/<int:os_id>/imagem-principal', methods=['DELETE'], endpoint='os_delete_principal_image')",
+    "function": "os_delete_principal_image",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1932,
+    "decorator": "bp.route('/api/os/<int:os_id>/video', methods=['DELETE'], endpoint='os_delete_video')",
+    "function": "os_delete_video",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 1966,
+    "decorator": "bp.route('/api/os/<int:os_id>/imagem-complementar/<int:image_index>', methods=['DELETE'], endpoint='os_delete_complementary_image')",
+    "function": "os_delete_complementary_image",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 2006,
+    "decorator": "bp.route('/admin/os/<int:os_id>/formulario', methods=['GET', 'POST'], endpoint='admin_os_formulario_view')",
+    "function": "admin_os_formulario_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 2047,
+    "decorator": "bp.route('/admin/os/<int:os_id>/export/pdf/v2', methods=['GET'], endpoint='admin_export_os_pdf_v2')",
+    "function": "admin_export_os_pdf_v2",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_os/routes.py",
+    "line": 2061,
+    "decorator": "bp.route('/admin/os/<int:os_id>/export/excel/v2', methods=['GET'], endpoint='admin_export_os_excel_v2')",
+    "function": "admin_export_os_excel_v2",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipes/routes.py",
+    "line": 30,
+    "decorator": "bp.route('/equipes/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_equipes')",
+    "function": "cadastrar_equipes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipes/routes.py",
+    "line": 167,
+    "decorator": "bp.route('/equipes', methods=['GET'], endpoint='listar_equipes')",
+    "function": "listar_equipes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipes/routes.py",
+    "line": 244,
+    "decorator": "bp.route('/equipes/<int:equipe_id>/credenciais', methods=['POST'], endpoint='atualizar_credenciais_equipe')",
+    "function": "atualizar_credenciais_equipe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipes/routes.py",
+    "line": 271,
+    "decorator": "bp.route('/equipes/<int:equipe_id>/editar', methods=['GET', 'POST'], endpoint='editar_equipe')",
+    "function": "editar_equipe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipes/routes.py",
+    "line": 434,
+    "decorator": "bp.route('/equipes/<int:equipe_id>/deletar', methods=['POST'], endpoint='deletar_equipe')",
+    "function": "deletar_equipe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/piloto_checklists/routes.py",
+    "line": 19,
+    "decorator": "bp.route('/piloto/checklists/semanais', methods=['GET', 'POST'], endpoint='piloto_checklist_semanal')",
+    "function": "piloto_checklist_semanal",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipe_uvis_dashboard/routes.py",
+    "line": 20,
+    "decorator": "bp.route('/equipe-uvis', methods=['GET'], endpoint='dashboard_equipe_uvis')",
+    "function": "dashboard_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipe_uvis_dashboard/routes.py",
+    "line": 41,
+    "decorator": "bp.route('/equipe-uvis/os/<int:os_id>/formulario', methods=['GET', 'POST'], endpoint='equipe_uvis_os_formulario_view')",
+    "function": "equipe_uvis_os_formulario_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipe_uvis_dashboard/routes.py",
+    "line": 83,
+    "decorator": "bp.route('/equipe-uvis/os/historico', methods=['GET'], endpoint='equipe_uvis_os_historico')",
+    "function": "equipe_uvis_os_historico",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipe_uvis_dashboard/routes.py",
+    "line": 98,
+    "decorator": "bp.route('/equipe-uvis/os/<int:os_id>/concluir', methods=['POST'], endpoint='equipe_uvis_concluir_os')",
+    "function": "equipe_uvis_concluir_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/canceladas/routes.py",
+    "line": 11,
+    "decorator": "bp.post('/solicitacao/<int:id>/cancelar', endpoint='cancelar_solicitacao')",
+    "function": "cancelar_solicitacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/canceladas/routes.py",
+    "line": 25,
+    "decorator": "bp.route('/canceladas', endpoint='solicitacoes_canceladas')",
+    "function": "solicitacoes_canceladas",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 209,
+    "decorator": "bp.route('/feedback/notificacoes/status', methods=['GET'], endpoint='feedback_notificacoes_status')",
+    "function": "feedback_notificacoes_status",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 219,
+    "decorator": "bp.route('/feedback', methods=['GET'], endpoint='feedback_listar')",
+    "function": "feedback_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 297,
+    "decorator": "bp.route('/bugs', methods=['GET'], endpoint='bugs_listar')",
+    "function": "bugs_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 352,
+    "decorator": "bp.route('/bugs/ajuda', methods=['GET'], endpoint='bugs_ajuda')",
+    "function": "bugs_ajuda",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 363,
+    "decorator": "bp.route('/feedback/novo', methods=['GET', 'POST'], endpoint='feedback_novo')",
+    "function": "feedback_novo",
+    "guards": [
+      "bp.route('/bugs/novo', methods=['GET', 'POST'], endpoint='bug_report_novo')",
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 364,
+    "decorator": "bp.route('/bugs/novo', methods=['GET', 'POST'], endpoint='bug_report_novo')",
+    "function": "feedback_novo",
+    "guards": [
+      "bp.route('/feedback/novo', methods=['GET', 'POST'], endpoint='feedback_novo')",
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 503,
+    "decorator": "bp.route('/feedback/<int:topico_id>', methods=['GET'], endpoint='feedback_detalhe')",
+    "function": "feedback_detalhe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 531,
+    "decorator": "bp.route('/bugs/<int:topico_id>/acompanhar', methods=['GET'], endpoint='bug_acompanhamento')",
+    "function": "bug_acompanhamento",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 549,
+    "decorator": "bp.route('/feedback/<int:topico_id>/status', methods=['GET'], endpoint='feedback_status')",
+    "function": "feedback_status",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 568,
+    "decorator": "bp.route('/feedback/<int:topico_id>/comentar', methods=['POST'], endpoint='feedback_comentar')",
+    "function": "feedback_comentar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 595,
+    "decorator": "bp.route('/feedback/anexos/<int:anexo_id>', methods=['GET'], endpoint='feedback_anexo')",
+    "function": "feedback_anexo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 641,
+    "decorator": "bp.route('/feedback/<int:topico_id>/comentarios/<int:comment_id>/editar', methods=['POST'], endpoint='feedback_comentario_editar')",
+    "function": "feedback_comentario_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 662,
+    "decorator": "bp.route('/feedback/<int:topico_id>/comentarios/<int:comment_id>/apagar', methods=['POST'], endpoint='feedback_comentario_apagar')",
+    "function": "feedback_comentario_apagar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 678,
+    "decorator": "bp.route('/feedback/<int:topico_id>/atualizar', methods=['POST'], endpoint='feedback_atualizar')",
+    "function": "feedback_atualizar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 719,
+    "decorator": "bp.route('/feedback/<int:topico_id>/assumir', methods=['POST'], endpoint='feedback_assumir')",
+    "function": "feedback_assumir",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/feedback/routes.py",
+    "line": 739,
+    "decorator": "bp.route('/feedback/<int:topico_id>/corrigir', methods=['POST'], endpoint='feedback_corrigir')",
+    "function": "feedback_corrigir",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dev_dashboard/routes.py",
+    "line": 33,
+    "decorator": "bp.route('/api/watchdog/deploy-events', methods=['POST'], endpoint='watchdog_deploy_event')",
+    "function": "watchdog_deploy_event",
+    "guards": []
+  },
+  {
+    "path": "app/modules/dev_dashboard/routes.py",
+    "line": 49,
+    "decorator": "bp.route('/dev', methods=['GET'], endpoint='dev_dashboard')",
+    "function": "dev_dashboard",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dev_dashboard/routes.py",
+    "line": 55,
+    "decorator": "bp.route('/dev/data', methods=['GET'], endpoint='dev_dashboard_data')",
+    "function": "dev_dashboard_data",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dev_dashboard/routes.py",
+    "line": 61,
+    "decorator": "bp.route('/dev/errors/<int:log_id>', methods=['GET'], endpoint='dev_dashboard_error_detail')",
+    "function": "dev_dashboard_error_detail",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dev_dashboard/routes.py",
+    "line": 70,
+    "decorator": "bp.route('/dev/checks/<slug>', methods=['POST'], endpoint='dev_dashboard_manual_check')",
+    "function": "dev_dashboard_manual_check",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 18,
+    "decorator": "bp.route('/agenda', endpoint='agenda')",
+    "function": "agenda",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 32,
+    "decorator": "bp.route('/agenda/rotas-dia', endpoint='agenda_rotas_dia')",
+    "function": "agenda_rotas_dia",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 43,
+    "decorator": "bp.route('/agenda/exportar_excel', endpoint='agenda_exportar_excel')",
+    "function": "agenda_exportar_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 57,
+    "decorator": "bp.route('/notificacoes/<int:notif_id>/ler', endpoint='ler_notificacao')",
+    "function": "ler_notificacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 64,
+    "decorator": "bp.route('/notificacoes', endpoint='notificacoes')",
+    "function": "notificacoes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 69,
+    "decorator": "bp.route('/notificacoes/<int:notif_id>/excluir', methods=['POST'], endpoint='excluir_notificacao')",
+    "function": "excluir_notificacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agenda_notificacoes/routes.py",
+    "line": 76,
+    "decorator": "bp.route('/notificacoes/limpar', methods=['POST'], endpoint='limpar_notificacoes')",
+    "function": "limpar_notificacoes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/painel_operacional/routes.py",
+    "line": 12,
+    "decorator": "bp.route('/diretor/painel-operacional', methods=['GET'], endpoint='painel_operacional')",
+    "function": "painel_operacional",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/painel_operacional/routes.py",
+    "line": 28,
+    "decorator": "bp.route('/api/painel-operacional/contexto-local', methods=['POST'], endpoint='api_painel_operacional_contexto')",
+    "function": "api_painel_operacional_contexto",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dashboard/routes.py",
+    "line": 22,
+    "decorator": "bp.route('/', endpoint='dashboard')",
+    "function": "dashboard",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dashboard/routes.py",
+    "line": 46,
+    "decorator": "bp.route('/uvis/historico-os', methods=['GET'], endpoint='uvis_historico_os')",
+    "function": "uvis_historico_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dashboard/routes.py",
+    "line": 61,
+    "decorator": "bp.route('/uvis/os/<int:os_id>/formulario', methods=['GET', 'POST'], endpoint='uvis_os_formulario_view')",
+    "function": "uvis_os_formulario_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dashboard/routes.py",
+    "line": 104,
+    "decorator": "bp.route('/uvis/os/<int:os_id>/equipe-formulario', methods=['GET'], endpoint='uvis_equipe_os_formulario_view')",
+    "function": "uvis_equipe_os_formulario_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 101,
+    "decorator": "bp.route('/admin/prefeituras/nova', methods=['GET', 'POST'], endpoint='admin_prefeitura_nova')",
+    "function": "admin_prefeitura_nova",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 160,
+    "decorator": "bp.route('/admin/prefeituras', methods=['GET'], endpoint='admin_prefeituras')",
+    "function": "admin_prefeituras",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 194,
+    "decorator": "bp.route('/admin/prefeituras/<int:id>/editar', methods=['GET', 'POST'], endpoint='admin_prefeitura_editar')",
+    "function": "admin_prefeitura_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 255,
+    "decorator": "bp.route('/admin/prefeituras/<int:id>/excluir', methods=['POST'], endpoint='admin_prefeitura_excluir')",
+    "function": "admin_prefeitura_excluir",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 290,
+    "decorator": "bp.route('/admin/usuarios/novo', methods=['GET', 'POST'], endpoint='admin_usuario_novo')",
+    "function": "admin_usuario_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 419,
+    "decorator": "bp.route('/admin/usuarios', methods=['GET'], endpoint='admin_usuarios_listar')",
+    "function": "admin_usuarios_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 440,
+    "decorator": "bp.route('/admin/usuarios/<int:id>/editar', methods=['GET', 'POST'], endpoint='admin_usuario_editar')",
+    "function": "admin_usuario_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 590,
+    "decorator": "bp.route('/admin/usuarios/<int:id>/reset_senha', methods=['POST'], endpoint='admin_usuario_reset_senha')",
+    "function": "admin_usuario_reset_senha",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/usuarios/routes.py",
+    "line": 625,
+    "decorator": "bp.route('/admin/usuarios/<int:id>/excluir', methods=['POST'], endpoint='admin_usuario_excluir')",
+    "function": "admin_usuario_excluir",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 54,
+    "decorator": "bp.route('/equipamentos', methods=['GET'], endpoint='listar_equipamentos')",
+    "function": "listar_equipamentos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 59,
+    "decorator": "bp.route('/equipamentos/drones', methods=['GET'], endpoint='listar_drones')",
+    "function": "listar_drones_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 70,
+    "decorator": "bp.route('/equipamentos/baterias', methods=['GET'], endpoint='listar_baterias')",
+    "function": "listar_baterias_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 81,
+    "decorator": "bp.route('/drones/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_drone')",
+    "function": "cadastrar_drone",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 109,
+    "decorator": "bp.route('/drones/<int:drone_id>/editar', methods=['GET', 'POST'], endpoint='editar_drone')",
+    "function": "editar_drone",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 155,
+    "decorator": "bp.route('/drones/<int:drone_id>/deletar', methods=['POST'], endpoint='deletar_drone')",
+    "function": "deletar_drone_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 171,
+    "decorator": "bp.route('/baterias/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_bateria')",
+    "function": "cadastrar_bateria",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 203,
+    "decorator": "bp.route('/baterias/<int:bateria_id>/editar', methods=['GET', 'POST'], endpoint='editar_bateria')",
+    "function": "editar_bateria",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 249,
+    "decorator": "bp.route('/baterias/<int:bateria_id>/deletar', methods=['POST'], endpoint='deletar_bateria')",
+    "function": "deletar_bateria_view",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 265,
+    "decorator": "bp.route('/equipamentos/em-manutencao', methods=['GET'], endpoint='equipamentos_manutencao')",
+    "function": "equipamentos_manutencao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 275,
+    "decorator": "bp.route('/equipamentos/manutencoes/historico', methods=['GET'], endpoint='equipamentos_manutencoes_historico')",
+    "function": "equipamentos_manutencoes_historico",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 284,
+    "decorator": "bp.route('/equipamentos/manutencoes/historico/excel', methods=['GET'], endpoint='equipamentos_manutencoes_historico_excel')",
+    "function": "equipamentos_manutencoes_historico_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 291,
+    "decorator": "bp.route('/equipamentos/manutencoes/pecas/historico', methods=['GET'], endpoint='equipamentos_manutencoes_pecas_historico')",
+    "function": "equipamentos_manutencoes_pecas_historico",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 300,
+    "decorator": "bp.route('/equipamentos/manutencoes/pecas/historico/excel', methods=['GET'], endpoint='equipamentos_manutencoes_pecas_historico_excel')",
+    "function": "equipamentos_manutencoes_pecas_historico_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 307,
+    "decorator": "bp.route('/equipamentos/manutencoes/<int:manutencao_id>', methods=['GET'], endpoint='equipamento_manutencao_detalhe')",
+    "function": "equipamento_manutencao_detalhe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 318,
+    "decorator": "bp.route('/equipamentos/<int:drone_id>/manutencao/pecas', methods=['GET', 'POST'], endpoint='equipamento_manutencao_pecas')",
+    "function": "equipamento_manutencao_pecas",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 350,
+    "decorator": "bp.route('/equipamentos/<int:drone_id>/manutencao/pdf', methods=['GET'], endpoint='equipamento_manutencao_pdf')",
+    "function": "equipamento_manutencao_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 365,
+    "decorator": "bp.route('/equipamentos/manutencoes/<int:manutencao_id>/pdf', methods=['GET'], endpoint='equipamento_manutencao_historico_pdf')",
+    "function": "equipamento_manutencao_historico_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 379,
+    "decorator": "bp.route('/equipamentos/<int:drone_id>/manutencao/encerrar', methods=['POST'], endpoint='equipamento_manutencao_encerrar')",
+    "function": "equipamento_manutencao_encerrar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 395,
+    "decorator": "bp.route('/equipamentos/baterias/update_ciclos/<int:id>', methods=['POST'], endpoint='update_ciclos')",
+    "function": "update_ciclos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/equipamentos/routes.py",
+    "line": 402,
+    "decorator": "bp.route('/drones/<int:drone_id>/manutencao', methods=['POST'], endpoint='enviar_manutencao_drone')",
+    "function": "enviar_manutencao_drone",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 24,
+    "decorator": "bp.route('/relatorios/dji-logs', methods=['GET'], endpoint='relatorios_dji_logs')",
+    "function": "relatorios_dji_logs",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 53,
+    "decorator": "bp.route('/relatorios/dji-logs/exportar', methods=['GET'], endpoint='exportar_dji_logs_excel')",
+    "function": "exportar_dji_logs_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 68,
+    "decorator": "bp.route('/relatorios/dji-logs/importar', methods=['POST'], endpoint='importar_dji_logs')",
+    "function": "importar_dji_logs",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 96,
+    "decorator": "bp.route('/relatorios/dji-logs/importar-kml', methods=['POST'], endpoint='importar_dji_kml')",
+    "function": "importar_dji_kml",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 126,
+    "decorator": "bp.route('/api/dji-kml-route/<int:route_id>', methods=['GET'], endpoint='api_dji_kml_route')",
+    "function": "api_dji_kml_route",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 134,
+    "decorator": "bp.route('/relatorios/dji-logs/rota/<int:route_id>/vincular-os', methods=['POST'], endpoint='vincular_dji_kml_route_os')",
+    "function": "vincular_dji_kml_route_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 162,
+    "decorator": "bp.route('/relatorios/dji-logs/rota/<int:route_id>/excluir', methods=['POST'], endpoint='excluir_dji_kml_route')",
+    "function": "excluir_dji_kml_route",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 185,
+    "decorator": "bp.route('/relatorios/dji-logs/rota/<int:route_id>', methods=['GET'], endpoint='visualizar_dji_kml_route')",
+    "function": "visualizar_dji_kml_route",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/dji_flight_logs/routes.py",
+    "line": 203,
+    "decorator": "bp.route('/relatorios/dji-logs/rota/<int:route_id>/kml', methods=['GET'], endpoint='baixar_dji_kml_route')",
+    "function": "baixar_dji_kml_route",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/pilotos/routes.py",
+    "line": 40,
+    "decorator": "bp.route('/pilotos/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_pilotos')",
+    "function": "cadastrar_pilotos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/pilotos/routes.py",
+    "line": 124,
+    "decorator": "bp.route('/pilotos', methods=['GET'], endpoint='listar_pilotos')",
+    "function": "listar_pilotos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/pilotos/routes.py",
+    "line": 185,
+    "decorator": "bp.route('/pilotos/<int:piloto_id>/editar', methods=['GET', 'POST'], endpoint='editar_piloto')",
+    "function": "editar_piloto",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/pilotos/routes.py",
+    "line": 296,
+    "decorator": "bp.route('/pilotos/<int:piloto_id>/deletar', methods=['POST'], endpoint='deletar_piloto')",
+    "function": "deletar_piloto",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 43,
+    "decorator": "bp.route('/uvis/acesso-operacional', methods=['GET', 'POST'], endpoint='uvis_acesso_operacional')",
+    "function": "uvis_acesso_operacional",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 99,
+    "decorator": "bp.route('/uvis/equipes', methods=['GET'], endpoint='listar_equipes_uvis')",
+    "function": "listar_equipes_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 106,
+    "decorator": "bp.route('/uvis/equipes/<string:nome_equipe>/credenciais', methods=['POST'], endpoint='atualizar_credenciais_equipe_uvis')",
+    "function": "atualizar_credenciais_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 143,
+    "decorator": "bp.route('/uvis/equipes/<string:nome_equipe>', methods=['GET'], endpoint='listar_membros_equipe_uvis')",
+    "function": "listar_membros_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 161,
+    "decorator": "bp.route('/uvis/equipes/<string:nome_equipe>/adicionar', methods=['GET', 'POST'], endpoint='adicionar_membro_equipe_uvis')",
+    "function": "adicionar_membro_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 216,
+    "decorator": "bp.route('/uvis/equipes/nova', methods=['GET', 'POST'], endpoint='criar_equipe_uvis')",
+    "function": "criar_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 268,
+    "decorator": "bp.route('/uvis/equipe-membro/<int:membro_id>/editar', methods=['GET', 'POST'], endpoint='editar_membro_equipe_uvis')",
+    "function": "editar_membro_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 308,
+    "decorator": "bp.route('/uvis/equipe-membro/<int:membro_id>/deletar', methods=['POST'], endpoint='deletar_membro_equipe_uvis')",
+    "function": "deletar_membro_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 333,
+    "decorator": "bp.route('/solicitacao/<int:id>/atribuir-equipe-uvis', methods=['POST'], endpoint='atribuir_equipe_uvis_solicitacao')",
+    "function": "atribuir_equipe_uvis_solicitacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 357,
+    "decorator": "bp.route('/admin/uvis/equipes', methods=['GET'], endpoint='admin_listar_equipes_uvis')",
+    "function": "admin_listar_equipes_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 369,
+    "decorator": "bp.route('/admin/uvis/<int:uvis_id>/acesso-operacional', methods=['POST'], endpoint='admin_atualizar_acesso_operacional_uvis')",
+    "function": "admin_atualizar_acesso_operacional_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/uvis_equipes/routes.py",
+    "line": 414,
+    "decorator": "bp.route('/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>', methods=['GET'], endpoint='admin_listar_membros_equipe_uvis')",
+    "function": "admin_listar_membros_equipe_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/mapas/routes.py",
+    "line": 14,
+    "decorator": "bp.route('/api/geocode', methods=['POST'], endpoint='api_geocode')",
+    "function": "api_geocode",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/mapas/routes.py",
+    "line": 47,
+    "decorator": "bp.route('/api/heatmap-data', endpoint='heatmap_data')",
+    "function": "heatmap_data",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/mapas/routes.py",
+    "line": 58,
+    "decorator": "bp.route('/mapa-relatorio', endpoint='mapa_relatorio')",
+    "function": "mapa_relatorio",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/mapas/routes.py",
+    "line": 73,
+    "decorator": "bp.route('/consultar_endereco_geolocalizacao', methods=['GET'], endpoint='consultar_endereco_geolocalizacao')",
+    "function": "consultar_endereco_geolocalizacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 297,
+    "decorator": "bp.route('/relatorios/solicitacoes', methods=['GET'], endpoint='relatorios_solicitacoes')",
+    "function": "relatorios_solicitacoes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 317,
+    "decorator": "bp.route('/relatorios', methods=['GET'], endpoint='relatorios')",
+    "function": "relatorios_menu",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 325,
+    "decorator": "bp.route('/relatorios-os', methods=['GET'], endpoint='relatorios_os')",
+    "function": "relatorios_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 345,
+    "decorator": "bp.route('/relatorios/retornos-automaticos', methods=['GET'], endpoint='relatorios_retornos_automaticos')",
+    "function": "relatorios_retornos_automaticos",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 365,
+    "decorator": "bp.route('/relatorios/retornos-automaticos/equipe/<int:equipe_id>', methods=['GET'], endpoint='relatorios_retornos_automaticos_equipe')",
+    "function": "relatorios_retornos_automaticos_equipe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 397,
+    "decorator": "bp.route('/relatorios/retornos-automaticos/sem-equipe', methods=['GET'], endpoint='relatorios_retornos_automaticos_sem_equipe')",
+    "function": "relatorios_retornos_automaticos_sem_equipe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 421,
+    "decorator": "bp.route('/relatorios-coleta-imagens', methods=['GET'], endpoint='relatorios_coleta_imagens')",
+    "function": "relatorios_coleta_imagens",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 441,
+    "decorator": "bp.route('/relatorios-coleta-imagens/os/<int:os_id>/ok-uvis', methods=['POST'], endpoint='relatorios_coleta_imagens_ok_uvis')",
+    "function": "relatorios_coleta_imagens_ok_uvis",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 463,
+    "decorator": "bp.route('/admin/exportar_relatorio_pdf', endpoint='exportar_relatorio_pdf')",
+    "function": "exportar_relatorio_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 482,
+    "decorator": "bp.route('/admin/exportar_relatorio_excel', endpoint='exportar_relatorio_excel')",
+    "function": "exportar_relatorio_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 497,
+    "decorator": "bp.route('/relatorios-os/export/excel', methods=['GET'], endpoint='relatorios_os_export_excel')",
+    "function": "relatorios_os_export_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 512,
+    "decorator": "bp.route('/relatorios-os/export/pdf', methods=['GET'], endpoint='relatorios_os_export_pdf')",
+    "function": "relatorios_os_export_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 531,
+    "decorator": "bp.route('/relatorios-coleta-imagens/export/pdf', methods=['GET'], endpoint='relatorios_coleta_imagens_export_pdf')",
+    "function": "relatorios_coleta_imagens_export_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 547,
+    "decorator": "bp.route('/relatorios-coleta-imagens/export/pdf-zip', methods=['GET'], endpoint='relatorios_coleta_imagens_export_pdf_zip')",
+    "function": "relatorios_coleta_imagens_export_pdf_zip",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 567,
+    "decorator": "bp.route('/relatorios-coleta-imagens/export/pdf/jobs/<job_id>', methods=['GET'], endpoint='relatorios_coleta_imagens_pdf_job_status')",
+    "function": "relatorios_coleta_imagens_pdf_job_status",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/relatorios/routes.py",
+    "line": 583,
+    "decorator": "bp.route('/relatorios-coleta-imagens/export/pdf/jobs/<job_id>/download', methods=['GET'], endpoint='relatorios_coleta_imagens_pdf_job_download')",
+    "function": "relatorios_coleta_imagens_pdf_job_download",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/anexos/routes.py",
+    "line": 15,
+    "decorator": "bp.route('/solicitacao/<int:id>/anexo', endpoint='baixar_anexo')",
+    "function": "baixar_anexo",
+    "guards": [
+      "bp.route('/admin/solicitacao/<int:id>/anexo', endpoint='baixar_anexo_admin')",
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/anexos/routes.py",
+    "line": 16,
+    "decorator": "bp.route('/admin/solicitacao/<int:id>/anexo', endpoint='baixar_anexo_admin')",
+    "function": "baixar_anexo",
+    "guards": [
+      "bp.route('/solicitacao/<int:id>/anexo', endpoint='baixar_anexo')",
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/anexos/routes.py",
+    "line": 36,
+    "decorator": "bp.route('/admin/solicitacao/<int:id>/remover_anexo', methods=['POST'], endpoint='remover_anexo')",
+    "function": "remover_anexo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/drones_import/routes.py",
+    "line": 49,
+    "decorator": "bp.route('/drones/importar-planilha', methods=['GET'], endpoint='importar_planilha_drones')",
+    "function": "importar_planilha_drones",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/drones_import/routes.py",
+    "line": 54,
+    "decorator": "bp.route('/agro/equipamentos/importar-planilha', methods=['GET'], endpoint='agro_importar_planilha_drones')",
+    "function": "agro_importar_planilha_drones",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/drones_import/routes.py",
+    "line": 59,
+    "decorator": "bp.route('/api/drones/importar-planilha', methods=['POST'], endpoint='importar_planilha_drones_api')",
+    "function": "importar_planilha_drones_api",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_checklists/routes.py",
+    "line": 18,
+    "decorator": "bp.route('/admin/checklists/semanais', methods=['GET'], endpoint='admin_checklists_semanais')",
+    "function": "admin_checklists_semanais",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_checklists/routes.py",
+    "line": 45,
+    "decorator": "bp.route('/admin/checklists/semanais/<int:piloto_id>/<string:semana_inicio>', methods=['GET'], endpoint='admin_checklist_semanal_detalhe')",
+    "function": "admin_checklist_semanal_detalhe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/admin_checklists/routes.py",
+    "line": 54,
+    "decorator": "bp.route('/admin/checklists/semanais/<string:actor_type>/<int:actor_id>/<string:semana_inicio>', methods=['GET'], endpoint='admin_checklist_semanal_detalhe_actor')",
+    "function": "admin_checklist_semanal_detalhe_actor",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/backup/routes.py",
+    "line": 18,
+    "decorator": "bp.route('/backup', methods=['GET'], endpoint='backup_page')",
+    "function": "backup_page",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/backup/routes.py",
+    "line": 43,
+    "decorator": "bp.route('/backup/status', methods=['GET'], endpoint='backup_status')",
+    "function": "backup_status",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/backup/routes.py",
+    "line": 51,
+    "decorator": "bp.route('/backups', methods=['GET'], endpoint='backups_list_page')",
+    "function": "backups_list_page",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/auditoria/routes.py",
+    "line": 20,
+    "decorator": "bp.route('/admin/logs-usuarios', methods=['GET'], endpoint='admin_logs_usuarios')",
+    "function": "admin_logs_usuarios",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/clientes/routes.py",
+    "line": 39,
+    "decorator": "bp.route('/clientes', methods=['GET'], endpoint='clientes_menu')",
+    "function": "clientes_menu",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/clientes/routes.py",
+    "line": 54,
+    "decorator": "bp.route('/clientes/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_clientes')",
+    "function": "cadastrar_clientes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/clientes/routes.py",
+    "line": 150,
+    "decorator": "bp.route('/clientes/listar', methods=['GET'], endpoint='listar_clientes')",
+    "function": "listar_clientes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/clientes/routes.py",
+    "line": 212,
+    "decorator": "bp.route('/clientes/<int:cliente_id>/editar', methods=['GET', 'POST'], endpoint='editar_cliente')",
+    "function": "editar_cliente",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/clientes/routes.py",
+    "line": 292,
+    "decorator": "bp.route('/clientes/<int:cliente_id>/deletar', methods=['POST'], endpoint='deletar_cliente')",
+    "function": "deletar_cliente",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/estoque/routes.py",
+    "line": 26,
+    "decorator": "bp.route('/estoque', methods=['GET'], endpoint='estoque_listar')",
+    "function": "estoque_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/estoque/routes.py",
+    "line": 33,
+    "decorator": "bp.route('/estoque/export/excel', methods=['GET'], endpoint='estoque_export_excel')",
+    "function": "estoque_export_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/estoque/routes.py",
+    "line": 40,
+    "decorator": "bp.route('/estoque/novo', methods=['GET', 'POST'], endpoint='estoque_novo')",
+    "function": "estoque_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/estoque/routes.py",
+    "line": 64,
+    "decorator": "bp.route('/estoque/<int:peca_id>/editar', methods=['GET', 'POST'], endpoint='estoque_editar')",
+    "function": "estoque_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/estoque/routes.py",
+    "line": 88,
+    "decorator": "bp.route('/estoque/<int:peca_id>/deletar', methods=['POST'], endpoint='estoque_deletar')",
+    "function": "estoque_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/cep/routes.py",
+    "line": 8,
+    "decorator": "bp.route('/api/cep/<cep>', methods=['GET'], endpoint='api_cep')",
+    "function": "api_cep",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/cep/routes.py",
+    "line": 18,
+    "decorator": "bp.route('/api/cep/busca-endereco', methods=['POST'], endpoint='api_cep_by_address')",
+    "function": "api_cep_by_address",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/talent_bank_routes.py",
+    "line": 84,
+    "decorator": "bp.route('/agro/banco-de-talentos', methods=['GET'], endpoint='agro_talentos_listar')",
+    "function": "agro_talentos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/talent_bank_routes.py",
+    "line": 136,
+    "decorator": "bp.route('/agro/banco-de-talentos/novo', methods=['GET', 'POST'], endpoint='agro_talento_novo')",
+    "function": "agro_talento_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/talent_bank_routes.py",
+    "line": 198,
+    "decorator": "bp.route('/agro/banco-de-talentos/<int:curriculo_id>', methods=['GET', 'POST'], endpoint='agro_talento_detalhe')",
+    "function": "agro_talento_detalhe",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/talent_bank_routes.py",
+    "line": 226,
+    "decorator": "bp.route('/agro/banco-de-talentos/<int:curriculo_id>/pdf', methods=['GET'], endpoint='agro_talento_pdf')",
+    "function": "agro_talento_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/talent_bank_routes.py",
+    "line": 247,
+    "decorator": "bp.route('/agro/banco-de-talentos/<int:curriculo_id>/reprocessar', methods=['POST'], endpoint='agro_talento_reprocessar')",
+    "function": "agro_talento_reprocessar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/talent_bank_routes.py",
+    "line": 276,
+    "decorator": "bp.route('/agro/banco-de-talentos/<int:curriculo_id>/deletar', methods=['POST'], endpoint='agro_talento_deletar')",
+    "function": "agro_talento_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3681,
+    "decorator": "bp.route('/agro', endpoint='agro_root')",
+    "function": "agro_root",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3690,
+    "decorator": "bp.route('/agro/piloto', endpoint='agro_piloto_dashboard')",
+    "function": "agro_piloto_dashboard",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3754,
+    "decorator": "bp.route('/agro/piloto/os', methods=['GET'], endpoint='agro_piloto_os_listar')",
+    "function": "agro_piloto_os_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3792,
+    "decorator": "bp.route('/agro/piloto/mapeamentos', methods=['GET'], endpoint='agro_piloto_mapeamentos_listar')",
+    "function": "agro_piloto_mapeamentos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3839,
+    "decorator": "bp.route('/agro/admin', endpoint='admin_agro')",
+    "function": "admin_agro",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3849,
+    "decorator": "bp.route('/agro/financeiro', endpoint='agro_financeiro_dashboard')",
+    "function": "agro_financeiro_dashboard",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3856,
+    "decorator": "bp.route('/agro/financeiro/categorias', methods=['GET'], endpoint='agro_financeiro_categorias_listar')",
+    "function": "agro_financeiro_categorias_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3910,
+    "decorator": "bp.route('/agro/financeiro/categorias/cadastrar', methods=['GET', 'POST'], endpoint='agro_financeiro_categoria_nova')",
+    "function": "agro_financeiro_categoria_nova",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 3948,
+    "decorator": "bp.route('/agro/financeiro/categorias/<int:subcategoria_id>/editar', methods=['GET', 'POST'], endpoint='agro_financeiro_categoria_editar')",
+    "function": "agro_financeiro_categoria_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4014,
+    "decorator": "bp.route('/agro/financeiro/categorias/<int:subcategoria_id>/alternar', methods=['POST'], endpoint='agro_financeiro_categoria_alternar')",
+    "function": "agro_financeiro_categoria_alternar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4034,
+    "decorator": "bp.route('/agro/bancos', methods=['GET'], endpoint='agro_bancos_listar')",
+    "function": "agro_bancos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4052,
+    "decorator": "bp.route('/agro/bancos/conciliacao', methods=['GET'], endpoint='agro_bancos_conciliacao')",
+    "function": "agro_bancos_conciliacao",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4165,
+    "decorator": "bp.route('/agro/bancos/cadastrar', methods=['GET', 'POST'], endpoint='agro_banco_novo')",
+    "function": "agro_banco_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4212,
+    "decorator": "bp.route('/agro/bancos/<int:banco_id>/editar', methods=['GET', 'POST'], endpoint='agro_banco_editar')",
+    "function": "agro_banco_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4253,
+    "decorator": "bp.route('/agro/bancos/<int:banco_id>/deletar', methods=['POST'], endpoint='agro_banco_deletar')",
+    "function": "agro_banco_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4268,
+    "decorator": "bp.route('/agro/relatorios/fluxo-caixa/excel', methods=['GET'], endpoint='agro_fluxo_caixa_exportar_excel')",
+    "function": "agro_fluxo_caixa_exportar_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4281,
+    "decorator": "bp.route('/agro/relatorios/dre-gerencial/excel', methods=['GET'], endpoint='agro_dre_gerencial_exportar_excel')",
+    "function": "agro_dre_gerencial_exportar_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4294,
+    "decorator": "bp.route('/agro/clientes', methods=['GET'], endpoint='agro_clientes_listar')",
+    "function": "agro_clientes_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4319,
+    "decorator": "bp.route('/agro/clientes-fornecedores', methods=['GET'], endpoint='agro_clientes_menu')",
+    "function": "agro_clientes_menu",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4335,
+    "decorator": "bp.route('/agro/clientes/cadastrar', methods=['GET', 'POST'], endpoint='agro_cliente_novo')",
+    "function": "agro_cliente_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4369,
+    "decorator": "bp.route('/agro/clientes/<int:cliente_id>/editar', methods=['GET', 'POST'], endpoint='agro_cliente_editar')",
+    "function": "agro_cliente_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4416,
+    "decorator": "bp.route('/agro/clientes/<int:cliente_id>/deletar', methods=['POST'], endpoint='agro_cliente_deletar')",
+    "function": "agro_cliente_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4431,
+    "decorator": "bp.route('/agro/fornecedores', methods=['GET'], endpoint='agro_fornecedores_listar')",
+    "function": "agro_fornecedores_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4456,
+    "decorator": "bp.route('/agro/fornecedores/cadastrar', methods=['GET', 'POST'], endpoint='agro_fornecedor_novo')",
+    "function": "agro_fornecedor_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4491,
+    "decorator": "bp.route('/agro/fornecedores/<int:fornecedor_id>/editar', methods=['GET', 'POST'], endpoint='agro_fornecedor_editar')",
+    "function": "agro_fornecedor_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4542,
+    "decorator": "bp.route('/agro/fornecedores/<int:fornecedor_id>/deletar', methods=['POST'], endpoint='agro_fornecedor_deletar')",
+    "function": "agro_fornecedor_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4557,
+    "decorator": "bp.route('/agro/orcamentos', methods=['GET'], endpoint='agro_orcamentos_listar')",
+    "function": "agro_orcamentos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4593,
+    "decorator": "bp.route('/agro/orcamentos/cadastrar', methods=['GET', 'POST'], endpoint='agro_orcamento_novo')",
+    "function": "agro_orcamento_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4713,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/editar', methods=['GET', 'POST'], endpoint='agro_orcamento_editar')",
+    "function": "agro_orcamento_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4865,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/rd-mapeamento', methods=['GET', 'POST'], endpoint='agro_rd_mapeamento_editar')",
+    "function": "agro_rd_mapeamento_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4927,
+    "decorator": "bp.route('/agro/orcamentos/template-mapeamento', methods=['GET'], endpoint='agro_orcamentos_template_mapeamento')",
+    "function": "agro_orcamentos_template_mapeamento",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4953,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/template-mapeamento', methods=['POST'], endpoint='agro_orcamento_template_mapeamento_salvar')",
+    "function": "agro_orcamento_template_mapeamento_salvar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 4999,
+    "decorator": "bp.route('/agro/piloto/rd-mapeamento/<int:rd_id>', methods=['GET', 'POST'], endpoint='agro_piloto_rd_mapeamento')",
+    "function": "agro_piloto_rd_mapeamento",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5075,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/contrato', methods=['GET', 'POST'], endpoint='agro_contrato_editar')",
+    "function": "agro_contrato_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5196,
+    "decorator": "bp.route('/agro/contratos', methods=['GET'], endpoint='agro_contratos_listar')",
+    "function": "agro_contratos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5238,
+    "decorator": "bp.route('/agro/contratos/comprovantes', methods=['GET'], endpoint='agro_contratos_comprovantes')",
+    "function": "agro_contratos_comprovantes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5269,
+    "decorator": "bp.route('/agro/financeiro/contas', methods=['GET'], endpoint='agro_financeiro_contas')",
+    "function": "agro_financeiro_contas",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5287,
+    "decorator": "bp.route('/agro/financeiro/relatorio-geral', methods=['GET'], endpoint='agro_relatorio_contas_geral')",
+    "function": "agro_relatorio_contas_geral",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5311,
+    "decorator": "bp.route('/agro/financeiro/relatorio-geral/excel', methods=['GET'], endpoint='agro_relatorio_contas_geral_excel')",
+    "function": "agro_relatorio_contas_geral_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5330,
+    "decorator": "bp.route('/agro/financeiro/relatorio-geral/pdf', methods=['GET'], endpoint='agro_relatorio_contas_geral_pdf')",
+    "function": "agro_relatorio_contas_geral_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5349,
+    "decorator": "bp.route('/agro/financeiro/contas-receber', methods=['GET'], endpoint='agro_contas_receber_listar')",
+    "function": "agro_contas_receber_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5395,
+    "decorator": "bp.route('/agro/financeiro/contas-pagar', methods=['GET'], endpoint='agro_contas_pagar_listar')",
+    "function": "agro_contas_pagar_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5439,
+    "decorator": "bp.route('/agro/financeiro', methods=['GET'], endpoint='agro_financeiro_listar')",
+    "function": "agro_financeiro_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5482,
+    "decorator": "bp.route('/agro/financeiro/configuracoes', methods=['GET'], endpoint='agro_financeiro_configuracoes')",
+    "function": "agro_financeiro_configuracoes",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5496,
+    "decorator": "bp.route('/agro/financeiro/configuracoes', methods=['POST'], endpoint='agro_financeiro_configuracoes_salvar')",
+    "function": "agro_financeiro_configuracoes_salvar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5529,
+    "decorator": "bp.route('/agro/financeiro/cadastrar', methods=['GET', 'POST'], endpoint='agro_financeiro_novo')",
+    "function": "agro_financeiro_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5647,
+    "decorator": "bp.route('/agro/financeiro/<int:lancamento_id>/editar', methods=['GET', 'POST'], endpoint='agro_financeiro_editar')",
+    "function": "agro_financeiro_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5765,
+    "decorator": "bp.route('/agro/financeiro/<int:lancamento_id>/receber', methods=['POST'], endpoint='agro_financeiro_receber_os_concluida')",
+    "function": "agro_financeiro_receber_os_concluida",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5824,
+    "decorator": "bp.route('/agro/financeiro/<int:lancamento_id>/deletar', methods=['POST'], endpoint='agro_financeiro_deletar')",
+    "function": "agro_financeiro_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5849,
+    "decorator": "bp.route('/agro/financeiro/entradas', methods=['GET'], endpoint='agro_financeiro_entrada_listar')",
+    "function": "agro_financeiro_entrada_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 5876,
+    "decorator": "bp.route('/agro/financeiro/entradas/cadastrar', methods=['GET', 'POST'], endpoint='agro_financeiro_entrada_novo')",
+    "function": "agro_financeiro_entrada_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6003,
+    "decorator": "bp.route('/agro/financeiro/entradas/<int:lancamento_id>/editar', methods=['GET', 'POST'], endpoint='agro_financeiro_entrada_editar')",
+    "function": "agro_financeiro_entrada_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6109,
+    "decorator": "bp.route('/agro/financeiro/entradas/<int:lancamento_id>/deletar', methods=['POST'], endpoint='agro_financeiro_entrada_deletar')",
+    "function": "agro_financeiro_entrada_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6137,
+    "decorator": "bp.route('/agro/financeiro/saidas', methods=['GET'], endpoint='agro_financeiro_saida_listar')",
+    "function": "agro_financeiro_saida_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6167,
+    "decorator": "bp.route('/agro/financeiro/saidas/cadastrar', methods=['GET', 'POST'], endpoint='agro_financeiro_saida_novo')",
+    "function": "agro_financeiro_saida_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6305,
+    "decorator": "bp.route('/agro/financeiro/saidas/<int:lancamento_id>/editar', methods=['GET', 'POST'], endpoint='agro_financeiro_saida_editar')",
+    "function": "agro_financeiro_saida_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6423,
+    "decorator": "bp.route('/agro/financeiro/saidas/<int:lancamento_id>/deletar', methods=['POST'], endpoint='agro_financeiro_saida_deletar')",
+    "function": "agro_financeiro_saida_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6451,
+    "decorator": "bp.route('/agro/caixa', methods=['GET'], endpoint='agro_caixa_diario')",
+    "function": "agro_caixa_diario",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6466,
+    "decorator": "bp.route('/agro/caixa/abrir', methods=['POST'], endpoint='agro_caixa_abrir')",
+    "function": "agro_caixa_abrir",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6516,
+    "decorator": "bp.route('/agro/caixa/fechar', methods=['POST'], endpoint='agro_caixa_fechar')",
+    "function": "agro_caixa_fechar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6546,
+    "decorator": "bp.route('/agro/contratos/template', methods=['GET'], endpoint='agro_contratos_template')",
+    "function": "agro_contratos_template",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6565,
+    "decorator": "bp.route('/agro/contratos/<int:contrato_id>/template', methods=['POST'], endpoint='agro_contrato_template_salvar')",
+    "function": "agro_contrato_template_salvar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6587,
+    "decorator": "bp.route('/agro/contratos/<int:contrato_id>/deletar', methods=['POST'], endpoint='agro_contrato_deletar')",
+    "function": "agro_contrato_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6602,
+    "decorator": "bp.route('/agro/contratos/<int:contrato_id>/comprovante-pagamento', methods=['POST'], endpoint='agro_contrato_comprovante_pagamento_upload')",
+    "function": "agro_contrato_comprovante_pagamento_upload",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6623,
+    "decorator": "bp.route('/agro/contratos/<int:contrato_id>/comprovante-pagamento', methods=['GET'], endpoint='agro_contrato_comprovante_pagamento')",
+    "function": "agro_contrato_comprovante_pagamento",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6640,
+    "decorator": "bp.route('/agro/contratos/<int:contrato_id>/comprovante-pagamento/remover', methods=['POST'], endpoint='agro_contrato_comprovante_pagamento_remover')",
+    "function": "agro_contrato_comprovante_pagamento_remover",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6653,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/anexo', endpoint='agro_orcamento_anexo')",
+    "function": "agro_orcamento_anexo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6664,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/pdf', endpoint='agro_orcamento_pdf')",
+    "function": "agro_orcamento_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6680,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/contrato/pdf', endpoint='agro_contrato_pdf')",
+    "function": "agro_contrato_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6690,
+    "decorator": "bp.route('/agro/os/<int:os_id>/relatorio/pdf', methods=['GET'], endpoint='agro_os_relatorio_pdf')",
+    "function": "agro_os_relatorio_pdf",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6704,
+    "decorator": "bp.route('/agro/os/<int:os_id>/deletar', methods=['POST'], endpoint='agro_os_deletar')",
+    "function": "agro_os_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6715,
+    "decorator": "bp.route('/agro/os', methods=['GET'], endpoint='agro_os_listar')",
+    "function": "agro_os_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6741,
+    "decorator": "bp.route('/agro/logs-voo', methods=['GET'], endpoint='agro_logs_voo')",
+    "function": "agro_logs_voo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6769,
+    "decorator": "bp.route('/agro/logs-voo/exportar', methods=['GET'], endpoint='agro_logs_voo_exportar')",
+    "function": "agro_logs_voo_exportar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6783,
+    "decorator": "bp.route('/agro/logs-voo/importar-excel', methods=['POST'], endpoint='agro_logs_voo_importar_excel')",
+    "function": "agro_logs_voo_importar_excel",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6809,
+    "decorator": "bp.route('/agro/logs-voo/importar-kml', methods=['POST'], endpoint='agro_logs_voo_importar_kml')",
+    "function": "agro_logs_voo_importar_kml",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6838,
+    "decorator": "bp.route('/agro/logs-voo/rota/<int:route_id>/vincular-os', methods=['POST'], endpoint='agro_logs_voo_vincular_os')",
+    "function": "agro_logs_voo_vincular_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6857,
+    "decorator": "bp.route('/agro/logs-voo/rota/<int:route_id>/desvincular-os', methods=['POST'], endpoint='agro_logs_voo_desvincular_os')",
+    "function": "agro_logs_voo_desvincular_os",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6867,
+    "decorator": "bp.route('/api/agro/kml-route/<int:route_id>', methods=['GET'], endpoint='api_agro_kml_route')",
+    "function": "api_agro_kml_route",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6874,
+    "decorator": "bp.route('/agro/logs-voo/rota/<int:route_id>/kml', methods=['GET'], endpoint='agro_logs_voo_baixar_kml')",
+    "function": "agro_logs_voo_baixar_kml",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 6896,
+    "decorator": "bp.route('/agro/contratos/<int:contrato_id>/os/cadastrar', methods=['GET', 'POST'], endpoint='agro_os_nova')",
+    "function": "agro_os_nova",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7070,
+    "decorator": "bp.route('/agro/os/<int:os_id>/editar', methods=['GET', 'POST'], endpoint='agro_os_editar')",
+    "function": "agro_os_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7219,
+    "decorator": "bp.route('/agro/orcamentos/<int:orcamento_id>/deletar', methods=['POST'], endpoint='agro_orcamento_deletar')",
+    "function": "agro_orcamento_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7236,
+    "decorator": "bp.route('/agro/equipes', methods=['GET'], endpoint='agro_equipes_listar')",
+    "function": "agro_equipes_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7258,
+    "decorator": "bp.route('/agro/equipes/cadastrar', methods=['GET', 'POST'], endpoint='agro_equipe_nova')",
+    "function": "agro_equipe_nova",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7283,
+    "decorator": "bp.route('/agro/equipes/<int:equipe_id>/editar', methods=['GET', 'POST'], endpoint='agro_equipe_editar')",
+    "function": "agro_equipe_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7310,
+    "decorator": "bp.route('/agro/equipes/<int:equipe_id>/deletar', methods=['POST'], endpoint='agro_equipe_deletar')",
+    "function": "agro_equipe_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7323,
+    "decorator": "bp.route('/agro/pilotos', methods=['GET'], endpoint='agro_pilotos_listar')",
+    "function": "agro_pilotos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7347,
+    "decorator": "bp.route('/agro/pilotos/cadastrar', methods=['GET', 'POST'], endpoint='agro_piloto_novo')",
+    "function": "agro_piloto_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7385,
+    "decorator": "bp.route('/agro/pilotos/<int:piloto_id>/editar', methods=['GET', 'POST'], endpoint='agro_piloto_editar')",
+    "function": "agro_piloto_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7436,
+    "decorator": "bp.route('/agro/pilotos/<int:piloto_id>/deletar', methods=['POST'], endpoint='agro_piloto_deletar')",
+    "function": "agro_piloto_deletar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7448,
+    "decorator": "bp.route('/agro/equipamentos', methods=['GET'], endpoint='agro_equipamentos_listar')",
+    "function": "agro_equipamentos_listar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7476,
+    "decorator": "bp.route('/agro/equipamentos/cadastrar', methods=['GET', 'POST'], endpoint='agro_equipamento_novo')",
+    "function": "agro_equipamento_novo",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7512,
+    "decorator": "bp.route('/agro/equipamentos/<int:equipamento_id>/editar', methods=['GET', 'POST'], endpoint='agro_equipamento_editar')",
+    "function": "agro_equipamento_editar",
+    "guards": [
+      "login_required"
+    ]
+  },
+  {
+    "path": "app/modules/agro/routes.py",
+    "line": 7574,
+    "decorator": "bp.route('/agro/equipamentos/<int:equipamento_id>/deletar', methods=['POST'], endpoint='agro_equipamento_deletar')",
+    "function": "agro_equipamento_deletar",
+    "guards": [
+      "login_required"
+    ]
+  }
+]

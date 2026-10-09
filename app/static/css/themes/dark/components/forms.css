@@ -1,0 +1,25 @@
+/* =========================================
+   FORMS
+   ========================================= */
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background: #1c2b3f;
+  border: 1px solid #334155;
+  color: var(--color-text-main);
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 224, 255, 0.25);
+}
+
+body.dark-mode .form-control[readonly] {
+  background: #1f2a44;
+  color: var(--color-text-muted);
+}
+
+body.dark-mode .form-control::placeholder {
+  color: #94a3b8;
+}

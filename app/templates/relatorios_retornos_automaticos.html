@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_result_summary.html" import render_result_summary %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/relatorios_retornos_automaticos.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set filtros_ativos = filters.equipe_id or filters.unidade_values or filters.regiao or filters.status or filters.situacao_operacional or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim %}
+
+<div class="container-fluid py-4 retornos-page" style="max-width: 1200px;">
+  <div class="retornos-toolbar page-toolbar mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-arrow-repeat me-2 text-primary"></i> Central de Retornos Automaticos
+      </h2>
+      <div class="retornos-subtitle">
+        {% if filters.data_ini and filters.data_fim %}
+          Retornos agendados de {{ filters.data_ini.strftime('%d/%m/%Y') }} ate {{ filters.data_fim.strftime('%d/%m/%Y') }}.
+        {% elif filters.data_ini %}
+          Retornos agendados a partir de {{ filters.data_ini.strftime('%d/%m/%Y') }}.
+        {% elif filters.data_fim %}
+          Retornos agendados ate {{ filters.data_fim.strftime('%d/%m/%Y') }}.
+        {% else %}
+          Todos os retornos automaticos dentro do seu acesso.
+        {% endif %}
+      </div>
+      {{ render_result_summary(total_retornos, 'retornos filtrados') }}
+    </div>
+
+    <div class="retornos-toolbar-actions page-toolbar-actions">
+      <a href="{{ url_for('main.admin_historico_os', retorno_automatico='RETORNO') }}" class="btn btn-outline-primary">
+        <i class="bi bi-clock-history me-1"></i> Historico OS
+      </a>
+      <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapseFiltrosRetornos"
+      aria-expanded="{{ 'true' if filtros_ativos else 'false' }}"
+      style="cursor: pointer;"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de busca</span>
+        {% if filtros_ativos %}
+          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosRetornos">
+      <div class="card-body pt-0 pb-4">
+        <form method="GET">
+          <div class="row g-2 filter-chip-row">
+            <div class="col-md-3">
+              <label class="small text-muted">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status in status_disponiveis %}
+                  <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Situacao operacional:</label>
+              <select name="situacao_operacional" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                <option value="CONCLUIDO" {% if filters.situacao_operacional == 'CONCLUIDO' %}selected{% endif %}>Concluido</option>
+                <option value="PENDENTE_FUTURO" {% if filters.situacao_operacional == 'PENDENTE_FUTURO' %}selected{% endif %}>Pendente futuro</option>
+                <option value="HOJE" {% if filters.situacao_operacional == 'HOJE' %}selected{% endif %}>Hoje</option>
+                <option value="SEM_FECHAMENTO" {% if filters.situacao_operacional == 'SEM_FECHAMENTO' %}selected{% endif %}>Sem fechamento no sistema</option>
+                <option value="DATA_VENCIDA" {% if filters.situacao_operacional == 'DATA_VENCIDA' %}selected{% endif %}>Data vencida</option>
+                <option value="CANCELADO" {% if filters.situacao_operacional == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Unidade:</label>
+              {{ render_chip_select_values('unidade', uvis_disponiveis|map(attribute='nome_uvis')|list, filters.unidade_values, 'Adicionar UVIS') }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">PLOA / equipe:</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_disponiveis %}
+                  <option value="{{ equipe.id }}" {% if equipe.id in filters.equipe_id %}selected{% endif %}>
+                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Regiao:</label>
+              <select name="regiao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for regiao in ['NORTE', 'SUL', 'LESTE', 'OESTE', 'CENTRO', 'SUDESTE', 'CENTRO-OESTE'] %}
+                  <option value="{{ regiao }}" {% if filters.regiao == regiao %}selected{% endif %}>{{ regiao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Apoio CET?</label>
+              <select name="apoio_cet" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="SIM" {% if filters.apoio_cet == 'SIM' %}selected{% endif %}>Sim</option>
+                <option value="NAO" {% if filters.apoio_cet == 'NAO' %}selected{% endif %}>Nao</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de visita:</label>
+              <select name="tipo_visita" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_visita_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de imovel:</label>
+              <select name="tipo_imovel" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.tipo_imovel == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de operacao:</label>
+              <select name="tipo_operacao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                <option value="Monitoramento" {% if filters.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
+                <option value="Tratamento" {% if filters.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Foco:</label>
+              {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filters.foco_values, 'Adicionar foco') }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">ID ou protocolo:</label>
+              <input type="search" name="protocolo" class="form-control form-control-sm font-monospace" placeholder="ID, protocolo ou identificador" value="{{ filters.protocolo }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Endereco:</label>
+              <input type="search" name="endereco" class="form-control form-control-sm" placeholder="Rua, numero, bairro ou cidade" value="{{ filters.endereco }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Data de agendamento:</label>
+              <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ filters.data_ini.isoformat() if filters.data_ini else '' }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Data de agendamento ate:</label>
+              <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filters.data_fim.isoformat() if filters.data_fim else '' }}">
+            </div>
+
+            <div class="col-md-3 d-flex gap-2 align-items-end">
+              <button class="btn btn-info text-white btn-sm flex-grow-1" type="submit">
+                <i class="bi bi-search"></i> Filtrar
+              </button>
+              {% if filtros_ativos %}
+                <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+                  <i class="bi bi-x-lg"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Retornos</div>
+          <div class="retornos-kpi-value">{{ total_retornos }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Equipes com agenda</div>
+          <div class="retornos-kpi-value">{{ total_equipes }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Proximos 7 dias</div>
+          <div class="retornos-kpi-value">{{ total_proximos_7 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Sem fechamento</div>
+          <div class="retornos-kpi-value text-warning">{{ total_sem_fechamento }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Data vencida</div>
+          <div class="retornos-kpi-value text-danger">{{ total_data_vencida }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Concluidos</div>
+          <div class="retornos-kpi-value text-success">{{ total_concluidos }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h5 class="text-dark fw-bold mb-0">PLOAs</h5>
+      <span class="small text-muted">Agrupado pela equipe vinculada a solicitacao ou OS.</span>
+    </div>
+
+    {% if equipes_cards %}
+      <div class="row g-3">
+        {% for equipe in equipes_cards %}
+          <div class="col-md-6 col-xl-4">
+            {% if equipe.id %}
+              {% set detalhe_url = url_for('main.relatorios_retornos_automaticos_equipe', equipe_id=equipe.id, data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) %}
+            {% else %}
+              {% set detalhe_url = url_for('main.relatorios_retornos_automaticos_sem_equipe', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) %}
+            {% endif %}
+            <a href="{{ detalhe_url }}" class="card retornos-team-card rounded-4 h-100 {% if not equipe.id %}sem-equipe{% endif %}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <h5 class="fw-bold text-dark mb-1">{{ equipe.nome }}</h5>
+                    <div class="small text-muted">Retornos automaticos</div>
+                  </div>
+                  <div class="btn btn-outline-primary btn-sm" title="Abrir detalhes">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </div>
+                </div>
+                <div class="retornos-team-total mt-3">{{ equipe.total }}</div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border d-flex align-items-center gap-2">
+        <i class="bi bi-info-circle text-primary"></i>
+        <span>Nenhum retorno automatico encontrado para os filtros atuais.</span>
+      </div>
+    {% endif %}
+  </div>
+
+  {% set retornos_table_title = 'Logs gerais' %}
+  {% set retornos_table_subtitle = 'Todos os retornos automaticos filtrados na central.' %}
+  {% set retornos_pagination_endpoint = 'main.relatorios_retornos_automaticos' %}
+  {% include "_retornos_automaticos_table.html" %}
+</div>
+{% endblock %}

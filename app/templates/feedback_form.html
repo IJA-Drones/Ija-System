@@ -11,31 +11,63 @@
   <div class="feedback-header mb-4">
     <div>
       <span class="feedback-kicker">Novo chamado</span>
-      <h2 class="mb-1"><i class="bi bi-headset me-2 text-primary"></i>Abrir suporte</h2>
-      <p class="text-muted small mb-0">Escolha o tipo de atendimento para direcionar a conversa automaticamente.</p>
+      <h2 class="mb-1">
+        <i class="bi {{ 'bi-bug-fill' if is_bug_report else 'bi-headset' }} me-2 text-primary"></i>
+        {{ 'Reportar bug no sistema' if is_bug_report else 'Abrir suporte' }}
+      </h2>
+      <p class="text-muted small mb-0">
+        {{ 'Conte o que aconteceu para o suporte técnico analisar.' if is_bug_report else 'Escolha o tipo de atendimento para direcionar a conversa automaticamente.' }}
+      </p>
     </div>
-    <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
-  <form method="POST" action="{{ url_for('main.feedback_novo') }}" class="feedback-form-shell" novalidate>
+  <form method="POST" action="{{ url_for('main.bug_report_novo') if is_bug_report else url_for('main.feedback_novo') }}" class="feedback-form-shell" enctype="multipart/form-data" novalidate>
     <div class="feedback-form-main">
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
           <div class="row g-3">
+            {% if is_bug_report %}
+            <div class="col-12">
+              <div class="feedback-bug-limit">
+                <i class="bi bi-info-circle"></i>
+                <span>{{ active_bug_count }} de {{ max_active_bug_count }} bugs em aberto na sua coordenadoria.</span>
+              </div>
+              {% if active_bug_count >= max_active_bug_count %}
+              <div class="alert alert-warning mt-3 mb-0">
+                Sua coordenadoria já atingiu o limite de {{ max_active_bug_count }} bugs em aberto. Aguarde a conclusão de um deles antes de enviar outro.
+              </div>
+              <div class="feedback-blocking-list mt-3">
+                {% for bug in active_bugs %}
+                <a href="{{ url_for('main.bug_acompanhamento', topico_id=bug.id) }}">
+                  <strong>#{{ bug.id }} {{ bug.titulo }}</strong>
+                  <span>{{ bug.atualizado_em.strftime("%d/%m/%Y %H:%M") if bug.atualizado_em else "-" }}</span>
+                </a>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
             <div class="col-12">
               <label for="feedback-setor" class="form-label">Tipo de atendimento</label>
+              {% if is_bug_report %}
+              <input type="hidden" name="setor_suporte" value="tecnico">
+              <input id="feedback-setor" class="form-control" value="Suporte técnico" readonly>
+              {% else %}
               <select id="feedback-setor" name="setor_suporte" class="form-select {% if errors.get('setor_suporte') %}is-invalid{% endif %}" required>
                 {% for key, label in support_sector_options %}
                 <option value="{{ key }}" {% if form.setor_suporte == key %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
+              {% endif %}
               {% if errors.get('setor_suporte') %}<div class="invalid-feedback">{{ errors.setor_suporte }}</div>{% endif %}
             </div>
 
             <div class="col-12">
-              <label for="feedback-uvis" class="form-label">UVIS</label>
+              <label for="feedback-uvis" class="form-label">{{ 'Origem' if owner and owner.tipo_usuario != 'uvis' else 'UVIS' }}</label>
               {% if owner %}
               <input type="hidden" name="uvis_id" value="{{ owner.id }}">
               <input id="feedback-uvis" class="form-control" value="{{ owner.nome_uvis }}{% if owner.regiao %} - {{ owner.regiao }}{% endif %}" readonly>
@@ -52,17 +84,22 @@
 
             <div class="col-12">
               <label for="feedback-titulo" class="form-label">Assunto</label>
-              <input id="feedback-titulo" name="titulo" class="form-control {% if errors.get('titulo') %}is-invalid{% endif %}" value="{{ form.titulo }}" maxlength="180" required>
+              <input id="feedback-titulo" name="titulo" class="form-control {% if errors.get('titulo') %}is-invalid{% endif %}" value="{{ form.titulo }}" maxlength="180" placeholder="{{ 'Ex.: Erro ao salvar OS no painel da UVIS' if is_bug_report else '' }}" required>
               {% if errors.get('titulo') %}<div class="invalid-feedback">{{ errors.titulo }}</div>{% endif %}
             </div>
 
             <div class="col-md-6">
               <label for="feedback-categoria" class="form-label">Subcategoria</label>
+              {% if is_bug_report %}
+              <input type="hidden" name="categoria" value="bug">
+              <input id="feedback-categoria" class="form-control" value="Erro no sistema" readonly>
+              {% else %}
               <select id="feedback-categoria" name="categoria" class="form-select {% if errors.get('categoria') %}is-invalid{% endif %}">
                 {% for key, label in category_options %}
                 <option value="{{ key }}" {% if form.categoria == key %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
+              {% endif %}
               {% if errors.get('categoria') %}<div class="invalid-feedback">{{ errors.categoria }}</div>{% endif %}
             </div>
 
@@ -76,19 +113,46 @@
               {% if errors.get('prioridade') %}<div class="invalid-feedback">{{ errors.prioridade }}</div>{% endif %}
             </div>
 
+            {% if is_bug_report %}
             <div class="col-12">
-              <label for="feedback-descricao" class="form-label">Mensagem inicial</label>
-              <textarea id="feedback-descricao" name="descricao" rows="8" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" required>{{ form.descricao }}</textarea>
+              <label for="feedback-impacto" class="form-label">Impacto</label>
+              <select id="feedback-impacto" name="impacto" class="form-select {% if errors.get('impacto') %}is-invalid{% endif %}">
+                {% for key, label in impact_options %}
+                <option value="{{ key }}" {% if form.impacto == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get('impacto') %}<div class="invalid-feedback">{{ errors.impacto }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+            <div class="col-12">
+              <label for="feedback-descricao" class="form-label">{{ 'Detalhes' if is_bug_report else 'Mensagem inicial' }}</label>
+              <textarea id="feedback-descricao" name="descricao" rows="8" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" placeholder="{{ 'O que você tentou fazer? Em qual tela aconteceu? Qual mensagem apareceu? Se souber, escreva os passos para repetir o problema.' if is_bug_report else '' }}" required>{{ form.descricao }}</textarea>
               {% if errors.get('descricao') %}<div class="invalid-feedback">{{ errors.descricao }}</div>{% endif %}
             </div>
+
+            {% if is_bug_report %}
+            <div class="col-12">
+              <label class="form-label" for="feedback-imagens">Prints do erro</label>
+              <input
+                id="feedback-imagens"
+                type="file"
+                name="imagens"
+                class="form-control"
+                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                multiple
+              >
+              <div class="feedback-upload-hint">Opcional. Envie até 6 imagens PNG ou JPG.</div>
+            </div>
+            {% endif %}
           </div>
         </div>
         <div class="card-footer bg-transparent border-0 p-4 pt-0 d-flex justify-content-end gap-2 flex-wrap">
-          <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-danger">
+          <a href="{{ url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar') }}" class="btn btn-outline-danger">
             <i class="bi bi-x-lg"></i> Cancelar
           </a>
-          <button type="submit" class="btn btn-success text-white">
-            <i class="bi bi-send"></i> Abrir chamado
+          <button type="submit" class="btn btn-success text-white" {% if is_bug_report and active_bug_count >= max_active_bug_count %}disabled{% endif %}>
+            <i class="bi bi-send"></i> {{ 'Enviar bug' if is_bug_report else 'Abrir chamado' }}
           </button>
         </div>
       </div>
@@ -100,11 +164,13 @@
         <h5>Origem</h5>
         <p>{% if owner %}{{ owner.nome_uvis }}{% else %}Fila regional ou administrativa{% endif %}</p>
       </div>
-      <div class="feedback-info-panel">
-        <span class="feedback-info-icon"><i class="bi bi-clock-history"></i></span>
-        <h5>Atendimento</h5>
-        <p>O chamado abre uma conversa com a equipe responsavel.</p>
-      </div>
+      {% if not is_bug_report %}
+        <div class="feedback-info-panel">
+          <span class="feedback-info-icon"><i class="bi bi-clock-history"></i></span>
+          <h5>Atendimento</h5>
+          <p>O chamado abre uma conversa com a equipe responsável.</p>
+        </div>
+      {% endif %}
     </aside>
   </form>
 </div>

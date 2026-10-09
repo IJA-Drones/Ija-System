@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipamentos, Equipe
+from app.models import Baterias, Drones, Equipamentos, Equipe, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso
 from app.shared.access import apply_prefeitura_scope
 
 
@@ -64,6 +64,139 @@ def list_equipamentos_manutencao(user=None):
         .order_by(Equipamentos.criado_em.desc())
         .all()
     )
+
+
+def list_pecas_disponiveis_manutencao(drone, user=None):
+    query = EstoquePeca.query.filter(
+        EstoquePeca.drone_id == drone.id,
+        EstoquePeca.status == "disponivel_manutencao",
+        EstoquePeca.quantidade > 0,
+    )
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
+    return query.order_by(EstoquePeca.modelo_peca.asc(), EstoquePeca.numero_serie.asc()).all()
+
+
+def list_pecas_usadas_manutencao(drone, user=None):
+    manutencao = get_manutencao_aberta(drone, user=user)
+    query = ManutencaoPecaUso.query.filter(ManutencaoPecaUso.drone_id == drone.id)
+    if manutencao:
+        query = query.filter(ManutencaoPecaUso.manutencao_id == manutencao.id)
+    else:
+        query = query.filter(ManutencaoPecaUso.manutencao_id.is_(None))
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, ManutencaoPecaUso.prefeitura_id)
+    return query.order_by(ManutencaoPecaUso.criado_em.desc()).all()
+
+
+def get_manutencao_aberta(drone, user=None):
+    query = ManutencaoEquipamento.query.filter(
+        ManutencaoEquipamento.drone_id == drone.id,
+        ManutencaoEquipamento.status == "aberta",
+    )
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
+    return query.order_by(ManutencaoEquipamento.aberta_em.desc()).first()
+
+
+def get_or_create_manutencao_aberta(drone, user=None):
+    manutencao = get_manutencao_aberta(drone, user=user)
+    if manutencao:
+        return manutencao
+
+    manutencao = ManutencaoEquipamento(
+        prefeitura_id=getattr(user, "prefeitura_id", None) if user is not None else drone.prefeitura_id,
+        drone_id=drone.id,
+        aberta_por_id=getattr(user, "id", None),
+        status="aberta",
+    )
+    db.session.add(manutencao)
+    return manutencao
+
+
+def list_historico_manutencoes(user=None):
+    query = ManutencaoEquipamento.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
+    return query.order_by(ManutencaoEquipamento.aberta_em.desc(), ManutencaoEquipamento.id.desc()).all()
+
+
+def get_manutencao_scoped_or_404(manutencao_id, user=None):
+    query = ManutencaoEquipamento.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
+    return query.filter(ManutencaoEquipamento.id == manutencao_id).first_or_404()
+
+
+def list_historico_pecas_usadas(user=None):
+    query = ManutencaoPecaUso.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, ManutencaoPecaUso.prefeitura_id)
+    return query.order_by(ManutencaoPecaUso.criado_em.desc(), ManutencaoPecaUso.id.desc()).all()
+
+
+def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None):
+    errors = {}
+    pecas_disponiveis = list_pecas_disponiveis_manutencao(drone, user=user)
+    pecas_por_id = {peca.id: peca for peca in pecas_disponiveis}
+    selecionadas = []
+
+    for raw_peca_id in form_data.getlist("peca_id"):
+        try:
+            peca_id = int(raw_peca_id)
+        except (TypeError, ValueError):
+            errors["pecas"] = "Selecione pecas validas."
+            continue
+
+        peca = pecas_por_id.get(peca_id)
+        if not peca:
+            errors["pecas"] = "Uma das pecas selecionadas nao esta disponivel para este drone."
+            continue
+
+        raw_qtd = (form_data.get(f"quantidade_{peca_id}") or "1").strip()
+        try:
+            quantidade = int(raw_qtd)
+        except ValueError:
+            errors[f"quantidade_{peca_id}"] = "Quantidade invalida."
+            continue
+
+        if quantidade <= 0:
+            errors[f"quantidade_{peca_id}"] = "A quantidade deve ser maior que zero."
+            continue
+        if quantidade > peca.quantidade:
+            errors[f"quantidade_{peca_id}"] = "Quantidade maior que o estoque disponivel."
+            continue
+
+        selecionadas.append((peca, quantidade))
+
+    if not selecionadas and not errors:
+        errors["pecas"] = "Selecione ao menos uma peca usada na manutencao."
+
+    observacoes = (form_data.get("observacoes") or "").strip()
+    if errors:
+        return None, errors
+
+    manutencao = get_or_create_manutencao_aberta(drone, user=user)
+    usos = []
+    for peca, quantidade in selecionadas:
+        uso = ManutencaoPecaUso(
+            prefeitura_id=getattr(user, "prefeitura_id", None) if user is not None else drone.prefeitura_id,
+            manutencao=manutencao,
+            drone_id=drone.id,
+            peca_id=peca.id,
+            usuario_id=getattr(user, "id", None),
+            quantidade_usada=quantidade,
+            observacoes=observacoes or None,
+        )
+        peca.quantidade -= quantidade
+        if peca.quantidade <= 0:
+            peca.quantidade = 0
+            peca.status = "baixada"
+        db.session.add(uso)
+        usos.append(uso)
+
+    db.session.commit()
+    return usos, {}
 
 
 def _parse_int(raw_value, *, min_value=None, max_value=None, error_message):
@@ -314,11 +447,28 @@ def delete_drone(drone):
     db.session.commit()
 
 
-def send_drone_to_manutencao(drone):
+def send_drone_to_manutencao(drone, *, user=None):
     if (drone.status or "").strip() in MANUTENCAO_STATUS_ALIASES:
         return False
 
     drone.status = MANUTENCAO_STATUS
+    drone.ultima_manutencao = date.today()
+    get_or_create_manutencao_aberta(drone, user=user)
+    db.session.commit()
+    return True
+
+
+def encerrar_manutencao_drone(drone, *, user=None):
+    if (drone.status or "").strip() not in MANUTENCAO_STATUS_ALIASES:
+        return False
+
+    manutencao = get_manutencao_aberta(drone, user=user)
+    if manutencao:
+        manutencao.status = "encerrada"
+        manutencao.encerrada_em = datetime.now()
+        manutencao.encerrada_por_id = getattr(user, "id", None)
+
+    drone.status = "Ativo"
     drone.ultima_manutencao = date.today()
     db.session.commit()
     return True

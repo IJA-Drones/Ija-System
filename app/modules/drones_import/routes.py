@@ -6,7 +6,7 @@ from app.modules.drones_import.service import import_drone_spreadsheet
 from app.shared.access import is_admin_global_user, normalize_role
 
 
-IMPORT_ALLOWED_ROLES = {"dev", "admin", "operario", "operador", "prefeitura_admin"}
+IMPORT_ALLOWED_ROLES = {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}
 
 
 def _require_import_permission():

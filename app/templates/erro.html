@@ -2,45 +2,7 @@
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<style>
-  .error-page-bg {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .error-page-bg::before {
-    content: "";
-    position: absolute;
-    inset: -200px;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(220,53,69,.10), transparent 55%),
-      radial-gradient(circle at 80% 30%, rgba(13,110,253,.08), transparent 55%),
-      radial-gradient(circle at 50% 90%, rgba(25,135,84,.06), transparent 55%);
-    z-index: 0;
-  }
-
-  .error-card {
-    position: relative;
-    z-index: 1;
-    backdrop-filter: blur(6px);
-    background: rgba(255,255,255,.96);
-  }
-
-  .error-icon {
-    width: 90px;
-    height: 90px;
-    display: grid;
-    place-items: center;
-    margin: 0 auto;
-    border-radius: 50%;
-    background: rgba(220,53,69,.08);
-    border: 1px solid rgba(220,53,69,.15);
-  }
-
-  .error-code {
-    letter-spacing: -0.04em;
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/erro.css') }}">
 {% endblock %}
 
 {% block content %}

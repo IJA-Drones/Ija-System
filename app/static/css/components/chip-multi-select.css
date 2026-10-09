@@ -1,0 +1,92 @@
+/* =========================================
+   CHIP MULTI SELECT
+   ========================================= */
+
+
+.chip-multi-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.chip-multi-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-height: 82px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+  scrollbar-gutter: stable;
+}
+
+.chip-multi-values:empty {
+  display: none;
+}
+
+.chip-multi-values::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chip-multi-values::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #b9d8e5;
+}
+
+.chip-multi-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #b9e8d1;
+  border-radius: 999px;
+  background: #e9f8f0;
+  color: #006b48;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.chip-multi-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #0bb3c7;
+  color: #fff;
+  font-size: 0.78rem;
+}
+
+.chip-multi-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-multi-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #007a55;
+  line-height: 1;
+}
+
+.chip-multi-remove:hover,
+.chip-multi-remove:focus {
+  background: rgba(0, 122, 85, 0.12);
+  color: #004b36;
+}

@@ -1,0 +1,368 @@
+import unittest
+from datetime import date, datetime, time, timedelta
+from unittest.mock import patch
+
+from flask import Flask
+from werkzeug.datastructures import MultiDict
+
+from app.extensions import db
+from app.models import Prefeitura, Solicitacao, Usuario
+from app.modules.solicitacoes import service as solicitacoes_service
+from app.modules.solicitacoes.service import NovoCadastroValidationError
+
+
+class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
+    def setUp(self):
+        self.app = Flask(__name__)
+        self.app.config.update(
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        )
+        db.init_app(self.app)
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        db.create_all()
+
+        self.prefeitura = Prefeitura(id=1, nome="Prefeitura A", slug="prefeitura-a")
+        self.outra_prefeitura = Prefeitura(id=2, nome="Prefeitura B", slug="prefeitura-b")
+        self.uvis = Usuario(
+            nome_uvis="UVIS A",
+            regiao="OESTE",
+            login="uvis_a",
+            senha_hash="hash",
+            tipo_usuario="uvis",
+            prefeitura_id=1,
+        )
+        self.outra_uvis = Usuario(
+            nome_uvis="UVIS B",
+            regiao="LESTE",
+            login="uvis_b",
+            senha_hash="hash",
+            tipo_usuario="uvis",
+            prefeitura_id=2,
+        )
+        db.session.add_all([self.prefeitura, self.outra_prefeitura, self.uvis, self.outra_uvis])
+        db.session.commit()
+        self.future_date = date.today() + timedelta(days=30)
+        self.other_future_date = self.future_date + timedelta(days=1)
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.ctx.pop()
+
+    def _solicitacao_form(self, place_id):
+        return MultiDict({
+            "data": self.future_date.isoformat(),
+            "hora": "09:30",
+            "cep": "02131-040",
+            "logradouro": "Rua Hiroshima",
+            "numero": "100",
+            "bairro": "Vila Maria Alta",
+            "cidade": "Sao Paulo",
+            "uf": "SP",
+            "latitude": "-23.5001",
+            "longitude": "-46.6001",
+            "place_id": place_id,
+            "tipo_visita": "Visita",
+            "tipo_imovel": "Casa",
+            "foco": "Foco Teste",
+            "tipo_operacao": "Tratamento",
+            "altura_voo": "30",
+            "distrito_administrativo": "DA Teste",
+            "apoio_cet": "nao",
+        })
+
+    def _editar_form(self):
+        form = self._solicitacao_form("place-new")
+        form["data_agendamento"] = form["data"]
+        form["hora_agendamento"] = form["hora"]
+        return form
+
+    def _solicitacao_no_limite(
+        self,
+        *,
+        status="PENDENTE",
+        uvis_id=None,
+        data_agendamento=None,
+        data_criacao=None,
+    ):
+        solicitacao = Solicitacao(
+            data_agendamento=data_agendamento or self.future_date,
+            hora_agendamento=time(8, 0),
+            foco="Foco Teste",
+            cep="02131-040",
+            logradouro="Rua Hiroshima",
+            numero="100",
+            bairro="Vila Maria Alta",
+            cidade="Sao Paulo",
+            uf="SP",
+            status=status,
+            usuario_id=uvis_id or self.uvis.id,
+            prefeitura_id=1,
+            data_criacao=data_criacao or datetime.now(),
+        )
+        db.session.add(solicitacao)
+        return solicitacao
+
+    def _bloqueio_existente(self, *, prefeitura_id=1, place_id="place-123"):
+        bloqueada = Solicitacao(
+            data_agendamento=date(2026, 8, 1),
+            hora_agendamento=time(8, 0),
+            foco="Foco Teste",
+            cep="02131-040",
+            logradouro="Rua Hiroshima",
+            numero="100",
+            bairro="Vila Maria Alta",
+            cidade="Sao Paulo",
+            uf="SP",
+            status="CONCLU\u00cdDO",
+            usuario_id=self.uvis.id if prefeitura_id == 1 else self.outra_uvis.id,
+            prefeitura_id=prefeitura_id,
+            place_id=place_id,
+            endereco_bloqueado=True,
+        )
+        db.session.add(bloqueada)
+        db.session.commit()
+        return bloqueada
+
+    def test_create_blocks_same_place_id_when_concluded_in_same_prefeitura(self):
+        bloqueada = self._bloqueio_existente()
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-123"),
+            )
+
+        self.assertIn(f"OS #{bloqueada.id}", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 1)
+
+    def test_create_blocks_same_normalized_address_when_existing_os_has_no_place_id(self):
+        bloqueada = self._bloqueio_existente(place_id=None)
+
+        form = self._solicitacao_form("place-new")
+        form["logradouro"] = "R. Hiroshima"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn(f"OS #{bloqueada.id}", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 1)
+
+    def test_create_allows_same_place_id_in_other_prefeitura(self):
+        self._bloqueio_existente(prefeitura_id=1, place_id="place-123")
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(
+                self.outra_uvis,
+                self._solicitacao_form("place-123"),
+            )
+
+        self.assertEqual(nova.prefeitura_id, 2)
+        self.assertEqual(nova.place_id, "place-123")
+        self.assertEqual(Solicitacao.query.count(), 2)
+
+    def test_create_resolves_place_id_on_backend_when_form_does_not_have_it(self):
+        form = self._solicitacao_form("")
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+            patch.object(
+                solicitacoes_service,
+                "resolve_google_place_id_for_address",
+                return_value="place-resolvido-no-backend",
+            ) as resolver,
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        resolver.assert_called_once()
+        self.assertEqual(nova.place_id, "place-resolvido-no-backend")
+
+    def test_create_rejects_multiple_address_numbers(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = "105, 190"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn("apenas um numero", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 0)
+
+    def test_create_rejects_long_address_number_sequence(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = "134551312QAD222"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn("numero predial", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 0)
+
+    def test_create_rejects_address_number_inside_street_name(self):
+        form = self._solicitacao_form("place-new")
+        form["logradouro"] = "Rua Augusto de Souza Cardoso, 120"
+        form["numero"] = "138"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn("Logradouro", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 0)
+
+    def test_create_allows_number_as_part_of_street_name(self):
+        form = self._solicitacao_form("place-new")
+        form["logradouro"] = "Rua 25 de Marco"
+        form["numero"] = "138"
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertEqual(nova.logradouro, "Rua 25 de Marco")
+        self.assertEqual(nova.numero, "138")
+
+    def test_create_normalizes_valid_address_number(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = " 120a "
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertEqual(nova.numero, "120A")
+
+    def test_create_accepts_sem_numero_marker(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = "sn"
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertEqual(nova.numero, "S/N")
+
+    def test_create_blocks_when_daily_limit_includes_concluded_requests(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE")
+        self._solicitacao_no_limite(status="CONCLUÍDO")
+        self._solicitacao_no_limite(status="NEGADO")
+        db.session.commit()
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-new"),
+            )
+
+        self.assertIn(
+            f"20 solicitações válidas para {self.future_date.strftime('%d/%m/%Y')}",
+            exc.exception.message,
+        )
+        self.assertEqual(Solicitacao.query.count(), 21)
+
+    def test_create_allows_new_request_when_one_of_twenty_is_denied(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE")
+        self._solicitacao_no_limite(status="NEGADO")
+        db.session.commit()
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-new"),
+            )
+
+        self.assertEqual(nova.status, "PENDENTE")
+        self.assertEqual(Solicitacao.query.count(), 21)
+
+    def test_create_allows_request_when_limit_is_for_another_scheduled_day(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE", data_agendamento=self.other_future_date)
+        self._solicitacao_no_limite(status="CONCLUIDO", data_agendamento=self.other_future_date)
+        db.session.commit()
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-new"),
+            )
+
+        self.assertEqual(nova.data_agendamento, self.future_date)
+        self.assertEqual(Solicitacao.query.count(), 21)
+
+    def test_uvis_cannot_reopen_denied_request_when_daily_limit_is_full(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE")
+        self._solicitacao_no_limite(status="CONCLUIDO")
+        negada = self._solicitacao_no_limite(status="NEGADO")
+        db.session.commit()
+
+        with (
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+            self.assertRaises(NovoCadastroValidationError) as exc,
+        ):
+            solicitacoes_service.atualizar_solicitacao(
+                self.uvis,
+                negada.id,
+                self._editar_form(),
+            )
+
+        self.assertIn(
+            f"20 solicitações válidas para {self.future_date.strftime('%d/%m/%Y')}",
+            exc.exception.message,
+        )
+        self.assertEqual(Solicitacao.query.get(negada.id).status, "NEGADO")
+
+
+if __name__ == "__main__":
+    unittest.main()

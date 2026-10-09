@@ -11,23 +11,7 @@
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
 />
-<style>
-  #mapaDesenho {
-    height: 450px; /* altura fixa ok */
-    width: 100%; /* IMPORTANTÍSSIMO dentro do modal */
-    display: block;
-  }
-
-  .modal-body {
-    overflow: hidden;
-  }
-  .modal {
-    z-index: 2000 !important;
-  }
-  .modal-backdrop {
-    z-index: 1990 !important;
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/cadastro.css') }}">
 {% endblock %} {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
   {# --- Cabeçalho --- #}
@@ -73,7 +57,7 @@
           </div>
         </div>
 
-        {% if current_user.tipo_usuario in ['dev', 'admin', 'visualizar', 'prefeitura_admin'] %}
+        {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar', 'prefeitura_admin'] or is_veiculos_supervisor(current_user) %}
           <div class="mb-4">
               <label class="form-label fw-bold small text-muted"><i class="bi bi-geo-alt me-2"></i>Unidade (UVIS) Responsável</label>
               <select class="form-select border-primary" name="uvis_responsavel_id" required>
@@ -204,6 +188,10 @@
                   <input class="form-check-input" type="radio" name="tipo_operacao" id="tratamento" value="Tratamento" {% if not form.tipo_operacao or form.tipo_operacao == 'Tratamento' %}checked{% endif %} />
                   <label class="form-check-label small fw-medium" for="tratamento">Tratamento e Monitoramento</label>
                 </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="tipo_operacao" id="tratamentoQuadra" value="Tratamento e monitoramento de quadra" {% if form.tipo_operacao == 'Tratamento e monitoramento de quadra' %}checked{% endif %} />
+                  <label class="form-check-label small fw-medium" for="tratamentoQuadra">Tratamento e monitoramento de quadra</label>
+                </div>
               </div>
             </div>
           </div>
@@ -283,14 +271,30 @@
               name="logradouro"
               class="form-control"
               required
+              title="Informe somente o nome da rua, sem numero predial."
               value="{{ form.logradouro or '' }}"
             />
+            <div class="invalid-feedback">
+              Nao coloque numero predial no Logradouro. Use somente o campo Numero.
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-hash me-1 text-primary"></i> Número *
             </label>
-            <input type="text" name="numero" class="form-control" required value="{{ form.numero or '' }}" />
+            <input
+              type="text"
+              name="numero"
+              class="form-control"
+              required
+              maxlength="7"
+              pattern="^\s*(\d{1,6}[A-Za-z]?|[sS]/?[nN])\s*$"
+              title="Informe apenas um numero predial, como 150, 150A ou S/N."
+              value="{{ form.numero or '' }}"
+            />
+            <div class="invalid-feedback">
+              Informe apenas um numero predial. Para outro numero, crie uma nova solicitacao separada.
+            </div>
           </div>
         </div>
 
@@ -381,6 +385,7 @@
             />
           </div>
         </div>
+        <input type="hidden" name="place_id" id="place_id" value="{{ form.place_id or '' }}" />
 
         <!-- <input
           type="hidden"
@@ -608,12 +613,15 @@
 
     const latInput = document.getElementById("latitude");
     const lngInput = document.getElementById("longitude");
+    const placeIdInput = document.getElementById("place_id");
+    const uvisResponsavelInput = document.querySelector('[name="uvis_responsavel_id"]');
 
     let geocodeTimer = null;
 
     function limparLatLng() {
       if (latInput) latInput.value = "";
       if (lngInput) lngInput.value = "";
+      if (placeIdInput) placeIdInput.value = "";
     }
 
     function formatarCep(value) {
@@ -622,8 +630,50 @@
       return `${digits.slice(0, 5)}-${digits.slice(5)}`;
     }
 
+    function normalizarNumeroEndereco() {
+      if (!numeroInput) return "";
+      const numero = (numeroInput.value || "").replace(/\s+/g, "");
+      numeroInput.value = /^s\/?n$/i.test(numero) ? "S/N" : numero.toUpperCase();
+      return numeroInput.value;
+    }
+
+    function numeroEnderecoValido() {
+      const numero = normalizarNumeroEndereco();
+      return /^(\d{1,6}[A-Z]?|S\/N)$/i.test(numero);
+    }
+
+    function atualizarValidacaoNumero() {
+      if (!numeroInput) return true;
+      const valido = numeroEnderecoValido();
+      numeroInput.classList.toggle("is-invalid", !valido && Boolean(numeroInput.value.trim()));
+      numeroInput.setCustomValidity(
+        valido ? "" : "Informe apenas um numero predial no campo Numero."
+      );
+      return valido;
+    }
+
+    function logradouroValido() {
+      const logradouro = (enderecoInput?.value || "").trim();
+      return !/(?:,|\/|-|\bn[ºo.]?)\s*\d{1,6}[A-Za-z]?\s*$/i.test(logradouro);
+    }
+
+    function atualizarValidacaoLogradouro() {
+      if (!enderecoInput) return true;
+      const valido = logradouroValido();
+      enderecoInput.classList.toggle("is-invalid", !valido && Boolean(enderecoInput.value.trim()));
+      enderecoInput.setCustomValidity(
+        valido ? "" : "Nao coloque numero predial no Logradouro."
+      );
+      return valido;
+    }
+
     async function chamarGeocode() {
       try {
+        if (!atualizarValidacaoLogradouro() || !atualizarValidacaoNumero()) {
+          limparLatLng();
+          return;
+        }
+
         const payload = {
           cep: (cepInput?.value || "").trim(),
           logradouro: (enderecoInput?.value || "").trim(),
@@ -660,13 +710,50 @@
           latInput.value = data.lat;
           lngInput.value = data.lng;
 
-          // centralizarMapaNoEndereco();
+          // 🔒 1. SE O BACKEND RETORNAR O PLACE_ID, SALVA NO INPUT HIDDEN
+          if (data.place_id) {
+            if (placeIdInput) placeIdInput.value = data.place_id;
+
+            // 🔒 2. CHECA SE O ENDEREÇO ESTÁ MARCADO COMO CONCLUÍDO
+            try {
+              const bloqueioParams = new URLSearchParams({ place_id: data.place_id });
+              ["cep", "logradouro", "numero", "bairro", "cidade", "uf"].forEach((field) => {
+                if ((payload[field] || "").trim()) {
+                  bloqueioParams.set(field, payload[field]);
+                }
+              });
+              if ((uvisResponsavelInput?.value || "").trim()) {
+                bloqueioParams.set("uvis_responsavel_id", uvisResponsavelInput.value);
+              }
+              const checkRes = await fetch(`/api/solicitacao/checar-bloqueio?${bloqueioParams.toString()}`);
+              const checkData = await checkRes.json();
+
+              if (checkData.bloqueado) {
+                if (typeof Swal !== "undefined") {
+                  Swal.fire({
+                    icon: "warning",
+                    title: "Endereço Concluído",
+                    html: "⚠️ Este endereço foi marcado como <strong>CONCLUÍDO</strong> pelo piloto e não aceita novas solicitações.",
+                    confirmButtonColor: "#dc3545",
+                    confirmButtonText: "Entendido"
+                  });
+                } else {
+                  alert("⚠️ Este endereço foi marcado como CONCLUÍDO pelo piloto e não aceita novas solicitações.");
+                }
+
+                // Opcional: Desabilita o botão de enviar pedido
+                const btnEnviar = document.getElementById("btnEnviarPedido");
+                if (btnEnviar) btnEnviar.disabled = true;
+              } else {
+                const btnEnviar = document.getElementById("btnEnviarPedido");
+                if (btnEnviar) btnEnviar.disabled = false;
+              }
+            } catch (errCheck) {
+              console.error("Erro ao verificar bloqueio de endereço:", errCheck);
+            }
+          }
         } else {
           limparLatLng();
-          // Toast opcional (só se quiser)
-          // if (typeof Swal !== 'undefined') {
-          //   Swal.fire({ toast:true, position:'top-end', icon:'warning', title:data.message || 'Não foi possível geocodificar', showConfirmButton:false, timer:2500 });
-          // }
         }
       } catch (e) {
         console.error("Erro geocode:", e);
@@ -861,11 +948,25 @@
       // enquanto digita
       numeroInput.addEventListener("keyup", function () {
         limparLatLng();
+        if (!atualizarValidacaoNumero()) return;
         agendarGeocode(450);
       });
 
       // quando sai do campo (bem confiável)
       numeroInput.addEventListener("blur", function () {
+        if (!atualizarValidacaoNumero()) return;
+        agendarGeocode(100);
+      });
+    }
+
+    if (enderecoInput) {
+      enderecoInput.addEventListener("input", function () {
+        limparLatLng();
+        atualizarValidacaoLogradouro();
+      });
+
+      enderecoInput.addEventListener("blur", function () {
+        if (!atualizarValidacaoLogradouro()) return;
         agendarGeocode(100);
       });
     }
@@ -1006,6 +1107,34 @@
 
         if (validandoEnvio) return;
         validandoEnvio = true;
+
+        if (!atualizarValidacaoLogradouro()) {
+          Swal.fire({
+            icon: "warning",
+            title: "Revise o logradouro",
+            text: "Nao coloque numero predial no Logradouro. Informe o numero somente no campo Numero.",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+          enderecoInput?.focus();
+          validandoEnvio = false;
+          restaurarBotaoEnvio();
+          return;
+        }
+
+        if (!atualizarValidacaoNumero()) {
+          Swal.fire({
+            icon: "warning",
+            title: "Revise o numero",
+            text: "Informe apenas um numero predial. Para outro numero, crie uma nova solicitacao separada.",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+          numeroInput?.focus();
+          validandoEnvio = false;
+          restaurarBotaoEnvio();
+          return;
+        }
 
         const latField = document.getElementById("latitude");
         const lngField = document.getElementById("longitude");

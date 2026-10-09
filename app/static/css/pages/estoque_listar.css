@@ -1,0 +1,18 @@
+/* =========================================
+   LISTAGEM DO ESTOQUE
+   ========================================= */
+
+.estoque-listar-page {
+  max-width: 1200px;
+}
+
+.estoque-listar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.estoque-listar-actions form {
+  margin: 0;
+}

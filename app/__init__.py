@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, render_template, request
+from flask import Flask, Response, g, jsonify, render_template, request
 from flask_login import current_user
 from flask_talisman import Talisman
 from sqlalchemy import text
@@ -148,6 +148,13 @@ def create_app():
     app.config.from_object(Config)
     app.wsgi_app = WhiteNoise(app.wsgi_app, root="app/static/")
 
+    if app.config.get("CSS_BUNDLE_AUTO_BUILD"):
+        from scripts.build_css_bundle import build_css_bundle_if_stale
+
+        @app.before_request
+        def refresh_css_bundle():
+            build_css_bundle_if_stale()
+
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -159,15 +166,21 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    from app.shared.session_security import register_session_security
+
+    register_session_security(app)
+
+    from app.shared.csrf_security import register_csrf_security
+
+    register_csrf_security(app)
+
     from app.models import AuditoriaUsuario, Usuario
+    from app.modules.auditoria.service import trim_auditoria_usuarios
     from app.shared.presence import record_user_presence
 
     @app.get("/healthz")
     def healthz():
-        return jsonify({
-            "status": "ok",
-            "service": "ija-system",
-        })
+        return Response("ok\n", mimetype="text/plain")
 
     @app.get("/healthz/full")
     def healthz_full():
@@ -201,6 +214,8 @@ def create_app():
 
     @app.before_request
     def capture_audit_user():
+        if request.blueprint == "session_security":
+            return
         if not getattr(current_user, "is_authenticated", False):
             return
 
@@ -265,6 +280,10 @@ def create_app():
                         criado_em=_utcnow_naive(),
                     )
                 )
+                trim_auditoria_usuarios(
+                    conn,
+                    app.config.get("AUDIT_RETENTION_MAX_RECORDS", 15000),
+                )
         except Exception:
             app.logger.exception("Erro ao registrar auditoria de usuario.")
 
@@ -280,6 +299,15 @@ def create_app():
                 or ""
             )
         )
+
+    @app.context_processor
+    def inject_style_bundle_version():
+        bundle_path = os.path.join(app.static_folder, "css", "style.bundle.css")
+        try:
+            version = os.stat(bundle_path).st_mtime_ns
+        except OSError:
+            version = "missing"
+        return {"style_bundle_version": version}
 
     @app.context_processor
     def inject_global_vars():

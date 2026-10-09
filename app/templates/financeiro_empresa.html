@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Financeiro · {{ empresa.nome }} | Oceano Azul{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 finance-hub">
+  <nav class="finance-breadcrumb" aria-label="Caminho de navegação">
+    <a href="{{ url_for('main.financeiro_central') }}">Financeiro</a><i class="bi bi-chevron-right" aria-hidden="true"></i><span aria-current="page">{{ empresa.nome }}</span>
+  </nav>
+  <header class="finance-hub-heading">
+    <div>
+      <span class="finance-eyebrow"><i class="bi bi-bank" aria-hidden="true"></i> Financeiro · {{ empresa.nome }}</span>
+      <h1>Visão geral</h1>
+      <p>Seu espaço de gestão financeira por empresa.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('main.financeiro_central') }}"><i class="bi bi-arrow-left-right me-2" aria-hidden="true"></i>Trocar empresa</a>
+  </header>
+
+  <section class="finance-selected-company" aria-label="Empresa selecionada">
+    {% if empresa.tem_logo %}<span class="finance-company-monogram"><img src="{{ url_for('main.financeiro_empresa_logo', empresa_slug=empresa.slug) }}" alt="Logo de {{ empresa.nome }}"></span>{% else %}<span class="finance-company-monogram" aria-hidden="true">{{ empresa.sigla }}</span>{% endif %}
+    <div class="finance-selected-name"><h2>{{ empresa.nome }}</h2><p>{{ empresa.razao_social if empresa.razao_social != empresa.nome else 'Gestão financeira' }}</p>{% if empresa.demonstracao %}<span class="finance-demo-label"><i class="bi bi-info-circle" aria-hidden="true"></i> CNPJ fictício para demonstração</span>{% endif %}</div>
+    <div class="finance-selected-document"><span>CNPJ</span><strong>{{ empresa.cnpj_formatado or 'Pendente de identificação' }}</strong></div>
+    <span class="finance-operation-label"><i class="bi bi-tree" aria-hidden="true"></i>{{ empresa.operacao }}</span>
+  </section>
+
+  <section aria-labelledby="finance-workspace-title">
+    <h2 id="finance-workspace-title" class="finance-module-title">Funcionalidades financeiras</h2>
+    <div class="finance-module-grid">
+      {% for item in build_financeiro_menu(current_user, empresa) %}
+      <a class="finance-module-link" href="{{ url_for(item.endpoint, **item.params) }}">
+        <i class="bi {{ item.icon }} finance-module-icon" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
+        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+      </a>
+      {% else %}
+      <p class="text-muted">As funcionalidades desta empresa ainda não estão disponíveis.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

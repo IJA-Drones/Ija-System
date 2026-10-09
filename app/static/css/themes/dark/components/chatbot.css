@@ -1,0 +1,108 @@
+/* =========================================
+   CHATBOT
+   ========================================= */
+
+body.dark-mode .chat-window {
+  background-color: #152233;
+
+  border-color: #233549;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .bot-header {
+  background:
+    linear-gradient(
+      135deg,
+      #1f2a3e,
+      #152233
+    );
+
+  border-bottom: 1px solid #233549;
+}
+
+body.dark-mode .bot-body {
+  background-color: #101927;
+}
+
+
+/* Mensagens */
+
+body.dark-mode .chat-window .message.bot {
+  background-color: #1f2a3e;
+  color: var(--color-text-main);
+
+  border-color: #233549;
+}
+
+body.dark-mode .chat-window .message.user {
+  background-color: var(--color-primary);
+  color: #fff;
+
+  box-shadow: none;
+}
+
+
+/* Chips */
+
+body.dark-mode .chat-window .chip {
+  background-color: #1f2a3e;
+
+  border-color: #233549;
+
+  color: var(--color-text-muted);
+}
+
+body.dark-mode .chat-window .chip:hover {
+  background-color: var(--color-accent);
+
+  border-color: var(--color-accent);
+
+  color: #101927;
+}
+
+
+/* Footer */
+
+body.dark-mode .bot-footer {
+  background-color: #152233;
+
+  border-top-color: #233549;
+}
+
+body.dark-mode .bot-footer input {
+  background-color: #101927;
+
+  color: #fff;
+
+  border-color: #233549;
+}
+
+body.dark-mode .bot-footer input::placeholder {
+  color: #5a6a85;
+}
+
+body.dark-mode .bot-footer input:focus {
+  border-color: var(--color-accent);
+}
+
+
+/* Botão flutuante */
+
+body.dark-mode .bot-fab {
+  z-index: 2000;
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .bot-fab i {
+  color: var(--color-text-main);
+}
+
+
+/* TODO:
+   confirmar se existe .bot-fab::after em algum outro CSS.
+*/
+body.dark-mode .bot-fab::after {
+  border-color: var(--color-primary-dark);
+}

@@ -1,19 +1,26 @@
-{% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
+{% set is_financeiro_context = is_financeiro_endpoint(request.endpoint) if is_financeiro_endpoint is defined else false %}
+{% set is_agro_context = not is_financeiro_context and request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
+{% set empresa_financeiro = empresa if empresa is defined else financeiro_empresa_atual|default(none) %}
 {% set is_global_admin = current_user.is_authenticated and is_admin_global_user(current_user) %}
 {% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
-{% set is_financeiro_agro_admin = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario == 'financeiro_admin') %}
-{% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin']) %}
+{% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin', 'sup_veiculos']) %}
+{% set can_access_agro_context = current_user.is_authenticated and can_access_agro_panel(current_user) %}
+{% set can_access_financeiro_context = current_user.is_authenticated and can_access_financeiro_panel is defined and can_access_financeiro_panel(current_user) %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
 <!doctype html>
 <html
   lang="pt-br"
-  class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% endif %}"
+  class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}"
 >
   <head>
     <meta charset="UTF-8" />
+    {% if ija_csrf_enabled %}
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <script src="{{ url_for('static', filename='js/csrf-security.js') }}"></script>
+    {% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Oceano Azul</title>
+    <title>{% block title %}{% if is_financeiro_context and empresa_financeiro %}Financeiro · {{ empresa_financeiro.nome }} | {% endif %}Oceano Azul{% endblock %}</title>
 
     <link
       rel="manifest"
@@ -56,10 +63,15 @@
 
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
+      href="{{ url_for('static', filename='css/style.bundle.css', v=style_bundle_version) }}"
     />
+    {% if not is_financeiro_context %}
     <link rel="preload" as="image" href="{{ logo_light_url }}" />
     <link rel="preload" as="image" href="{{ logo_dark_url }}" />
+    {% endif %}
+    {% if is_financeiro_context %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/financeiro-central.css', v='20261007d') }}">
+    {% endif %}
     {% block extra_styles %}{% endblock %}
 
     <script>
@@ -75,93 +87,22 @@
       })();
     </script>
 
-    <style>
-      :root {
-        --navbar-offset: 70px; /* Fallback mais realista para mobile */
-      }
-
-      body {
-        overflow-x: hidden; /* Evita scroll lateral indesejado no mobile */
-        /* Remova o padding-top daqui e deixe o JS ou uma classe fixa resolver */
-      }
-
-      /* ✅ Classe para evitar que o conteúdo suma antes do JS carregar */
-      body:not(.is-loaded) {
-        padding-top: 70px !important;
-      }
-
-      .navbar.fixed-top {
-        z-index: 1030  !important; /* Acima de quase tudo */
-      }
-
-      /* Overlay deve cobrir a tela toda, inclusive a navbar se necessário */
-      .sidebar-overlay {
-        z-index: 1040  !important;
-      }
-
-      #appSidebar {
-        z-index: 1045  !important; /* Sidebar sempre no topo de tudo no mobile */
-      }
-
-      @media (max-width: 991.98px) {
-        .navbar .navbar-collapse {
-          display: none !important;
-        }
-
-        /* Ajuste para a logo não estourar em celulares pequenos */
-        .navbar-brand img {
-          max-width: 140px;
-          height: auto;
-        }
-
-      }
-
-      .global-video-upload-status {
-        position: fixed;
-        right: 18px;
-        bottom: 18px;
-        z-index: 1080;
-        width: min(360px, calc(100vw - 32px));
-        border: 1px solid rgba(21, 101, 192, 0.18);
-        border-radius: 14px;
-        background: #ffffff;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-        padding: 14px;
-      }
-
-      .global-video-upload-status .progress {
-        height: 0.6rem;
-        border-radius: 999px;
-        background: #dbe7f4;
-        overflow: hidden;
-      }
-
-      .global-video-upload-title {
-        color: #173b62;
-        font-weight: 800;
-        font-size: 0.92rem;
-      }
-
-      .global-video-upload-message {
-        color: #64748b;
-        font-size: 0.8rem;
-        line-height: 1.4;
-      }
-    </style>
   </head>
 
-  <body class="{% if is_agro_context %}agro-mode{% endif %}">
+  <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+      {% if current_user.tipo_usuario == 'gestor_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+        {% set navbar_home_endpoint = 'main.central_ti' %}
+      {% elif is_financeiro_context %}
+        {% set navbar_home_endpoint = 'main.financeiro_central' %}
+      {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
         {% set navbar_home_endpoint = 'main.piloto_os' %}
       {% elif current_user.tipo_usuario == 'piloto_agro' %}
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' %}
       {% elif current_user.tipo_usuario == 'equipe_uvis' %}
         {% set navbar_home_endpoint = 'main.dashboard_equipe_uvis' %}
-      {% elif is_financeiro_agro_user %}
-        {% set navbar_home_endpoint = 'main.admin_agro' %}
-      {% elif is_admin_panel_user %}
+      {% elif is_admin_panel_user or is_financeiro_agro_user %}
         {% set navbar_home_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
       {% endif %}
     {% endif %}
@@ -181,10 +122,13 @@
         {% endif %}
 
         <a
-          class="navbar-brand d-flex align-items-center gap-2 me-3"
+          class="navbar-brand {% if is_financeiro_context %}finance-navbar-brand {% endif %}d-flex align-items-center gap-2 me-3"
           href="{{ url_for(navbar_home_endpoint) }}"
         >
-          <!-- <img src="{{ url_for('static', filename='img/logo_oceano_azul_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" alt="Logo Oceano Azul"> -->
+          {% if is_financeiro_context %}
+          <i class="bi bi-bank finance-navbar-icon" aria-hidden="true"></i>
+          <span class="finance-navbar-title">Central Financeiro</span>
+          {% else %}
           <img
             src="{{ logo_light_url }}"
             class="navbar-logo logo-light"
@@ -203,6 +147,7 @@
             fetchpriority="{{ 'high' if tema_escolhido == 'dark' else 'low' }}"
             style="max-height: 50px"
           />
+          {% endif %}
         </a>
 
         <div class="dropdown navbar-user-menu ms-auto me-2">
@@ -229,20 +174,23 @@
               >
             </li>
             {% endif %}
-            {% if is_global_admin %}
+            {% if can_access_financeiro_context or (is_global_admin and can_access_agro_context) %}
             <li class="px-2 pb-2 mb-2 border-bottom">
-              <div class="admin-context-switch admin-context-switch-dropdown {% if is_agro_context %}is-agro{% else %}is-uvis{% endif %}" role="group" aria-label="Alternar contexto entre UVIS e Agro">
+              <div class="admin-context-switch admin-context-switch-dropdown admin-context-switch-extended {% if is_agro_context %}is-agro{% elif is_financeiro_context %}is-financeiro{% else %}is-uvis{% endif %}" role="group" aria-label="Selecionar central">
                 <span class="admin-context-switch-thumb" aria-hidden="true"></span>
+                {% if is_global_admin %}
                 <button
                   type="button"
-                  class="admin-context-btn {% if not is_agro_context %}is-active{% endif %}"
+                  class="admin-context-btn {% if not is_agro_context and not is_financeiro_context %}is-active{% endif %}"
                   data-admin-context="uvis_prefeitura"
                   data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
-                  aria-pressed="{{ 'true' if not is_agro_context else 'false' }}"
+                  aria-pressed="{{ 'true' if not is_agro_context and not is_financeiro_context else 'false' }}"
                 >
                   <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
                   <span>UVIS e Prefeitura</span>
                 </button>
+                {% endif %}
+                {% if can_access_agro_context %}
                 <button
                   type="button"
                   class="admin-context-btn {% if is_agro_context %}is-active{% endif %}"
@@ -253,6 +201,19 @@
                   <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
                   <span>Agro</span>
                 </button>
+                {% endif %}
+                {% if can_access_financeiro_context %}
+                <button
+                  type="button"
+                  class="admin-context-btn {% if is_financeiro_context %}is-active{% endif %}"
+                  data-admin-context="financeiro"
+                  data-admin-context-url="{{ url_for('main.financeiro_central') }}"
+                  aria-pressed="{{ 'true' if is_financeiro_context else 'false' }}"
+                >
+                  <span class="admin-context-btn-icon"><i class="bi bi-bank"></i></span>
+                  <span>Financeiro</span>
+                </button>
+                {% endif %}
               </div>
             </li>
             {% endif %}
@@ -287,7 +248,13 @@
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
-        {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+        {% if current_user.tipo_usuario == 'gestor_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+          {% set sidebar_dashboard_endpoint = 'main.central_ti' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.central_ti' %}
+        {% elif is_financeiro_context %}
+          {% set sidebar_dashboard_endpoint = 'main.financeiro_central' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.financeiro_central' %}
+        {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
           {% set sidebar_dashboard_endpoint = 'main.piloto_os' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.piloto_os' %}
         {% elif current_user.tipo_usuario == 'piloto_agro' %}
@@ -296,24 +263,87 @@
         {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
-        {% elif is_financeiro_agro_user %}
-          {% set sidebar_dashboard_endpoint = 'main.admin_agro' %}
-          {% set sidebar_dashboard_active = request.endpoint == 'main.admin_agro' %}
-        {% elif is_admin_panel_user %}
+        {% elif is_admin_panel_user or is_financeiro_agro_user %}
           {% set sidebar_dashboard_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
+          {% if current_user.tipo_usuario == 'dev' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.central_ti' %}active{% endif %}" href="{{ url_for('main.central_ti') }}">
+              <i class="bi bi-shield-check me-2"></i><span>Central de TI</span>
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
               href="{{ url_for(sidebar_dashboard_endpoint) }}"
             >
-              <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
+              <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill') }} me-2"></i><span>{{ 'Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Empresas' if is_financeiro_context else 'Dashboard') }}</span>
             </a>
           </li>
+          {% if sidebar_dashboard_endpoint != 'main.central_ti' %}
+          {% if is_financeiro_context %}
+            {% if empresa_financeiro %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'main.financeiro_empresa' %}active{% endif %}" href="{{ url_for('main.financeiro_empresa', empresa_slug=empresa_financeiro.slug) }}" {% if request.endpoint == 'main.financeiro_empresa' %}aria-current="page"{% endif %}>
+                <i class="bi bi-grid-fill me-2"></i><span>Visão geral</span>
+              </a>
+            </li>
+            {% include '_financeiro_menu.html' %}
+            {% endif %}
+          {% else %}
+          {% set can_report_bugs_user = current_user.tipo_usuario == 'regional' or (current_user.tipo_usuario == 'visualizar' and (current_user.regiao or '')|upper == 'COVISA') %}
+          {% if can_report_bugs_user %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.bug_report_novo', 'main.bug_acompanhamento'] or (request.endpoint == 'main.feedback_novo' and request.args.get('tipo') == 'bug') %}active{% endif %}"
+              href="{{ url_for('main.bug_report_novo') }}"
+            >
+              <i class="bi bi-bug-fill me-2"></i><span>Reportar bug</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.bugs_listar', 'main.bug_acompanhamento', 'main.bugs_ajuda'] %}active{% endif %}"
+              href="{{ url_for('main.bugs_listar') }}"
+            >
+              <i class="bi bi-inbox-fill me-2"></i><span>Caixa de bugs</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if is_dev_user(current_user) %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.feedback_listar') }}"
+            >
+              <i class="bi bi-tools me-2"></i><span>Bugs reportados</span>
+              {% if support_nav_count and support_nav_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ support_nav_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
 
           {% if is_admin_panel_user and not is_agro_context %}
+          {% if can_access_denuncias(current_user) %}
+          <li class="nav-item">
+            <a
+              class="nav-link nav-link-disabled {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
+              href="#"
+              aria-disabled="true"
+              tabindex="-1"
+            >
+              <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+              <span class="nav-development-badge">Em desenvolvimento</span>
+              {% if denuncias_nav_count and denuncias_nav_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
@@ -322,6 +352,32 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          {% if current_user.tipo_usuario == 'sup_veiculos' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_dosagem' %}active{% endif %}"
+              href="{{ url_for('main.piloto_dosagem') }}"
+            >
+              <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_checklist_semanal' %}active{% endif %}"
+              href="{{ url_for('main.piloto_checklist_semanal') }}"
+            >
+              <i class="bi bi-ui-checks-grid me-2"></i><span>Checklist Semanal</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_veiculos' and request.args.get('acao') == 'abrir_turno' %}active{% endif %}"
+              href="{{ url_for('main.piloto_veiculos', acao='abrir_turno') }}#veiculos-equipe"
+            >
+              <i class="bi bi-play-circle-fill me-2"></i><span>Abrir Turno</span>
+            </a>
+          </li>
+          {% endif %}
           {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           <li class="nav-item">
             <a
@@ -331,7 +387,7 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico Operacional</span>
             </a>
           </li>
-          {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+          {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano', 'sup_veiculos'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_os_historico' %}active{% endif %}"
@@ -340,6 +396,21 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          {% if current_user.trabalha_oceano_azul %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_caixa_entrada' %}active{% endif %}"
+              href="{{ url_for('main.piloto_caixa_entrada') }}"
+            >
+              <i class="bi bi-inbox-fill me-2"></i><span>Caixa de Entrada</span>
+              {% if limpeza_alertas_operacionais_count and limpeza_alertas_operacionais_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">
+                {{ limpeza_alertas_operacionais_count }}
+              </span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
@@ -398,6 +469,20 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a
+              class="nav-link nav-link-disabled {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
+              href="#"
+              aria-disabled="true"
+              tabindex="-1"
+            >
+              <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+              <span class="nav-development-badge">Em desenvolvimento</span>
+              {% if denuncias_nav_count and denuncias_nav_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
+              {% endif %}
+            </a>
+          </li>
           {% endif %}
 
           {% if is_admin_panel_user and not is_agro_context %}
@@ -416,33 +501,7 @@
           </li>
           {% endif %}
 
-          {% if (is_admin_panel_user or is_financeiro_agro_user) and is_agro_context %}
-          {% set agro_financeiro_menu_active = request.endpoint in [
-            'main.agro_financeiro_dashboard',
-            'main.agro_caixa_diario',
-            'main.agro_financeiro_contas',
-            'main.agro_relatorio_contas_geral',
-            'main.agro_contratos_comprovantes',
-            'main.agro_contas_receber_listar',
-            'main.agro_contas_pagar_listar',
-            'main.agro_financeiro_listar',
-            'main.agro_financeiro_novo',
-            'main.agro_financeiro_editar',
-            'main.agro_bancos_listar',
-            'main.agro_banco_novo',
-            'main.agro_banco_editar',
-            'main.agro_bancos_conciliacao',
-            'main.agro_financeiro_configuracoes',
-            'main.agro_financeiro_categorias_listar',
-            'main.agro_financeiro_categoria_nova',
-            'main.agro_financeiro_categoria_editar',
-            'main.agro_financeiro_entrada_listar',
-            'main.agro_financeiro_entrada_novo',
-            'main.agro_financeiro_entrada_editar',
-            'main.agro_financeiro_saida_listar',
-            'main.agro_financeiro_saida_novo',
-            'main.agro_financeiro_saida_editar'
-          ] %}
+          {% if can_access_agro_context and is_agro_context %}
           {% set agro_relacionamentos_menu_active = request.endpoint in [
             'main.agro_clientes_menu',
             'main.agro_clientes_listar',
@@ -575,134 +634,6 @@
           <li class="nav-item">
             <button
               type="button"
-              class="nav-link nav-link-toggle {% if agro_financeiro_menu_active %}active{% endif %}"
-              data-bs-toggle="collapse"
-              data-bs-target="#menuFinanceiroAgro"
-              aria-expanded="{{ 'true' if agro_financeiro_menu_active else 'false' }}"
-            >
-              <span>
-                <i class="bi bi-cash-coin me-2"></i>
-                <span>Financeiro</span>
-              </span>
-              <i class="bi bi-chevron-down chevron"></i>
-            </button>
-
-            <div class="collapse {% if agro_financeiro_menu_active %}show{% endif %}" id="menuFinanceiroAgro">
-              <ul class="nav flex-column sub-nav">
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_contas'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_contas') }}"
-                  >
-                    <i class="bi bi-wallet2 me-2"></i><span>Contas</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_relatorio_contas_geral'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_relatorio_contas_geral') }}"
-                  >
-                    <i class="bi bi-clipboard-data me-2"></i><span>Relatorio Geral</span>
-                  </a>
-                </li>
-                {% if is_global_admin or is_financeiro_agro_user %}
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint == 'main.agro_contratos_comprovantes' %}active{% endif %}"
-                    href="{{ url_for('main.agro_contratos_comprovantes') }}"
-                  >
-                    <i class="bi bi-receipt-cutoff me-2"></i><span>Comprovantes</span>
-                  </a>
-                </li>
-                {% endif %}
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_caixa_diario'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_caixa_diario') }}"
-                  >
-                    <i class="bi bi-journal-text me-2"></i><span>Caixa Diario</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_listar', 'main.agro_financeiro_novo', 'main.agro_financeiro_editar', 'main.agro_contas_receber_listar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}"
-                  >
-                    <i class="bi bi-receipt-cutoff me-2"></i><span>Recebiveis</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_receber_listar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_contas_receber_listar') }}"
-                  >
-                    <i class="bi bi-cash-stack me-2"></i><span>Contas a Receber</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_entrada_novo', 'main.agro_financeiro_entrada_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_entrada_novo') }}"
-                  >
-                    <i class="bi bi-plus-circle me-2"></i><span>Nova Entrada Manual</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_pagar_listar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_contas_pagar_listar') }}"
-                  >
-                    <i class="bi bi-credit-card-2-front me-2"></i><span>Contas a Pagar</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_saida_novo', 'main.agro_financeiro_saida_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_saida_novo') }}"
-                  >
-                    <i class="bi bi-plus-circle me-2"></i><span>Nova Saida Manual</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_bancos_listar', 'main.agro_banco_novo', 'main.agro_banco_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_bancos_listar') }}"
-                  >
-                    <i class="bi bi-bank me-2"></i><span>Bancos Agro</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint == 'main.agro_bancos_conciliacao' %}active{% endif %}"
-                    href="{{ url_for('main.agro_bancos_conciliacao') }}"
-                  >
-                    <i class="bi bi-bank2 me-2"></i><span>Conciliacao Bancaria</span>
-                  </a>
-                </li>
-                {% if is_financeiro_agro_admin %}
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_configuracoes'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_configuracoes') }}"
-                  >
-                    <i class="bi bi-sliders me-2"></i><span>Configuracoes</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_categorias_listar', 'main.agro_financeiro_categoria_nova', 'main.agro_financeiro_categoria_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_categorias_listar') }}"
-                  >
-                    <i class="bi bi-tags me-2"></i><span>Categorias</span>
-                  </a>
-                </li>
-                {% endif %}
-              </ul>
-            </div>
-          </li>
-          <li class="nav-item">
-            <button
-              type="button"
               class="nav-link nav-link-toggle {% if agro_operacional_menu_active %}active{% endif %}"
               data-bs-toggle="collapse"
               data-bs-target="#menuOperacionalAgro"
@@ -794,7 +725,7 @@
           </li>
           {% endif %}
 
-          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os', 'main.relatorios_coleta_imagens'] %}active{% endif %}"
@@ -811,6 +742,25 @@
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
           </li>
+
+          {% if current_user.tipo_usuario in ['dev', 'diretor'] %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.painel_operacional' %}active{% endif %}"
+              href="{{ url_for('main.painel_operacional') }}"
+            >
+              <i class="bi bi-command me-2"></i><span>Painel Operacional</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.estoque_listar', 'main.estoque_novo', 'main.estoque_editar'] %}active{% endif %}"
+              href="{{ url_for('main.estoque_listar') }}"
+            >
+              <i class="bi bi-box-seam-fill me-2"></i><span>Estoque</span>
+            </a>
+          </li>
+          {% endif %}
 
 {% if is_global_admin %}
   {# ===================== USUÁRIOS ===================== #}       
@@ -875,7 +825,7 @@
 {% endif %}
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <button
               type="button"
@@ -900,7 +850,7 @@
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin' , 'sup_veiculos'] %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link"
@@ -917,28 +867,46 @@
           {% endif %}
 
           {# ===================== EQUIPAMNETOS ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.listar_equipamentos', 'main.importar_planilha_drones'] %}active{% endif %}"
               href="{{ url_for('main.listar_equipamentos') }}">
               <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
             </a> 
           </li>
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_logs', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo'] %}active{% endif %}"
+            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_rastreamento', 'main.veiculos_logs', 'main.veiculos_limpezas', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
                href="{{ url_for('main.veiculos_menu') }}">
               <span>
                 <i class="bi bi-truck-front-fill me-2"></i>
                 <span>Veículos</span>
               </span>
+              {% if limpeza_alertas_admin_count and limpeza_alertas_admin_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">
+                {{ limpeza_alertas_admin_count }}
+              </span>
+              {% endif %}
             </a>
           </li>
+          {% if current_user.trabalha_oceano_azul %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.veiculos_alertas_limpeza' %}active{% endif %}"
+               href="{{ url_for('main.veiculos_alertas_limpeza') }}">
+              <i class="bi bi-droplet-half me-2"></i><span>Alertas Limpeza</span>
+              {% if limpeza_alertas_admin_count and limpeza_alertas_admin_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">
+                {{ limpeza_alertas_admin_count }}
+              </span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
         {% endif %}
 
           {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>
@@ -957,7 +925,7 @@
                 </li>
 
                 {# ✅ Somente ADMIN pode cadastrar equipes da Oceano Azul #}
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
                 <li class="nav-item">
                   <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_equipes') }}">
                     <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
@@ -1061,38 +1029,7 @@
           {% endif %}
           {% endif %}
 
-          {% if not is_agro_context and current_user.tipo_usuario in ['dev', 'admin'] %}
-          <li class="nav-item">
-            <a
-              id="supportNavLink"
-              class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_novo', 'main.feedback_detalhe'] %}active{% endif %}"
-              href="{{ url_for('main.feedback_listar') }}"
-            >
-              <i class="bi bi-headset me-2"></i><span>Suporte</span>
-              <span
-                id="supportNavBadge"
-                class="badge rounded-pill bg-danger ms-auto support-alert-badge {% if not support_nav_count %}d-none{% endif %}"
-                data-status-url="{{ url_for('main.feedback_notificacoes_status') }}"
-                data-initial-count="{{ support_nav_count or 0 }}"
-                data-initial-latest-id="{{ support_nav_latest_id or 0 }}"
-                data-user-key="{{ current_user.id }}"
-                aria-label="{{ support_nav_count or 0 }} chamados ativos"
-              >{{ '99+' if support_nav_count and support_nav_count > 99 else (support_nav_count or 0) }}</span>
-            </a>
-          </li>
-          {% elif not is_agro_context and current_user.tipo_usuario in ['regional', 'uvis', 'equipe_uvis'] %}
-          <li class="nav-item">
-            <span
-              class="nav-link disabled feedback-placeholder-link"
-              aria-disabled="true"
-              title="Funcionalidade em desenvolvimento"
-            >
-              <span class="feedback-placeholder-main">
-                <i class="bi bi-headset me-2"></i><span>Suporte</span>
-              </span>
-              <small class="feedback-placeholder-note">Em Desenvolvimento</small>
-            </span>
-          </li>
+          {% endif %}
           {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
@@ -1109,7 +1046,12 @@
       </div>
 
       <div class="app-content" id="appContent">
-        <div class="container-fluid">{% block content %}{% endblock %}</div>
+        <div class="container-fluid">
+          {% if is_financeiro_context and financeiro_empresa_atual %}
+          {% include '_financeiro_empresa_contexto.html' %}
+          {% endif %}
+          {% block content %}{% endblock %}
+        </div>
         <footer class="main-footer py-3 mt-4">
           <div class="container-fluid text-center">
             <p class="mb-0 small text-muted">
@@ -1121,7 +1063,7 @@
       </div>
     </div>
     {% else %}
-    <div class="container py-4">{% block auth_content %}{% endblock %}</div>
+    <div class="{% block auth_container_class %}container py-4{% endblock %}">{% block auth_content %}{% endblock %}</div>
     {% endif %}
 
     {% if current_user.is_authenticated %}
@@ -1162,10 +1104,12 @@
       };
     </script>
 
+    {% if not is_financeiro_context %}
     <script
       async
       src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&v=weekly&libraries=geometry,marker&callback=initGoogleMaps&loading=async">
     </script>
+    {% endif %}
 
     <script>
       function setThemeCookie(themeName) {
@@ -1215,13 +1159,31 @@
                         popup: isDarkMode ? 'swal2-dark-mode' : ''
                     }
                 });
+            } else if (flashCategory === 'limite_diario_solicitacoes') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Limite diário atingido',
+                    text: flashMessage,
+                    confirmButtonText: 'Entendi',
+                    confirmButtonColor: '#0d6efd',
+                    allowOutsideClick: false,
+                    allowEscapeKey: true,
+                    background: isDarkMode ? '#152233' : '#ffffff',
+                    color: isDarkMode ? '#ffffff' : '#545454',
+                    customClass: {
+                        popup: isDarkMode ? 'swal2-dark-mode' : ''
+                    }
+                });
             } else {
 
-                let iconType =
-                "{{ 'success' if category == 'success'
-                else 'error' if category in ['danger','error']
-                else 'warning' if category == 'warning'
-                else 'info' }}";
+                let iconType = 'info';
+                if (flashCategory === 'success') {
+                    iconType = 'success';
+                } else if (['danger', 'error'].includes(flashCategory)) {
+                    iconType = 'error';
+                } else if (flashCategory === 'warning') {
+                    iconType = 'warning';
+                }
 
                 Swal.fire({
                 toast: true,
@@ -1250,133 +1212,19 @@
             const contextSwitches = document.querySelectorAll(".admin-context-switch");
             const contextButtons = document.querySelectorAll("[data-admin-context]");
             const contextStorageKey = "oa_admin_context_mode";
-            const serverContextMode = "{{ 'agro' if is_agro_context else 'uvis_prefeitura' }}";
-            const supportNavBadge = document.getElementById("supportNavBadge");
+            const serverContextMode = "{{ 'agro' if is_agro_context else 'financeiro' if is_financeiro_context else 'uvis_prefeitura' }}";
             const contextLabels = {
                 uvis_prefeitura: "UVIS/PREFEITURA",
                 agro: "AGRO",
+                financeiro: "FINANCEIRO",
             };
 
-            function setupSupportNotifications() {
-                if (!supportNavBadge) return;
-
-                const statusUrl = supportNavBadge.dataset.statusUrl;
-                const userKey = supportNavBadge.dataset.userKey || "anon";
-                const storageKey = `ijaSupportLatest:${userKey}`;
-                let latestKnown = Math.max(
-                    Number(localStorage.getItem(storageKey) || 0),
-                    Number(supportNavBadge.dataset.initialLatestId || 0)
-                );
-                let audioContext = null;
-                let audioUnlocked = false;
-
-                try {
-                    localStorage.setItem(storageKey, String(latestKnown));
-                } catch (error) {
-                    // ignore
-                }
-
-                function formatCount(count) {
-                    const normalized = Math.max(0, Number(count) || 0);
-                    return normalized > 99 ? "99+" : String(normalized);
-                }
-
-                function updateSupportBadge(count) {
-                    const normalized = Math.max(0, Number(count) || 0);
-                    supportNavBadge.textContent = formatCount(normalized);
-                    supportNavBadge.setAttribute("aria-label", `${normalized} chamados ativos`);
-                    supportNavBadge.classList.toggle("d-none", normalized <= 0);
-                }
-
-                function unlockSupportAudio() {
-                    if (audioUnlocked) return;
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContextClass) return;
-
-                    try {
-                        audioContext = audioContext || new AudioContextClass();
-                        if (audioContext.state === "suspended") {
-                            audioContext.resume().catch(() => {});
-                        }
-                        audioUnlocked = true;
-                    } catch (error) {
-                        audioUnlocked = false;
-                    }
-                }
-
-                function playSupportTone() {
-                    if (!audioUnlocked) return;
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContextClass) return;
-
-                    try {
-                        const ctx = audioContext || new AudioContextClass();
-                        audioContext = ctx;
-                        const now = ctx.currentTime;
-                        const gain = ctx.createGain();
-                        const oscillator = ctx.createOscillator();
-
-                        oscillator.type = "sine";
-                        oscillator.frequency.setValueAtTime(880, now);
-                        oscillator.frequency.exponentialRampToValueAtTime(660, now + 0.22);
-                        gain.gain.setValueAtTime(0.0001, now);
-                        gain.gain.exponentialRampToValueAtTime(0.16, now + 0.03);
-                        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-                        oscillator.connect(gain);
-                        gain.connect(ctx.destination);
-                        oscillator.start(now);
-                        oscillator.stop(now + 0.3);
-                    } catch (error) {
-                        // ignore
-                    }
-                }
-
-                function handleSupportSnapshot(payload, shouldNotify) {
-                    const count = Number(payload?.count || 0);
-                    const latestId = Number(payload?.latest_id || 0);
-                    const hasNewTicket = latestId > latestKnown;
-
-                    updateSupportBadge(count);
-
-                    if (hasNewTicket) {
-                        latestKnown = latestId;
-                        try {
-                            localStorage.setItem(storageKey, String(latestKnown));
-                        } catch (error) {
-                            // ignore
-                        }
-                        if (shouldNotify) {
-                            playSupportTone();
-                        }
-                    }
-                }
-
-                async function pollSupportNotifications() {
-                    if (!statusUrl) return;
-                    try {
-                        const response = await fetch(statusUrl, {
-                            headers: { "Accept": "application/json" },
-                            cache: "no-store",
-                        });
-                        const payload = await response.json().catch(() => ({}));
-                        if (!response.ok || !payload.success) return;
-                        handleSupportSnapshot(payload, true);
-                    } catch (error) {
-                        // ignore
-                    }
-                }
-
-                ["click", "keydown", "touchstart"].forEach((eventName) => {
-                    document.addEventListener(eventName, unlockSupportAudio, { once: true, passive: true });
-                });
-
-                updateSupportBadge(Number(supportNavBadge.dataset.initialCount || 0));
-                window.setTimeout(pollSupportNotifications, 3500);
-                window.setInterval(pollSupportNotifications, 15000);
+            function readContextMode() {
+                return normalizeContextMode(serverContextMode);
             }
 
-            function readContextMode() {
-                return serverContextMode === "agro" ? "agro" : "uvis_prefeitura";
+            function normalizeContextMode(mode) {
+                return ["agro", "financeiro", "uvis_prefeitura"].includes(mode) ? mode : "uvis_prefeitura";
             }
 
             function writeContextMode(mode) {
@@ -1411,7 +1259,7 @@
 
             function syncContextSwitchElement(contextSwitch, mode) {
                 if (!contextSwitch) return;
-                const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
+                const selectedMode = normalizeContextMode(mode);
                 const activeButton = contextSwitch.querySelector(`[data-admin-context="${selectedMode}"]`);
                 if (!activeButton) return;
 
@@ -1419,7 +1267,8 @@
                 const activeRect = activeButton.getBoundingClientRect();
 
                 contextSwitch.classList.toggle("is-agro", selectedMode === "agro");
-                contextSwitch.classList.toggle("is-uvis", selectedMode !== "agro");
+                contextSwitch.classList.toggle("is-uvis", selectedMode === "uvis_prefeitura");
+                contextSwitch.classList.toggle("is-financeiro", selectedMode === "financeiro");
                 contextSwitch.style.setProperty("--admin-context-thumb-left", `${activeRect.left - switchRect.left}px`);
                 contextSwitch.style.setProperty("--admin-context-thumb-width", `${activeRect.width}px`);
             }
@@ -1431,11 +1280,13 @@
             }
 
             function applyContextMode(mode, persist = true) {
-                const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
+                const selectedMode = normalizeContextMode(mode);
                 const isAgro = selectedMode === "agro";
 
                 body.classList.toggle("agro-mode", isAgro);
                 document.documentElement.classList.toggle("agro-mode", isAgro);
+                body.classList.toggle("financeiro-mode", selectedMode === "financeiro");
+                document.documentElement.classList.toggle("financeiro-mode", selectedMode === "financeiro");
 
                 contextButtons.forEach((button) => {
                     const active = button.dataset.adminContext === selectedMode;
@@ -1462,7 +1313,6 @@
 
             applyContextMode(readContextMode(), false);
             writeContextMode(serverContextMode);
-            setupSupportNotifications();
             contextButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     const mode = button.dataset.adminContext || "uvis_prefeitura";
@@ -1497,6 +1347,25 @@
                     }
                 });
             });
+
+            function applyThemeState(themeName, persist = true) {
+                const isDark = themeName === "dark";
+                document.documentElement.classList.toggle("dark-mode", isDark);
+                body.classList.toggle("dark-mode", isDark);
+                document.documentElement.style.backgroundColor = isDark ? "#101927" : "";
+
+                if (toggle) {
+                    toggle.innerHTML = isDark
+                        ? '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>'
+                        : '<span>Modo Escuro</span><i class="bi bi-moon-stars"></i>';
+                }
+
+                if (persist) {
+                    setThemeCookie(isDark ? "dark" : "light");
+                }
+
+                updateThemeColorByMode();
+            }
 
             // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
             document.querySelectorAll('.form-deletar').forEach(form => {
@@ -1598,17 +1467,15 @@
             if (toggle) {
                 const savedTheme = getThemeFromCookie();
                 if (savedTheme === "dark") {
-                    body.classList.add("dark-mode");
-                    toggle.innerHTML = '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>';
+                    applyThemeState("dark", false);
+                } else {
+                    applyThemeState("light", false);
                 }
-                updateThemeColorByMode();
+
                 toggle.addEventListener("click", (e) => {
                     e.stopPropagation();
-                    body.classList.toggle("dark-mode");
-                    const isDark = body.classList.contains("dark-mode");
-                    setThemeCookie(isDark ? "dark" : "light");
-                    toggle.innerHTML = isDark ? '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>' : '<span>Modo Escuro</span><i class="bi bi-moon-stars"></i>';
-                    updateThemeColorByMode();
+                    const nextTheme = document.documentElement.classList.contains("dark-mode") ? "light" : "dark";
+                    applyThemeState(nextTheme, true);
                 });
             }
 
@@ -1666,10 +1533,11 @@
       }
 
       // Dica iOS
+      const iosLink = document.getElementById("iosInstallHint");
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      if (isIOS && !isStandalone) {
-          if (iosLink) iosLink.style.display = "block";
+      if (isIOS && !isStandalone && iosLink) {
+          iosLink.style.display = "block";
       }
 
       const videoUploadWidget = document.getElementById("globalVideoUploadStatus");
@@ -1887,6 +1755,10 @@
       navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
   }
     </script>
+    {% if ija_security %}
+    <script id="ija-security-config" type="application/json">{{ ija_security|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/session-security.js', v='20261007a') }}" defer></script>
+    {% endif %}
     {% block scripts %}{% endblock %}
   </body>
 </html>

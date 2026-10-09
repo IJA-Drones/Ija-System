@@ -1,0 +1,55 @@
+/* Painel e operacao do piloto Agro. */
+body.dark-mode.agro-mode .agro-pilot-page-header .text-dark,
+body.dark-mode.agro-mode .agro-pilot-overview .text-dark,
+body.dark-mode.agro-mode .agro-pilot-stat .text-dark,
+body.dark-mode.agro-mode .agro-pilot-section-card .text-dark {
+  color: #dfece7 !important;
+}
+
+body.dark-mode.agro-mode .agro-pilot-page-header .text-muted,
+body.dark-mode.agro-mode .agro-pilot-overview .text-muted,
+body.dark-mode.agro-mode .agro-pilot-stat .text-muted,
+body.dark-mode.agro-mode .agro-pilot-section-card .text-muted,
+body.dark-mode.agro-mode .agro-pilot-demand-meta,
+body.dark-mode.agro-mode .agro-pilot-profile-item span {
+  color: #9eb0b8 !important;
+}
+
+body.dark-mode.agro-mode .agro-pilot-overview,
+body.dark-mode.agro-mode .agro-pilot-stat,
+body.dark-mode.agro-mode .agro-pilot-section-card,
+body.dark-mode.agro-mode .agro-pilot-demand-item,
+body.dark-mode.agro-mode .agro-pilot-profile-item,
+body.dark-mode.agro-mode .agro-pilot-help-box,
+body.dark-mode.agro-mode .agro-pilot-overview-note {
+  background: #172a36;
+  border-color: #304750;
+  box-shadow: 0 12px 26px rgba(2, 10, 14, 0.22);
+}
+
+body.dark-mode.agro-mode .agro-pilot-overview-tag {
+  color: #dfece7;
+  background: #1b303b;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-pilot-overview-tag.is-alert {
+  color: #e6cd86;
+  background: rgba(210, 170, 70, 0.12);
+}
+
+body.dark-mode.agro-mode .agro-pilot-demand-title strong,
+body.dark-mode.agro-mode .agro-pilot-profile-item strong,
+body.dark-mode.agro-mode .agro-pilot-empty-state h6 {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-pilot-empty-state {
+  background: #172a36;
+  border-color: #34505a;
+}
+
+body.dark-mode.agro-mode .agro-pilot-empty-icon {
+  color: #91dfb1;
+  background: rgba(99, 208, 138, 0.12);
+}

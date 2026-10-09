@@ -4,205 +4,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-<style>
-  .usuarios-page {
-    width: 100%;
-  }
-  .usuarios-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  .usuarios-toolbar-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  .usuarios-toolbar-actions > a {
-    white-space: nowrap;
-  }
-  .usuarios-filter-actions {
-    display: flex;
-    gap: 8px;
-  }
-  .usuarios-table-wrap th.col-acoes,
-  .usuarios-table-wrap td.cell-acoes {
-    width: 240px;
-    min-width: 240px;
-    text-align: center;
-  }
-  .usuarios-table-wrap td.cell-acoes {
-    vertical-align: middle;
-  }
-  .usuarios-table-wrap .usuarios-actions-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    max-width: 220px;
-    margin: 0 auto;
-    align-items: stretch;
-  }
-  .usuarios-table-wrap .usuarios-actions-row form {
-    margin: 0;
-  }
-  .usuarios-table-wrap .usuarios-actions-row .btn {
-    width: 100%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    min-height: 32px;
-  }
-
-  @media (max-width: 991.98px) {
-    .usuarios-page.container-fluid.py-4 {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
-    .usuarios-toolbar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .usuarios-toolbar-actions {
-      width: 100%;
-      justify-content: stretch;
-    }
-    .usuarios-toolbar-actions > a {
-      flex: 1 1 calc(50% - 4px);
-      justify-content: center;
-    }
-    #collapseFiltrosUsers .row.g-2.align-items-end > div {
-      width: 100%;
-    }
-    .usuarios-filter-actions {
-      flex-direction: column;
-    }
-    .usuarios-filter-actions > * {
-      width: 100%;
-    }
-    .usuarios-table-wrap .table-responsive {
-      overflow-x: visible !important;
-    }
-    .usuarios-table-wrap table.table thead {
-      display: none;
-    }
-    .usuarios-table-wrap table.table,
-    .usuarios-table-wrap table.table tbody,
-    .usuarios-table-wrap table.table tr,
-    .usuarios-table-wrap table.table td {
-      display: block;
-      width: 100%;
-    }
-    .usuarios-table-wrap table.table tbody {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 12px;
-    }
-    .usuarios-table-wrap table.table tbody tr {
-      border: 1px solid rgba(0,0,0,.08);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 22px rgba(0,0,0,.06);
-      background: #fff;
-    }
-    .usuarios-table-wrap table.table tbody td {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 14px;
-      border: 0 !important;
-      text-align: left !important;
-    }
-    .usuarios-table-wrap table.table tbody td + td {
-      border-top: 1px solid rgba(0,0,0,.06) !important;
-    }
-    .usuarios-table-wrap table.table tbody td::before {
-      flex: 0 0 96px;
-      max-width: 96px;
-      font-weight: 700;
-      font-size: .82rem;
-      color: rgba(0,0,0,.55);
-      line-height: 1.1;
-      padding-top: 2px;
-    }
-    .usuarios-table-wrap table.table tbody td:nth-child(1)::before { content: "ID"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(2)::before { content: "Nome"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(3)::before { content: "Tipo"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(4)::before { content: "Regiao"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(5)::before { content: "Suporte"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(6)::before { content: "Login"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(7)::before { content: "Acoes"; }
-    .usuarios-table-wrap table.table tbody td > * {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .usuarios-table-wrap .usuarios-actions-row {
-      flex-direction: column;
-      display: flex;
-      max-width: none;
-      margin: 0;
-    }
-    .usuarios-table-wrap td:last-child .collapse .row.g-2.align-items-end > div {
-      width: 100%;
-    }
-    .usuarios-table-wrap td code {
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-    .card-footer .pagination {
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-  }
-
-  @media (max-width: 420px) {
-    .usuarios-toolbar-actions > a {
-      flex-basis: 100%;
-    }
-    .usuarios-table-wrap table.table tbody td {
-      flex-direction: column;
-      gap: 6px;
-    }
-    .usuarios-table-wrap table.table tbody td::before {
-      flex-basis: auto;
-      max-width: none;
-      padding-top: 0;
-    }
-  }
-
-  @media (max-width: 991.98px) {
-    html.dark-mode .usuarios-table-wrap table.table tbody tr,
-    body.dark-mode .usuarios-table-wrap table.table tbody tr {
-      background: #0f1a24 !important;
-      border-color: #233549 !important;
-      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
-      color: rgba(255,255,255,.92) !important;
-    }
-    html.dark-mode .usuarios-table-wrap table.table tbody td + td,
-    body.dark-mode .usuarios-table-wrap table.table tbody td + td {
-      border-top-color: #233549 !important;
-    }
-    html.dark-mode .usuarios-table-wrap table.table tbody td::before,
-    body.dark-mode .usuarios-table-wrap table.table tbody td::before {
-      color: rgba(255,255,255,.72) !important;
-    }
-    html.dark-mode .usuarios-table-wrap .text-muted,
-    body.dark-mode .usuarios-table-wrap .text-muted {
-      color: rgba(255,255,255,.70) !important;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_usuarios_listar.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 usuarios-page" style="max-width: 1200px">
 
-  <div class="usuarios-toolbar mb-4">
+  <div class="usuarios-toolbar page-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-people-fill me-2 text-primary"></i> Usuários (Admin / Operário)
@@ -215,7 +23,7 @@
       </p>
     </div>
 
-    <div class="usuarios-toolbar-actions">
+    <div class="usuarios-toolbar-actions page-toolbar-actions">
       <a href="{{ url_for('main.admin_dashboard') }}"
          class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
@@ -228,8 +36,8 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+  <div class="card shadow-sm rounded-4 mb-4 border-0 usuarios-filter-card">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center usuarios-filter-header"
          data-bs-toggle="collapse"
          data-bs-target="#collapseFiltrosUsers"
          aria-expanded="{{ 'true' if (q or tipo) else 'false' }}"
@@ -264,14 +72,17 @@
               <label class="small text-muted">Tipo:</label>
               <select name="tipo" class="form-select form-select-sm">
                 <option value="">Todos</option>
+                <option value="diretor" {% if tipo == 'diretor' %}selected{% endif %}>Diretor</option>
                 <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
                 <option value="covisa" {% if tipo == 'covisa' %}selected{% endif %}>COVISA</option>
                 <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
                 <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
                 <option value="financeiro_admin" {% if tipo == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
                 <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
+                <option value="gestor_ti" {% if tipo == 'gestor_ti' %}selected{% endif %}>Gestor de TI</option>
                 <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
                 <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
+                <option value="sup_veiculos" {% if tipo == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
               </select>
             </div>
 
@@ -296,7 +107,7 @@
 
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden usuarios-table-wrap">
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0 usuarios-listing-table">
         <thead class="table-light">
           <tr>
             <th style="width: 80px">ID</th>
@@ -320,6 +131,11 @@
                   {% if u.id == current_user.id %}
                     <span class="badge bg-info text-dark ms-2">Você</span>
                   {% endif %}
+                  {% if u.trabalha_oceano_azul %}
+                    <div class="mt-1">
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Oceano Azul</span>
+                    </div>
+                  {% endif %}
                 </td>
 
                 <td>
@@ -327,6 +143,10 @@
                     <span class="badge bg-info">COVISA</span>
                   {% elif u.tipo_usuario == 'dev' %}
                     <span class="badge bg-danger">DEV</span>
+                  {% elif u.tipo_usuario == 'gestor_ti' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">GESTOR DE TI</span>
+                  {% elif u.tipo_usuario == 'diretor' %}
+                    <span class="badge bg-dark">DIRETOR</span>
                   {% elif u.tipo_usuario == 'admin' %}
                     <span class="badge bg-primary">ADMIN</span>
                   {% elif u.tipo_usuario == 'regional' %}
@@ -337,6 +157,8 @@
                     <span class="badge bg-success-subtle text-success border border-success-subtle">FINANCEIRO</span>
                   {% elif u.tipo_usuario == 'prefeitura_admin' %}
                     <span class="badge bg-dark">PREFEITURA</span>
+                  {% elif u.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] %}
+                    <span class="badge bg-primary">SUPERVISOR DE VEÍCULOS</span>
                   {% else %}
                     <span class="badge bg-warning text-dark">OPERÁRIO</span>
                   {% endif %}
@@ -367,7 +189,7 @@
                   <div class="usuarios-actions-row">
                     <a class="btn btn-sm btn-success text-white shadow-sm"
                        href="{{ url_for('main.admin_usuario_editar', id=u.id) }}"
-                       {% if u.tipo_usuario == 'dev' and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %}>
+                       {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %}>
                       <i class="bi bi-pencil-square me-1"></i> Editar
                     </a>
 
@@ -376,14 +198,14 @@
                           action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}">
                       <button type="submit"
                               class="btn btn-sm btn-danger shadow-sm"
-                              {% if u.tipo_usuario == 'dev' and not can_manage_dev_accounts %}disabled title="Apenas dev pode excluir uma conta dev"{% endif %}
+                              {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}disabled title="Apenas dev pode excluir esta conta"{% endif %}
                               {% if u.id == current_user.id %}disabled title="Você não pode excluir seu próprio usuário"{% endif %}>
                         <i class="bi bi-trash me-1"></i> Excluir
                       </button>
                     </form>
 
                     <div class="collapse w-100 mt-2" id="resetSenha{{ u.id }}">
-                      <div class="p-3 border rounded-3 bg-light">
+                      <div class="p-3 border rounded-3 bg-light usuarios-reset-panel">
                         <form method="POST"
                               action="{{ url_for('main.admin_usuario_reset_senha', id=u.id) }}"
                               class="row g-2 align-items-end m-0">

@@ -6,8 +6,9 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from app.extensions import db
+from app.shared.password_policy import validate_password
 from app.models import Equipe, EquipePiloto, Pilotos, Usuario
-from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.access import VEICULOS_SUPERVISOR_USER_TYPES, apply_prefeitura_scope, normalize_role
 from app.shared.query_filters import id_search_clause
 
 
@@ -42,6 +43,68 @@ def get_pilotos_ordered(user=None):
     if user is not None:
         query = apply_prefeitura_scope(query, user, Pilotos.prefeitura_id)
     return query.order_by(Pilotos.nome_piloto.asc()).all()
+
+
+def supervisores_query(user=None):
+    query = Usuario.query.filter(Usuario.tipo_usuario.in_(VEICULOS_SUPERVISOR_USER_TYPES))
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
+    return query
+
+
+def get_supervisores_ordered(user=None):
+    return supervisores_query(user).order_by(Usuario.nome_uvis.asc(), Usuario.id.asc()).all()
+
+
+def build_equipe_supervisores_map(equipes, user=None):
+    equipe_ids = {str(equipe.id).strip(): equipe.id for equipe in equipes}
+    result = {equipe.id: [] for equipe in equipes}
+    if equipe_ids:
+        supervisors = supervisores_query(user).all()
+        for supervisor in supervisors:
+            setor = (getattr(supervisor, "codigo_setor", None) or "").strip()
+            if setor in equipe_ids:
+                result[equipe_ids[setor]].append(supervisor)
+        for eq_id in result:
+            result[eq_id].sort(key=lambda s: ((s.nome_uvis or s.login or "").lower(), s.id))
+    return result
+
+
+def validate_equipe_supervisores(raw_ids, user, prefeitura_id, *, nova_equipe=False):
+    try:
+        ids = {int(value) for value in raw_ids if value}
+        if any(value <= 0 or value > 2147483647 for value in ids):
+            raise ValueError
+    except (TypeError, ValueError):
+        return [], prefeitura_id, {"supervisor_ids": "Selecione um supervisor de veículos válido."}
+    
+    supervisores = supervisores_query(user).filter(Usuario.id.in_(ids)).all() if ids else []
+    if len(supervisores) != len(ids):
+        return [], prefeitura_id, {"supervisor_ids": "Selecione apenas usuários do tipo supervisor de veículos disponíveis para você."}
+    
+    prefeituras = {item.prefeitura_id for item in supervisores if item.prefeitura_id is not None}
+    
+    # Se a equipe não tem prefeitura mas o supervisor tem, herda a do supervisor
+    if prefeitura_id is None and len(prefeituras) == 1:
+        prefeitura_id = next(iter(prefeituras))
+    
+    # Só valida conflito se ambos tiverem prefeitura definida e forem diferentes
+    if prefeitura_id is not None and prefeituras and prefeituras - {prefeitura_id}:
+        return [], prefeitura_id, {"supervisor_ids": "A equipe e seus supervisores devem pertencer à mesma prefeitura."}
+        
+    return supervisores, prefeitura_id, {}
+
+
+def sync_equipe_supervisores(equipe, supervisores, user=None):
+    selected_ids = {item.id for item in supervisores}
+    equipe_str = str(equipe.id).strip()
+    atuais = supervisores_query(user).all()
+    for atual in atuais:
+        setor = (getattr(atual, "codigo_setor", None) or "").strip()
+        if setor == equipe_str and atual.id not in selected_ids:
+            atual.codigo_setor = None
+    for supervisor in supervisores:
+        supervisor.codigo_setor = equipe_str
 
 
 def login_em_uso(login: str, exclude_user_id=None):
@@ -105,6 +168,9 @@ def validate_equipe_account_form(login: str, senha: str, senha2: str, current_ac
     elif senha and len(senha) < 6:
         errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
 
+    if senha and (password_error := validate_password(senha)):
+        errors["senha"] = password_error
+
     if senha or senha2:
         if senha != senha2:
             errors["senha2"] = "As senhas nao conferem."
@@ -132,6 +198,7 @@ def upsert_equipe_account(equipe, login: str, senha: str):
     account.codigo_setor = str(equipe.id)
     account.login = login
     account.tipo_usuario = EQUIPE_OCEANO_USER_TYPE
+    account.trabalha_oceano_azul = bool(getattr(equipe, "trabalha_oceano_azul", True))
     account.piloto_id = None
     if senha:
         account.set_senha(senha)
@@ -187,7 +254,7 @@ def build_equipes_query(
         else:
             query = query.filter(Equipe.regiao.ilike(regiao))
             query = query.filter(Equipe.ativa.is_(True))
-    elif tipo not in ["dev", "admin", "visualizar", "operario", "operador", "prefeitura_admin"]:
+    elif tipo not in {"dev", "diretor", "admin", "visualizar", "operario", "operador", "prefeitura_admin", *VEICULOS_SUPERVISOR_USER_TYPES}:
         if user_regiao:
             query = query.filter(Equipe.regiao.ilike(user_regiao))
             regiao = user_regiao
@@ -321,7 +388,7 @@ def build_equipes_export(rows):
     sheet["A2"].font = Font(color="6B7280")
 
     start_row = 4
-    headers = ["ID", "Equipe", "Regiao", "Ativa", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descricao"]
+    headers = ["ID", "Equipe", "Regiao", "Ativa", "Oceano Azul", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descricao"]
 
     for col_idx, header in enumerate(headers, start=1):
         cell = sheet.cell(row=start_row, column=col_idx, value=header)
@@ -336,6 +403,7 @@ def build_equipes_export(rows):
             equipe.nome_equipe,
             equipe.regiao or "",
             "SIM" if equipe.ativa else "NAO",
+            "SIM" if equipe.trabalha_oceano_azul else "NAO",
             equipe.piloto_titular.nome_piloto if equipe.piloto_titular else "",
             equipe.piloto_auxiliar.nome_piloto if equipe.piloto_auxiliar else "",
             _format_drones(equipe),
@@ -346,7 +414,7 @@ def build_equipes_export(rows):
         for col_idx, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_idx, column=col_idx, value=value)
             cell.border = border
-            cell.alignment = center_align if col_idx in (1, 4) else text_align
+            cell.alignment = center_align if col_idx in (1, 4, 5) else text_align
 
     last_row = start_row + len(rows)
     last_col = len(headers)
@@ -354,7 +422,7 @@ def build_equipes_export(rows):
     sheet.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
     sheet.row_dimensions[start_row].height = 22
 
-    max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 60, 8: 18, 9: 50}
+    max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 14, 6: 26, 7: 26, 8: 60, 9: 18, 10: 50}
     for col_idx in range(1, last_col + 1):
         max_len = len(headers[col_idx - 1])
         for row_idx in range(start_row + 1, last_row + 1):

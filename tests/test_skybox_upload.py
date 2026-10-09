@@ -69,6 +69,25 @@ class SkyboxUploadTests(unittest.TestCase):
             "registros abastecimento/ABC1D23/2026-07-08/nota fiscal/nf_ABC1D23_2026-07-08_09-23-31-123.png",
         )
 
+    def test_skybox_roundtrip_checks_upload_confirmation_and_cleanup(self):
+        calls = []
+
+        def fake_request(method, remote_path, **kwargs):
+            calls.append((method, remote_path))
+            if method == "MKCOL":
+                return SimpleNamespace(status_code=201, text="")
+            if method == "PROPFIND":
+                return SimpleNamespace(status_code=207, text="")
+            return SimpleNamespace(status_code=204, text="")
+
+        skybox._request = fake_request
+        result = skybox.test_skybox_roundtrip()
+
+        self.assertEqual(result["severity"], "success")
+        self.assertEqual([step["status"] for step in result["steps"]], ["ok", "ok", "ok"])
+        self.assertIn(("PUT", next(path for method, path in calls if method == "PUT")), calls)
+        self.assertEqual([method for method, _ in calls[-3:]], ["DELETE", "DELETE", "DELETE"])
+
 
 if __name__ == "__main__":
     unittest.main()

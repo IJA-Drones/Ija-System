@@ -1,0 +1,448 @@
+{
+  "labels": {
+    "consultar": "Consultar",
+    "criar": "Cadastrar",
+    "editar": "Editar",
+    "excluir": "Excluir",
+    "exportar": "Exportar",
+    "aprovar": "Aprovar",
+    "cancelar": "Cancelar",
+    "concluir": "Concluir",
+    "midias": "Gerenciar mídias",
+    "atribuir": "Atribuir equipe",
+    "operar": "Operar",
+    "configurar": "Configurar",
+    "importar": "Importar",
+    "corrigir": "Corrigir",
+    "encaminhar": "Encaminhar",
+    "atender": "Atender",
+    "gerenciar": "Gerenciar acessos"
+  },
+  "catalog": [
+    {
+      "id": "prefeitura",
+      "label": "Prefeitura",
+      "icon": "bi-buildings",
+      "description": "Solicitações, equipes e operação municipal.",
+      "modules": [
+        [
+          "solicitacoes",
+          "Solicitações",
+          "Pedidos, aprovações e agendamentos.",
+          "bi-inbox",
+          "consultar criar editar aprovar cancelar excluir exportar"
+        ],
+        [
+          "os",
+          "Ordens de serviço",
+          "Execução, histórico e arquivos das OS.",
+          "bi-clipboard-check",
+          "consultar editar concluir midias exportar"
+        ],
+        [
+          "clientes",
+          "Clientes e UVIS",
+          "Cadastros e contatos da prefeitura.",
+          "bi-people",
+          "consultar criar editar excluir exportar"
+        ],
+        [
+          "equipes",
+          "Equipes e pilotos",
+          "Equipes OA, membros e acessos UVIS.",
+          "bi-person-badge",
+          "consultar criar editar excluir atribuir"
+        ],
+        [
+          "equipamentos",
+          "Equipamentos",
+          "Drones, baterias e manutenção.",
+          "bi-cpu",
+          "consultar criar editar excluir importar"
+        ],
+        [
+          "veiculos",
+          "Veículos e turnos",
+          "Frota, KM, abastecimento e limpeza.",
+          "bi-truck",
+          "consultar criar editar excluir operar corrigir exportar"
+        ],
+        [
+          "checklists",
+          "Checklists",
+          "Inspeções semanais de veículos e drones.",
+          "bi-ui-checks-grid",
+          "consultar editar corrigir"
+        ],
+        [
+          "relatorios",
+          "Relatórios",
+          "Indicadores, coleta de imagens e retornos.",
+          "bi-bar-chart",
+          "consultar exportar"
+        ],
+        [
+          "mapas",
+          "Mapas e agenda",
+          "Geolocalização e programação da operação.",
+          "bi-geo-alt",
+          "consultar exportar"
+        ],
+        [
+          "denuncias",
+          "Denúncias",
+          "Triagem e encaminhamento de registros.",
+          "bi-megaphone",
+          "consultar encaminhar atribuir"
+        ]
+      ]
+    },
+    {
+      "id": "agro",
+      "label": "Agro",
+      "icon": "bi-tree",
+      "description": "Comercial, equipes e operação agrícola.",
+      "modules": [
+        [
+          "clientes",
+          "Clientes e fornecedores",
+          "Cadastros e contatos da operação Agro.",
+          "bi-people",
+          "consultar criar editar excluir"
+        ],
+        [
+          "comercial",
+          "Comercial",
+          "Orçamentos, contratos e documentos.",
+          "bi-briefcase",
+          "consultar criar editar excluir exportar"
+        ],
+        [
+          "mapeamentos",
+          "Mapeamentos",
+          "RD e templates de mapeamento.",
+          "bi-map",
+          "consultar editar concluir configurar"
+        ],
+        [
+          "os",
+          "Ordens de serviço",
+          "Contratos aprovados e execução em campo.",
+          "bi-clipboard-check",
+          "consultar criar editar concluir excluir exportar"
+        ],
+        [
+          "equipes",
+          "Equipes e pilotos",
+          "Cadastros e vínculos operacionais Agro.",
+          "bi-person-badge",
+          "consultar criar editar excluir"
+        ],
+        [
+          "equipamentos",
+          "Equipamentos",
+          "Equipamentos e equipe responsável.",
+          "bi-cpu",
+          "consultar criar editar excluir importar"
+        ],
+        [
+          "voos",
+          "Logs de voo",
+          "Importação, rotas KML e vínculo com OS.",
+          "bi-airplane",
+          "consultar importar editar exportar"
+        ],
+        [
+          "talentos",
+          "Banco de talentos",
+          "Currículos e análise de candidatos.",
+          "bi-file-earmark-person",
+          "consultar criar editar excluir"
+        ]
+      ]
+    },
+    {
+      "id": "financeiro",
+      "label": "Financeiro",
+      "icon": "bi-bank",
+      "description": "Contas, caixa e gestão por empresa.",
+      "modules": [
+        [
+          "contas",
+          "Contas e lançamentos",
+          "Entradas, saídas, contas a pagar e receber.",
+          "bi-wallet2",
+          "consultar criar editar excluir operar"
+        ],
+        [
+          "caixa",
+          "Caixa diário",
+          "Abertura, movimentação e fechamento.",
+          "bi-cash-stack",
+          "consultar operar"
+        ],
+        [
+          "bancos",
+          "Bancos e conciliação",
+          "Contas bancárias e conferência de valores.",
+          "bi-bank",
+          "consultar criar editar excluir operar"
+        ],
+        [
+          "comprovantes",
+          "Comprovantes",
+          "Documentos dos pagamentos e recebimentos.",
+          "bi-receipt",
+          "consultar midias"
+        ],
+        [
+          "relacionamentos",
+          "Fornecedores",
+          "Cadastro de fornecedores da empresa.",
+          "bi-briefcase",
+          "consultar criar editar excluir"
+        ],
+        [
+          "comercial",
+          "Clientes e comercial",
+          "Consulta de clientes, orçamentos e contratos da empresa.",
+          "bi-briefcase",
+          "consultar exportar"
+        ],
+        [
+          "relatorios",
+          "Relatórios financeiros",
+          "Visão geral e exportação dos resultados.",
+          "bi-bar-chart",
+          "consultar exportar"
+        ],
+        [
+          "configuracoes",
+          "Configurações da empresa",
+          "Identificação, logo, categorias e competências.",
+          "bi-sliders",
+          "consultar configurar"
+        ]
+      ]
+    },
+    {
+      "id": "sistema",
+      "label": "Sistema",
+      "icon": "bi-shield-check",
+      "description": "Administração e ferramentas de suporte.",
+      "modules": [
+        [
+          "usuarios",
+          "Usuários e acessos",
+          "Contas, perfis e responsabilidades.",
+          "bi-person-lock",
+          "consultar criar editar excluir gerenciar"
+        ],
+        [
+          "perfis",
+          "Central de TI",
+          "Configurações e responsabilidades por tipo de usuário.",
+          "bi-shield-check",
+          "consultar configurar"
+        ],
+        [
+          "suporte",
+          "Bugs e suporte",
+          "Solicitações de ajuda e tratamento de bugs.",
+          "bi-tools",
+          "consultar criar atender"
+        ],
+        [
+          "estoque",
+          "Estoque",
+          "Peças, quantidades e disponibilidade.",
+          "bi-box-seam",
+          "consultar criar editar excluir exportar"
+        ],
+        [
+          "operacional",
+          "Painel operacional",
+          "Acompanhamento da operação.",
+          "bi-activity",
+          "consultar"
+        ],
+        [
+          "auditoria",
+          "Auditoria e presença",
+          "Histórico de ações e presença no sistema.",
+          "bi-clock-history",
+          "consultar exportar"
+        ],
+        [
+          "tecnico",
+          "Ferramentas técnicas",
+          "Erros, verificações, backups e importações DJI.",
+          "bi-terminal",
+          "consultar operar importar"
+        ]
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "prefeitura_admin",
+      "name": "Admin Prefeitura",
+      "description": "Administração municipal",
+      "area": "prefeitura",
+      "group": "administrativo",
+      "glyph": "bi-buildings"
+    },
+    {
+      "id": "financeiro",
+      "name": "Financeiro",
+      "description": "Operação financeira",
+      "area": "financeiro",
+      "group": "financeiro",
+      "glyph": "bi-wallet2"
+    },
+    {
+      "id": "financeiro_admin",
+      "name": "Admin Financeiro",
+      "description": "Gestão financeira",
+      "area": "financeiro",
+      "group": "financeiro",
+      "glyph": "bi-bank"
+    },
+    {
+      "id": "piloto",
+      "name": "Piloto OA",
+      "description": "Operação da Oceano Azul",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-airplane"
+    },
+    {
+      "id": "regional",
+      "name": "Regional",
+      "description": "Gestão regional",
+      "area": "prefeitura",
+      "group": "administrativo",
+      "glyph": "bi-geo-alt"
+    },
+    {
+      "id": "uvis",
+      "name": "UVIS",
+      "description": "Solicitações municipais",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-building"
+    },
+    {
+      "id": "operario",
+      "name": "Operário",
+      "description": "Gestão operacional",
+      "area": "prefeitura",
+      "group": "administrativo",
+      "glyph": "bi-clipboard-check"
+    },
+    {
+      "id": "sup_veiculos",
+      "name": "Supervisor de veículos",
+      "description": "Frota e turnos",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-truck"
+    },
+    {
+      "id": "piloto_agro",
+      "name": "Piloto Agro",
+      "description": "Operação agrícola",
+      "area": "agro",
+      "group": "operacao",
+      "glyph": "bi-tree"
+    },
+    {
+      "id": "equipe_oceano",
+      "name": "Equipe OA",
+      "description": "Equipe da Oceano Azul",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-people"
+    },
+    {
+      "id": "equipe_uvis",
+      "name": "Equipe UVIS",
+      "description": "Equipe municipal",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-people"
+    },
+    {
+      "id": "covisa",
+      "name": "COVISA",
+      "description": "Coordenação municipal",
+      "area": "prefeitura",
+      "group": "administrativo",
+      "glyph": "bi-diagram-3"
+    },
+    {
+      "id": "admin",
+      "name": "Admin",
+      "description": "Administração geral",
+      "area": "prefeitura",
+      "group": "administrativo",
+      "glyph": "bi-shield-check"
+    },
+    {
+      "id": "diretor",
+      "name": "Diretor",
+      "description": "Direção do sistema",
+      "area": "sistema",
+      "group": "administrativo",
+      "glyph": "bi-person-badge"
+    },
+    {
+      "id": "visualizar",
+      "name": "Visualização",
+      "description": "Consulta administrativa",
+      "area": "prefeitura",
+      "group": "administrativo",
+      "glyph": "bi-eye"
+    },
+    {
+      "id": "dev",
+      "name": "Dev",
+      "description": "Ferramentas técnicas",
+      "area": "sistema",
+      "group": "ti",
+      "glyph": "bi-terminal"
+    },
+    {
+      "id": "gestor_ti",
+      "name": "Gestor de TI",
+      "description": "Gestão da Central de TI",
+      "area": "sistema",
+      "group": "ti",
+      "glyph": "bi-person-lock"
+    },
+    {
+      "id": "visualizador",
+      "name": "Visualizador (legado)",
+      "description": "Consulta administrativa",
+      "area": "prefeitura",
+      "group": "legado",
+      "glyph": "bi-eye"
+    },
+    {
+      "id": "operador",
+      "name": "Operador (legado)",
+      "description": "Cadastros operacionais",
+      "area": "prefeitura",
+      "group": "legado",
+      "glyph": "bi-tools"
+    },
+    {
+      "id": "sup_veiculo",
+      "name": "Supervisor (legado)",
+      "description": "Alias de supervisor de veículos",
+      "area": "prefeitura",
+      "group": "legado",
+      "glyph": "bi-truck"
+    }
+  ]
+}

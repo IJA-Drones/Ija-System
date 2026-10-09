@@ -1,0 +1,11 @@
+/* =========================================
+   LOGOS
+   ========================================= */
+
+body.dark-mode .logo-light {
+  display: none;
+}
+
+body.dark-mode .logo-dark {
+  display: block;
+}

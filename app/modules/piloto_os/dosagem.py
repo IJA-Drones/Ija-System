@@ -14,6 +14,7 @@ from app.modules.piloto_os.service import (
     _parse_json_object,
     _sanitize_calculo_dosagem_planejado,
 )
+from app.shared.access import VEICULOS_SUPERVISOR_USER_TYPES, normalize_role
 
 
 def _fmt_number(value):
@@ -220,7 +221,8 @@ def _build_base_context(user):
 
 
 def _get_piloto_os_planejamento(user, os_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    if role not in {EQUIPE_OCEANO_USER_TYPE, *VEICULOS_SUPERVISOR_USER_TYPES} and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = (

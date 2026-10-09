@@ -767,22 +767,36 @@ def build_orcamento_agro_pdf(orcamento):
         value_width=109 * mm,
     )
 
+    included_services = [
+        "- Aplicação;",
+        "- Relatório final de pulverização",
+    ]
+    included_deadlines = [
+        "- Agendamento Pulverização;",
+        "- Envio do relatório de pulverização (Até 30 dias úteis);",
+    ]
+    if orcamento.mapeamento:
+        included_services[:0] = [
+            "- Mapeamento;",
+            "- Geoprocessamento + Relatório de processamento;",
+        ]
+        included_deadlines[:0] = [
+            "- Agendamento Mapeamento;",
+            "- Envio de mapa (Até 4 dias úteis);",
+        ]
+
+    commercial_note_text = (
+        "Serviços inclusos:<br/>"
+        "<br/>"
+        f"{'<br/>'.join(included_services)}"
+        "<br/><br/>"
+        f"{'<br/>'.join(included_deadlines)}"
+    )
+
     commercial_note = Table(
         [[
             Paragraph(
-                (
-                    "Serviços inclusos:<br/>"
-                    "<br/>"
-                    "- Mapeamento;<br/>"
-                    "- Geoprocessamento + Relatório de processamento;<br/>"
-                    "- Aplicação;<br/>"
-                    "- Relatório final de pulverização"
-                    "<br/><br/>"
-                    "- Agendamento Mapeamento;<br/>"
-                    "- Envio de mapa (Até 4 dias úteis);<br/>"
-                    "- Agendamento Pulverização;<br/>"
-                    "- Envio do relatório de pulverização (Até 30 dias úteis);"
-                ),
+                commercial_note_text,
                 note_style,
             )
         ]],

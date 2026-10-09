@@ -1,0 +1,7 @@
+/* =========================================
+   LIST GROUPS
+   ========================================= */
+
+.list-group-item-light-custom {
+  background-color: var(--color-text-notificação) !important;
+}

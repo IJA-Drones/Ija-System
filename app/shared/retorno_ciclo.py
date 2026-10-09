@@ -404,29 +404,83 @@ def _build_retorno_ciclo_summary(context):
     }
 
 
-def build_retorno_ciclo_summaries(user, solicitacoes):
-    summaries = {}
-    context_by_root = {}
+def _retorno_ciclo_candidate_ids(solicitacoes):
+    solicitacao_ids = [
+        solicitacao.id
+        for solicitacao in solicitacoes
+        if getattr(solicitacao, "id", None)
+    ]
+    if not solicitacao_ids:
+        return set()
 
-    for solicitacao in solicitacoes or []:
+    parent_query = (
+        db.session.query(Solicitacao.origem_retorno_id.label("solicitacao_id"))
+        .filter(Solicitacao.origem_retorno_id.in_(solicitacao_ids))
+    )
+    piloto_retorno_query = (
+        db.session.query(OrdemServico.solicitacao_id.label("solicitacao_id"))
+        .filter(
+            OrdemServico.solicitacao_id.in_(solicitacao_ids),
+            func.upper(func.trim(func.coalesce(OrdemServico.retornar_proxima_semana_monitorar_larvas, ""))) == "SIM",
+        )
+    )
+    equipe_uvis_retorno_query = (
+        db.session.query(OrdemServicoEquipeUvis.solicitacao_id.label("solicitacao_id"))
+        .filter(
+            OrdemServicoEquipeUvis.solicitacao_id.in_(solicitacao_ids),
+            func.upper(
+                func.trim(func.coalesce(OrdemServicoEquipeUvis.retornar_proxima_semana_monitorar_larvas, ""))
+            ) == "SIM",
+        )
+    )
+    candidate_ids = {
+        row.solicitacao_id
+        for row in parent_query.union(piloto_retorno_query, equipe_uvis_retorno_query).all()
+        if row.solicitacao_id is not None
+    }
+    candidate_ids.update(
+        solicitacao.id
+        for solicitacao in solicitacoes
+        if getattr(solicitacao, "origem_retorno_id", None)
+        or getattr(solicitacao, "gerada_automaticamente", False)
+    )
+    return candidate_ids
+
+
+def _retorno_context_for_current(context, os_id):
+    if context.get("current_id") == os_id:
+        return context
+
+    adjusted = dict(context)
+    adjusted["current_id"] = os_id
+    adjusted["nodes"] = [
+        {**node, "is_current": node.get("id") == os_id}
+        for node in context.get("nodes") or []
+    ]
+    return adjusted
+
+
+def build_retorno_ciclo_summaries(user, solicitacoes):
+    solicitacoes = list(solicitacoes or [])
+    summaries = {}
+    context_by_node = {}
+    candidate_ids = _retorno_ciclo_candidate_ids(solicitacoes)
+
+    for solicitacao in solicitacoes:
         os_id = getattr(solicitacao, "id", None)
-        if not os_id:
+        if not os_id or os_id not in candidate_ids:
             continue
 
-        root_hint = getattr(solicitacao, "origem_retorno_id", None) or os_id
-        context = context_by_root.get(root_hint)
+        context = context_by_node.get(os_id)
         if context is None:
             context = build_retorno_ciclo_context(user, os_id)
-            root_id = context.get("root_id") or root_hint
-            context_by_root[root_id] = context
-            context_by_root[root_hint] = context
+            context_by_node[os_id] = context
+            for node in context.get("nodes") or []:
+                node_id = node.get("id")
+                if node_id is not None:
+                    context_by_node[node_id] = context
 
-        if context.get("current_id") != os_id:
-            context = build_retorno_ciclo_context(user, os_id)
-            root_id = context.get("root_id") or root_hint
-            context_by_root[root_id] = context
-
-        summary = _build_retorno_ciclo_summary(context)
+        summary = _build_retorno_ciclo_summary(_retorno_context_for_current(context, os_id))
         if summary:
             summaries[os_id] = summary
 

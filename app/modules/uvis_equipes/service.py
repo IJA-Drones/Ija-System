@@ -4,6 +4,7 @@ import unicodedata
 from sqlalchemy import func
 
 from app.extensions import db
+from app.shared.password_policy import validate_password
 from app.models import EquipeUvis, Solicitacao, Usuario
 
 
@@ -138,6 +139,8 @@ def validate_team_password(senha: str, senha2: str, required=False):
 
     if not senha:
         return {"senha": "Informe a senha."}
+    if password_error := validate_password(senha):
+        return {"senha": password_error}
     if len(senha) < 6:
         return {"senha": "A senha deve ter pelo menos 6 caracteres."}
     if senha != senha2:

@@ -4,16 +4,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <style>
-    .hover-shadow:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-    }
-  </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4 relatorios-menu-page" style="max-width: 1200px">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h2 class="text-dark">
@@ -26,7 +20,7 @@
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_solicitacoes') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow relatorios-menu-card relatorios-menu-card--solicitacoes" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Solicitações</h6>
@@ -46,7 +40,7 @@
 
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_os') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 hover-shadow relatorios-menu-card relatorios-menu-card--os" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Ordens de Serviço</h6>
@@ -66,7 +60,7 @@
 
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow relatorios-menu-card relatorios-menu-card--midias" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Levantamento de Midias</h6>
@@ -84,10 +78,30 @@
       </a>
     </div>
 
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 hover-shadow relatorios-menu-card relatorios-menu-card--retornos" style="transition: all 0.2s ease; cursor: pointer;">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Planejamento</h6>
+              <h3 class="mb-0 text-dark fw-bold">Retornos Automaticos</h3>
+            </div>
+            <div class="fs-1 text-danger opacity-75">
+              <i class="bi bi-arrow-repeat"></i>
+            </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center text-danger small fw-bold">
+            <span>Abrir central por PLOA e agenda geral</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+
     {% if is_admin_global_user(current_user) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_dji_logs') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 hover-shadow relatorios-menu-card relatorios-menu-card--dji" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">DJI</h6>
@@ -100,6 +114,25 @@
           <div class="mt-3 d-flex align-items-center text-info small fw-bold">
             <span>Abrir relatório acumulado dos voos</span>
             <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+    {% if config.get('VIGILANCIA_PREVIEW_ENABLED') and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin') %}
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.vigilancia_validacao') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 relatorios-menu-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Vigilância · Prévia</h6>
+              <h3 class="mb-0 text-dark fw-bold">Validação de Focal e LIRAa</h3>
+            </div>
+            <i class="bi bi-file-earmark-check fs-1 text-primary opacity-75" aria-hidden="true"></i>
+          </div>
+          <p class="text-muted small mt-3 mb-2">Conferir um CSV e seus indicadores preliminares.</p>
+          <div class="d-flex align-items-center text-primary small fw-bold">
+            <span>Abrir prévia de validação</span><i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
           </div>
         </div>
       </a>

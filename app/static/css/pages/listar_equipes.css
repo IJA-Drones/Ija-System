@@ -1,0 +1,243 @@
+.equipes-table-wrap { width: 100%; }
+  .equipes-table-wrap .table-responsive {
+    overflow-x: auto;
+  }
+
+  .equipes-table-wrap table.table {
+    min-width: 1080px;
+  }
+
+  .operational-login {
+    display: grid;
+    gap: 8px;
+    min-width: 150px;
+  }
+
+  .operational-login-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: fit-content;
+    max-width: 180px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(13, 110, 253, .18);
+    background: rgba(13, 110, 253, .08);
+    color: #16477d;
+    font-size: .8rem;
+    font-weight: 800;
+  }
+
+  .operational-login-code span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .operational-login-empty {
+    color: #6c757d;
+    font-size: .82rem;
+    line-height: 1.25;
+  }
+
+  .operational-login-action {
+    width: fit-content;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: .76rem;
+    font-weight: 800;
+  }
+
+  .team-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .team-actions .btn {
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .credential-modal .modal-content {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, .18);
+  }
+
+  .credential-modal .modal-header {
+    border-bottom: 1px solid rgba(100, 116, 139, .12);
+  }
+
+  @media (max-width: 991.98px) {
+    .container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 12px;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 > a {
+      flex: 1 1 48%;
+      justify-content: center;
+    }
+
+    form.card.p-3.mb-4 .row.g-2.align-items-end > div {
+      width: 100%;
+    }
+
+    .equipes-table-wrap .table-responsive { overflow-x: visible !important; }
+    .equipes-table-wrap table.table thead { display: none; }
+
+    .equipes-table-wrap table.table,
+    .equipes-table-wrap table.table tbody,
+    .equipes-table-wrap table.table tr,
+    .equipes-table-wrap table.table td {
+      display: block;
+      width: 100%;
+    }
+
+    .equipes-table-wrap table.table tbody tr {
+      margin: 0 0 16px 0 !important;
+      border-radius: 16px !important;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      background: #fff;
+    }
+    .equipes-table-wrap table.table tbody tr:last-child {
+      margin-bottom: 0 !important;
+    }
+
+    .equipes-table-wrap table.table tbody tr td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px !important;
+      border: 0 !important;
+      background: transparent !important;
+      text-align: left !important;
+    }
+
+    .equipes-table-wrap table.table tbody tr td + td {
+      border-top: 1px solid rgba(0,0,0,.06) !important;
+    }
+
+    .equipes-table-wrap .ps-3,
+    .equipes-table-wrap .pe-3 {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+
+    /* Labels (mobile cards) */
+    .equipes-table-wrap table.table tbody tr td:nth-child(1)::before { content: "ID"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(2)::before { content: "Equipe"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(3)::before { content: "Região"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(4)::before { content: "Ativa"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(5)::before { content: "Piloto Titular"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(6)::before { content: "Auxiliar"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(7)::before { content: "Drones"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(8)::before { content: "Criada em"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(9)::before { content: "Login operacional"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(10)::before { content: "Ações"; }
+
+    .equipes-table-wrap table.table tbody tr td::before {
+      flex: 0 0 130px;
+      max-width: 130px;
+      font-weight: 700;
+      font-size: .82rem;
+      line-height: 1.1;
+      color: rgba(0,0,0,.55);
+      padding-top: 2px;
+    }
+
+    .equipes-table-wrap table.table tbody tr td > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    /* ações agora é a 10ª coluna */
+    .equipes-table-wrap td:nth-child(10) .team-actions {
+      flex-direction: column;
+      width: 100%;
+    }
+    .equipes-table-wrap td:nth-child(10) .team-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .operational-login,
+    .operational-login-action {
+      width: 100%;
+    }
+
+    .card-footer .d-flex.justify-content-between.align-items-center {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 10px;
+    }
+    .card-footer nav { width: 100%; }
+    .card-footer .pagination { justify-content: flex-start; flex-wrap: wrap; }
+  }
+
+  @media (max-width: 420px) {
+    .equipes-table-wrap table.table tbody tr td::before {
+      flex-basis: 110px;
+      max-width: 110px;
+      font-size: .78rem;
+    }
+    .equipes-table-wrap table.table tbody tr td {
+      padding: 12px 12px !important;
+    }
+  }
+
+  /* DARK MODE */
+  @media (max-width: 991.98px) {
+    html.dark-mode .equipes-table-wrap table.table tbody tr,
+    body.dark-mode .equipes-table-wrap table.table tbody tr {
+      background: #0f1a24 !important;
+      border-color: #233549 !important;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td + td,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td + td {
+      border-top-color: #233549 !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td::before,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td::before {
+      color: rgba(255,255,255,.72) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td {
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap .text-muted,
+    body.dark-mode .equipes-table-wrap .text-muted {
+      color: rgba(255,255,255,.70) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap a,
+    body.dark-mode .equipes-table-wrap a {
+      color: #7dd3fc !important;
+    }
+
+    html.dark-mode .card-footer.bg-white,
+    body.dark-mode .card-footer.bg-white {
+      background: transparent !important;
+      border-top-color: #233549 !important;
+    }
+  }

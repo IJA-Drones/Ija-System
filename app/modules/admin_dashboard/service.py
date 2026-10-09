@@ -1,8 +1,10 @@
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from io import BytesIO
 import os
 import re
 import uuid
+from zipfile import ZIP_DEFLATED, ZipFile
+from zoneinfo import ZoneInfo
 
 from flask import current_app
 from openpyxl import Workbook
@@ -13,6 +15,7 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
+from app.modules.piloto_os.exporters import build_admin_os_excel_v2_export, build_admin_os_pdf_v2_export
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -22,6 +25,7 @@ from app.shared.access import (
 )
 from app.shared.os_history_filters import apply_retorno_automatico_filter
 from app.shared.query_filters import id_search_clause, normalize_multi_values
+from app.shared.solicitacao_focos import same_normalized
 from app.shared.uploads import allowed_file, get_upload_folder
 
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
@@ -35,6 +39,16 @@ HISTORICO_OS_ANDAMENTO_STATUSES = (
 )
 HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 HISTORICO_EQUIPE_UVIS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
+UTC_TZ = ZoneInfo("UTC")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+
+
+def is_solicitacao_quadra(pedido):
+    return (
+        same_normalized(pedido.tipo_visita, "Quadra")
+        and same_normalized(pedido.foco, "QUADRA")
+        and same_normalized(pedido.tipo_operacao, "Tratamento e monitoramento de quadra")
+    )
 
 
 def _parse_filter_date(value: str):
@@ -59,6 +73,36 @@ def _apply_data_agendamento_range(query, filtro_data_ini: str = "", filtro_data_
 
     if data_fim:
         query = query.filter(Solicitacao.data_agendamento <= data_fim)
+
+    return query
+
+
+def _brazil_day_start_as_utc_naive(value):
+    return (
+        datetime.combine(value, time.min)
+        .replace(tzinfo=BRAZIL_TZ)
+        .astimezone(UTC_TZ)
+        .replace(tzinfo=None)
+    )
+
+
+def _apply_data_criacao_range(
+    query,
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
+):
+    data_ini = _parse_filter_date(filtro_data_criacao_ini)
+    data_fim = _parse_filter_date(filtro_data_criacao_fim)
+
+    if data_ini and data_fim and data_ini > data_fim:
+        data_ini, data_fim = data_fim, data_ini
+
+    if data_ini:
+        query = query.filter(Solicitacao.data_criacao >= _brazil_day_start_as_utc_naive(data_ini))
+
+    if data_fim:
+        end_exclusive = _brazil_day_start_as_utc_naive(data_fim + timedelta(days=1))
+        query = query.filter(Solicitacao.data_criacao < end_exclusive)
 
     return query
 
@@ -173,6 +217,8 @@ def build_admin_dashboard_query(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
 ):
     query = (
@@ -226,7 +272,8 @@ def build_admin_dashboard_query(
 
     query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
-    return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+    query = _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+    return _apply_data_criacao_range(query, filtro_data_criacao_ini, filtro_data_criacao_fim)
 
 
 def build_admin_canceladas_query(
@@ -440,6 +487,8 @@ def build_admin_export_query(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
 ):
     query = (
@@ -488,6 +537,7 @@ def build_admin_export_query(
     query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
     query = _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+    query = _apply_data_criacao_range(query, filtro_data_criacao_ini, filtro_data_criacao_fim)
 
     return query.order_by(Solicitacao.data_criacao.desc())
 
@@ -505,6 +555,8 @@ def build_admin_dashboard_export(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
 ):
     pedidos = build_admin_export_query(
@@ -520,6 +572,8 @@ def build_admin_dashboard_export(
         filtro_foco=filtro_foco,
         filtro_data_ini=filtro_data_ini,
         filtro_data_fim=filtro_data_fim,
+        filtro_data_criacao_ini=filtro_data_criacao_ini,
+        filtro_data_criacao_fim=filtro_data_criacao_fim,
         filtro_retorno_automatico=filtro_retorno_automatico,
     ).all()
 
@@ -827,12 +881,165 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
     return output, filename
 
 
+def _historico_os_zip_readme(tipo_exportacao: str, filtros, filtro_equipe: str, total: int):
+    periodo_inicio = _format_filter_date(filtros.get("data_ini"))
+    periodo_fim = _format_filter_date(filtros.get("data_fim"))
+    if periodo_inicio and periodo_fim:
+        periodo = f"{periodo_inicio} ate {periodo_fim}"
+    elif periodo_inicio:
+        periodo = f"a partir de {periodo_inicio}"
+    elif periodo_fim:
+        periodo = f"ate {periodo_fim}"
+    else:
+        periodo = "Nao informado"
+
+    linhas = [
+        "IJA System - Exportacao em massa de OS",
+        "=" * 42,
+        "",
+        f"Tipo de exportacao: {tipo_exportacao}",
+        f"Gerado em: {_format_datetime_br(datetime.now())}",
+        f"Total de arquivos de OS no pacote: {total}",
+        "",
+        "Filtros aplicados",
+        "-" * 17,
+        f"Periodo de agendamento: {periodo}",
+    ]
+
+    filtros_legiveis = [
+        ("Status da OS", filtros.get("status")),
+        ("Retorno automatico", filtros.get("retorno_automatico")),
+        ("Unidade", filtros.get("unidade_values") or filtros.get("unidade")),
+        ("Regiao", filtros.get("regiao")),
+        ("PLOA / equipe", filtro_equipe),
+        ("Apoio CET", filtros.get("apoio_cet")),
+        ("Tipo de visita", filtros.get("tipo_visita")),
+        ("Tipo de imovel", filtros.get("tipo_imovel")),
+        ("Foco", filtros.get("foco_values") or filtros.get("foco")),
+        ("ID, protocolo ou identificador", filtros.get("protocolo")),
+        ("Endereco", filtros.get("endereco")),
+    ]
+
+    for label, value in filtros_legiveis:
+        linhas.append(f"{label}: {_format_filter_value(value)}")
+
+    linhas.extend([
+        "",
+        "Observacao",
+        "-" * 10,
+        "Cada arquivo individual foi gerado com o mesmo modelo usado no botao de exportacao da linha da OS.",
+        "Este TXT registra apenas os filtros usados para montar este pacote.",
+        "",
+    ])
+    return "\n".join(linhas)
+
+
+def _format_filter_date(value):
+    if not value:
+        return ""
+    try:
+        return date.fromisoformat(str(value)).strftime("%d/%m/%Y")
+    except ValueError:
+        return str(value)
+
+
+def _format_filter_value(value):
+    if isinstance(value, (list, tuple, set)):
+        value = ", ".join(str(item) for item in value if str(item).strip())
+    value = (str(value).strip() if value is not None else "")
+    return value or "Nao informado"
+
+
+def build_admin_historico_os_individual_excel_zip(
+    user,
+    filtros,
+    filtro_tipo_os: str,
+    filtro_equipe: str = "",
+):
+    pedidos = (
+        build_admin_historico_os_query(user, filtros, filtro_tipo_os, filtro_equipe)
+        .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .all()
+    )
+
+    output = BytesIO()
+    used_names = set()
+    with ZipFile(output, "w", ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(
+            "LEIA-ME.txt",
+            _historico_os_zip_readme("Excels individuais", filtros, filtro_equipe, len(pedidos)),
+        )
+        for pedido in pedidos:
+            excel_output, excel_name = build_admin_os_excel_v2_export(pedido.id, {})
+            safe_name = secure_filename(excel_name) or f"os_{pedido.id}_formulario.xlsx"
+            if safe_name in used_names:
+                base, ext = os.path.splitext(safe_name)
+                safe_name = f"{base}_{pedido.id}{ext or '.xlsx'}"
+            used_names.add(safe_name)
+            zip_file.writestr(safe_name, excel_output.getvalue())
+
+    output.seek(0)
+    filename = f"os_individuais_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return output, filename
+
+
+def build_admin_historico_os_individual_pdf_zip(
+    user,
+    filtros,
+    filtro_tipo_os: str,
+    filtro_equipe: str = "",
+):
+    pedidos = (
+        build_admin_historico_os_query(user, filtros, filtro_tipo_os, filtro_equipe)
+        .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .all()
+    )
+
+    output = BytesIO()
+    used_names = set()
+    with ZipFile(output, "w", ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(
+            "LEIA-ME.txt",
+            _historico_os_zip_readme("PDFs individuais", filtros, filtro_equipe, len(pedidos)),
+        )
+        for pedido in pedidos:
+            pdf_path = None
+            try:
+                pdf_path, pdf_name = build_admin_os_pdf_v2_export(pedido.id, {})
+                safe_name = secure_filename(pdf_name) or f"os_{pedido.id}_formulario.pdf"
+                if safe_name in used_names:
+                    base, ext = os.path.splitext(safe_name)
+                    safe_name = f"{base}_{pedido.id}{ext or '.pdf'}"
+                used_names.add(safe_name)
+                with open(pdf_path, "rb") as pdf_file:
+                    zip_file.writestr(safe_name, pdf_file.read())
+            finally:
+                if pdf_path:
+                    try:
+                        os.remove(pdf_path)
+                    except OSError:
+                        current_app.logger.warning(
+                            "Nao foi possivel remover PDF temporario %s",
+                            pdf_path,
+                        )
+
+    output.seek(0)
+    filename = f"os_pdfs_individuais_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return output, filename
+
+
 def apply_admin_update_fields(pedido, form, *, user=None):
     pedido.protocolo = form.get("protocolo")
     pedido.status = form.get("status")
     pedido.justificativa = form.get("justificativa")
     pedido.latitude = form.get("latitude")
     pedido.longitude = form.get("longitude")
+    if is_solicitacao_quadra(pedido):
+        quadra_decisao = form.get("quadra_confirmada_admin")
+        if quadra_decisao in {"0", "1"}:
+            pedido.quadra_confirmada_admin = quadra_decisao == "1"
+            pedido.quadra_visualizada_admin = True
+            pedido.quadra_visualizada_admin_em = datetime.now()
 
     equipe_id = form.get("equipe_id")
     if equipe_id in (None, "", "null", "undefined"):

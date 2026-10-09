@@ -4,21 +4,33 @@ from app.models import Solicitacao, Usuario
 
 
 REGIONAL_USER_TYPE = "regional"
+COVISA_LEGACY_USER_TYPE = "visualizar"
+COVISA_USER_TYPE = "covisa"
+COVISA_REGIAO = "COVISA"
 PREFEITURA_ADMIN_USER_TYPE = "prefeitura_admin"
 FINANCEIRO_ADMIN_USER_TYPE = "financeiro_admin"
 FINANCEIRO_USER_TYPE = "financeiro"
 ADMIN_USER_TYPE = "admin"
+DIRECTOR_USER_TYPE = "diretor"
 DEV_USER_TYPE = "dev"
-GLOBAL_ADMIN_USER_TYPES = {ADMIN_USER_TYPE, DEV_USER_TYPE}
+VEICULOS_SUPERVISOR_USER_TYPES = {"sup_veiculos", "sup_veiculo"}
+GLOBAL_ADMIN_USER_TYPES = {ADMIN_USER_TYPE, DIRECTOR_USER_TYPE, DEV_USER_TYPE}
 ADMIN_PANEL_VIEW_TYPES = {
     *GLOBAL_ADMIN_USER_TYPES,
     "operario",
     "visualizar",
     "visualizador",
+    COVISA_USER_TYPE,
     REGIONAL_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
+    *VEICULOS_SUPERVISOR_USER_TYPES,
 }
-ADMIN_PANEL_EDIT_TYPES = {*GLOBAL_ADMIN_USER_TYPES, "operario", PREFEITURA_ADMIN_USER_TYPE}
+ADMIN_PANEL_EDIT_TYPES = {
+    *GLOBAL_ADMIN_USER_TYPES,
+    "operario",
+    PREFEITURA_ADMIN_USER_TYPE,
+    *VEICULOS_SUPERVISOR_USER_TYPES,
+}
 AGRO_FINANCE_VIEW_TYPES = {
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
@@ -27,10 +39,15 @@ AGRO_FINANCE_EDIT_TYPES = {
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
 }
+FINANCEIRO_PANEL_VIEW_TYPES = AGRO_FINANCE_VIEW_TYPES | {DEV_USER_TYPE}
 
 
 def normalize_role(value: str | None) -> str:
     return (value or "").strip().lower()
+
+
+def is_veiculos_supervisor(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in VEICULOS_SUPERVISOR_USER_TYPES
 
 
 def normalize_regiao(value: str | None) -> str:
@@ -39,6 +56,13 @@ def normalize_regiao(value: str | None) -> str:
 
 def is_regional_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) == REGIONAL_USER_TYPE
+
+
+def is_covisa_user(user) -> bool:
+    user_type = normalize_role(getattr(user, "tipo_usuario", None))
+    if user_type == COVISA_USER_TYPE:
+        return True
+    return user_type == COVISA_LEGACY_USER_TYPE and get_user_regiao(user) == COVISA_REGIAO
 
 
 def is_prefeitura_admin_user(user) -> bool:
@@ -57,12 +81,28 @@ def is_agro_finance_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in AGRO_FINANCE_VIEW_TYPES
 
 
+def can_access_financeiro_panel(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in FINANCEIRO_PANEL_VIEW_TYPES
+
+
+def can_manage_financeiro_settings(user) -> bool:
+    return is_financeiro_admin_user(user) or is_dev_user(user)
+
+
 def is_admin_global_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in GLOBAL_ADMIN_USER_TYPES
 
 
+def is_director_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) == DIRECTOR_USER_TYPE
+
+
 def is_dev_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) == DEV_USER_TYPE
+
+
+def can_manage_user_work_flags(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {DIRECTOR_USER_TYPE, DEV_USER_TYPE}
 
 
 def get_user_regiao(user) -> str:
@@ -74,11 +114,14 @@ def get_user_prefeitura_id(user):
 
 
 def apply_prefeitura_scope(query, user, column):
-    if user is None or is_admin_global_user(user):
+    role = normalize_role(getattr(user, "tipo_usuario", None)) if user is not None else None
+    if user is None or role in GLOBAL_ADMIN_USER_TYPES:
         return query
 
     prefeitura_id = get_user_prefeitura_id(user)
     if prefeitura_id is None:
+        if is_veiculos_supervisor(user):
+            return query.filter(false())
         if is_prefeitura_admin_user(user):
             return query.filter(false())
         return query

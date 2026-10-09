@@ -1,0 +1,151 @@
+/* =========================================
+   VEICULOS MODAIS - DARK MODE
+   ========================================= */
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.98) 0%, rgba(18, 28, 40, 0.98) 100%);
+
+  color:
+    var(--color-text-main);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.38);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .modal-header,
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .modal-footer,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .modal-header,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .modal-footer {
+  background:
+    rgba(20, 30, 42, 0.96);
+
+  border-color:
+    rgba(126, 180, 255, 0.08) !important;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .modal-title,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .modal-title {
+  color:
+    var(--color-primary-dark);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .modal-body,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .modal-body {
+  background:
+    rgba(18, 28, 40, 0.98);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .text-muted,
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .small.text-muted,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .text-muted,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .small.text-muted {
+  color:
+    rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .form-label.text-muted,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .form-label.text-muted {
+  color:
+    rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .form-control,
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .form-select,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .form-control,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .form-select {
+  background:
+    rgba(16, 25, 36, 0.92);
+
+  border-color:
+    rgba(126, 180, 255, 0.12);
+
+  color:
+    var(--color-text-main);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .form-control:focus,
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .form-select:focus,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .form-control:focus,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .form-select:focus {
+  background:
+    rgba(16, 25, 36, 0.98);
+
+  border-color:
+    var(--color-primary);
+
+  box-shadow:
+    0 0 0 3px rgba(76, 163, 255, 0.12);
+
+  color:
+    var(--color-text-main);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .form-text,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .form-text {
+  color:
+    rgba(162, 188, 216, 0.72);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .alert-warning,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .alert-warning {
+  background:
+    rgba(255, 193, 7, 0.12);
+
+  border-color:
+    rgba(255, 193, 7, 0.2);
+
+  color:
+    #ffe08a;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .alert-danger,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .alert-danger {
+  background:
+    rgba(220, 53, 69, 0.12);
+
+  border-color:
+    rgba(255, 107, 129, 0.2);
+
+  color:
+    #ffb4bb;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal--danger .modal-title {
+  color:
+    #ff8e99;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .btn-warning,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .btn-warning {
+  background:
+    var(--color-warning);
+
+  border-color:
+    var(--color-warning);
+
+  color:
+    #101927;
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .btn-outline-secondary,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .btn-outline-secondary {
+  color:
+    var(--color-text-muted);
+
+  border-color:
+    rgba(162, 188, 216, 0.35);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-action-modal .btn-outline-secondary:hover,
+body.dark-mode .veiculo-detalhe-page .vehicle-action-modal .btn-outline-secondary:hover {
+  background:
+    rgba(76, 163, 255, 0.08);
+
+  color:
+    var(--color-primary-dark);
+}

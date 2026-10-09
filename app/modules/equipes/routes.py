@@ -12,17 +12,18 @@ from app.modules.equipes.service import (
     find_piloto_conflict,
     get_equipe_account,
     get_pilotos_ordered,
+    sync_equipe_supervisores,
     is_truthy,
     parse_optional_int,
     regiao_valida,
     upsert_equipe_account,
     validate_equipe_account_form,
 )
-from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(current_user):
         abort(403)
 
 
@@ -41,6 +42,7 @@ def register_routes(bp):
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
             descricao = (request.form.get("descricao") or "").strip()
             regiao = (request.form.get("regiao") or "").strip().upper()
+            trabalha_oceano_azul = request.form.get("trabalha_oceano_azul") == "1"
             piloto_id = (request.form.get("piloto_id") or "").strip()
             auxiliar_id = (request.form.get("auxiliar_id") or "").strip()
 
@@ -48,6 +50,7 @@ def register_routes(bp):
                 "nome_equipe": nome_equipe,
                 "descricao": descricao,
                 "regiao": regiao,
+                "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
                 "piloto_id": piloto_id,
                 "auxiliar_id": auxiliar_id,
             }
@@ -102,7 +105,7 @@ def register_routes(bp):
                 if vinculo:
                     nome_eq = equipe.nome_equipe if equipe else f"ID {vinculo.equipe_id}"
                     papel = (vinculo.papel or "").lower()
-                    errors["piloto_id"] = f"Este piloto ja esta na equipe '{nome_eq}' como {papel}. Remova de la antes."
+                    errors["piloto_id"] = f"Este piloto já está vinculado à equipe '{nome_eq}' como {papel}. Para atribuí-lo a esta equipe, primeiro remova o vínculo atual."
                     flash(errors["piloto_id"], "warning")
 
             if auxiliar_id_int and "auxiliar_id" not in errors:
@@ -113,6 +116,7 @@ def register_routes(bp):
                     errors["auxiliar_id"] = f"Este piloto ja esta na equipe '{nome_eq}' como {papel}. Remova de la antes."
                     flash(errors["auxiliar_id"], "warning")
 
+            prefeitura_id = getattr(current_user, "prefeitura_id", None)
             if errors:
                 flash("Corrija os campos destacados.", "warning")
                 return render_template(
@@ -128,7 +132,8 @@ def register_routes(bp):
                 descricao=descricao or None,
                 regiao=regiao or None,
                 ativa=True,
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                trabalha_oceano_azul=trabalha_oceano_azul,
+                prefeitura_id=prefeitura_id,
             )
             db.session.add(equipe)
             db.session.flush()
@@ -198,7 +203,7 @@ def register_routes(bp):
         )
 
         if export == "xlsx":
-            if tipo not in ["dev", "admin", "visualizar", "prefeitura_admin"]:
+            if tipo not in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
                 abort(403)
 
             output, filename = build_equipes_export(query.all())
@@ -212,7 +217,7 @@ def register_routes(bp):
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         equipes = pagination.items
         equipe_accounts = build_equipe_accounts_map(equipes)
-        is_editable = tipo in ["dev", "admin", "operario", "operador", "prefeitura_admin"]
+        is_editable = tipo in ["dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"]
         filters = build_equipes_filters(
             q=q,
             regiao=regiao,
@@ -232,7 +237,7 @@ def register_routes(bp):
             "listar_equipes.html",
             equipes=equipes,
             filters=filters,
-            is_admin=(tipo in {"dev", "admin"}),
+            is_admin=(tipo in {"dev", "diretor", "admin"}),
             is_editable=is_editable,
             tipo_usuario=tipo,
             equipe_accounts=equipe_accounts,
@@ -291,9 +296,11 @@ def register_routes(bp):
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
             regiao = (request.form.get("regiao") or "").strip().upper()
             ativa_raw = (request.form.get("ativa") or "").strip()
+            trabalha_oceano_azul = request.form.get("trabalha_oceano_azul") == "1"
             descricao = (request.form.get("descricao") or "").strip()
             piloto_id_raw = (request.form.get("piloto_id") or "").strip()
             auxiliar_id_raw = (request.form.get("auxiliar_id") or "").strip()
+            form["trabalha_oceano_azul"] = "1" if trabalha_oceano_azul else ""
 
             if not nome_equipe:
                 errors["nome_equipe"] = "Informe o nome da equipe."
@@ -354,11 +361,16 @@ def register_routes(bp):
                     errors["auxiliar_id"] = msg
                     flash(msg, "warning")
 
+
             if not errors:
                 equipe.nome_equipe = nome_equipe
                 equipe.regiao = regiao or None
                 equipe.ativa = ativa
+                equipe.trabalha_oceano_azul = trabalha_oceano_azul
                 equipe.descricao = descricao or None
+                account = get_equipe_account(equipe.id)
+                if account:
+                    account.trabalha_oceano_azul = trabalha_oceano_azul
 
                 membro_piloto = next((membro for membro in equipe.membros if membro.papel == "piloto"), None)
                 if piloto_id:
@@ -430,6 +442,7 @@ def register_routes(bp):
         equipe = apply_prefeitura_scope(Equipe.query, current_user, Equipe.prefeitura_id).filter(Equipe.id == equipe_id).first_or_404()
 
         try:
+            sync_equipe_supervisores(equipe, [], user=current_user)
             db.session.delete(equipe)
             db.session.commit()
             flash(f"Equipe '{equipe.nome_equipe}' excluida com sucesso.", "success")

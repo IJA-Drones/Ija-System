@@ -1,0 +1,135 @@
+/* =========================================
+   RELATORIOS MENU - DARK MODE
+   ========================================= */
+
+body.dark-mode .relatorios-menu-page h2.text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .relatorios-menu-page .text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .relatorios-menu-card {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+
+  border-color:
+    rgba(126, 180, 255, 0.12) !important;
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .relatorios-menu-card:hover {
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .relatorios-menu-card h6.text-muted {
+  color:
+    rgba(162, 188, 216, 0.7) !important;
+}
+
+body.dark-mode .relatorios-menu-card h3.text-dark {
+  color:
+    var(--color-text-main) !important;
+}
+
+body.dark-mode .relatorios-menu-card .fs-1 {
+  opacity:
+    0.58;
+}
+
+body.dark-mode .relatorios-menu-card .text-primary,
+body.dark-mode .relatorios-menu-card .text-success,
+body.dark-mode .relatorios-menu-card .text-warning,
+body.dark-mode .relatorios-menu-card .text-danger,
+body.dark-mode .relatorios-menu-card .text-info {
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+body.dark-mode .relatorios-menu-card--solicitacoes {
+  border-left-color:
+    rgba(124, 184, 255, 0.45) !important;
+}
+
+body.dark-mode .relatorios-menu-card--solicitacoes .text-primary {
+  color:
+    #8abcf2 !important;
+}
+
+body.dark-mode .relatorios-menu-card--solicitacoes .text-primary.opacity-75 {
+  opacity:
+    0.58 !important;
+}
+
+body.dark-mode .relatorios-menu-card--solicitacoes .mt-3.text-primary {
+  color:
+    #94c3fb !important;
+}
+
+body.dark-mode .relatorios-menu-card--os {
+  border-left-color:
+    rgba(115, 191, 145, 0.42) !important;
+}
+
+body.dark-mode .relatorios-menu-card--os .text-success {
+  color:
+    #82c49e !important;
+}
+
+body.dark-mode .relatorios-menu-card--os .mt-3.text-success {
+  color:
+    #8fd0aa !important;
+}
+
+body.dark-mode .relatorios-menu-card--midias {
+  border-left-color:
+    rgba(230, 195, 92, 0.42) !important;
+}
+
+body.dark-mode .relatorios-menu-card--midias .text-warning {
+  color:
+    #d8c067 !important;
+}
+
+body.dark-mode .relatorios-menu-card--midias .mt-3.text-warning {
+  color:
+    #e1c97a !important;
+}
+
+body.dark-mode .relatorios-menu-card--retornos {
+  border-left-color:
+    rgba(224, 131, 131, 0.42) !important;
+}
+
+body.dark-mode .relatorios-menu-card--retornos .text-danger {
+  color:
+    #df8f8f !important;
+}
+
+body.dark-mode .relatorios-menu-card--retornos .mt-3.text-danger {
+  color:
+    #e8a0a0 !important;
+}
+
+body.dark-mode .relatorios-menu-card--dji {
+  border-left-color:
+    rgba(114, 195, 212, 0.42) !important;
+}
+
+body.dark-mode .relatorios-menu-card--dji .text-info {
+  color:
+    #7ac7d8 !important;
+}
+
+body.dark-mode .relatorios-menu-card--dji .mt-3.text-info {
+  color:
+    #88d1e0 !important;
+}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 feedback-page" style="max-width: 980px;">
+  <div class="feedback-header mb-4">
+    <div>
+      <span class="feedback-kicker">Nova função</span>
+      <h2 class="mb-1"><i class="bi bi-bug-fill me-2 text-primary"></i>Reporte de bugs</h2>
+      <p class="text-muted small mb-0">Guia rápido para a coordenadoria enviar e acompanhar problemas do sistema.</p>
+    </div>
+    <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <section class="feedback-guide-hero mb-4">
+    <div>
+      <h3>Quando usar</h3>
+      <p>Use o reporte de bug quando uma tela, botão, cadastro, listagem ou função do sistema apresentar erro, travar, salvar informação incorreta ou impedir o trabalho da coordenadoria.</p>
+    </div>
+    <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-danger text-white">
+      <i class="bi bi-bug-fill"></i> Reportar bug
+    </a>
+  </section>
+
+  <div class="feedback-guide-grid mb-4">
+    <article>
+      <span><i class="bi bi-1-circle"></i></span>
+      <h5>Descreva o problema</h5>
+      <p>Informe o assunto, impacto e detalhes do que aconteceu. Quanto mais claro o relato, mais rápido o suporte técnico identifica a causa.</p>
+    </article>
+    <article>
+      <span><i class="bi bi-2-circle"></i></span>
+      <h5>Anexe prints</h5>
+      <p>Se possível, envie imagens do erro. Os prints ajudam os devs a entenderem a tela e a mensagem exibida.</p>
+    </article>
+    <article>
+      <span><i class="bi bi-3-circle"></i></span>
+      <h5>Acompanhe pela caixa</h5>
+      <p>Depois do envio, o bug aparece na caixa de entrada da coordenadoria com status, responsável e atualizações da tratativa.</p>
+    </article>
+  </div>
+
+  <section class="card shadow-sm border-0 feedback-treatment-card mb-4">
+    <div class="card-body p-4">
+      <h5 class="mb-3"><i class="bi bi-shield-check me-2"></i>Regras atuais</h5>
+      <div class="feedback-guide-rules">
+        <div>
+          <strong>Acesso</strong>
+          <span>Apenas usuários da coordenadoria/covisa podem enviar bugs.</span>
+        </div>
+        <div>
+          <strong>Tipo</strong>
+          <span>Todo reporte entra como suporte técnico e subcategoria erro no sistema.</span>
+        </div>
+        <div>
+          <strong>Limite</strong>
+          <span>Cada coordenadoria pode manter até {{ max_active_bug_count }} bugs ativos ao mesmo tempo.</span>
+        </div>
+        <div>
+          <strong>Retorno</strong>
+          <span>As respostas aparecem na tela de acompanhamento do bug, sem chat aberto para o usuário.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feedback-guide-note">
+    <i class="bi bi-lightbulb"></i>
+    <p class="mb-0">Antes de reportar, confira se o mesmo problema já está na caixa de entrada. Se estiver, acompanhe o bug existente em vez de abrir outro.</p>
+  </section>
+</div>
+{% endblock %}

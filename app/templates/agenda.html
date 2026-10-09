@@ -15,105 +15,10 @@
   rel="stylesheet"
   href="{{ url_for('static', filename='css/components/buttons.css') }}"
 />
-<style>
-  .agenda-modal-stat {
-    padding: 1rem 1.1rem;
-    border-radius: 1.25rem;
-    background: #fff;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-    height: 100%;
-  }
-
-  .agenda-modal-soft {
-    background: #f8fbff;
-  }
-
-  .agenda-modal-kicker {
-    display: block;
-    margin-bottom: 0.65rem;
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: #7a889f;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-
-  .agenda-modal-stat-value {
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: #244f86;
-    line-height: 1.45;
-    word-break: break-word;
-  }
-
-  .agenda-modal-panel {
-    padding: 1rem 1.1rem;
-    border: 1px solid rgba(44, 82, 130, 0.12);
-    border-radius: 1.25rem;
-    background: #fff;
-  }
-
-  .agenda-modal-meta-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.1rem 1.4rem;
-  }
-
-  .agenda-modal-meta-item {
-    min-width: 0;
-  }
-
-  .agenda-modal-meta-label {
-    display: block;
-    margin-bottom: 0.45rem;
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: #7a889f;
-    text-transform: uppercase;
-  }
-
-  .agenda-modal-meta-value {
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: #244f86;
-    line-height: 1.45;
-    word-break: break-word;
-  }
-
-  .agenda-modal-textbox {
-    padding: 0.7rem 0.85rem;
-    border-radius: 0.9rem;
-    background: #f8fbff;
-    color: #244f86;
-    line-height: 1.5;
-  }
-
-  .agenda-modal-primary-action {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(44, 82, 130, 0.12);
-  }
-
-  .agenda-modal-primary-action .btn {
-    min-height: 44px;
-    font-weight: 700;
-    box-shadow: 0 10px 22px rgba(13, 110, 253, 0.22);
-  }
-
-  .agenda-modal-primary-action .btn-success {
-    box-shadow: 0 10px 22px rgba(25, 135, 84, 0.2);
-  }
-
-  @media (max-width: 991.98px) {
-    .agenda-modal-meta-grid {
-      grid-template-columns: 1fr;
-      gap: 0.9rem;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agenda.css') }}">
 {% endblock %} {% block content %}
 
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4 agenda-page" style="max-width: 1200px">
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <h2 class="text-dark m-0">
       <i class="bi bi-calendar-event-fill me-2 text-primary"></i> Agenda
@@ -121,7 +26,7 @@
 
     <div class="d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
       {# ✅ Rota do dia #} 
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["dev", "admin", "operario", "visualizar", "uvis", "regional", "piloto", "equipe_oceano"] %}
+      {% if current_user.is_authenticated and (current_user.tipo_usuario in ["dev", "diretor", "admin", "operario", "visualizar", "uvis", "regional", "piloto", "equipe_oceano"] or is_veiculos_supervisor(current_user)) %}
         <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
           <button id="btnRotaDia" class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
             <i class="bi bi-sign-turn-right-fill"></i> 
@@ -131,7 +36,7 @@
       {% endif %}
 
       {# ✅ Exportar Tudo #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["dev", "admin", "operario", "visualizar", "regional", "uvis"] %}
+      {% if current_user.is_authenticated and (current_user.tipo_usuario in ["dev", "diretor", "admin", "operario", "visualizar", "regional", "uvis"] or is_veiculos_supervisor(current_user)) %}
         {# ✅ Exportar Atual #}
         <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
           <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
@@ -155,10 +60,10 @@
     </div>
   </div>
 
-  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
+  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_agenda or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
 
   {% if periodo_semanal_fixo %}
-  <div class="alert alert-primary border-0 shadow-sm rounded-4 mb-4">
+  <div class="alert alert-primary border-0 shadow-sm rounded-4 mb-4 agenda-period-alert">
     <i class="bi bi-calendar-week me-2"></i>
     Exibindo somente as solicitações da semana:
     <strong>{{ semana_inicio.strftime('%d/%m/%Y') }}</strong>
@@ -167,9 +72,9 @@
   {% endif %}
 
   {# --- FILTROS DA AGENDA (SANFONA) --- #}
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
+  <div class="card shadow-sm rounded-4 mb-4 border-0 agenda-filter-card">
     <div
-      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center agenda-filter-header"
       data-bs-toggle="collapse"
       data-bs-target="#collapseFiltrosAgenda"
       aria-expanded="{{ 'true' if agenda_has_filters else 'false' }}"
@@ -228,6 +133,55 @@
                 {% endfor %}
               </select>
             </div>
+
+            {% if pode_ver_retornos_automaticos %}
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo na agenda:</label>
+              <select class="form-select form-select-sm" name="tipo_agenda">
+                <option value="">Todos</option>
+                <optgroup label="Agendamentos">
+                <option
+                  value="{{ agenda_tipo_normal }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_normal %}selected{% endif %}
+                >
+                  Agendamentos normais
+                </option>
+                </optgroup>
+                <optgroup label="Retornos automáticos">
+                <option
+                  value="{{ agenda_tipo_auto }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto %}selected{% endif %}
+                >
+                  Todos os retornos
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_pendente }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_pendente %}selected{% endif %}
+                >
+                  Pendentes
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_concluido }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_concluido %}selected{% endif %}
+                >
+                  Concluídos
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_vencido }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_vencido %}selected{% endif %}
+                >
+                  Vencidos
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_futuro }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_futuro %}selected{% endif %}
+                >
+                  Futuros
+                </option>
+                </optgroup>
+              </select>
+            </div>
+            {% endif %}
 
             <div class="col-md-3">
               <label class="small text-muted">Tipo de visita:</label>
@@ -348,7 +302,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0">
+  <div class="card shadow-sm rounded-4 border-0 agenda-calendar-card">
     <div class="card-body p-4">
       <div id="calendar"></div>
     </div>
@@ -356,7 +310,7 @@
 </div>
 
 {# --- MODAL DETALHES DO EVENTO --- #}
-<div class="modal fade" id="modalEvento" tabindex="-1" aria-hidden="true">
+<div class="modal fade agenda-event-modal" id="modalEvento" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow">
       <div class="modal-header border-bottom-0">
@@ -423,6 +377,10 @@
               </div>
 
               <div class="agenda-modal-meta-grid mb-3">
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Tipo na Agenda</span>
+                  <div id="m-tipo-agenda" class="agenda-modal-meta-value">-</div>
+                </div>
                 <div class="agenda-modal-meta-item">
                   <span class="agenda-modal-meta-label">Tipo de Visita</span>
                   <div id="m-tipo-visita" class="agenda-modal-meta-value">—</div>
@@ -723,6 +681,7 @@
     const tipoVisita = props.tipo_visita || "—";
     const tipoImovel = props.tipo_imovel || "—";
     const tipoOperacao = props.tipo_operacao || "—";
+    const tipoAgenda = props.tipo_agenda_label || "Agendamento";
     const altura = props.altura_voo || "—";
     const apoioCet = props.apoio_cet || "—";
     const solicitacaoId = fcEvent.id || "—";
@@ -754,6 +713,7 @@
     const elTipoVisita = document.getElementById("m-tipo-visita");
     const elTipoImovel = document.getElementById("m-tipo-imovel");
     const elTipoOperacao = document.getElementById("m-tipo-operacao");
+    const elTipoAgenda = document.getElementById("m-tipo-agenda");
     const elAltura = document.getElementById("m-altura");
     const elApoioCet = document.getElementById("m-apoio-cet");
     const elSolicitacaoId = document.getElementById("m-solicitacao-id");
@@ -769,6 +729,7 @@
     if (elTipoVisita) elTipoVisita.textContent = tipoVisita;
     if (elTipoImovel) elTipoImovel.textContent = tipoImovel;
     if (elTipoOperacao) elTipoOperacao.textContent = tipoOperacao;
+    if (elTipoAgenda) elTipoAgenda.textContent = tipoAgenda;
     if (elAltura) elAltura.textContent = altura;
     if (elApoioCet) elApoioCet.textContent = apoioCet;
     if (elSolicitacaoId) elSolicitacaoId.textContent = solicitacaoId;
@@ -904,7 +865,8 @@
     const eventos = JSON.parse(raw);
     const calendarEl = document.getElementById("calendar");
     const initialDateFromServer = "{{ initial_date }}";
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const mobileQuery = window.matchMedia("(max-width: 768px)");
+    const isMobile = mobileQuery.matches;
     const weeklyOnly = {{ periodo_semanal_fixo | tojson }};
     const concluirForm = document.getElementById("m-concluir-form");
 
@@ -946,6 +908,13 @@
       initialView: weeklyOnly ? "dayGridMonth" : (isMobile ? "listWeek" : "dayGridMonth"),
       initialDate: initialDateFromServer,
       locale: "pt-br",
+      buttonText: {
+        today: "Hoje",
+        month: "Mês",
+        week: "Semana",
+        day: "Dia",
+        list: "Lista",
+      },
       height: "auto",
       nowIndicator: true,
       dayMaxEvents: true,
@@ -954,12 +923,39 @@
         const status = (info.event.extendedProps?.status || "")
           .trim()
           .toUpperCase();
+        const classNames = [];
 
-        if (status.includes("CONCLU")) {
-          return ["agenda-event-completed"];
+        if (info.event.extendedProps?.is_retorno_automatico) {
+          classNames.push("agenda-event-retorno");
         }
 
-        return [];
+        if (status.includes("CONCLU")) {
+          classNames.push("agenda-event-completed");
+        }
+
+        return classNames;
+      },
+      eventContent: function (info) {
+        const props = info.event.extendedProps || {};
+        const title = info.event.title || "";
+        const titleEl = document.createElement("span");
+        titleEl.className = "agenda-event-title";
+
+        if (!props.is_retorno_automatico) {
+          titleEl.textContent = title;
+          return { domNodes: [titleEl] };
+        }
+
+        const badge = document.createElement("span");
+        badge.className = "agenda-event-retorno-badge";
+        badge.title = "Retorno automatico";
+        badge.setAttribute("aria-label", "Retorno automatico");
+        const icon = document.createElement("i");
+        icon.className = "bi bi-arrow-repeat";
+        badge.appendChild(icon);
+        titleEl.textContent = title;
+
+        return { domNodes: [badge, titleEl] };
       },
 
       headerToolbar: {
@@ -1053,16 +1049,22 @@
       });
 
     // responsivo
+    let lastResponsiveMode = isMobile ? "mobile" : "desktop";
     window.addEventListener("resize", () => {
-      const mobileNow = window.matchMedia("(max-width: 768px)").matches;
-      const desiredView = weeklyOnly ? "dayGridMonth" : (mobileNow ? "listWeek" : "dayGridMonth");
-      if (calendar.view.type !== desiredView) calendar.changeView(desiredView);
+      const mobileNow = mobileQuery.matches;
+      const responsiveMode = mobileNow ? "mobile" : "desktop";
 
       calendar.setOption("headerToolbar", {
         left: "prev,next today",
         center: "title",
         right: weeklyOnly ? "dayGridMonth,listWeek" : (mobileNow ? "listWeek" : "dayGridMonth,listWeek"),
       });
+
+      if (responsiveMode === lastResponsiveMode) return;
+
+      lastResponsiveMode = responsiveMode;
+      const desiredView = weeklyOnly ? "dayGridMonth" : (mobileNow ? "listWeek" : "dayGridMonth");
+      if (calendar.view.type !== desiredView) calendar.changeView(desiredView);
     });
   });
 </script>

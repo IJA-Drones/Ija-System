@@ -1,0 +1,72 @@
+/* =========================================
+   LISTAGEM DO ESTOQUE
+   ========================================= */
+
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar h2,
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .badge.bg-light {
+  color: #b9cee4 !important;
+  background: rgba(118, 145, 176, 0.12) !important;
+  border-color: rgba(148, 168, 191, 0.22) !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .badge.bg-success-light {
+  color: #8bd8aa !important;
+  background: rgba(76, 175, 120, 0.13) !important;
+  border: 1px solid rgba(131, 212, 165, 0.18);
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .badge.bg-danger-light {
+  color: #f3a1a1 !important;
+  background: rgba(222, 91, 91, 0.13) !important;
+  border: 1px solid rgba(240, 153, 153, 0.18);
+}

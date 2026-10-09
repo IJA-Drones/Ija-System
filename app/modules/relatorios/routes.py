@@ -13,12 +13,14 @@ from app.extensions import db
 from app.models import Usuario
 from app.modules.relatorios.exporters import (
     build_relatorio_coleta_imagens_pdf_export,
+    build_relatorio_coleta_imagens_pdf_zip_export,
     build_relatorio_excel_export,
     build_relatorio_os_excel_export,
     build_relatorio_os_pdf_export,
     build_relatorio_pdf_export,
 )
 from app.modules.relatorios.service import (
+    build_retornos_automaticos_context,
     build_relatorios_coleta_imagens_context,
     build_relatorios_os_context,
     build_relatorios_solicitacoes_context,
@@ -194,11 +196,73 @@ def _run_coleta_pdf_job(app, job_id):
                 message="PDF pronto para download.",
                 path=caminho_pdf,
                 download_name=download_name,
+                mimetype="application/pdf",
             )
         except Exception as exc:
             db.session.rollback()
             current_app.logger.exception("Erro ao gerar PDF assincrono do relatorio de coleta de imagens.")
             message = str(exc).strip()[:500] or "Nao foi possivel gerar o PDF do relatorio de imagens."
+            _set_coleta_pdf_job(
+                job_id,
+                status="error",
+                message=message,
+                error=message,
+            )
+        finally:
+            if acquired and PDF_EXPORT_SEMAPHORE is not None:
+                PDF_EXPORT_SEMAPHORE.release()
+            db.session.remove()
+
+
+def _run_coleta_pdf_zip_job(app, job_id):
+    with app.app_context():
+        acquired = False
+        try:
+            job = _get_coleta_pdf_job(job_id)
+            if not job:
+                return
+
+            _set_coleta_pdf_job(
+                job_id,
+                status="running",
+                progress=5,
+                message="Preparando exportacao em massa por UVIS.",
+                error=None,
+            )
+            user = Usuario.query.get(job["user_id"])
+            if not user:
+                raise RuntimeError("Usuario do relatorio nao foi encontrado.")
+
+            if PDF_EXPORT_SEMAPHORE is not None:
+                _set_coleta_pdf_job(
+                    job_id,
+                    progress=10,
+                    message="Aguardando a vez na fila de exportacao PDF.",
+                )
+                PDF_EXPORT_SEMAPHORE.acquire()
+                acquired = True
+
+            def progress_callback(progress, message):
+                _set_coleta_pdf_job(job_id, progress=progress, message=message)
+
+            caminho_zip, download_name = build_relatorio_coleta_imagens_pdf_zip_export(
+                user,
+                MultiDict(job.get("args") or {}),
+                progress_callback=progress_callback,
+            )
+            _set_coleta_pdf_job(
+                job_id,
+                status="success",
+                progress=100,
+                message="ZIP pronto para download.",
+                path=caminho_zip,
+                download_name=download_name,
+                mimetype="application/zip",
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao gerar ZIP assincrono do relatorio de coleta de imagens.")
+            message = str(exc).strip()[:500] or "Nao foi possivel gerar o ZIP do relatorio de imagens."
             _set_coleta_pdf_job(
                 job_id,
                 status="error",
@@ -276,6 +340,82 @@ def register_routes(bp):
                 codigo=500,
                 titulo="Erro nos Relatorios de OS",
                 mensagem="Houve um erro tecnico ao processar os dados das ordens de servico.",
+            )
+
+    @bp.route("/relatorios/retornos-automaticos", methods=["GET"], endpoint="relatorios_retornos_automaticos")
+    @login_required
+    def relatorios_retornos_automaticos():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_retornos_automaticos_context(current_user, request.args)
+            return render_template("relatorios_retornos_automaticos.html", **context)
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NA CENTRAL DE RETORNOS AUTOMATICOS: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro na Central de Retornos Automaticos",
+                mensagem="Houve um erro tecnico ao processar os dados dos retornos automaticos.",
+            )
+
+    @bp.route(
+        "/relatorios/retornos-automaticos/equipe/<int:equipe_id>",
+        methods=["GET"],
+        endpoint="relatorios_retornos_automaticos_equipe",
+    )
+    @login_required
+    def relatorios_retornos_automaticos_equipe(equipe_id):
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_retornos_automaticos_context(
+                current_user,
+                request.args,
+                equipe_detalhe_id=equipe_id,
+            )
+            return render_template("relatorios_retornos_automaticos_equipe.html", **context)
+        except PermissionError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+            return redirect(url_for("main.relatorios_retornos_automaticos"))
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NOS RETORNOS AUTOMATICOS DA EQUIPE: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro nos Retornos Automaticos da Equipe",
+                mensagem="Houve um erro tecnico ao processar os retornos automaticos da equipe.",
+            )
+
+    @bp.route(
+        "/relatorios/retornos-automaticos/sem-equipe",
+        methods=["GET"],
+        endpoint="relatorios_retornos_automaticos_sem_equipe",
+    )
+    @login_required
+    def relatorios_retornos_automaticos_sem_equipe():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_retornos_automaticos_context(current_user, request.args, sem_equipe=True)
+            return render_template("relatorios_retornos_automaticos_equipe.html", **context)
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NOS RETORNOS AUTOMATICOS SEM EQUIPE: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro nos Retornos Automaticos Sem Equipe",
+                mensagem="Houve um erro tecnico ao processar os retornos automaticos sem equipe.",
             )
 
     @bp.route("/relatorios-coleta-imagens", methods=["GET"], endpoint="relatorios_coleta_imagens")
@@ -405,6 +545,26 @@ def register_routes(bp):
         return _redirect_to_coleta_imagens_with_job(job_id)
 
     @bp.route(
+        "/relatorios-coleta-imagens/export/pdf-zip",
+        methods=["GET"],
+        endpoint="relatorios_coleta_imagens_export_pdf_zip",
+    )
+    @login_required
+    def relatorios_coleta_imagens_export_pdf_zip():
+        if not can_access_relatorio_coleta_imagens(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        job_id = _create_coleta_pdf_job(current_user, request.args)
+        COLETA_IMAGENS_PDF_EXECUTOR.submit(
+            _run_coleta_pdf_zip_job,
+            current_app._get_current_object(),
+            job_id,
+        )
+        flash("Os PDFs por UVIS estao sendo gerados e compactados em ZIP.", "info")
+        return _redirect_to_coleta_imagens_with_job(job_id)
+
+    @bp.route(
         "/relatorios-coleta-imagens/export/pdf/jobs/<job_id>",
         methods=["GET"],
         endpoint="relatorios_coleta_imagens_pdf_job_status",
@@ -444,5 +604,5 @@ def register_routes(bp):
             job["path"],
             as_attachment=True,
             download_name=job.get("download_name") or "relatorio_coleta_imagens.pdf",
-            mimetype="application/pdf",
+            mimetype=job.get("mimetype") or "application/pdf",
         )

@@ -1,0 +1,78 @@
+/* Composição das telas internas de denúncias. Componentes-base vêm do bundle global. */
+.denuncias-page {
+  --denuncia-line: color-mix(in srgb, var(--color-text-muted) 24%, transparent);
+  --denuncia-surface: color-mix(in srgb, var(--color-bg-body) 65%, var(--color-bg-white));
+  color: var(--color-text-main);
+}
+
+.denuncias-page .listing-header h2 { overflow-wrap: anywhere; }
+.denuncia-context { color: var(--color-text-muted); font-size: .75rem; font-weight: 600; }
+.denuncia-context > span { margin: 0 .4rem; color: var(--color-accent); }
+.denuncias-page .listing-filter-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.denuncias-page .filter-card-body { padding-top: 1rem !important; }
+.denuncias-page .filter-result-summary { color: var(--color-text-muted); }
+.denuncia-results { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
+.denuncia-protocol { color: var(--color-primary-dark); font-weight: 700; overflow-wrap: anywhere; }
+.denuncias-page .listing-table tbody td { border-color: var(--denuncia-line); overflow-wrap: anywhere; }
+.denuncias-page .listing-cell-actions .btn { white-space: nowrap; }
+
+.denuncias-page .denuncia-status {
+  --denuncia-status-color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .45rem .7rem;
+  border: 1px solid color-mix(in srgb, var(--denuncia-status-color) 24%, transparent);
+  color: var(--denuncia-status-color);
+  background: color-mix(in srgb, var(--denuncia-status-color) 10%, var(--color-bg-white));
+  font-size: .73rem;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+}
+.denuncias-page .denuncia-status--warning { --denuncia-status-color: #89640c; }
+.denuncias-page .denuncia-status--success { --denuncia-status-color: #236b49; }
+.denuncias-page .denuncia-status--neutral { --denuncia-status-color: var(--color-text-muted); }
+.denuncia-status > i { flex: none; }
+.denuncias-page .badge.denuncia-attachments { flex-wrap: nowrap; white-space: nowrap; }
+.denuncia-attachments > span { white-space: nowrap; }
+
+.denuncia-section-title { display: flex; align-items: center; gap: .6rem; font-size: 1rem; line-height: 1.4; }
+.denuncia-section-title > i { color: var(--color-accent); flex: none; }
+.denuncia-card .card-header { border-bottom-color: var(--denuncia-line); }
+.denuncia-card .card-header p { font-weight: 400; }
+.denuncia-card .card-body { min-width: 0; }
+.denuncia-facts dt { margin-bottom: .35rem; color: var(--color-text-muted); font-size: .75rem; font-weight: 600; }
+.denuncia-facts dd { margin: 0; font-size: .87rem; overflow-wrap: anywhere; }
+.denuncia-note,
+.denuncia-choice-group { padding: 1rem; background: var(--denuncia-surface); border: 1px solid var(--denuncia-line); border-radius: var(--radius-md); }
+.denuncia-note { white-space: pre-wrap; overflow-wrap: anywhere; }
+.denuncia-choice-group { min-width: 0; }
+.denuncia-choice-group legend { float: none; width: auto; margin: 0 0 .75rem; font-size: .85rem; font-weight: 600; }
+.denuncia-operation-section { margin: 0; padding: 0; border: 0; min-width: 0; }
+.denuncia-operation-section > legend { float: none; width: auto; margin-bottom: 1rem; }
+.denuncia-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; padding-top: 1.25rem; border-top: 1px solid var(--denuncia-line); }
+.denuncia-card .btn { white-space: normal; }
+.denuncia-card .btn > i { flex: none; }
+.denuncia-empty > i { color: var(--color-accent); font-size: 2rem; }
+.denuncia-empty h3 { font-size: 1.05rem; }
+.denuncia-media { overflow: hidden; border: 1px solid var(--denuncia-line); border-radius: var(--radius-md); background: var(--denuncia-surface); }
+.denuncia-media-preview { display: block; width: 100%; height: 240px; object-fit: contain; background: var(--denuncia-surface); }
+.denuncia-media figcaption .btn { flex: none; }
+.denuncia-flow { display: grid; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+.denuncia-flow li { display: flex; align-items: flex-start; gap: .75rem; }
+.denuncia-flow li > span { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; height: 28px; border-radius: var(--radius-sm); color: var(--color-primary-dark); background: var(--denuncia-surface); font-size: .8rem; font-weight: 700; }
+.denuncia-flow strong { font-size: .82rem; }
+.denuncia-flow p { margin: .2rem 0 0; font-size: .78rem; color: var(--color-text-muted); }
+
+@media (max-width: 991.98px) {
+  .denuncias-page .listing-cell-actions > .btn { flex: 1; width: auto; }
+  .denuncia-results { align-items: flex-start; }
+}
+
+@media (max-width: 575.98px) {
+  .denuncia-card .card-body,
+  .denuncia-card .card-header { padding: 1rem; }
+  .denuncia-form-actions > .btn { width: 100%; }
+  .denuncia-media-preview { height: 200px; }
+}

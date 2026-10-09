@@ -4,38 +4,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/listing.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
-  <style>
-    @media (min-width: 992px) {
-      .caixa-diario-header {
-        align-items: center;
-      }
-
-      .caixa-diario-header > div:first-child {
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-
-      .caixa-diario-actions {
-        flex-wrap: nowrap;
-        justify-content: flex-end;
-        align-items: center;
-      }
-    }
-
-    .caixa-diario-actions .btn {
-      min-height: 42px;
-      justify-content: center;
-      white-space: nowrap;
-    }
-
-    .caixa-diario-actions .btn .bi {
-      width: 16px;
-      text-align: center;
-      flex: 0 0 16px;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_caixa_diario.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -43,7 +14,7 @@
   <div class="listing-header caixa-diario-header mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-journal-text me-2 text-primary"></i> Caixa Diario Agro
+        <i class="bi bi-journal-text me-2 text-primary"></i> Caixa Diário · {{ empresa_financeiro.nome }}
       </h2>
       <p class="text-muted small mb-0">
         Abra o caixa no inicio do dia, acompanhe as movimentacoes e feche o saldo com base no dia anterior.
@@ -51,7 +22,12 @@
     </div>
 
     <div class="listing-actions caixa-diario-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      {% if is_editable and not report.caixa_aberto and not report.caixa_fechado %}
+        <a href="#abrir-caixa-form" class="btn btn-primary caixa-abrir-destaque d-flex align-items-center gap-2">
+          <i class="bi bi-unlock-fill" aria-hidden="true"></i> Abrir caixa
+        </a>
+      {% endif %}
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
@@ -153,7 +129,7 @@
         </div>
         <div class="d-flex flex-wrap gap-2">
           {% if request.args.get('caixa_status') != 'fechado' and is_editable and not report.caixa_aberto and not report.caixa_fechado %}
-            <a href="#abrir-caixa-form" class="btn btn-warning btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+            <a href="#abrir-caixa-form" class="btn btn-primary caixa-abrir-destaque d-inline-flex align-items-center justify-content-center gap-2">
               <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
             </a>
           {% endif %}
@@ -246,7 +222,7 @@
                 <input type="text" name="observacoes_abertura" class="form-control" placeholder="Ex.: caixa aberto com conferencia do banco">
               </div>
               <div class="col-12">
-                <button type="submit" class="btn btn-success btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+                <button type="submit" class="btn btn-primary caixa-abrir-destaque d-inline-flex align-items-center justify-content-center gap-2">
                   <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
                 </button>
               </div>

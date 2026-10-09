@@ -33,7 +33,7 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard_equipe_uvis"))
 
         if is_agro_finance_user(current_user):
-            return redirect(url_for("main.admin_agro"))
+            return redirect(url_for("main.financeiro_central"))
 
         if current_user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
             return redirect(url_for("main.admin_dashboard"))

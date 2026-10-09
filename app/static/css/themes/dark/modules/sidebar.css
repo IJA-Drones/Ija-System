@@ -1,0 +1,23 @@
+/* =========================================
+   SIDEBAR
+   ========================================= */
+
+body.dark-mode .app-sidebar {
+  background: #152233;
+  border-right: 1px solid #233549;
+}
+
+body.dark-mode .app-sidebar .nav-link {
+  color: var(--color-text-main);
+}
+
+body.dark-mode .app-sidebar .nav-link:hover {
+  background: rgba(18, 227, 255, 0.13);
+  color: var(--color-accent);
+}
+
+body.dark-mode .app-sidebar .nav-link.active {
+  background: rgba(18, 227, 255, 0.15);
+  color: var(--color-accent);
+  border-left: 4px solid var(--color-accent);
+}

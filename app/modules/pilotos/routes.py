@@ -17,7 +17,8 @@ from app.modules.pilotos.service import (
     serialize_pilotos,
     validate_piloto_data,
 )
-from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
+from app.shared.password_policy import password_input, validate_password
 
 
 def _query_args_without_page():
@@ -27,7 +28,7 @@ def _query_args_without_page():
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(current_user):
         abort(403)
 
 
@@ -80,6 +81,9 @@ def register_routes(bp):
             elif len(senha) < 6:
                 errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
 
+            if senha and (password_error := validate_password(senha)):
+                errors["senha"] = password_error
+
             if senha != senha2:
                 errors["senha2"] = "As senhas nao conferem."
 
@@ -125,7 +129,7 @@ def register_routes(bp):
     @login_required
     def listar_pilotos():
         user_tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
-        if user_tipo not in ("dev", "admin", "uvis", "visualizar", "regional", "operario", "operador", "prefeitura_admin"):
+        if user_tipo not in ("dev", "diretor", "admin", "uvis", "visualizar", "regional", "operario", "operador", "prefeitura_admin"):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -155,7 +159,7 @@ def register_routes(bp):
         query = build_pilotos_query(user_tipo, regiao, telefone, q, sort, user=current_user)
 
         if export == "xlsx":
-            if user_tipo not in ["dev", "admin", "visualizar", "regional"]:
+            if user_tipo not in ["dev", "diretor", "admin", "visualizar", "regional"]:
                 abort(403)
 
             output, filename = build_pilotos_export(query.all(), user_tipo, uvis_regiao)
@@ -175,8 +179,8 @@ def register_routes(bp):
             "listar_pilotos.html",
             pilotos=pilotos,
             filters=filters,
-            is_admin=(user_tipo in {"dev", "admin"}),
-            is_editable=user_tipo in ["dev", "admin", "operario", "operador"],
+            is_admin=(user_tipo in {"dev", "diretor", "admin"}),
+            is_editable=user_tipo in ["dev", "diretor", "admin", "operario", "operador"],
             tipo_usuario=user_tipo,
             uvis_regiao=(uvis_regiao if user_tipo in {"uvis", "regional"} else None),
             pagination_args=_query_args_without_page(),
@@ -199,8 +203,8 @@ def register_routes(bp):
             regiao_alternativa = (request.form.get("regiao_alternativa") or "").strip().upper()
             telefone = (request.form.get("telefone") or "").strip()
             login = (request.form.get("login") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
 
             form = {
                 "nome_piloto": nome_piloto,
@@ -223,6 +227,8 @@ def register_routes(bp):
             if senha or senha2:
                 if len(senha) < 4:
                     errors["senha"] = "A senha deve ter pelo menos 4 caracteres."
+                if senha and (password_error := validate_password(senha)):
+                    errors["senha"] = password_error
                 if senha != senha2:
                     errors["senha2"] = "As senhas nao conferem."
 

@@ -1,0 +1,14 @@
+/* =========================================
+   HISTORICO DE MANUTENCOES
+   ========================================= */
+
+.equipamentos-manutencoes-historico-page {
+  max-width: 1200px;
+}
+
+.manutencoes-historico-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  white-space: nowrap;
+}

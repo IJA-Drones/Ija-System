@@ -1,0 +1,382 @@
+/* =========================================
+   RELATORIO DE LOGS DJI
+   ========================================= */
+
+body.dark-mode .dji-logs-report-page > .d-flex:first-child h2,
+body.dark-mode .dji-logs-report-page > .d-flex:first-child h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .dji-logs-report-page > .d-flex:first-child h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .dji-logs-report-page h5 {
+  color: #dce9f8;
+}
+
+body.dark-mode .dji-logs-report-page .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .dji-logs-report-page .text-muted,
+body.dark-mode .dji-route-modal .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .dji-logs-report-page .text-muted strong {
+  color: #dce9f8;
+}
+
+body.dark-mode .dji-logs-report-page hr {
+  border-color: #30465f;
+  opacity: 1;
+}
+
+body.dark-mode .dji-logs-report-page .metric-card {
+  color: #dce9f8;
+  background: linear-gradient(145deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057;
+  box-shadow: 0 12px 26px rgba(2, 8, 20, 0.22);
+}
+
+body.dark-mode .dji-logs-report-page .metric-label,
+body.dark-mode .dji-logs-report-page .comparison-kicker,
+body.dark-mode .dji-route-modal .comparison-kicker {
+  color: #91a9c2;
+}
+
+body.dark-mode .dji-logs-report-page .metric-value,
+body.dark-mode .dji-logs-report-page .comparison-value,
+body.dark-mode .dji-route-modal .route-summary-value {
+  color: #dce9f8;
+}
+
+body.dark-mode .dji-logs-report-page .section-card {
+  color: rgba(237, 243, 251, 0.9);
+  background: #172536;
+  border: 1px solid #283c53;
+  box-shadow: 0 14px 30px rgba(2, 8, 20, 0.22);
+}
+
+body.dark-mode .dji-logs-report-page .section-card .form-label {
+  color: #aebed1 !important;
+  font-weight: 700;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .form-control,
+body.dark-mode .dji-logs-report-page .section-card .form-select,
+body.dark-mode .dji-logs-report-page .kml-actions-menu .form-control {
+  color: #e8f1fb;
+  background: #213249;
+  border-color: #3a5069;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .form-control::placeholder,
+body.dark-mode .dji-logs-report-page .kml-actions-menu .form-control::placeholder {
+  color: #8498af;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .form-control:hover,
+body.dark-mode .dji-logs-report-page .section-card .form-select:hover,
+body.dark-mode .dji-logs-report-page .kml-actions-menu .form-control:hover {
+  border-color: #52708f;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .form-control:focus,
+body.dark-mode .dji-logs-report-page .section-card .form-select:focus,
+body.dark-mode .dji-logs-report-page .kml-actions-menu .form-control:focus {
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .dji-logs-report-page .section-card option,
+body.dark-mode .dji-logs-report-page .kml-actions-menu option {
+  color: #e8f1fb;
+  background: #213249;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .border.rounded-4 {
+  background: #19283a;
+  border-color: #30465f !important;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .border.rounded-4 > .bg-light {
+  color: #dce9f8;
+  background: linear-gradient(135deg, #1d2e42, #1a2a3c) !important;
+  box-shadow: none;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .border.rounded-4 > .bg-light[aria-expanded="true"] {
+  background: #203248 !important;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .border.rounded-4 > .bg-light .text-primary {
+  color: #6db0fb !important;
+}
+
+body.dark-mode .dji-logs-report-page .section-card .border.rounded-4 > .bg-light + .collapse > .border-top {
+  border-color: #30465f !important;
+}
+
+body.dark-mode .dji-logs-report-page .analytics-card {
+  color: rgba(237, 243, 251, 0.9);
+  background: #142131;
+  border: 1px solid #283c53;
+  box-shadow: 0 14px 30px rgba(2, 8, 20, 0.24);
+}
+
+body.dark-mode .dji-logs-report-page .analytics-card .nav-tabs {
+  background: linear-gradient(135deg, #1d2e42, #19293b);
+  border-bottom: 1px solid #30465f;
+}
+
+body.dark-mode .dji-logs-report-page .analytics-card .nav-tabs .nav-link {
+  color: #9eb1c7;
+}
+
+body.dark-mode .dji-logs-report-page .analytics-card .nav-tabs .nav-link:hover {
+  color: #c7ddf4;
+  background: rgba(76, 163, 255, 0.08);
+}
+
+body.dark-mode .dji-logs-report-page .analytics-card .nav-tabs .nav-link.active {
+  color: #8fc4ff;
+  background: #142131;
+  box-shadow: 0 -2px 10px rgba(2, 8, 20, 0.18);
+}
+
+body.dark-mode .dji-logs-report-page .analytics-card .tab-content {
+  background: #142131;
+}
+
+body.dark-mode .dji-logs-report-page .chart-panel {
+  color: rgba(237, 243, 251, 0.9);
+  background: #172536;
+  border-color: #2d4057;
+}
+
+body.dark-mode .dji-logs-report-page .comparison-card {
+  color: rgba(237, 243, 251, 0.9);
+  background: linear-gradient(180deg, #19293b, #172536);
+  border-color: #30465f;
+}
+
+body.dark-mode .dji-logs-report-page .delta-positive {
+  color: #83d4a5;
+}
+
+body.dark-mode .dji-logs-report-page .delta-negative {
+  color: #f09999;
+}
+
+body.dark-mode .dji-logs-report-page .delta-neutral {
+  color: #9eb1c7;
+}
+
+body.dark-mode .dji-logs-report-page .table-responsive {
+  background: transparent;
+}
+
+body.dark-mode .dji-logs-report-page .table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-color: #30465f !important;
+}
+
+body.dark-mode .dji-logs-report-page .table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .dji-logs-report-page .table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .dji-logs-report-page .table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .dji-logs-report-page .table .fw-semibold {
+  color: #dce9f8;
+}
+
+body.dark-mode .dji-logs-report-page #voos-processados .card-body {
+  min-width: 0;
+  overflow: hidden;
+}
+
+body.dark-mode .dji-logs-report-page #voos-processados > .card-body > .border.rounded-4 {
+  position: relative;
+  z-index: 2;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table-wrap {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  border: 1px solid #2a3d53;
+  border-radius: 14px;
+  scrollbar-color: #52708f #172536;
+  scrollbar-width: thin;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table {
+  min-width: 1120px;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table th:last-child,
+body.dark-mode .dji-logs-report-page .dji-flights-table td:not([colspan]):last-child {
+  position: sticky;
+  right: 0;
+  min-width: 138px;
+  box-shadow: -10px 0 18px rgba(2, 8, 20, 0.16);
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table th:last-child {
+  z-index: 3;
+  background: #1b2d41 !important;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table td:not([colspan]):last-child {
+  z-index: 2;
+  background: #172536 !important;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table tbody tr:nth-child(even) td:not([colspan]):last-child {
+  background: #19293b !important;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table.table-hover > tbody > tr:hover > td:not([colspan]):last-child {
+  background: #20354c !important;
+}
+
+body.dark-mode .dji-logs-report-page .dji-flights-table td:last-child .btn,
+body.dark-mode .dji-logs-report-page .dji-flights-table td:last-child .linked-route-pill {
+  position: relative;
+  z-index: 1;
+}
+
+body.dark-mode .dji-logs-report-page .badge.text-bg-light {
+  color: #bddcff !important;
+  background: rgba(76, 163, 255, 0.12) !important;
+  border: 1px solid rgba(126, 180, 255, 0.16);
+}
+
+body.dark-mode .dji-logs-report-page .badge.text-bg-success {
+  color: #c3efd7 !important;
+  background: rgba(45, 151, 99, 0.2) !important;
+  border: 1px solid rgba(96, 201, 145, 0.2);
+}
+
+body.dark-mode .dji-logs-report-page .badge.text-bg-warning {
+  color: #f6dfa0 !important;
+  background: rgba(224, 196, 75, 0.17) !important;
+  border: 1px solid rgba(235, 211, 112, 0.18);
+}
+
+body.dark-mode .dji-logs-report-page .linked-route-pill {
+  color: #b9dcff;
+  background: rgba(76, 163, 255, 0.12);
+  border-color: rgba(126, 180, 255, 0.2);
+}
+
+body.dark-mode .dji-logs-report-page .linked-route-pill:hover {
+  color: #d4eaff;
+  background: rgba(76, 163, 255, 0.2);
+}
+
+body.dark-mode .dji-logs-report-page .linked-route-muted {
+  color: #8fa5bd;
+}
+
+body.dark-mode .dji-logs-report-page a.text-success {
+  color: #83d4a5 !important;
+}
+
+body.dark-mode .dji-logs-report-page a.text-success:hover {
+  color: #a3e3bd !important;
+}
+
+body.dark-mode .dji-logs-report-page .kml-actions-menu {
+  color: #dce9f8;
+  background: #1d2e42;
+  border-color: #3a5069;
+  box-shadow: 0 14px 30px rgba(2, 8, 20, 0.3) !important;
+}
+
+body.dark-mode .dji-logs-report-page .kml-actions-menu .dropdown-item {
+  color: #dce9f8;
+}
+
+body.dark-mode .dji-logs-report-page .kml-actions-menu .dropdown-item:hover,
+body.dark-mode .dji-logs-report-page .kml-actions-menu .dropdown-item:focus {
+  color: #f0f6fd;
+  background: #28415c;
+}
+
+body.dark-mode .dji-logs-report-page .kml-actions-menu .dropdown-item.text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .dji-logs-report-page .kml-actions-menu .dropdown-divider {
+  border-color: #3a5069;
+}
+
+body.dark-mode .dji-route-modal .modal-content {
+  color: rgba(237, 243, 251, 0.9);
+  background: #142131;
+  border: 1px solid #30465f !important;
+  box-shadow: 0 24px 56px rgba(2, 8, 20, 0.42);
+}
+
+body.dark-mode .dji-route-modal .modal-header,
+body.dark-mode .dji-route-modal .modal-footer {
+  background: #19283a;
+  border-color: #30465f;
+}
+
+body.dark-mode .dji-route-modal .modal-title {
+  color: #8fc4ff;
+}
+
+body.dark-mode .dji-route-modal .modal-body {
+  background: #142131;
+}
+
+body.dark-mode .dji-route-modal .route-summary-card,
+body.dark-mode .dji-route-modal .route-detail-panel {
+  color: rgba(237, 243, 251, 0.9);
+  background: linear-gradient(180deg, #19293b, #172536);
+  border-color: #30465f;
+  box-shadow: none;
+}
+
+body.dark-mode .dji-route-modal .route-summary-meta,
+body.dark-mode .dji-route-modal .route-detail-label {
+  color: #91a5bd;
+}
+
+body.dark-mode .dji-route-modal .route-detail-text {
+  color: #dce9f8;
+}
+
+body.dark-mode .dji-route-modal .route-map-canvas {
+  background: #101c2a;
+  border: 1px solid #30465f;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode .dji-logs-report-page .analytics-card .tab-content {
+    padding: 1rem !important;
+  }
+
+  body.dark-mode .dji-logs-report-page .chart-panel {
+    padding: 0.85rem;
+  }
+}

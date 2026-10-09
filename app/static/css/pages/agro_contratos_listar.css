@@ -362,60 +362,6 @@
   line-height: 1.35;
 }
 
-body.dark-mode .agro-contratos-table-wrap {
-  background: #152233;
-}
-
-body.dark-mode .agro-actions-dropdown .dropdown-menu {
-  background: #16283a;
-  border: 1px solid #233549;
-}
-
-body.dark-mode .agro-template-panel {
-  background: #1c2b3f;
-  border-color: #233549;
-}
-
-body.dark-mode .agro-actions-dropdown .dropdown-item {
-  color: var(--color-text-main);
-}
-
-body.dark-mode .agro-actions-dropdown .dropdown-item:hover,
-body.dark-mode .agro-actions-dropdown .dropdown-item:focus {
-  background: rgba(99, 208, 138, 0.12);
-  color: var(--color-text-main);
-}
-
-body.dark-mode .agro-actions-dropdown .dropdown-divider {
-  border-top-color: #233549;
-}
-
-body.dark-mode .agro-contrato-modal {
-  background: #152233;
-  color: var(--color-text-main);
-}
-
-body.dark-mode .agro-detail-card {
-  background: #1c2b3f;
-  border-color: #233549;
-}
-
-body.dark-mode .agro-detail-title {
-  color: var(--color-primary-dark);
-}
-
-body.dark-mode .agro-detail-list dt {
-  color: var(--color-text-muted);
-}
-
-body.dark-mode .agro-detail-list dd {
-  color: var(--color-text-main);
-}
-
-body.dark-mode .agro-detail-list-inline > div + div {
-  border-top-color: #233549;
-}
-
 @media (max-width: 991.98px) {
   .agro-template-page-header {
     align-items: stretch;

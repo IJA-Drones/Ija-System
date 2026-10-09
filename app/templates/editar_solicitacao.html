@@ -154,6 +154,7 @@
                         <select name="tipo_operacao" class="form-select">
                             <option value="Monitoramento" {% if pedido.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
                             <option value="Tratamento" {% if pedido.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
+                            <option value="Tratamento e monitoramento de quadra" {% if pedido.tipo_operacao == 'Tratamento e monitoramento de quadra' %}selected{% endif %}>Tratamento e monitoramento de quadra</option>
                         </select>
                     </div>
                 </div>
@@ -235,6 +236,17 @@
                         <label class="form-label fw-bold small text-muted">Justificativa ou Recomendações</label>
                         <input name="justificativa" class="form-control" value="{{ pedido.justificativa or '' }}">
                     </div>
+                    {% if is_solicitacao_quadra(pedido) %}
+                    <div class="col-12">
+                        <div class="border rounded p-3 bg-light">
+                            <label class="form-label fw-bold small text-muted">Solicitado como Quadra?</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="quadra_confirmada_admin" value="1" id="quadraConfirmada" {% if pedido.quadra_confirmada_admin %}checked{% endif %}>
+                                <label class="form-check-label" for="quadraConfirmada">Confirmar solicitação de Quadra</label>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
 

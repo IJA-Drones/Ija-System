@@ -1,0 +1,129 @@
+{% set status_options = [
+  ('RECEBIDA', 'Recebida', 'info', 'bi-inbox'),
+  ('EM_TRIAGEM_COVISA', 'Em triagem COVISA', 'warning', 'bi-search'),
+  ('ENCAMINHADA_COORDENADORIA', 'Encaminhada à coordenadoria', 'info', 'bi-diagram-3'),
+  ('ENCAMINHADA_UVIS', 'Encaminhada à UVIS', 'info', 'bi-building'),
+  ('CONVERTIDA_SOLICITACAO', 'Solicitação criada', 'success', 'bi-check-circle'),
+  ('ARQUIVADA', 'Arquivada', 'neutral', 'bi-archive')
+] %}
+
+{% macro status_badge(status) -%}
+  {% set selected = status_options|selectattr('0', 'equalto', status)|list %}
+  {% set item = selected[0] if selected else (status, status|replace('_', ' ')|capitalize, 'neutral', 'bi-circle') %}
+  <span class="badge denuncia-status denuncia-status--{{ item[2] }}">
+    <i class="bi {{ item[3] }}" aria-hidden="true"></i>{{ item[1] }}
+  </span>
+{%- endmacro %}
+
+{% macro detail_header(denuncia, back_url, area) -%}
+  <header class="page-toolbar listing-header mb-4">
+    <div>
+      <p class="denuncia-context mb-2">Portal do Cidadão <span aria-hidden="true">/</span> {{ area }}</p>
+      <h2 class="mb-2"><i class="bi bi-megaphone-fill me-2" aria-hidden="true"></i>{{ denuncia.protocolo }}</h2>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        {{ status_badge(denuncia.status) }}
+        <span class="text-muted small">Recebida em {{ denuncia.criado_em.strftime('%d/%m/%Y às %H:%M') if denuncia.criado_em else 'Data não informada' }}</span>
+      </div>
+    </div>
+    <div class="listing-actions page-toolbar-actions">
+      <a href="{{ back_url }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left" aria-hidden="true"></i>Voltar para denúncias</a>
+    </div>
+  </header>
+{%- endmacro %}
+
+{% macro section(title, icon, class_name='', description='') -%}
+  <section class="card denuncia-card {{ class_name }}">
+    <div class="card-header">
+      <h3 class="denuncia-section-title mb-0"><i class="bi {{ icon }}" aria-hidden="true"></i>{{ title }}</h3>
+      {% if description %}<p class="text-muted small mb-0 mt-2">{{ description }}</p>{% endif %}
+    </div>
+    <div class="card-body">{{ caller() }}</div>
+  </section>
+{%- endmacro %}
+
+{% macro occurrence(denuncia) -%}
+  <dl class="row g-3 denuncia-facts mb-0">
+    <div class="col-sm-6"><dt>Tipo de visita</dt><dd>{{ denuncia.tipo_visita }}</dd></div>
+    <div class="col-sm-6"><dt>Tipo de imóvel</dt><dd>{{ denuncia.tipo_imovel or 'Não informado' }}</dd></div>
+    <div class="col-12"><dt>Foco relatado</dt><dd>{{ denuncia.foco }}</dd></div>
+    <div class="col-12"><dt>Descrição do cidadão</dt><dd class="denuncia-note mt-2">{{ denuncia.descricao or 'Sem descrição complementar.' }}</dd></div>
+  </dl>
+{%- endmacro %}
+
+{% macro address(denuncia) -%}
+  <dl class="row g-3 denuncia-facts mb-0">
+    <div class="col-sm-8"><dt>Endereço</dt><dd>{{ denuncia.logradouro }}, {{ denuncia.numero }}{% if denuncia.complemento %}<span class="d-block text-muted small mt-1">{{ denuncia.complemento }}</span>{% endif %}</dd></div>
+    <div class="col-sm-4"><dt>CEP</dt><dd>{{ denuncia.cep or 'Não informado' }}</dd></div>
+    <div class="col-sm-6"><dt>Bairro</dt><dd>{{ denuncia.bairro }}</dd></div>
+    <div class="col-sm-6"><dt>Cidade / UF</dt><dd>{{ denuncia.cidade }}/{{ denuncia.uf }}</dd></div>
+    <div class="col-12"><dt>Coordenadas</dt><dd>{% if denuncia.latitude is not none and denuncia.longitude is not none and denuncia.latitude != '' and denuncia.longitude != '' %}{{ denuncia.latitude }}, {{ denuncia.longitude }}{% else %}Não informadas{% endif %}</dd></div>
+  </dl>
+  {% if denuncia.latitude is not none and denuncia.longitude is not none and denuncia.latitude != '' and denuncia.longitude != '' %}
+  <a class="btn btn-outline-primary btn-sm mt-3" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query={{ denuncia.latitude }},{{ denuncia.longitude }}">
+    <i class="bi bi-map" aria-hidden="true"></i>Abrir no mapa
+  </a>
+  {% endif %}
+{%- endmacro %}
+
+{% macro citizen(denuncia, show_documents=False) -%}
+  <dl class="row g-3 denuncia-facts mb-0">
+    <div class="col-12"><dt>Nome</dt><dd>{{ denuncia.cidadao_nome }}</dd></div>
+    <div class="col-12"><dt>Telefone</dt><dd>{{ denuncia.cidadao_telefone }}</dd></div>
+    {% if show_documents %}
+    <div class="col-sm-6"><dt>CPF</dt><dd>{{ denuncia.cidadao_cpf }}</dd></div>
+    <div class="col-sm-6"><dt>RG</dt><dd>{{ denuncia.cidadao_rg }}</dd></div>
+    {% endif %}
+  </dl>
+{%- endmacro %}
+
+{% macro media(denuncia) -%}
+  {% if denuncia.anexos %}
+  <div class="row g-3">
+    {% for anexo in denuncia.anexos %}
+    {% set media_url = url_for('main.denuncia_anexo', anexo_id=anexo.id) %}
+    <div class="col-12 col-md-6">
+      <figure class="denuncia-media mb-0 h-100">
+        {% if anexo.tipo_midia == 'video' %}
+        <video class="denuncia-media-preview" controls preload="metadata" aria-label="Vídeo: {{ anexo.arquivo_nome }}">
+          <source src="{{ media_url }}" type="{{ anexo.mime_type or 'video/mp4' }}">
+          Seu navegador não suporta a reprodução deste vídeo. Use o link abaixo para abri-lo.
+        </video>
+        {% else %}
+        <a href="{{ media_url }}" target="_blank" rel="noopener" aria-label="Abrir foto: {{ anexo.arquivo_nome }}">
+          <img src="{{ media_url }}" alt="{{ anexo.arquivo_nome }}" class="denuncia-media-preview" loading="lazy">
+        </a>
+        {% endif %}
+        <figcaption class="d-flex align-items-center justify-content-between gap-2 p-3">
+          <span class="text-muted small text-break">{{ anexo.arquivo_nome }}</span>
+          <a class="btn btn-outline-primary btn-sm" href="{{ media_url }}" target="_blank" rel="noopener" aria-label="Abrir anexo: {{ anexo.arquivo_nome }}">Abrir<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
+        </figcaption>
+      </figure>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="denuncia-empty text-center py-4">
+    <i class="bi bi-images" aria-hidden="true"></i>
+    <p class="text-muted mb-0 mt-2">Nenhuma foto ou vídeo foi enviado nesta denúncia.</p>
+  </div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro flow(denuncia) -%}
+  <ol class="denuncia-flow">
+    <li><span>1</span><div><strong>Recebimento</strong><p>Relato enviado pelo Portal do Cidadão.</p></div></li>
+    <li><span>2</span><div><strong>Triagem COVISA</strong><p>Conferência do endereço e das evidências.</p></div></li>
+    <li><span>3</span><div><strong>Coordenadoria</strong><p>Definição da UVIS responsável.</p></div></li>
+    <li><span>4</span><div><strong>Atuação da UVIS</strong><p>Preparação da solicitação operacional.</p></div></li>
+  </ol>
+  <hr>
+  <dl class="row g-3 denuncia-facts mb-0">
+    <div class="col-12"><dt>Coordenadoria</dt><dd>{{ denuncia.coordenadoria or 'Ainda não definida' }}</dd></div>
+    <div class="col-12"><dt>UVIS</dt><dd>{{ denuncia.uvis_usuario.nome_uvis if denuncia.uvis_usuario else 'Ainda não definida' }}</dd></div>
+    <div class="col-12"><dt>Solicitação vinculada</dt><dd>{{ '#' ~ denuncia.solicitacao_id if denuncia.solicitacao_id else 'Ainda não criada' }}</dd></div>
+    {% if denuncia.triado_por %}<div class="col-12"><dt>Última triagem por</dt><dd>{{ denuncia.triado_por.nome_uvis or denuncia.triado_por.login }}</dd></div>{% endif %}
+    {% if denuncia.encaminhado_em %}<div class="col-12"><dt>Encaminhada em</dt><dd>{{ denuncia.encaminhado_em.strftime('%d/%m/%Y %H:%M') }}</dd></div>{% endif %}
+    {% if denuncia.arquivado_em %}<div class="col-12"><dt>Arquivada em</dt><dd>{{ denuncia.arquivado_em.strftime('%d/%m/%Y %H:%M') }}</dd></div>{% endif %}
+    {% if denuncia.arquivado_motivo %}<div class="col-12"><dt>Motivo do arquivamento</dt><dd class="denuncia-note mt-2">{{ denuncia.arquivado_motivo }}</dd></div>{% endif %}
+  </dl>
+{%- endmacro %}

@@ -1,0 +1,295 @@
+.auditoria-page {
+    max-width: 1440px;
+  }
+
+  .auditoria-hero { align-items: flex-end; }
+  .auditoria-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+    color: #2563a6;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .auditoria-title { font-weight: 800; letter-spacing: -.02em; }
+  .auditoria-retention {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: .58rem .85rem;
+    border: 1px solid rgba(37, 99, 166, .18);
+    border-radius: 999px;
+    background: rgba(37, 99, 166, .06);
+    color: #2563a6;
+    font-size: .8rem;
+  }
+
+  .auditoria-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .auditoria-stat-card {
+    border: 0;
+    border-radius: 1.25rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+    border-top: 3px solid rgba(37, 99, 166, .75);
+  }
+
+  .auditoria-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(33, 37, 41, 0.62);
+  }
+
+  .auditoria-stat-value {
+    margin-top: 12px;
+    font-size: 1.9rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-stat-note {
+    margin-top: 10px;
+    font-size: 0.84rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-filter-hint {
+    margin: 0 0 1rem;
+    padding: .7rem .85rem;
+    border-radius: .7rem;
+    background: rgba(37, 99, 166, .06);
+    color: var(--bs-secondary-color);
+    font-size: .82rem;
+  }
+  .auditoria-filter-hint i { color: #2563a6; margin-right: .35rem; }
+  .auditoria-search-input {
+    min-height: 44px;
+    padding-left: 1rem;
+    border-color: rgba(37, 99, 166, .22);
+    box-shadow: 0 4px 12px rgba(37, 99, 166, .05);
+  }
+  .auditoria-search-input:focus {
+    border-color: #2563a6;
+    box-shadow: 0 0 0 .2rem rgba(37, 99, 166, .12);
+  }
+  .auditoria-filter-actions { display: flex; gap: .5rem; }
+  .auditoria-filter-actions .btn { min-height: 38px; }
+  .auditoria-result-meta { display: flex; align-items: center; gap: 10px; }
+  .auditoria-page-count { color: var(--bs-secondary-color); font-size: .8rem; }
+
+  .auditoria-table-card .card-header {
+    background: #fff;
+  }
+
+  .auditoria-table .col-data {
+    width: 150px;
+  }
+
+  .auditoria-table .col-usuario {
+    width: 220px;
+  }
+
+  .auditoria-table .col-evento {
+    width: 180px;
+  }
+
+  .auditoria-table .col-origem {
+    width: 235px;
+  }
+
+  .auditoria-time {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .auditoria-time-date {
+    font-weight: 700;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-time-hour {
+    font-size: 0.88rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-user-name {
+    font-weight: 600;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-user-login {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-chip-group,
+  .auditoria-badge-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .auditoria-chip-group {
+    margin-top: 10px;
+  }
+
+  .auditoria-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--bs-light);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-badge-group .badge {
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+  }
+
+  .auditoria-path-box,
+  .auditoria-origin-box {
+    border-radius: 1rem;
+    background: rgba(248, 249, 250, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .auditoria-path-box {
+    padding: 0.9rem 1rem;
+  }
+
+  .auditoria-path-value {
+    font-weight: 600;
+    color: var(--bs-dark);
+    word-break: break-word;
+  }
+
+  .auditoria-path-meta {
+    margin-top: 0.65rem;
+    font-size: 0.84rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-path-meta code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .auditoria-origin-stack {
+    display: grid;
+    gap: 8px;
+  }
+
+  .auditoria-origin-box {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .auditoria-origin-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(33, 37, 41, 0.55);
+  }
+
+  .auditoria-origin-value {
+    font-size: 0.88rem;
+    color: var(--bs-dark);
+    word-break: break-word;
+  }
+
+  .auditoria-table tbody tr { border-bottom: 1px solid rgba(15, 23, 42, .06); }
+  .auditoria-table tbody tr:hover { box-shadow: inset 3px 0 0 #2563a6; }
+
+  @media (max-width: 1199.98px) {
+    .auditoria-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 991.98px) {
+    .auditoria-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .auditoria-table tbody tr td:nth-child(1)::before { content: "Data"; }
+    .auditoria-table tbody tr td:nth-child(2)::before { content: "Usuario"; }
+    .auditoria-table tbody tr td:nth-child(3)::before { content: "Evento"; }
+    .auditoria-table tbody tr td:nth-child(4)::before { content: "Tela / Rota"; }
+    .auditoria-table tbody tr td:nth-child(5)::before { content: "Origem"; }
+  }
+
+  @media (max-width: 420px) {
+    .auditoria-stat-value {
+      font-size: 1.6rem;
+    }
+  }
+
+  body.dark-mode .auditoria-stat-card,
+  body.dark-mode .auditoria-table-card,
+  body.dark-mode .auditoria-path-box,
+  body.dark-mode .auditoria-origin-box {
+    background: #0f1a24 !important;
+    border-color: #233549 !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  body.dark-mode .auditoria-stat-value,
+  body.dark-mode .auditoria-time-date,
+  body.dark-mode .auditoria-user-name,
+  body.dark-mode .auditoria-path-value,
+  body.dark-mode .auditoria-origin-value,
+  body.dark-mode .auditoria-table-card .text-dark {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  body.dark-mode .auditoria-stat-label,
+  body.dark-mode .auditoria-stat-note,
+  body.dark-mode .auditoria-time-hour,
+  body.dark-mode .auditoria-user-login,
+  body.dark-mode .auditoria-origin-label,
+  body.dark-mode .auditoria-path-meta,
+  body.dark-mode .auditoria-table-card .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  body.dark-mode .auditoria-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #233549;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  body.dark-mode .auditoria-eyebrow,
+  body.dark-mode .auditoria-retention { color: #8fc2ff; }
+  body.dark-mode .auditoria-retention { background: rgba(88, 166, 255, .1); border-color: rgba(143, 194, 255, .25); }
+  body.dark-mode .auditoria-filter-hint { background: rgba(88, 166, 255, .1); }
+  body.dark-mode .auditoria-filter-hint i { color: #8fc2ff; }
+  body.dark-mode .auditoria-search-input { border-color: #355777; }
+
+  @media (max-width: 767.98px) {
+    .auditoria-hero { align-items: flex-start; gap: 1rem; }
+    .auditoria-retention { display: none; }
+    .auditoria-result-meta { width: 100%; justify-content: space-between; }
+  }

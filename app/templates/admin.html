@@ -2,203 +2,13 @@
 {% from "_pagination.html" import render_pagination %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 {% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_filters.html" import render_filter_card %}
 {% from "_result_summary.html" import render_result_summary %}
-
-{% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
-    <style>
-        .admin-page {
-            width: 100%;
-        }
-        .admin-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
-        .admin-toolbar-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        .admin-toolbar-slot {
-            width: 180px;
-            min-width: 150px;
-        }
-        .admin-filter-actions {
-            display: flex;
-            gap: 8px;
-        }
-        .admin-table-wrap {
-            width: 100%;
-        }
-        .admin-table-wrap .pagination-toolbar {
-            padding-inline: 1rem;
-        }
-        .admin-table-wrap .pagination-page-size-form {
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        .admin-table-wrap .pagination-page-size-select {
-            min-width: 82px;
-            width: auto;
-            border-radius: 999px;
-            padding-right: 2rem;
-        }
-        .admin-op-table-wrap {
-            margin-top: 14px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 14px;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.78);
-        }
-        .admin-op-table {
-            width: 100%;
-            margin: 0;
-            border-collapse: collapse;
-        }
-        .admin-op-table th,
-        .admin-op-table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            vertical-align: top;
-            line-height: 1.35;
-        }
-        .admin-op-table tr:last-child th,
-        .admin-op-table tr:last-child td {
-            border-bottom: 0;
-        }
-        .admin-op-table th {
-            width: 148px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--color-text-muted);
-            background: rgba(44, 82, 130, 0.05);
-            white-space: nowrap;
-        }
-        .admin-op-table td {
-            font-size: 0.84rem;
-            font-weight: 700;
-            color: var(--color-text-main);
-            word-break: break-word;
-        }
-
-        @media (max-width: 991.98px) {
-            .admin-page.container-fluid.py-4 {
-                padding-left: 12px !important;
-                padding-right: 12px !important;
-            }
-            .admin-toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .admin-toolbar-actions {
-                width: 100%;
-                justify-content: flex-start;
-            }
-            .admin-toolbar-slot {
-                flex: 0 1 180px;
-            }
-            #collapseFiltros .row.g-2.align-items-end > div {
-                width: 100%;
-            }
-            .admin-filter-actions {
-                flex-wrap: wrap;
-                align-items: stretch;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.main-row {
-                display: block;
-                border: 1px solid rgba(0,0,0,.08);
-                border-radius: 16px;
-                overflow: hidden;
-                box-shadow: 0 10px 22px rgba(0,0,0,.06);
-                background: #fff;
-                margin-bottom: 14px;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.main-row > td {
-                display: block;
-                width: 100%;
-                padding: 14px !important;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.d-lg-none > td > .collapse > div {
-                padding: 14px !important;
-                background: #fff;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.d-lg-none .row.g-2.small > div,
-            .admin-table-wrap .table-accordion > tbody > tr.d-lg-none .row.g-2 > div {
-                width: 100%;
-            }
-            .admin-table-wrap .table-accordion .d-flex.gap-1.mt-2.align-items-center.justify-content-center,
-            .admin-table-wrap .table-accordion .d-none.d-lg-flex.gap-1.mt-4 {
-                flex-wrap: wrap;
-            }
-            .admin-table-wrap .pagination {
-                flex-wrap: wrap;
-            }
-            .admin-table-wrap .pagination-toolbar {
-                padding-inline: 0.75rem;
-            }
-            .admin-table-wrap .pagination-page-size-form {
-                justify-content: flex-start;
-            }
-            .admin-map-modal .modal-dialog {
-                margin: 0.75rem;
-            }
-            .admin-map-modal .modal-footer {
-                flex-direction: column;
-                gap: 10px;
-            }
-            .admin-map-modal .modal-footer .d-flex.gap-2 {
-                flex-wrap: wrap;
-            }
-            .admin-map-modal #mapCanvas {
-                height: 320px !important;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .admin-toolbar-actions {
-                justify-content: center;
-            }
-            .admin-toolbar-slot {
-                width: 100%;
-                min-width: 0;
-            }
-            .admin-filter-actions {
-                flex-direction: column;
-            }
-            .admin-map-modal #mapCanvas {
-                height: 260px !important;
-            }
-        }
-
-        @media (max-width: 991.98px) {
-            html.dark-mode .admin-table-wrap .table-accordion > tbody > tr.main-row,
-            body.dark-mode .admin-table-wrap .table-accordion > tbody > tr.main-row,
-            html.dark-mode .admin-table-wrap .table-accordion > tbody > tr.d-lg-none > td > .collapse > div,
-            body.dark-mode .admin-table-wrap .table-accordion > tbody > tr.d-lg-none > td > .collapse > div {
-                background: #0f1a24 !important;
-                border-color: #233549 !important;
-                box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
-                color: rgba(255,255,255,.92) !important;
-            }
-            html.dark-mode .admin-table-wrap .text-muted,
-            body.dark-mode .admin-table-wrap .text-muted {
-                color: rgba(255,255,255,.70) !important;
-            }
-        }
-    </style>
-{% endblock %}
 
 {% block content %}
 
 {# --- INÍCIO DO CONTAINER PADRONIZADO --- #}
-<div class="container-fluid py-4 admin-page" style="max-width: 1200px;">
+<div class="container-fluid py-4 admin-page">
 
     <div class="admin-toolbar mb-4">
         <div>
@@ -206,14 +16,14 @@
             {{ render_result_summary(paginacao.total, 'Solicitações filtradas') }}
         </div>
 
-        {% if current_user.tipo_usuario in ['dev', 'admin', 'operario', 'visualizar', 'regional'] %}
+        {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'operario', 'visualizar', 'regional'] or is_veiculos_supervisor(current_user) %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
             
             {# Substituímos o style fixo por uma classe que o Bootstrap entende, ou mantemos o style mas permitimos que ele diminua #}
-            {% if current_user.tipo_usuario in ['dev', 'admin', 'visualizar'] %}
+            {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar'] or is_veiculos_supervisor(current_user) %}
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
-                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-plus-lg"></i> 
                     <span>Nova Solicitação</span>
                 </a>
@@ -236,14 +46,17 @@
                 <input type="hidden" name="endereco" value="{{ request.args.get('endereco', '') }}">
                 <input type="hidden" name="data_ini" value="{{ request.args.get('data_ini', '') }}">
                 <input type="hidden" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
-                <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                <input type="hidden" name="data_criacao_ini" value="{{ request.args.get('data_criacao_ini', '') }}">
+                <input type="hidden" name="data_criacao_fim" value="{{ request.args.get('data_criacao_fim', '') }}">
+                <input type="hidden" name="retorno_automatico" value="{{ request.args.get('retorno_automatico', '') }}">
+                <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span>Exportar Excel</span>
                 </button>
             </form>
 
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
-                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-danger shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-danger shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-x-circle"></i> 
                     <span>Canceladas</span>
                 </a>
@@ -252,31 +65,18 @@
         {% endif %}
     </div>
 
-    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
+    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('data_criacao_ini') or request.args.get('data_criacao_fim') or request.args.get('retorno_automatico') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
-    <div class="card shadow-sm rounded-4 mb-4 border-0">
-        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapseFiltros"
-                aria-expanded="false"
-                style="cursor: pointer;">
-
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-funnel-fill text-primary"></i>
-                <span class="text-dark">Filtros de Busca</span>
-                {% if current_user.tipo_usuario in ['dev', 'admin'] %}
-                    <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
-                {% endif %}
-                {% if admin_has_filters %}
-                    <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
-                {% endif %}
-            </div>
-            <i class="bi bi-chevron-down text-muted"></i>
-        </div>
-
-        <div class="collapse {% if admin_has_filters %}show{% endif %}" id="collapseFiltros">
-            <div class="card-body pt-0 pb-4">
+    {% call render_filter_card(
+      'Filtros de Busca',
+      'collapseFiltros',
+      active=admin_has_filters,
+      badges=[
+        {'label': 'UVIS/PREFEITURA', 'class': 'admin-context-badge', 'id': 'adminContextFilterBadge'} if current_user.tipo_usuario in ['dev', 'diretor', 'admin'] else {},
+        {'label': 'Filtros Ativos', 'class': 'bg-primary'} if admin_has_filters else {}
+      ]
+    ) %}
                 <form method="GET">
                     <div class="row g-2 filter-chip-row">
                         <div class="col-md-3">
@@ -389,8 +189,26 @@
                                 value="{{ request.args.get('data_fim', '') }}"
                             >
                         </div>
-                        <div class="col-md-3 admin-filter-actions">
-                            <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Criada de:</label>
+                            <input
+                                type="date"
+                                name="data_criacao_ini"
+                                class="form-control form-control-sm"
+                                value="{{ request.args.get('data_criacao_ini', '') }}"
+                            >
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Criada ate:</label>
+                            <input
+                                type="date"
+                                name="data_criacao_fim"
+                                class="form-control form-control-sm"
+                                value="{{ request.args.get('data_criacao_fim', '') }}"
+                            >
+                        </div>
+                        <div class="col-md-3 admin-filter-actions filter-card-actions">
+                            <button class="btn btn-secondary btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
                             {% if admin_has_filters %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-x-lg"></i> Limpar
@@ -399,9 +217,7 @@
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
+    {% endcall %}
 
     {# --- TABELA HÃBRIDA (SANFONA NO MOBILE / TABELA NO PC) --- #}
     <div class="card shadow-sm rounded-4 border-0 overflow-hidden admin-table-wrap">
@@ -410,9 +226,9 @@
             {# HEADER: OCULTO NO MOBILE (d-none), VISÍVEL NO DESKTOP (d-lg-table-header-group) #}
             <thead class="d-none d-lg-table-header-group">
                 <tr>
-                    <th style="width: 25%">Unidade</th>
-                    <th style="width: 40%">Dados da Operação</th>
-                    <th style="width: 35%">{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo DECEA{% endif %}</th>
+                    <th>Unidade</th>
+                    <th>Dados da Operação</th>
+                    <th>{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo DECEA{% endif %}</th>
                 </tr>
             </thead>
 
@@ -438,7 +254,7 @@
                                     #{{ p.id }} {{ p.usuario.nome_uvis }}
                                 </strong>
                                 {# FILTRO DE PERFIL: Aplica-se a ambos os alertas abaixo #}
-                                {% if current_user.tipo_usuario|lower in ['dev', 'admin', 'visualizar', 'operario', 'regional'] %}
+                                {% if current_user.tipo_usuario|lower in ['dev', 'diretor', 'admin', 'visualizar', 'operario', 'regional'] %}
                                     
                                     {# 1. ALERTA GEOFENCING #}
                                     {% if p.area_restrita %}
@@ -482,7 +298,7 @@
                                         </span>
                                     </div>
 
-                                    <!-- EQUIPE (exibiÃ§Ã£o rÃ¡pida) -->
+                                    <!-- EQUIPE -->
                                     <div class="mt-2 small text-muted">
                                         <i class="bi bi-people-fill me-1"></i>
                                         {% if p.equipe %}
@@ -502,7 +318,14 @@
                         </div>
 
                         <div class="small text-muted mt-4 border-top pt-2">
-                            <i class="bi bi-calendar-event me-1"></i> {{ p.data_agendamento.strftime('%d/%m/%Y') }} as {{ p.hora_agendamento.strftime('%H:%M') }}
+                            <div>
+                                <i class="bi bi-calendar-event me-1"></i>
+                                <b>Agendada para {{ p.data_agendamento.strftime('%d/%m/%Y') }} as {{ p.hora_agendamento.strftime('%H:%M') }}</b>
+                            </div>
+                            <div class="mt-1">
+                                <i class="bi bi-clock-history me-1"></i>
+                                Criada em {{ brazil_datetime(p.data_criacao).strftime('%d/%m/%Y as %H:%M') if p.data_criacao else '--' }}
+                            </div>
                         </div>
 
                         {# Endereço Desktop (Escondido no Mobile) #}
@@ -512,7 +335,7 @@
                         </div>
 
                         {# Botões de Admin Desktop #}
-                        {% if current_user.tipo_usuario in ['dev', 'admin'] %}
+                        {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin'] %}
                         <div class="d-none d-lg-flex gap-1 mt-4">
                             <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                 class="btn btn-sm btn-success"
@@ -607,17 +430,19 @@
                     <td class="align-top pt-3 d-none d-lg-table-cell bg-opacity-10">
                         {% if is_editable %}
                             {# --- FORMULÁRIO DESKTOP (ADMIN/OPERÁRIO) --- #}
+                            {% set quadra_admin = is_admin_solicitacao_quadra(p) %}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
                                 <input type="hidden" name="next" value="{{ admin_return_url }}">
-                                <div class="row g-1 mb-2">
+                                <div class="row g-1 mb-2 {% if quadra_admin %}quadra-readonly-fields{% endif %}">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
                                     <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
                                 </div>
 
+                                {# O protocolo pode ser informado antes da confirmação da quadra. #}
                                 <input name="protocolo" class="form-control form-control-sm mb-2" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
 
                                 <div class="p-2 border rounded gap-1 d-flex flex-column">
-                                    <div>
+                                    <div class="{% if quadra_admin and not p.quadra_visualizada_admin %}quadra-readonly-fields{% endif %}">
                                         <label class="form-label">Status</label>
                                         <select name="status" class="form-select form-select-sm" data-jid="{{ p.id }}" onchange="toggleJustificativa(this, this.dataset.jid)">
                                             <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
@@ -628,7 +453,7 @@
                                         </select>
                                     </div>
 
-                                    <div>
+                                    <div class="{% if quadra_admin and not p.quadra_visualizada_admin %}quadra-readonly-fields{% endif %}">
                                         <label class="form-label mt-2">Equipe responsável</label>
                                         <select class="form-select form-select-sm" name="equipe_id">
                                             <option value="" {% if not p.equipe_id %}selected{% endif %}>- Sem equipe -</option>
@@ -639,6 +464,24 @@
                                             {% endfor %}
                                         </select>
                                     </div>
+
+                                    {% if is_admin_solicitacao_quadra(p) %}
+                                    <div class="mt-2 p-2 border rounded bg-light">
+                                        <label class="form-label mb-1">Solicitado como Quadra?</label>
+                                        <div class="mb-2">
+                                            {% if p.quadra_visualizada_admin %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Visualizado</span>
+                                            <span class="text-muted small ms-1">{{ 'Confirmado' if p.quadra_confirmada_admin else 'Cancelado' }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Aguardando retorno</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" name="quadra_confirmada_admin" value="0" class="btn btn-sm btn-outline-secondary flex-fill">Cancelar</button>
+                                            <button type="submit" name="quadra_confirmada_admin" value="1" class="btn btn-sm btn-primary flex-fill">Confirmar</button>
+                                        </div>
+                                    </div>
+                                    {% endif %}
 
                                     <div id="boxJustificativa{{ p.id }}" style="display: none;">
                                         <label class="form-label mt-2">Justificativa</label>
@@ -874,7 +717,7 @@
                                     </form>
                                     {% endif %}
 
-                                    {% if current_user.tipo_usuario in ['dev', 'admin'] %}
+                                    {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin'] %}
                                     <div class="d-flex gap-1 mt-2 align-items-center justify-content-center">
                                         <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}"
                                            class="btn btn-sm btn-outline-primary">
@@ -921,7 +764,7 @@
 {# --- FIM DO CONTAINER PADRONIZADO --- #}
 
 {# --- CHATBOT (Mantido igual) --- #}
-{% if current_user.tipo_usuario in ['dev', 'admin', 'operario', 'visualizar', 'regional'] %}
+{% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'operario', 'visualizar', 'regional'] %}
 <button id="adminBotFab" class="bot-fab" title="Ajuda do painel" onclick="toggleAdminChat()">
     <i class="bi bi-robot"></i>
 </button>
@@ -1352,4 +1195,3 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 {% endblock %}
-

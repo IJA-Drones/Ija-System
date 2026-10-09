@@ -5,270 +5,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 
-<style>
-  .piloto-frota-page {
-    width: 100%;
-  }
-  .piloto-frota-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-  }
-  .table-frota {
-    width: 100%;
-    table-layout: fixed;
-  }
-  .table-frota col:nth-child(1) { width: 27%; }
-  .table-frota col:nth-child(2) { width: 14%; }
-  .table-frota col:nth-child(3) { width: 12%; }
-  .table-frota col:nth-child(4) { width: 13%; }
-  .table-frota col:nth-child(5) { width: 10%; }
-  .table-frota col:nth-child(6) { width: 24%; }
-
-  .table-frota thead th {
-    vertical-align: middle;
-    font-weight: 700;
-    white-space: nowrap;
-    text-align: left;
-  }
-  .table-frota tbody td {
-    vertical-align: middle;
-    text-align: left;
-  }
-  .table-frota thead th,
-  .table-frota tbody td {
-    padding-top: 0.85rem;
-    padding-bottom: 0.85rem;
-  }
-  .table-frota thead th:first-child,
-  .table-frota tbody td:first-child {
-    padding-left: 1.25rem;
-  }
-  .table-frota thead th:last-child,
-  .table-frota tbody td:last-child {
-    padding-right: 1.25rem;
-  }
-  .table-frota thead th:nth-child(3),
-  .table-frota thead th:nth-child(4),
-  .table-frota tbody td:nth-child(3),
-  .table-frota tbody td:nth-child(4) {
-    text-align: right;
-  }
-  .table-frota thead th:nth-child(6),
-  .table-frota tbody td:nth-child(6) {
-    text-align: center;
-    white-space: normal;
-  }
-  .turno-actions-cell {
-    min-width: 0;
-  }
-  .turno-actions-meta {
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-    white-space: normal;
-  }
-  .turno-actions-buttons .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 154px;
-    white-space: nowrap;
-  }
-
-  .stat-pill { border-radius: 999px; padding: 6px 10px; font-weight: 700; font-size: .85rem; }
-  .pill-ok { background: #d1e7dd; color: #0f5132; }
-  .pill-warn { background: #fff3cd; color: #664d03; }
-  .pill-bad { background: #f8d7da; color: #842029; }
-
-  .modal-section-title { 
-    font-size: 0.75rem; 
-    font-weight: 800; 
-    text-transform: uppercase; 
-    color: #4a5568; 
-    border-left: 4px solid #0d6efd; 
-    padding-left: 10px; 
-    margin: 20px 0 10px;
-  }
-  .modal-soft-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 14px;
-  }
-  .modal-km-highlight {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: #0d6efd;
-    line-height: 1;
-  }
-  .hint-line {
-    font-size: 0.78rem;
-    color: #64748b;
-  }
-
-  .signature-container {
-    border: 2px dashed #cbd5e0;
-    border-radius: 12px;
-    background: #fdfdfd;
-    position: relative;
-    overflow: hidden;
-  }
-
-  canvas[id^="sig-canvas"] {
-    width: 100%;
-    height: 180px;
-    cursor: crosshair;
-    touch-action: none;
-  }
-
-  @media (max-width: 768px) {
-    .piloto-frota-page.container-fluid.py-4 {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
-    .piloto-frota-header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .piloto-frota-header .btn {
-      width: 100%;
-      justify-content: center;
-    }
-    .table-responsive {
-      overflow-x: visible !important;
-    }
-    .table-frota,
-    .table-frota tbody,
-    .table-frota tr,
-    .table-frota td {
-      display: block;
-      width: 100%;
-    }
-    .table-frota thead { display:none; }
-    .table-frota tbody { display:flex; flex-direction:column; gap:14px; }
-    .table-frota tbody tr {
-      display:block;
-      border:1px solid rgba(0,0,0,.1);
-      border-radius:16px;
-      overflow:hidden;
-      box-shadow: 0 10px 22px rgba(0,0,0,.06);
-      margin-bottom: 10px;
-      background: #fff;
-    }
-    .table-frota tbody td {
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      padding:12px 14px;
-      border:0 !important;
-      text-align: right !important;
-    }
-    .table-frota tbody td + td {
-      border-top: 1px solid rgba(0,0,0,.06) !important;
-    }
-    .table-frota tbody td::before {
-      flex: 0 0 112px;
-      max-width: 112px;
-      font-weight:800;
-      color: rgba(0,0,0,.55);
-      text-align:left;
-    }
-    .table-frota tbody td:nth-child(1)::before { content: "Veículo"; }
-    .table-frota tbody td:nth-child(2)::before { content: "Operação"; }
-    .table-frota tbody td:nth-child(3)::before { content: "KM Atual"; }
-    .table-frota tbody td:nth-child(4)::before { content: "Prox Revisão"; }
-    .table-frota tbody td:nth-child(5)::before { content: "Status"; }
-    .table-frota tbody td:nth-child(6)::before { content: "Ações"; }
-    .table-frota tbody td > * {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .table-frota tbody td:nth-child(6) .btn {
-      width: 100%;
-      white-space: normal;
-    }
-    .table-frota tbody td:nth-child(2) .badge,
-    .table-frota tbody td:nth-child(5) .stat-pill {
-      white-space: normal;
-      text-align: center;
-    }
-
-    .modal-dialog {
-      margin: 0.75rem;
-    }
-    .modal-body.p-4,
-    .modal-footer,
-    .modal-header {
-      padding-left: 1rem !important;
-      padding-right: 1rem !important;
-    }
-    .modal-soft-card.mb-3.d-flex.justify-content-between.align-items-center {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 12px;
-    }
-    .modal-soft-card .badge {
-      align-self: stretch;
-      text-align: center;
-      white-space: normal;
-    }
-    .modal-body .row.g-3 > [class*="col-"] {
-      width: 100%;
-    }
-    .signature-container .mt-2 {
-      padding: 0 10px 10px;
-    }
-    .modal-footer {
-      flex-direction: column-reverse;
-      gap: 10px;
-    }
-    .modal-footer .btn {
-      width: 100%;
-    }
-  }
-
-  @media (max-width: 420px) {
-    .table-frota tbody td {
-      flex-direction: column;
-      gap: 6px;
-      text-align: left !important;
-    }
-    .table-frota tbody td::before {
-      flex-basis: auto;
-      max-width: none;
-    }
-    .modal-km-highlight {
-      font-size: 1.05rem;
-    }
-    canvas[id^="sig-canvas"] {
-      height: 150px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    html.dark-mode .table-frota tbody tr,
-    body.dark-mode .table-frota tbody tr {
-      background: #0f1a24 !important;
-      border-color: #233549 !important;
-      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
-    }
-    html.dark-mode .table-frota tbody td + td,
-    body.dark-mode .table-frota tbody td + td {
-      border-top-color: #233549 !important;
-    }
-    html.dark-mode .table-frota tbody td::before,
-    body.dark-mode .table-frota tbody td::before {
-      color: rgba(255,255,255,.72) !important;
-    }
-    html.dark-mode .modal-soft-card,
-    body.dark-mode .modal-soft-card {
-      background: #13202d;
-      border-color: #233549;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_veiculos.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -279,7 +16,7 @@
         <i class="bi bi-car-front-fill me-2 text-primary"></i> Gestão de Frota
       </h2>
       <div class="text-muted small mt-1">
-        Gerencie os veículos sob responsabilidade da equipe e registre os turnos conforme os padrões Oceano Azul.
+        {% if current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] %}Gerencie seu veículo e acompanhe a frota das equipes.{% else %}Gerencie os veículos sob responsabilidade da equipe e registre os turnos conforme os padrões Oceano Azul.{% endif %}
       </div>
     </div>
     <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
@@ -298,7 +35,17 @@
   {% endif %}
 
   {% if veiculos %}
-    <div class="card shadow-sm rounded-4 border-0 overflow-hidden" id="veiculos-equipe">
+    {% set separar_supervisor = current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] and veiculos_supervisor_ids %}
+    {% set grupos = [true, false] if separar_supervisor and (veiculos|length > veiculos_supervisor_ids|length) else [none] %}
+    {% for grupo in grupos %}
+    <div class="card shadow-sm rounded-4 border-0 overflow-hidden mb-4 {% if grupo is sameas true %}supervisor-vehicle-card{% endif %}" {% if grupo is sameas true %}id="meu-veiculo"{% endif %}>
+      {% if grupo is sameas true %}
+        <div class="card-header supervisor-vehicle-heading py-3 px-4">
+          <strong><i class="bi bi-person-badge-fill me-2"></i>Veículo sob sua responsabilidade</strong>
+        </div>
+      {% elif grupo is sameas false %}
+        <div class="card-header bg-light py-3 px-4"><strong>Demais veículos das equipes</strong></div>
+      {% endif %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 table-frota">
           <colgroup>
@@ -316,11 +63,20 @@
           </thead>
           <tbody>
             {% for v in veiculos %}
+              {% set is_supervisor_veiculo = v.id in (veiculos_supervisor_ids or []) %}
+              {% if grupo is none or is_supervisor_veiculo == grupo %}
               {% set turno_aberto = turnos_abertos.get(v.id) %}
+              {% set turno_de_outro = turno_aberto and current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] and (not current_user.piloto_id or turno_aberto.piloto_id != current_user.piloto_id) %}
               {% set km_atual_visual = turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual %}
-              <tr>
+              
+              <tr class="{% if is_supervisor_veiculo %}table-light border-start border-4 border-primary{% endif %}">
                 <td>
-                  <div class="fw-bold">{{ v.modelo }}</div>
+                  <div class="fw-bold d-flex align-items-center gap-2 flex-wrap">
+                    <span>{{ v.modelo }}</span>
+                    {% if is_supervisor_veiculo %}
+                      <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.65rem;">Seu veículo</span>
+                    {% endif %}
+                  </div>
                   <div class="text-muted small">{{ v.placa }}</div>
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ v.operacao }}</span></td>
@@ -343,7 +99,9 @@
                   {% endif %}
                 </td>
                 <td class="turno-actions-cell">
-                  {% if turno_aberto %}
+                  {% if turno_de_outro %}
+                    <div class="small text-muted">Turno em andamento por {{ turno_aberto.piloto.nome_piloto if turno_aberto.piloto else (turno_aberto.equipe.nome_equipe if turno_aberto.equipe else 'outro operador') }}</div>
+                  {% elif turno_aberto %}
                     <div class="d-flex flex-column align-items-center gap-2">
                       <div class="small text-muted turno-actions-meta">
                         Aberto em {{ turno_aberto.data_registro.strftime('%d/%m/%Y %H:%M') if turno_aberto.data_registro else '-' }}
@@ -351,10 +109,17 @@
                       <div class="small text-muted turno-actions-meta">
                         {{ turno_aberto.qtd_abastecimentos }} abast. • R$ {{ '%.2f'|format(turno_aberto.total_valor_abastecido or 0) }}
                       </div>
+                      <div class="small text-muted turno-actions-meta">
+                        {{ turno_aberto.qtd_limpezas }} limpeza(s) • R$ {{ '%.2f'|format(turno_aberto.total_valor_limpeza or 0) }}
+                      </div>
                       <div class="d-flex flex-wrap justify-content-center gap-2 turno-actions-buttons">
                         <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm"
                                 data-bs-toggle="modal" data-bs-target="#modalAbastecimento{{ v.id }}">
                           <i class="bi bi-fuel-pump-fill me-1"></i> Abastecimento
+                        </button>
+                        <button class="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm"
+                                data-bs-toggle="modal" data-bs-target="#modalLimpeza{{ v.id }}">
+                          <i class="bi bi-droplet-half me-1"></i> Limpeza
                         </button>
                         <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm"
                                 data-bs-toggle="modal" data-bs-target="#modalEncerramento{{ v.id }}">
@@ -370,11 +135,13 @@
                   {% endif %}
                 </td>
               </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {% endfor %}
 
     {% for v in veiculos %}
       {% set turno_aberto = turnos_abertos.get(v.id) %}
@@ -403,7 +170,7 @@
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Kilometragem de Início</label>
-                    <input type="hidden" name="km_inicial" value="{{ '%.0f'|format(km_inicio_valor or 0) }}">
+                    <input type="hidden" name="km_inicial" value="{{ '%.2f'|format(km_inicio_valor or 0) }}">
                     <input type="number"
                            step="1"
                            class="form-control bg-light fw-bold"
@@ -425,10 +192,12 @@
                   </div>
                 </div>
 
-                <div class="modal-section-title">2. Assinatura do responsável</div>
+                <div class="modal-section-title">2. Assinatura do Piloto/Supervisor</div>
                 <div class="modal-soft-card mb-3">
                   <div class="small text-muted">Fluxo do turno</div>
-                  <div class="hint-line mt-1">Depois de iniciar o turno, use o botão de abastecimento para registrar quantos lançamentos forem necessários até o encerramento.</div>
+                  <div class="hint-line mt-1">
+                    O início deste turno deve ser assinado para validação. Depois de iniciar, use o botão de abastecimento para registrar os lançamentos necessários.
+                  </div>
                 </div>
                 <div class="signature-container text-center">
                     <canvas id="sig-canvas-{{ v.id }}" class="shadow-sm bg-white border rounded-3"></canvas>
@@ -451,6 +220,7 @@
       </div>
 
       {% if turno_aberto %}
+      {% set referencia_abastecimento = km_abastecimento_referencias[v.id] %}
       <div class="modal fade" id="modalAbastecimento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
@@ -478,16 +248,16 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">KM no Abastecimento</label>
-                    <input type="number" step="1" name="km_abastecimento" class="form-control" min="0" max="{{ (turno_aberto.km_inicial or 0) + 500 }}" value="{{ turno_aberto.ultimo_km_registrado or v.km_atual or '' }}" required>
-                    <div class="hint-line mt-1">Usado para auditoria e relatórios do abastecimento.</div>
+                    <input type="text" inputmode="numeric" name="km_abastecimento" class="form-control js-decimal-centavos" value="{{ '%.2f'|format(turno_aberto.ultimo_km_registrado or v.km_atual or 0)|replace('.', ',') }}" data-km-max="{{ referencia_abastecimento.limite }}" aria-describedby="limite-abastecimento-{{ v.id }}" placeholder="0,00" autocomplete="off" required>
+                    <div class="hint-line mt-1" id="limite-abastecimento-{{ v.id }}">Para veículo, limite de {{ '%.2f'|format(referencia_abastecimento.limite)|replace('.', ',') }} km: até 500 km acima do {{ 'último abastecimento do veículo' if referencia_abastecimento.origem == 'ultimo_abastecimento' else 'KM inicial do turno (primeiro abastecimento)' }}.</div>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Litros</label>
-                    <input type="number" step="0.01" min="0" name="litros" class="form-control" placeholder="0.00" required>
+                    <input type="text" inputmode="numeric" name="litros" class="form-control js-decimal-centavos" placeholder="0,00" autocomplete="off" required>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Valor Total (R$)</label>
-                    <input type="number" step="0.01" min="0" name="valor_abastecimento" class="form-control" placeholder="0,00" required>
+                    <input type="text" inputmode="numeric" name="valor_abastecimento" class="form-control js-money-centavos" placeholder="0,00" autocomplete="off" required>
                   </div>
                   <div class="col-12">
                     <label class="form-label small fw-bold">Foto do Painel no Abastecimento</label>
@@ -504,6 +274,76 @@
               <div class="modal-footer border-0 bg-light rounded-bottom-4">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                 <button type="submit" class="btn btn-success px-4 shadow">Salvar Abastecimento</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="modalLimpeza{{ v.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow-lg rounded-4">
+            <form method="POST" action="{{ url_for('main.piloto_registrar_limpeza_turno', veiculo_id=v.id) }}">
+              <div class="modal-header border-0 bg-light rounded-top-4">
+                <h5 class="fw-bold m-0 text-info"><i class="bi bi-droplet-half me-2"></i>Registrar Limpeza - {{ v.placa }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4">
+                <div class="modal-soft-card mb-3">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Data/hora do registro</label>
+                      <input type="datetime-local"
+                             class="form-control bg-light fw-bold"
+                             value="{{ agora_brasilia.strftime('%Y-%m-%dT%H:%M') if agora_brasilia else '' }}"
+                             disabled
+                             aria-disabled="true">
+                      <div class="hint-line mt-2">Gerada automaticamente pelo sistema.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Data/hora da limpeza</label>
+                      <input type="datetime-local"
+                             name="data_hora_limpeza"
+                             class="form-control"
+                             value="{{ agora_brasilia.strftime('%Y-%m-%dT%H:%M') if agora_brasilia else '' }}"
+                             required>
+                      <div class="hint-line mt-2">Preencha quando a limpeza foi realizada.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label small fw-bold">Limpeza realizada?</label>
+                    <div class="btn-group w-100" role="group" aria-label="Limpeza realizada">
+                      <input class="btn-check" type="radio" name="limpeza_realizada" id="limpeza_realizada_sim_{{ v.id }}" value="1" checked>
+                      <label class="btn btn-outline-info fw-bold" for="limpeza_realizada_sim_{{ v.id }}">REALIZADA</label>
+
+                      <input class="btn-check" type="radio" name="limpeza_realizada" id="limpeza_realizada_nao_{{ v.id }}" value="0">
+                      <label class="btn btn-outline-info fw-bold" for="limpeza_realizada_nao_{{ v.id }}">NAO REALIZADA</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold">Tipo de Limpeza</label>
+                    <select name="tipo_limpeza" class="form-select" required>
+                      <option value="" selected disabled>Selecione</option>
+                      <option value="completa">Completa</option>
+                      <option value="ducha">Apenas ducha</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold">Valor da Limpeza (R$)</label>
+                    <input type="text" inputmode="numeric" name="valor_limpeza" class="form-control js-money-centavos" placeholder="0,00" autocomplete="off" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-bold">Observacoes</label>
+                    <textarea name="observacao_limpeza" class="form-control" rows="2" placeholder="Ex.: local da lavagem, recibo, observacao do servico..."></textarea>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer border-0 bg-light rounded-bottom-4">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-info text-white px-4 shadow">Salvar Limpeza</button>
               </div>
             </form>
           </div>
@@ -533,7 +373,7 @@
 
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Kilometragem Final (Painel)</label>
-                  <input type="number" step="1" name="km_final" class="form-control" min="{{ km_fechamento_min or 0 }}" max="{{ ((turno_aberto.km_inicial if turno_aberto else v.km_atual) or 0) + 500 }}" value="" placeholder="KM mostrado no fim do dia" required>
+                  <input type="text" inputmode="numeric" name="km_final" class="form-control js-decimal-centavos" value="" placeholder="0,00" autocomplete="off" required>
                   <div class="hint-line mt-1">Não pode ser menor que o KM inicial nem que o KM registrado no abastecimento.</div>
                 </div>
                 <div class="mb-3">
@@ -635,7 +475,8 @@ document.querySelectorAll('.modal').forEach(modal => {
         const id = this.id
             .replace('modalChecklist', '')
             .replace('modalEncerramento', '')
-            .replace('modalAbastecimento', '');
+            .replace('modalAbastecimento', '')
+            .replace('modalLimpeza', '');
         
         if (this.id.startsWith('modalChecklist')) {
             const signature = setupSignature('sig-canvas-' + id, 'sig-input-' + id);
@@ -653,11 +494,55 @@ document.querySelectorAll('.check-form').forEach(form => {
     form.addEventListener('submit', function (e) {
         const sigInput = this.querySelector('input[name="assinatura_b64"]');
         if (!sigInput || !sigInput.value) {
-            alert("A assinatura do motorista Ã© obrigatÃ³ria para iniciar o turno."); 
+            alert("A assinatura do motorista é obrigatória para iniciar o turno."); 
             e.preventDefault();
             return false;
         }
     });
+});
+
+const formatCentavos = (rawValue) => {
+    const digits = String(rawValue || "").replace(/\D/g, "");
+    if (!digits) return "";
+
+    const cents = digits.padStart(3, "0");
+    const integerPart = cents.slice(0, -2).replace(/^0+(?=\d)/, "");
+    const decimalPart = cents.slice(-2);
+    return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${decimalPart}`;
+};
+
+document.querySelectorAll('.js-money-centavos, .js-decimal-centavos').forEach(input => {
+    const applyMask = () => {
+        input.value = formatCentavos(input.value);
+    };
+
+    input.addEventListener('input', applyMask);
+    input.addEventListener('blur', applyMask);
+    input.form?.addEventListener('submit', applyMask);
+});
+
+document.querySelectorAll('input[name="km_abastecimento"][data-km-max]').forEach(input => {
+    const tipo = input.form.querySelector('[name="tipo_abastecimento"]');
+    const limite = Number(input.dataset.kmMax);
+    const validarKm = () => {
+        const km = Number(input.value.replace(/\./g, '').replace(',', '.'));
+        const ehVeiculo = !tipo.value.toLowerCase().includes('gerador');
+        input.setCustomValidity(ehVeiculo && km > limite
+            ? `KM do abastecimento acima do limite de ${limite.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km. A diferença máxima permitida é de 500 km.`
+            : '');
+    };
+
+    input.addEventListener('input', validarKm);
+    input.addEventListener('blur', validarKm);
+    tipo.addEventListener('change', validarKm);
+    input.form.addEventListener('submit', event => {
+        validarKm();
+        if (!input.checkValidity()) {
+            event.preventDefault();
+            input.reportValidity();
+        }
+    });
+    validarKm();
 });
 </script>
 {% endblock %}

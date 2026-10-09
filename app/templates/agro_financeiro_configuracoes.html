@@ -4,76 +4,23 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
-  <style>
-    @media (min-width: 992px) {
-      .financeiro-config-header {
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        align-items: flex-start;
-      }
-
-      .financeiro-config-title {
-        flex: 1 1 auto;
-        min-width: 0;
-        max-width: 760px;
-      }
-
-      .financeiro-config-actions {
-        margin-left: auto;
-        justify-content: flex-end;
-        flex-wrap: nowrap;
-        align-items: center;
-        flex: 0 0 auto;
-      }
-    }
-
-    .financeiro-config-actions .btn {
-      min-height: 42px;
-      justify-content: center;
-      white-space: nowrap;
-    }
-
-    .financeiro-config-actions .btn .bi {
-      width: 16px;
-      text-align: center;
-      flex: 0 0 16px;
-    }
-
-    .financeiro-config-subtitle {
-      max-width: 760px;
-    }
-
-    .competencia-config-card {
-      border: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .competencia-status-pill {
-      border-radius: 999px;
-      padding: 0.35rem 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_financeiro_configuracoes.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4 agro-content-width-1200">
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4 financeiro-config-header">
     <div class="financeiro-config-title">
       <h2 class="text-dark m-0">
         <i class="bi bi-sliders me-2 text-primary"></i> Configurações do Financeiro
       </h2>
       <p class="text-muted small mb-0 financeiro-config-subtitle">
-        Escolha uma competência passada no seletor para liberar ou bloquear rapidamente. As competências configuradas manualmente ficam listadas logo abaixo.
+        Personalize a identidade da empresa e gerencie as configurações do seu financeiro.
       </p>
     </div>
 
     <div class="d-flex flex-wrap gap-2 financeiro-config-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
@@ -85,6 +32,36 @@
     </div>
   </div>
 
+  {% set empresa = financeiro_empresa_atual %}
+  <nav class="finance-settings-nav mb-4" aria-label="Seções das configurações">
+    {% for chave, rotulo, icone in [('dados', 'Dados da empresa', 'bi-building'), ('layout', 'Logo e aparência', 'bi-image'), ('competencias', 'Competências', 'bi-calendar3')] %}
+    {% if chave != 'competencias' or empresa.slug == 'ija' %}
+    <a class="btn {{ 'btn-primary' if secao == chave else 'btn-outline-primary' }}" href="{{ url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao=chave) }}" {% if secao == chave %}aria-current="page"{% endif %}><i class="bi {{ icone }} me-2" aria-hidden="true"></i>{{ rotulo }}</a>
+    {% endif %}
+    {% endfor %}
+  </nav>
+  {% if secao in ['dados', 'layout'] %}
+  <section class="card shadow-sm rounded-4 border-0 mb-4">
+    <div class="card-body p-4">
+      <h3 class="h5 mb-2">{{ 'Dados da empresa' if secao == 'dados' else 'Logo e aparência' }}</h3>
+      <p class="text-muted">{{ 'Mantenha o nome, a razão social e o CNPJ da empresa atualizados.' if secao == 'dados' else 'A logo aparece no cartão da empresa, na visão geral e no cabeçalho do financeiro.' }}</p>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('main.financeiro_empresa_configuracoes_salvar', empresa_slug=empresa.slug) }}" class="row g-3">
+        {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+        <input type="hidden" name="secao" value="{{ secao }}">
+        {% if secao == 'dados' %}
+        <div class="col-md-6"><label for="empresa-nome" class="form-label">Nome da empresa</label><input id="empresa-nome" name="nome" class="form-control" maxlength="120" required value="{{ empresa.nome }}"></div>
+        <div class="col-md-6"><label for="empresa-razao" class="form-label">Razão social</label><input id="empresa-razao" name="razao_social" class="form-control" maxlength="180" required value="{{ empresa.razao_social }}"></div>
+        <div class="col-md-6"><label for="empresa-cnpj" class="form-label">CNPJ</label><input id="empresa-cnpj" name="cnpj" class="form-control" maxlength="18" required value="{{ empresa.cnpj_formatado }}">{% if empresa.demonstracao %}<div class="form-text">CNPJ fictício para demonstração. Substitua pelo CNPJ da empresa.</div>{% endif %}</div>
+        {% else %}
+        <div class="col-12"><div class="finance-logo-preview">{% if empresa.tem_logo %}<img src="{{ url_for('main.financeiro_empresa_logo', empresa_slug=empresa.slug) }}" alt="Logo de {{ empresa.nome }}">{% else %}<span>{{ empresa.sigla }}</span>{% endif %}</div></div>
+        <div class="col-md-8"><label for="empresa-logo" class="form-label">Escolher logo</label><input id="empresa-logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" class="form-control" aria-describedby="logo-ajuda"><div id="logo-ajuda" class="form-text">PNG, JPG ou WebP, até 2 MB. A proporção e a transparência da imagem serão preservadas.</div></div>
+        {% if empresa.tem_logo %}<div class="col-12 form-check ms-2"><input id="remover-logo" name="remover_logo" value="1" type="checkbox" class="form-check-input"><label for="remover-logo" class="form-check-label">Remover logo e usar as iniciais da empresa</label></div>{% endif %}
+        {% endif %}
+        <div class="col-12"><button type="submit" class="btn btn-primary">Salvar {{ 'dados da empresa' if secao == 'dados' else 'logo' }}</button></div>
+      </form>
+    </div>
+  </section>
+  {% else %}
   <div class="row g-3 mb-4">
     <div class="col-lg-6">
       <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
@@ -214,6 +191,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 </div>
 {% endblock %}
 

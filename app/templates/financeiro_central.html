@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Financeiro · Empresas | Oceano Azul{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 finance-hub">
+  <header class="finance-hub-heading">
+    <div>
+      <span class="finance-eyebrow"><i class="bi bi-bank" aria-hidden="true"></i> Central Financeiro</span>
+      <h1>Suas empresas</h1>
+      <p>Selecione a empresa para acessar seu ambiente financeiro.</p>
+    </div>
+    <div class="finance-hub-actions">
+      <span class="finance-count"><i class="bi bi-buildings" aria-hidden="true"></i> {{ total_empresas_disponiveis }} {{ 'empresa disponível' if total_empresas_disponiveis == 1 else 'empresas disponíveis' }}</span>
+      {% if can_manage_financeiro_settings(current_user) %}
+      <div class="finance-company-register">
+        <button class="btn btn-primary" type="button" disabled aria-describedby="finance-register-status">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar empresa
+        </button>
+        <span id="finance-register-status">Em breve</span>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <section class="finance-company-section" aria-labelledby="finance-company-title">
+    <div class="finance-company-toolbar">
+      <h2 id="finance-company-title">Empresas</h2>
+      <div class="finance-company-filters">
+        <div class="finance-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <label class="visually-hidden" for="finance-company-search">Buscar empresa por nome ou CNPJ</label>
+          <input class="form-control" id="finance-company-search" type="search" placeholder="Buscar por nome ou CNPJ" autocomplete="off">
+        </div>
+        <label class="visually-hidden" for="finance-company-filter">Disponibilidade das empresas</label>
+        <select class="form-select" id="finance-company-filter">
+          <option value="todas">Todas as empresas</option>
+          <option value="disponiveis">Disponíveis para mim</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="finance-company-grid" role="list" id="finance-company-list">
+      {% for item in empresas %}
+      <article class="finance-company-card" role="listitem"
+        data-company-search="{{ item.nome }} {{ item.razao_social }} {{ item.cnpj }} {{ item.cnpj_formatado or '' }} {{ item.sigla }}"
+        data-company-available="{{ 'true' if item.disponivel else 'false' }}">
+        <div class="finance-company-card-top">
+          {% if item.tem_logo %}<span class="finance-company-monogram"><img src="{{ url_for('main.financeiro_empresa_logo', empresa_slug=item.slug) }}" alt="Logo de {{ item.nome }}"></span>{% else %}<span class="finance-company-monogram" aria-hidden="true">{{ item.sigla }}</span>{% endif %}
+          <span class="finance-status {{ 'is-available' if item.disponivel else '' }}">
+            {% if item.disponivel %}<span class="finance-status-dot" aria-hidden="true"></span>Disponível{% else %}Sem acesso{% endif %}
+          </span>
+        </div>
+        <div class="finance-company-identity">
+          <h3>{{ item.nome }}</h3>
+          <p>{{ item.razao_social if item.razao_social != item.nome else 'Gestão financeira' }}</p>
+          <div class="finance-company-cnpj"><span>CNPJ</span><strong>{{ item.cnpj_formatado or 'Pendente de identificação' }}</strong></div>
+          {% if item.demonstracao %}<span class="finance-demo-label"><i class="bi bi-info-circle" aria-hidden="true"></i> CNPJ fictício para demonstração</span>{% endif %}
+        </div>
+        <div class="finance-company-operation">
+          <i class="bi bi-tree" aria-hidden="true"></i>
+          <span>{{ item.operacao }}</span>
+        </div>
+        <p class="finance-company-description">Um espaço próprio para a gestão financeira da {{ item.nome }}.</p>
+        <div class="finance-company-card-footer">
+          {% if item.disponivel %}
+          <a class="btn btn-primary finance-company-open" href="{{ url_for('main.financeiro_empresa', empresa_slug=item.slug) }}" aria-label="Acessar empresa {{ item.nome }}">
+            Acessar empresa <i class="bi bi-arrow-right" aria-hidden="true"></i>
+          </a>
+          {% else %}
+          <button class="btn btn-outline-secondary finance-company-open" type="button" disabled>
+            Acesso não habilitado <i class="bi bi-lock" aria-hidden="true"></i>
+          </button>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="finance-search-empty" id="finance-company-empty" role="status" hidden>Nenhuma empresa encontrada para esta busca.</p>
+  </section>
+  <div class="finance-hub-note"><i class="bi bi-info-circle" aria-hidden="true"></i><p>Selecione a empresa para acessar suas funcionalidades financeiras. O cadastro de novas empresas estará disponível em breve.</p></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/financeiro-central.js', v='20261007a') }}" defer></script>
+{% endblock %}

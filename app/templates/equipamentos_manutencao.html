@@ -3,102 +3,7 @@
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <style>
-        .equipamentos-manutencao-page {
-            max-width: 1200px;
-        }
-
-        .equipamentos-manutencao-toolbar {
-            gap: 1rem;
-        }
-
-        .equipamentos-manutencao-table-wrap table {
-            margin-bottom: 0;
-        }
-
-        @media (max-width: 767.98px) {
-            .equipamentos-manutencao-page {
-                padding-left: 0.75rem;
-                padding-right: 0.75rem;
-            }
-
-            .equipamentos-manutencao-toolbar {
-                align-items: stretch !important;
-                flex-direction: column;
-            }
-
-            .equipamentos-manutencao-toolbar .btn {
-                align-self: flex-start;
-            }
-
-            .equipamentos-manutencao-table-wrap {
-                overflow: visible;
-            }
-
-            .equipamentos-manutencao-table-wrap .table-responsive {
-                overflow: visible;
-            }
-
-            .equipamentos-manutencao-table-wrap table,
-            .equipamentos-manutencao-table-wrap thead,
-            .equipamentos-manutencao-table-wrap tbody,
-            .equipamentos-manutencao-table-wrap tr,
-            .equipamentos-manutencao-table-wrap th,
-            .equipamentos-manutencao-table-wrap td {
-                display: block;
-                width: 100%;
-            }
-
-            .equipamentos-manutencao-table-wrap thead {
-                display: none;
-            }
-
-            .equipamentos-manutencao-table-wrap tbody {
-                padding: 0.75rem;
-            }
-
-            .equipamentos-manutencao-table-wrap tbody tr {
-                background: #fff;
-                border: 1px solid rgba(16, 25, 39, 0.08);
-                border-radius: 1rem;
-                box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
-                margin-bottom: 0.75rem;
-                overflow: hidden;
-                padding: 0.25rem 0;
-            }
-
-            .equipamentos-manutencao-table-wrap tbody tr:last-child {
-                margin-bottom: 0;
-            }
-
-            .equipamentos-manutencao-table-wrap tbody td {
-                border: 0;
-                padding: 0.75rem 1rem !important;
-                text-align: left !important;
-            }
-
-            .equipamentos-manutencao-table-wrap tbody td::before {
-                color: #6c757d;
-                content: attr(data-label);
-                display: block;
-                font-size: 0.72rem;
-                font-weight: 700;
-                letter-spacing: 0.04em;
-                margin-bottom: 0.35rem;
-                text-transform: uppercase;
-            }
-        }
-
-        .dark-mode .equipamentos-manutencao-table-wrap tbody tr {
-            background: #162133;
-            border-color: rgba(255, 255, 255, 0.08);
-            box-shadow: none;
-        }
-
-        .dark-mode .equipamentos-manutencao-table-wrap tbody td::before {
-            color: rgba(255, 255, 255, 0.65);
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamentos_manutencao.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -115,10 +20,18 @@
             </p>
         </div>
 
-        <a href="{{ url_for('main.listar_equipamentos') }}"
-           class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-clock-history me-1"></i> Histórico
+            </a>
+            <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico') }}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-box-seam me-1"></i> Peças
+            </a>
+            <a href="{{ url_for('main.listar_equipamentos') }}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden equipamentos-manutencao-table-wrap">
@@ -133,6 +46,7 @@
                             <th>Nº de Série</th>
                             <th>Equipe</th>
                             <th>Data Cadastro</th>
+                            <th class="text-end pe-3">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -178,11 +92,39 @@
                                         -
                                     {% endif %}
                                 </td>
+
+                                <td class="text-end pe-3" data-label="Ações">
+                                    {% if eq.tipo_equipamento == 'drones' %}
+                                      <div class="manutencao-actions">
+                                        <a href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=eq.id) }}"
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-clipboard-plus me-1"></i>
+                                            Peças usadas
+                                        </a>
+                                        <a href="{{ url_for('main.equipamento_manutencao_pdf', drone_id=eq.id) }}"
+                                           class="btn btn-sm btn-outline-danger"
+                                           target="_blank">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>
+                                            PDF
+                                        </a>
+                                        <form method="post"
+                                              action="{{ url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id) }}"
+                                              onsubmit="return confirm('Encerrar a manutenção deste drone?')">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check2-circle me-1"></i>
+                                                Encerrar
+                                            </button>
+                                        </form>
+                                      </div>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     Nenhum equipamento em manutenção no momento.
                                 </td>
                             </tr>

@@ -8,10 +8,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
-from app.models import Prefeitura, Usuario
+from app.shared.password_policy import password_input
+from app.models import Prefeitura, Usuario, Pilotos
 from app.modules.usuarios.service import (
     build_admin_users_query,
+    can_assign_director_role,
     can_assign_dev_role,
+    can_assign_ti_manager_role,
     can_manage_admin_user,
     delete_admin_user,
     get_admin_user_type_form_value,
@@ -21,9 +24,19 @@ from app.modules.usuarios.service import (
     validate_edit_admin_user,
     validate_new_admin_user,
     validate_password_reset,
+    garantir_piloto_para_supervisor, # ➔ IMPORTAÇÃO ADICIONADA AQUI
+    TI_MANAGER_USER_TYPE,
 )
 from app.shared.query_filters import id_search_clause
-from app.shared.access import DEV_USER_TYPE, is_admin_global_user, is_dev_user
+from app.shared.access import (
+    DEV_USER_TYPE,
+    DIRECTOR_USER_TYPE,
+    VEICULOS_SUPERVISOR_USER_TYPES,
+    is_veiculos_supervisor,
+    can_manage_user_work_flags,
+    is_admin_global_user,
+    is_dev_user,
+)
 
 
 def _admin_only():
@@ -91,6 +104,10 @@ def _prefeitura_dependency_labels(prefeitura):
 
 
 def register_routes(bp):
+    @bp.app_context_processor
+    def inject_ti_manager_creation_access():
+        return {"can_assign_ti_manager": can_assign_ti_manager_role(current_user)}
+
     @bp.route("/admin/prefeituras/nova", methods=["GET", "POST"], endpoint="admin_prefeitura_nova")
     @login_required
     def admin_prefeitura_nova():
@@ -302,10 +319,13 @@ def register_routes(bp):
             )
             prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+            can_manage_work_flags = can_manage_user_work_flags(current_user)
+            trabalha_oceano_azul = can_manage_work_flags and request.form.get("trabalha_oceano_azul") == "1"
+            trabalha_agro = can_manage_work_flags and request.form.get("trabalha_agro") == "1"
             suporte_operacional = request.form.get("suporte_operacional") == "1"
             suporte_tecnico = request.form.get("suporte_tecnico") == "1"
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
 
             form = {
                 "nome": nome,
@@ -314,12 +334,16 @@ def register_routes(bp):
                 "regiao": regiao or "",
                 "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
+                "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
+                "trabalha_agro": "1" if trabalha_agro else "",
                 "suporte_operacional": "1" if suporte_operacional else "",
                 "suporte_tecnico": "1" if suporte_tecnico else "",
                 "senha": senha,
                 "senha2": senha2,
             }
 
+            if tipo_usuario_form == TI_MANAGER_USER_TYPE and not can_assign_ti_manager_role(current_user):
+                abort(403)
             if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
                 errors["tipo_usuario"] = "Apenas um desenvolvedor pode criar outra conta dev."
                 flash(errors["tipo_usuario"], "danger")
@@ -329,6 +353,20 @@ def register_routes(bp):
                     form=form,
                     prefeituras=prefeituras,
                     can_assign_dev=False,
+                    can_assign_director=can_assign_director_role(current_user),
+                    can_manage_work_flags=can_manage_work_flags,
+                )
+            if tipo_usuario_form == DIRECTOR_USER_TYPE and not can_assign_director_role(current_user):
+                errors["tipo_usuario"] = "Apenas um desenvolvedor pode criar uma conta diretor."
+                flash(errors["tipo_usuario"], "danger")
+                return render_template(
+                    "admin_usuario_novo.html",
+                    errors=errors,
+                    form=form,
+                    prefeituras=prefeituras,
+                    can_assign_dev=can_assign_dev_role(current_user),
+                    can_assign_director=False,
+                    can_manage_work_flags=can_manage_work_flags,
                 )
 
             errors = validate_new_admin_user(
@@ -340,6 +378,8 @@ def register_routes(bp):
                 senha,
                 senha2,
             )
+            if tipo_usuario in VEICULOS_SUPERVISOR_USER_TYPES:
+                codigo_setor = None
             if errors:
                 flash("Revise os campos destacados.", "warning")
                 return render_template(
@@ -348,6 +388,8 @@ def register_routes(bp):
                     form=form,
                     prefeituras=prefeituras,
                     can_assign_dev=can_assign_dev_role(current_user),
+                    can_assign_director=can_assign_director_role(current_user),
+                    can_manage_work_flags=can_manage_work_flags,
                 )
 
             novo = Usuario(
@@ -357,6 +399,8 @@ def register_routes(bp):
                 codigo_setor=codigo_setor,
                 login=login,
                 tipo_usuario=tipo_usuario,
+                trabalha_oceano_azul=trabalha_oceano_azul,
+                trabalha_agro=trabalha_agro,
                 suporte_operacional=suporte_operacional,
                 suporte_tecnico=suporte_tecnico,
             )
@@ -364,6 +408,10 @@ def register_routes(bp):
 
             try:
                 db.session.add(novo)
+                
+                # ➔ ADICIONADO AQUI: Garante que o supervisor criado tenha um piloto_id
+                garantir_piloto_para_supervisor(novo)
+                
                 db.session.commit()
                 flash("Usuario criado com sucesso!", "success")
                 return redirect(url_for("main.admin_usuarios_listar"))
@@ -382,6 +430,8 @@ def register_routes(bp):
             form=form,
             prefeituras=prefeituras,
             can_assign_dev=can_assign_dev_role(current_user),
+            can_assign_director=can_assign_director_role(current_user),
+            can_manage_work_flags=can_manage_user_work_flags(current_user),
         )
 
     @bp.route("/admin/usuarios", methods=["GET"], endpoint="admin_usuarios_listar")
@@ -427,6 +477,17 @@ def register_routes(bp):
             login = (request.form.get("login") or "").strip()
             prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+            can_manage_work_flags = can_manage_user_work_flags(current_user)
+            trabalha_oceano_azul = (
+                request.form.get("trabalha_oceano_azul") == "1"
+                if can_manage_work_flags
+                else bool(usuario.trabalha_oceano_azul)
+            )
+            trabalha_agro = (
+                request.form.get("trabalha_agro") == "1"
+                if can_manage_work_flags
+                else bool(usuario.trabalha_agro)
+            )
             suporte_operacional = request.form.get("suporte_operacional") == "1"
             suporte_tecnico = request.form.get("suporte_tecnico") == "1"
 
@@ -437,14 +498,18 @@ def register_routes(bp):
                 tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
                 if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
                     abort(403)
+                if tipo_usuario_form == DIRECTOR_USER_TYPE and not can_assign_director_role(current_user):
+                    abort(403)
+                if tipo_usuario_form == TI_MANAGER_USER_TYPE and not can_assign_ti_manager_role(current_user):
+                    abort(403)
                 tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
             regiao = normalize_admin_user_regiao(
                 tipo_usuario_form,
                 (request.form.get("regiao") or "").strip() or None,
             )
 
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
 
             form = {
                 "nome_uvis": nome_uvis,
@@ -452,6 +517,8 @@ def register_routes(bp):
                 "regiao": regiao or "",
                 "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
+                "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
+                "trabalha_agro": "1" if trabalha_agro else "",
                 "suporte_operacional": "1" if suporte_operacional else "",
                 "suporte_tecnico": "1" if suporte_tecnico else "",
                 "tipo_usuario": tipo_usuario_form,
@@ -467,6 +534,8 @@ def register_routes(bp):
                 senha2=senha2,
                 usuario_id=usuario.id,
             )
+            if tipo_usuario in VEICULOS_SUPERVISOR_USER_TYPES:
+                codigo_setor = usuario.codigo_setor if is_veiculos_supervisor(usuario) else None
             if errors:
                 return render_template(
                     "admin_usuario_editar.html",
@@ -475,6 +544,8 @@ def register_routes(bp):
                     form=form,
                     prefeituras=prefeituras,
                     can_assign_dev=can_assign_dev_role(current_user),
+                    can_assign_director=can_assign_director_role(current_user),
+                    can_manage_work_flags=can_manage_work_flags,
                 )
 
             usuario.nome_uvis = nome_uvis
@@ -483,6 +554,10 @@ def register_routes(bp):
             usuario.prefeitura_id = prefeitura_id
             usuario.codigo_setor = codigo_setor
             usuario.tipo_usuario = tipo_usuario
+            if is_veiculos_supervisor(usuario):
+                usuario.codigo_setor = None
+            usuario.trabalha_oceano_azul = trabalha_oceano_azul
+            usuario.trabalha_agro = trabalha_agro
             usuario.suporte_operacional = suporte_operacional
             usuario.suporte_tecnico = suporte_tecnico
 
@@ -490,6 +565,9 @@ def register_routes(bp):
                 usuario.set_senha(senha)
 
             try:
+                # ➔ ADICIONADO AQUI: Garante piloto na edição, caso um utilizador comum mude para supervisor
+                garantir_piloto_para_supervisor(usuario)
+                
                 db.session.commit()
                 flash("Usuario atualizado com sucesso!", "success")
                 return redirect(url_for("main.admin_usuarios_listar"))
@@ -508,6 +586,8 @@ def register_routes(bp):
                 form=form,
                 prefeituras=prefeituras,
                 can_assign_dev=can_assign_dev_role(current_user),
+                can_assign_director=can_assign_director_role(current_user),
+                can_manage_work_flags=can_manage_work_flags,
             )
 
         form = {
@@ -516,6 +596,8 @@ def register_routes(bp):
             "regiao": usuario.regiao or "",
             "prefeitura_id": usuario.prefeitura_id or "",
             "codigo_setor": usuario.codigo_setor or "",
+            "trabalha_oceano_azul": "1" if usuario.trabalha_oceano_azul else "",
+            "trabalha_agro": "1" if usuario.trabalha_agro else "",
             "suporte_operacional": "1" if usuario.suporte_operacional else "",
             "suporte_tecnico": "1" if usuario.suporte_tecnico else "",
             "tipo_usuario": get_admin_user_type_form_value(usuario) or "operario",
@@ -528,6 +610,8 @@ def register_routes(bp):
             form=form,
             prefeituras=prefeituras,
             can_assign_dev=can_assign_dev_role(current_user),
+            can_assign_director=can_assign_director_role(current_user),
+            can_manage_work_flags=can_manage_user_work_flags(current_user),
         )
 
     @bp.route("/admin/usuarios/<int:id>/reset_senha", methods=["POST"], endpoint="admin_usuario_reset_senha")
@@ -543,8 +627,8 @@ def register_routes(bp):
         if not can_manage_admin_user(current_user, user):
             abort(403)
 
-        senha = (request.form.get("senha") or "").strip()
-        senha2 = (request.form.get("senha2") or "").strip()
+        senha = password_input(request.form.get("senha"))
+        senha2 = password_input(request.form.get("senha2"))
         reset_error = validate_password_reset(
             senha,
             senha2,

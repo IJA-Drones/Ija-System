@@ -1,4 +1,5 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 from flask import url_for
 from sqlalchemy.orm import joinedload
@@ -16,6 +17,8 @@ from app.models import (
     Veiculos,
 )
 from app.modules.agenda_notificacoes import agora_brasilia_naive, criar_notificacao
+from app.shared.access import is_veiculos_supervisor
+from app.shared.vehicle_supervisor import get_supervisor_equipe, supervisor_equipment_query
 
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
@@ -30,6 +33,9 @@ CHECKLIST_VEICULO_BOOL_LABELS = [
     ("agua_radiador", "Agua do radiador"),
     ("fluido_freio", "Fluido de freio"),
     ("oleo_motor", "Oleo do motor"),
+    ("embreagem", "Embreagem"),
+    ("freio_mao", "Freio de mão"),
+    ("freio_pe", "Freio do pé"),
     ("vidros", "Vidros"),
     ("retrovisores", "Retrovisores"),
     ("pneus", "Pneus"),
@@ -59,6 +65,7 @@ CHECKLIST_VEICULO_TEXT_LABELS = [
     ("condicao_luzes_direcao", "Condicao luzes / direcao"),
     ("condicao_luz_painel", "Condicao luz do painel"),
     ("condicao_itens_manutencao", "Condicao manutencao preventiva"),
+    ("condicao_embreagem_freios", "Condição da embreagem e dos freios"),
     ("condicao_vidros_retrovisores", "Condicao vidros / retrovisores"),
     ("condicao_pneus_estepe", "Condicao pneus / estepe"),
     ("condicao_itens_seguranca", "Condicao itens de seguranca"),
@@ -93,6 +100,35 @@ CHECKLIST_VEICULO_TEXT_FIELDS = [field for field, _ in CHECKLIST_VEICULO_TEXT_LA
 CHECKLIST_DRONE_BOOL_FIELDS = [field for field, _ in CHECKLIST_DRONE_BOOL_LABELS]
 CHECKLIST_DRONE_TEXT_FIELDS = [field for field, _ in CHECKLIST_DRONE_TEXT_LABELS]
 
+# Cada observacao pertence ao grupo de itens correspondente. Se todos os
+# itens do grupo voltarem a ficar funcionais, a observacao deixa de ser
+# aplicavel e deve ser removida antes de persistir o checklist.
+CHECKLIST_VEICULO_TEXT_GROUPS = {
+    "condicao_luzes_direcao": ("farois_funcionando", "setas_funcionando", "lanternas_funcionando", "piscaalerta_funcionando"),
+    "condicao_luz_painel": ("luz_painel",),
+    "condicao_itens_manutencao": ("limpador_parabrisa", "agua_radiador", "fluido_freio", "oleo_motor"),
+    "condicao_embreagem_freios": ("embreagem", "freio_mao", "freio_pe"),
+    "condicao_vidros_retrovisores": ("vidros", "retrovisores"),
+    "condicao_pneus_estepe": ("pneus", "estepe", "macaco", "triangulo", "chave_roda"),
+    "condicao_itens_seguranca": ("extintor", "cinto_seguranca"),
+    "condicao_itens_carro_interno": ("alarme", "ar_condicionado", "radio"),
+    "condicao_giroflex_isqueiro_carregador": ("giroflex", "isqueiro", "carregador"),
+    "condicao_lataria": ("lataria_frontal", "lataria_lateral", "lataria_traseira"),
+    "condicao_lataria_portas": ("lataria_porta_frontal", "lataria_porta_traseira", "lataria_porta_lateral"),
+    "condicao_itens_carro_externo": ("parachoque_frontal", "parachoque_traseiro"),
+}
+
+CHECKLIST_DRONE_TEXT_GROUPS = {
+    "condicao_helices": ("helices_status",),
+    "condicao_estrutura": ("tanque", "trem_pouso", "cameras"),
+    "condicao_carregador_bateria": ("carregador_controle", "baterias"),
+    "condicao_cabos_correia": ("cabos_carregador", "correia_pescoco"),
+}
+
+
+def _drone_has_tanque(drone):
+    return "monitoramento" not in (drone.categoria or "").strip().lower()
+
 
 class PilotoChecklistError(Exception):
     def __init__(self, message, category="warning", *, redirect_endpoint="main.piloto_checklist_semanal"):
@@ -107,14 +143,21 @@ def build_piloto_checklist_context(user, args):
 
     veiculo_ids = [item.id for item in state["veiculos_equipe"]]
     drone_ids = [item.id for item in state["drones_equipe"]]
+    equipe_principal = state["equipe"] if is_veiculos_supervisor(user) else None
 
     veiculo_padrao_id = args.get("veiculo_id", type=int)
     if veiculo_padrao_id not in veiculo_ids:
-        veiculo_padrao_id = state["veiculos_equipe"][0].id if len(state["veiculos_equipe"]) == 1 else None
+        principais = [item for item in state["veiculos_equipe"] if is_veiculos_supervisor(user) and item.supervisor_usuario_id == user.id]
+        if not principais:
+            principais = [item for item in state["veiculos_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
+        opcoes = principais or state["veiculos_equipe"]
+        veiculo_padrao_id = opcoes[0].id if len(opcoes) == 1 else None
 
     drone_padrao_id = args.get("drone_id", type=int)
     if drone_padrao_id not in drone_ids:
-        drone_padrao_id = state["drones_equipe"][0].id if len(state["drones_equipe"]) == 1 else None
+        principais = [item for item in state["drones_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
+        opcoes = principais or state["drones_equipe"]
+        drone_padrao_id = opcoes[0].id if len(opcoes) == 1 else None
 
     return {
         "equipe": state["equipe"],
@@ -130,7 +173,7 @@ def build_piloto_checklist_context(user, args):
         "drone_prefill": state["drone_prefill"],
         "semana_inicio": week_bounds["inicio"].strftime("%d/%m/%Y"),
         "semana_fim": week_bounds["fim"].strftime("%d/%m/%Y"),
-        "agora": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "agora": agora_brasilia_naive().strftime("%d/%m/%Y %H:%M"),
     }
 
 
@@ -204,9 +247,10 @@ def save_piloto_checklist(user, form_data):
 
 
 def _build_equipment_state(user, args=None, include_prefill=True):
+    is_supervisor = is_veiculos_supervisor(user)
     vinculo = _piloto_vinculo_ativo(user)
-    equipe = _equipe_operacional_ativa(user)
-    if not equipe:
+    equipe = get_supervisor_equipe(user) if is_supervisor else _equipe_operacional_ativa(user)
+    if not equipe and not is_supervisor:
         raise PilotoChecklistError(
             "Voce ainda nao esta vinculado a nenhuma equipe ativa.",
             redirect_endpoint="main.piloto_os",
@@ -214,26 +258,28 @@ def _build_equipment_state(user, args=None, include_prefill=True):
 
     piloto_nome = _piloto_nome(user)
 
-    veiculos_equipe = (
-        Veiculos.query
-        .filter(
+    veiculos_query = Veiculos.query
+    if is_supervisor:
+        veiculos_query = supervisor_equipment_query(Veiculos, user)
+    else:
+        veiculos_query = veiculos_query.filter(
             db.or_(
                 Veiculos.equipe_id == equipe.id,
                 db.func.lower(Veiculos.responsavel) == piloto_nome.lower(),
                 db.func.lower(Veiculos.responsavel) == equipe.nome_equipe.lower(),
             )
         )
-        .distinct()
-        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc())
-        .all()
-    )
+    veiculos_equipe = veiculos_query.distinct().order_by(
+        Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc()
+    ).all()
 
+    drones_query = Drones.query.filter(Drones.status == "Ativo")
+    if is_supervisor:
+        drones_query = supervisor_equipment_query(Drones, user).filter(Drones.status == "Ativo")
+    else:
+        drones_query = drones_query.filter(Drones.equipe_id == equipe.id)
     drones_equipe = (
-        Drones.query
-        .filter(
-            Drones.equipe_id == equipe.id,
-            Drones.status == "Ativo",
-        )
+        drones_query
         .order_by(Drones.renomacao.asc())
         .all()
     )
@@ -274,6 +320,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
             "registro_anatel": item.registro_anatel or "",
             "registro_anac": item.registro_anac or "",
             "num_baterias": int(baterias_por_drone.get(item.id, 0) or 0),
+            "has_tanque": _drone_has_tanque(item),
         }
         for item in drones_equipe
     }
@@ -287,7 +334,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
     return {
         "vinculo": vinculo,
         "equipe": equipe,
-        "papel_equipe": "equipe" if _is_equipe_oceano(user) else ((vinculo.papel or "").lower() if vinculo else ""),
+        "papel_equipe": "supervisor" if is_supervisor else ("equipe" if _is_equipe_oceano(user) else ((vinculo.papel or "").lower() if vinculo else "")),
         "piloto_nome": piloto_nome,
         "veiculos_equipe": veiculos_equipe,
         "drones_equipe": drones_equipe,
@@ -360,17 +407,21 @@ def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assina
         checklist = ChecklistSemanalVeiculo(
             veiculo_id=veiculo_id,
             piloto_id=actor_filter["piloto_id"],
-            equipe_id=actor_filter["equipe_id"],
+            equipe_id=veiculo.equipe_id or actor_filter["equipe_id"],
         )
         db.session.add(checklist)
 
-    checklist.data_registro = datetime.now()
+    checklist.data_registro = agora_brasilia_naive()
     checklist.km_leitura = float(veiculo.km_atual or 0)
 
     for field in CHECKLIST_VEICULO_BOOL_FIELDS:
         setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
     for field in CHECKLIST_VEICULO_TEXT_FIELDS:
-        setattr(checklist, field, _clean_str(form_data.get(field)))
+        has_issue = any(
+            _bool_from_form(form_data.get(bool_field), default=True) is False
+            for bool_field in CHECKLIST_VEICULO_TEXT_GROUPS[field]
+        )
+        setattr(checklist, field, _clean_str(form_data.get(field)) if has_issue else None)
 
     checklist.assinatura_piloto = assinatura_piloto
 
@@ -387,19 +438,30 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
         .first()
     )
     if not checklist:
+        drone = db.session.get(Drones, drone_id)
         checklist = ChecklistSemanalDrone(
-            drone_id=drone_id,
+            drone=drone,
             piloto_id=actor_filter["piloto_id"],
-            equipe_id=actor_filter["equipe_id"],
+            equipe_id=drone.equipe_id or actor_filter["equipe_id"],
         )
         db.session.add(checklist)
 
-    checklist.data_registro = datetime.now()
+    checklist.data_registro = agora_brasilia_naive()
 
     for field in CHECKLIST_DRONE_BOOL_FIELDS:
-        setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
+        if field == "tanque" and not _drone_has_tanque(checklist.drone):
+            setattr(checklist, field, None)
+        else:
+            setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
     for field in CHECKLIST_DRONE_TEXT_FIELDS:
-        setattr(checklist, field, _clean_str(form_data.get(field)))
+        if field in CHECKLIST_DRONE_TEXT_GROUPS:
+            has_issue = any(
+                _bool_from_form(form_data.get(bool_field), default=True) is False
+                for bool_field in CHECKLIST_DRONE_TEXT_GROUPS[field]
+            )
+            setattr(checklist, field, _clean_str(form_data.get(field)) if has_issue else None)
+        else:
+            setattr(checklist, field, _clean_str(form_data.get(field)))
 
     default_baterias = baterias_por_drone.get(drone_id, 0)
     checklist.num_baterias = _to_int(form_data.get("num_baterias")) or int(default_baterias or 0)
@@ -407,6 +469,29 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
     checklist.assinatura_piloto = assinatura_piloto
     checklist.nome_responsavel = nome_responsavel
     checklist.assinatura_piloto_responsavel = assinatura_piloto
+
+
+def sincronizar_pendencias_registro(checklist):
+    """Atualiza os alertas da semana original depois de uma correcao administrativa."""
+    inicio = checklist.data_registro.date()
+    inicio -= timedelta(days=inicio.weekday())
+    inicio_dt = datetime.combine(inicio, datetime.min.time())
+    if checklist.piloto_id:
+        actor_filter = {
+            "veiculo": ChecklistSemanalVeiculo.piloto_id == checklist.piloto_id,
+            "drone": ChecklistSemanalDrone.piloto_id == checklist.piloto_id,
+        }
+        nome = checklist.piloto.nome_piloto if checklist.piloto else "-"
+    else:
+        actor_filter = {
+            "veiculo": ChecklistSemanalVeiculo.equipe_id == checklist.equipe_id,
+            "drone": ChecklistSemanalDrone.equipe_id == checklist.equipe_id,
+        }
+        nome = checklist.equipe.nome_equipe if checklist.equipe else "-"
+    pendencias = _coletar_pendencias_checklists_semanais(
+        actor_filter, inicio_dt, inicio_dt + timedelta(days=7),
+    )
+    _sincronizar_pendencias(SimpleNamespace(piloto_id=checklist.piloto_id), nome, pendencias, inicio)
 
 
 def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inicio):
@@ -422,7 +507,7 @@ def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inici
     admin_ids = [
         row[0]
         for row in db.session.query(Usuario.id)
-        .filter(Usuario.tipo_usuario.in_(("dev", "admin")))
+        .filter(Usuario.tipo_usuario.in_(("dev", "diretor", "admin")))
         .all()
     ]
     _sincronizar_notificacoes_pendencia_checklist(
@@ -516,6 +601,8 @@ def _coletar_pendencias_checklists_semanais(actor_filter, inicio_semana_dt, prox
 def _campos_defeituosos_checklist(checklist, labels):
     defeitos = []
     for field, label in labels:
+        if field == "tanque" and not _drone_has_tanque(checklist.drone):
+            continue
         if not bool(getattr(checklist, field)):
             defeitos.append(label)
     return defeitos
@@ -599,6 +686,16 @@ def _checklist_actor_filter(user, equipe):
             "veiculo": ChecklistSemanalVeiculo.equipe_id == equipe_id,
             "drone": ChecklistSemanalDrone.equipe_id == equipe_id,
         }
+    if is_veiculos_supervisor(user):
+        from app.modules.usuarios.service import garantir_piloto_para_supervisor
+        garantir_piloto_para_supervisor(user)
+        piloto_id = user.piloto_id
+        return {
+            "piloto_id": piloto_id,
+            "equipe_id": None,
+            "veiculo": ChecklistSemanalVeiculo.piloto_id == piloto_id,
+            "drone": ChecklistSemanalDrone.piloto_id == piloto_id,
+        }
 
     piloto_id = getattr(user, "piloto_id", None)
     return {
@@ -637,6 +734,7 @@ def _serialize_checklist_drone(checklist):
     data["num_baterias_wb"] = checklist.num_baterias_wb
     data["assinatura_piloto"] = checklist.assinatura_piloto or ""
     data["nome_responsavel"] = checklist.nome_responsavel or ""
+    data["assinatura_piloto_responsavel"] = checklist.assinatura_piloto_responsavel or ""
     return data
 
 
@@ -671,7 +769,7 @@ def _to_int(value):
 
 
 def _week_bounds():
-    hoje = date.today()
+    hoje = agora_brasilia_naive().date()
     inicio = hoje - timedelta(days=hoje.weekday())
     fim = inicio + timedelta(days=6)
     inicio_dt = datetime.combine(inicio, datetime.min.time())

@@ -1,22 +1,27 @@
 import mimetypes
 import os
 
-from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Veiculos
+from app.modules.veiculos.rastreamento import build_rastreamento_payload
 from app.modules.veiculos.service import (
     VEICULOS_ALLOWED_TYPES,
     VEICULOS_LOGS_ALLOWED_TYPES,
     VeiculoTurnoError,
     build_veiculo_form,
     build_veiculo_logs_detalhe_context,
+    build_limpeza_alertas_admin_context,
+    build_limpeza_alertas_operacionais_context,
     build_piloto_veiculos_context,
+    build_veiculos_deleted_logs_context,
     build_veiculo_media_skybox_path,
     build_veiculos_export_response,
     build_veiculos_logs_export,
     create_veiculo,
+    confirmar_alerta_limpeza_operacional,
     delete_veiculo_log,
     delete_veiculo,
     encerrar_turno_piloto,
@@ -25,10 +30,13 @@ from app.modules.veiculos.service import (
     get_abastecimento_for_media,
     get_veiculo_log_for_media,
     list_equipes_choices,
+    list_supervisores_choices,
     list_veiculos,
+    list_veiculos_limpezas,
     list_veiculos_logs,
-    list_responsaveis_choices,
     registrar_abastecimento_turno_piloto,
+    registrar_limpeza_turno_piloto,
+    update_veiculos_equipes,
     update_veiculo_log_km,
     update_veiculo,
     validate_veiculo_form,
@@ -38,18 +46,48 @@ from app.shared.skybox import SkyboxError, stream_skybox_file
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
+        "dev",
+        "diretor",
+        "admin",
+        "operario",
+        "operador",
+        "prefeitura_admin",
+        "sup_veiculos",
+    }:
+        abort(403)
+
+
+def _require_admin():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "sup_veiculos"}:
+        abort(403)
+
+
+def _require_dev():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "dev":
         abort(403)
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE}:
+    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE, "sup_veiculos"}:
         abort(403)
 
 
 def _get_scoped_veiculo_or_404(veiculo_id: int):
     query = apply_prefeitura_scope(Veiculos.query, current_user, Veiculos.prefeitura_id)
     return query.filter(Veiculos.id == veiculo_id).first_or_404()
+
+
+def _resolve_request_ip():
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+    if forwarded_for:
+        return forwarded_for
+
+    real_ip = (request.headers.get("X-Real-IP") or "").strip()
+    if real_ip:
+        return real_ip
+
+    return request.remote_addr or None
 
 
 def _send_local_veiculo_media(media_path):
@@ -85,6 +123,27 @@ def _send_veiculo_media_from_skybox(media_path, placa):
 
 
 def register_routes(bp):
+    @bp.route("/veiculos/rastreamento", methods=["GET"], endpoint="veiculos_rastreamento")
+    @login_required
+    def veiculos_rastreamento():
+        try:
+            payload = build_rastreamento_payload(current_user)
+        except PermissionError:
+            abort(403)
+        response = current_app.make_response(render_template("veiculos_rastreamento.html", tracking=payload))
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
+    @bp.route("/veiculos/rastreamento/dados", methods=["GET"], endpoint="veiculos_rastreamento_dados")
+    @login_required
+    def veiculos_rastreamento_dados():
+        try:
+            response = jsonify(build_rastreamento_payload(current_user))
+        except PermissionError:
+            abort(403)
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
     @bp.route("/veiculos/menu", methods=["GET"], endpoint="veiculos_menu")
     @login_required
     def veiculos_menu():
@@ -94,9 +153,9 @@ def register_routes(bp):
 
         return render_template(
             "veiculos_menu.html",
-            can_manage=tipo in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+            can_manage=tipo in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
             can_view_logs=tipo in VEICULOS_LOGS_ALLOWED_TYPES,
-            can_view_checklist=tipo in {"dev", "admin"},
+            can_view_checklist=tipo in {"dev", "diretor", "admin", "sup_veiculos"},
         )
 
     @bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")
@@ -112,12 +171,56 @@ def register_routes(bp):
         except PermissionError:
             abort(403)
 
+    @bp.route("/veiculos/equipes", methods=["POST"], endpoint="atualizar_equipes_veiculos")
+    @login_required
+    def atualizar_equipes_veiculos():
+        _require_admin_or_operario()
+
+        redirect_args = {
+            key: value
+            for key, value in request.args.items()
+            if key in {"q", "operacao", "frota", "status"}
+        }
+        try:
+            flash(update_veiculos_equipes(current_user, request.form), "success")
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao atualizar equipes dos veiculos em massa.")
+            flash("Erro interno ao atualizar as equipes dos veiculos. Tente novamente.", "danger")
+
+        return redirect(url_for("main.listar_veiculos", **redirect_args))
+
     @bp.route("/veiculos/logs", methods=["GET"], endpoint="veiculos_logs")
     @login_required
     def veiculos_logs_view():
         tipo = getattr(current_user, "tipo_usuario", None)
         try:
             return render_template("veiculos_logs.html", **list_veiculos_logs(tipo, request.args, user=current_user))
+        except PermissionError:
+            abort(403)
+
+    @bp.route("/veiculos/limpezas", methods=["GET"], endpoint="veiculos_limpezas")
+    @login_required
+    def veiculos_limpezas():
+        tipo = getattr(current_user, "tipo_usuario", None)
+        try:
+            return render_template("veiculos_limpezas.html", **list_veiculos_limpezas(tipo, request.args, user=current_user))
+        except PermissionError:
+            abort(403)
+
+    @bp.route("/veiculos/limpeza/alertas", methods=["GET"], endpoint="veiculos_alertas_limpeza")
+    @login_required
+    def veiculos_alertas_limpeza():
+        try:
+            return render_template(
+                "veiculos_alertas_limpeza.html",
+                **build_limpeza_alertas_admin_context(current_user),
+            )
         except PermissionError:
             abort(403)
 
@@ -142,29 +245,20 @@ def register_routes(bp):
         except PermissionError:
             abort(403)
 
-    @bp.route("/veiculos/logs/<int:log_id>/deletar", methods=["POST"], endpoint="deletar_log_veiculo")
+    @bp.route("/admin/veiculos/logs-excluidos", methods=["GET"], endpoint="veiculos_logs_excluidos")
     @login_required
-    def deletar_log_veiculo(log_id):
+    def veiculos_logs_excluidos():
+        _require_dev()
         try:
-            deleted = delete_veiculo_log(log_id, current_user)
-            if deleted:
-                flash("Log de veiculo removido com sucesso.", "success")
-            else:
-                flash("Log de veiculo nao encontrado.", "warning")
+            return render_template(
+                "veiculos_logs_excluidos.html",
+                **build_veiculos_deleted_logs_context(
+                    getattr(current_user, "tipo_usuario", None),
+                    request.args,
+                ),
+            )
         except PermissionError:
             abort(403)
-        except Exception:
-            db.session.rollback()
-            current_app.logger.exception("Erro ao remover log de veiculo %s.", log_id)
-            flash("Erro interno ao remover o log de veiculo.", "danger")
-
-        return redirect(url_for(
-            "main.veiculos_logs",
-            q=request.form.get("q") or None,
-            data_inicio=request.form.get("data_inicio") or None,
-            data_fim=request.form.get("data_fim") or None,
-            page=request.form.get("page") or None,
-        ))
 
     @bp.route("/veiculos/logs/<int:log_id>/corrigir-km", methods=["POST"], endpoint="corrigir_log_veiculo")
     @login_required
@@ -174,7 +268,18 @@ def register_routes(bp):
         redirect_args = {
             key: value
             for key, value in request.args.items()
-            if key in {"page", "q", "data_inicio", "data_fim"}
+            if key in {
+                "page",
+                "q",
+                "data_inicio",
+                "data_fim",
+                "limpeza_realizada",
+                "tipo_limpeza",
+                "data_limpeza_inicio",
+                "data_limpeza_fim",
+                "valor_limpeza_min",
+                "valor_limpeza_max",
+            }
         }
         return_to = (request.args.get("return_to") or "").strip()
         veiculo_id = request.args.get("veiculo_id", type=int)
@@ -199,6 +304,53 @@ def register_routes(bp):
                     data_fim=redirect_args.get("data_fim"),
                 )
             )
+        return redirect(url_for("main.veiculos_logs", **redirect_args))
+
+    @bp.route("/veiculos/logs/<int:log_id>/deletar", methods=["POST"], endpoint="deletar_log_veiculo")
+    @login_required
+    def deletar_log_veiculo(log_id):
+        _require_admin()
+
+        redirect_args = {
+            key: value
+            for key, value in request.args.items()
+            if key in {
+                "page",
+                "q",
+                "data_inicio",
+                "data_fim",
+                "limpeza_realizada",
+                "tipo_limpeza",
+                "data_limpeza_inicio",
+                "data_limpeza_fim",
+                "valor_limpeza_min",
+                "valor_limpeza_max",
+            }
+        }
+        try:
+            flash(
+                delete_veiculo_log(
+                    current_user,
+                    log_id,
+                    request_info={
+                        "path": request.path,
+                        "ip": _resolve_request_ip(),
+                        "user_agent": (request.headers.get("User-Agent") or "").strip() or None,
+                        "referrer": (request.referrer or "").strip() or None,
+                    },
+                ),
+                "success",
+            )
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao deletar log de veiculo %s.", log_id)
+            flash("Erro interno ao deletar o log de veiculo. Tente novamente.", "danger")
+
         return redirect(url_for("main.veiculos_logs", **redirect_args))
 
     @bp.route("/veiculos/logs/<int:log_id>/midia/<tipo>", methods=["GET"], endpoint="veiculo_log_midia_skybox")
@@ -255,14 +407,14 @@ def register_routes(bp):
 
         errors = {}
         form = {}
-        responsaveis = list_responsaveis_choices(user=current_user)
         equipes = list_equipes_choices(user=current_user)
+        supervisores = list_supervisores_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
-                responsaveis=responsaveis,
                 equipes=equipes,
+                supervisores=supervisores,
             )
 
             if errors:
@@ -271,8 +423,8 @@ def register_routes(bp):
                     "cadastrar_veiculo.html",
                     form=form,
                     errors=errors,
-                    responsaveis=responsaveis,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
             try:
@@ -287,16 +439,16 @@ def register_routes(bp):
                     "cadastrar_veiculo.html",
                     form=form,
                     errors=errors,
-                    responsaveis=responsaveis,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
         return render_template(
             "cadastrar_veiculo.html",
             form=form,
             errors=errors,
-            responsaveis=responsaveis,
             equipes=equipes,
+            supervisores=supervisores,
         )
 
     @bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
@@ -306,14 +458,14 @@ def register_routes(bp):
 
         veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         errors = {}
-        responsaveis = list_responsaveis_choices(user=current_user)
         equipes = list_equipes_choices(user=current_user)
+        supervisores = list_supervisores_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
-                responsaveis=responsaveis,
                 equipes=equipes,
+                supervisores=supervisores,
                 existing_veiculo=veiculo,
             )
 
@@ -324,8 +476,8 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     veiculo=veiculo,
-                    responsaveis=responsaveis,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
             try:
@@ -341,8 +493,8 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     veiculo=veiculo,
-                    responsaveis=responsaveis,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
         return render_template(
@@ -350,8 +502,8 @@ def register_routes(bp):
             form=build_veiculo_form(veiculo),
             errors=errors,
             veiculo=veiculo,
-            responsaveis=responsaveis,
             equipes=equipes,
+            supervisores=supervisores,
         )
 
     @bp.route("/veiculos/<int:veiculo_id>/deletar", methods=["POST"], endpoint="deletar_veiculo")
@@ -361,8 +513,7 @@ def register_routes(bp):
 
         veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         try:
-            delete_veiculo(veiculo)
-            flash("Veículo removido!", "success")
+            flash(delete_veiculo(veiculo), "success")
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao remover veiculo %s.", veiculo.id)
@@ -382,9 +533,48 @@ def register_routes(bp):
         return render_template(
             "piloto_veiculos.html",
             veiculos=context["veiculos"],
+            veiculos_supervisor_ids=context.get("veiculos_supervisor_ids", []),
             turnos_abertos=context["turnos_abertos"],
+            km_abastecimento_referencias=context.get("km_abastecimento_referencias", {}),
             km_inicial_referencias=context["km_inicial_referencias"],
+            agora_brasilia=context["agora_brasilia"],
         )
+
+    @bp.route("/piloto/caixa-entrada", methods=["GET"], endpoint="piloto_caixa_entrada")
+    @login_required
+    def piloto_caixa_entrada():
+        _require_piloto()
+
+        try:
+            return render_template(
+                "piloto_caixa_entrada.html",
+                **build_limpeza_alertas_operacionais_context(current_user),
+            )
+        except PermissionError:
+            abort(403)
+
+    @bp.route(
+        "/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar",
+        methods=["POST"],
+        endpoint="piloto_confirmar_alerta_limpeza",
+    )
+    @login_required
+    def piloto_confirmar_alerta_limpeza(veiculo_id):
+        _require_piloto()
+
+        try:
+            flash(confirmar_alerta_limpeza_operacional(current_user, veiculo_id), "success")
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao confirmar ciencia de alerta de limpeza.")
+            flash("Erro tecnico ao confirmar ciencia.", "danger")
+
+        return redirect(url_for("main.piloto_caixa_entrada"))
 
     @bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")
     @login_required
@@ -444,6 +634,35 @@ def register_routes(bp):
 
         return redirect(url_for("main.piloto_veiculos"))
 
+    @bp.route(
+        "/piloto/veiculos/<int:veiculo_id>/limpeza",
+        methods=["POST"],
+        endpoint="piloto_registrar_limpeza_turno",
+    )
+    @login_required
+    def piloto_registrar_limpeza_turno(veiculo_id):
+        _require_piloto()
+
+        try:
+            flash(
+                registrar_limpeza_turno_piloto(
+                    current_user,
+                    veiculo_id,
+                    request.form,
+                ),
+                "success",
+            )
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro tecnico ao registrar limpeza do turno.")
+            flash("Erro tecnico ao registrar limpeza.", "danger")
+
+        return redirect(url_for("main.piloto_veiculos"))
+
     @bp.route("/piloto/veiculos/<int:veiculo_id>/encerrar", methods=["POST"], endpoint="piloto_encerrar_turno")
     @login_required
     def piloto_encerrar_turno(veiculo_id):
@@ -468,5 +687,4 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Erro tecnico ao encerrar turno de veiculo.")
             flash("Erro tecnico ao salvar.", "danger")
-
         return redirect(url_for("main.piloto_veiculos"))

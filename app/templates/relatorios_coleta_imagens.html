@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_filters.html" import render_filter_card %}
 {% from "_pagination.html" import render_pagination %}
 {% from "_multi_select_chips.html" import render_chip_select_values, render_chip_select_pairs %}
 {% from "_result_summary.html" import render_result_summary %}
@@ -7,224 +8,21 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <style>
-    .media-report-card {
-      border: 1px solid #dbe4f0;
-      border-radius: 1rem;
-      overflow: hidden;
-      background: #fff;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-      height: 100%;
-      position: relative;
-    }
-    .media-report-thumb {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      background: #eff5fb;
-    }
-    .media-report-empty {
-      height: 220px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 1rem;
-      background: #f7fbff;
-      color: #6a7b91;
-      border-bottom: 1px solid #dbe4f0;
-    }
-    .media-report-meta {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-    }
-    .media-report-meta-item {
-      background: #f8fbff;
-      border: 1px solid #e3ebf5;
-      border-radius: 0.85rem;
-      padding: 0.7rem 0.8rem;
-    }
-    .media-report-meta-label {
-      display: block;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #7a8798;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-    }
-    .media-report-meta-value {
-      font-size: 0.92rem;
-      color: #193b62;
-      font-weight: 700;
-      line-height: 1.45;
-      word-break: break-word;
-    }
-    .media-report-address {
-      min-height: 72px;
-    }
-    .media-summary-card {
-      border: 0;
-      border-radius: 1rem;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-      height: 100%;
-    }
-    .media-summary-card .card-body {
-      padding: 1.15rem;
-    }
-    .media-summary-label {
-      color: #7a8798;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.3rem;
-    }
-    .media-summary-value {
-      color: #133a63;
-      font-size: 1.9rem;
-      font-weight: 800;
-      line-height: 1;
-    }
-    .media-filter-card,
-    .media-table-card {
-      border: 0;
-      border-radius: 1rem;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-    }
-    .media-table-card .table th {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #6e7f94;
-    }
-    .media-table-card .table td {
-      vertical-align: middle;
-    }
-    .media-filter-card .form-control,
-    .media-filter-card .form-select {
-      min-height: 31px;
-    }
-    .media-filter-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: flex-end;
-    }
-    .media-filter-actions .btn {
-      min-width: 120px;
-    }
-    .media-export-status {
-      border: 1px solid #dbe4f0;
-      border-radius: 0.75rem;
-      background: #f8fbff;
-    }
-    .media-export-status .progress {
-      height: 0.45rem;
-      background: #e4edf7;
-    }
-    .media-report-uvis-review {
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.62rem 0.82rem;
-      border-bottom: 1px solid #dbe4f0;
-      background: #f8fbff;
-    }
-    .media-report-uvis-review.is-ok {
-      background: #f3fbf6;
-      border-bottom-color: #cbeed6;
-    }
-    .media-report-uvis-review-copy {
-      min-width: 0;
-    }
-    .media-report-uvis-review-label {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: #193b62;
-      font-size: 0.78rem;
-      font-weight: 800;
-      line-height: 1.2;
-    }
-    .media-report-uvis-review.is-ok .media-report-uvis-review-label {
-      color: #0f7a34;
-    }
-    .media-report-uvis-review-detail {
-      color: #7a8798;
-      font-size: 0.68rem;
-      font-weight: 600;
-      line-height: 1.35;
-      margin-top: 0.12rem;
-    }
-    .media-report-ok-form {
-      flex: 0 0 auto;
-      margin: 0;
-    }
-    .media-report-ok-button {
-      min-height: 31px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
-      padding: 0.32rem 0.68rem;
-      font-size: 0.72rem;
-      font-weight: 800;
-      line-height: 1;
-      white-space: nowrap;
-      border: 1px solid #1f5b94;
-      background: #fff;
-      color: #1f5b94;
-    }
-    .media-report-ok-button:hover,
-    .media-report-ok-button:focus {
-      background: #1f5b94;
-      color: #fff;
-    }
-    .media-report-actions {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .media-report-action-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .media-report-ok-button i {
-      font-size: 0.86rem;
-    }
-    @media (max-width: 767.98px) {
-      .media-report-meta {
-        grid-template-columns: 1fr;
-      }
-      .media-filter-actions .btn {
-        width: 100%;
-      }
-      .media-report-action-buttons {
-        flex: 1 1 auto;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/relatorios_coleta_imagens.css') }}">
 {% endblock %}
 
 {% block content %}
 {% set meses = {
-  1: "Janeiro", 2: "Fevereiro", 3: "Marco", 4: "Abril",
+  1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
   5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
   9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
 {% set relatorio_pdf_job_id = request.args.get('relatorio_pdf_job_id') %}
-<div class="container-fluid py-4" style="max-width: 1280px;">
+<div class="media-report-page container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-images me-2 text-primary"></i>Relatorio de Coleta de Imagens
+        <i class="bi bi-images me-2 text-primary"></i>Relatório de Coleta de Imagens
       </h2>
       <p class="text-muted small mb-0">{{ descricao_painel }}</p>
       {{ render_result_summary(total_levantamentos, 'Levantamentos filtrados') }}
@@ -241,6 +39,14 @@
           <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exportar PDF
         </button>
       </form>
+      <form method="GET" action="{{ url_for('main.relatorios_coleta_imagens_export_pdf_zip') }}" class="m-0">
+        {% for nome, valor in filtros_exportacao.items() %}
+          <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
+        {% endfor %}
+        <button type="submit" class="btn btn-outline-danger">
+          <i class="bi bi-file-zip-fill me-1"></i>ZIP por UVIS
+        </button>
+      </form>
     </div>
   </div>
 
@@ -249,10 +55,10 @@
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
         <div class="fw-semibold text-dark">
           <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>
-          <span id="coletaPdfJobMessage">Gerando PDF do relatorio...</span>
+          <span id="coletaPdfJobMessage">Gerando arquivo do relatório...</span>
         </div>
         <a id="coletaPdfJobDownload" href="#" class="btn btn-sm btn-danger d-none">
-          <i class="bi bi-download me-1"></i>Baixar PDF
+          <i class="bi bi-download me-1"></i>Baixar arquivo
         </a>
       </div>
       <div class="progress" role="progressbar" aria-label="Progresso do PDF">
@@ -261,26 +67,7 @@
     </div>
   {% endif %}
 
-  <div class="card media-filter-card shadow-sm rounded-4 mb-4 border-0">
-    <div
-      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
-      data-bs-toggle="collapse"
-      data-bs-target="#collapseFiltrosColetaImagens"
-      aria-expanded="{{ 'true' if filtros_coleta_ativos else 'false' }}"
-      style="cursor: pointer; background: none;"
-    >
-      <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-funnel-fill text-primary"></i>
-        <span class="text-dark fw-bold">Filtros de busca</span>
-        {% if filtros_coleta_ativos %}
-          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
-        {% endif %}
-      </div>
-      <i class="bi bi-chevron-down text-muted"></i>
-    </div>
-
-    <div class="collapse {% if filtros_coleta_ativos %}show{% endif %}" id="collapseFiltrosColetaImagens">
-      <div class="card-body pt-0 pb-4">
+  {% call render_filter_card('Filtros de busca', collapse_id='collapseFiltrosColetaImagens', active=filtros_coleta_ativos, icon='bi-funnel-fill') %}
         <form method="GET">
           <div class="row g-2 filter-chip-row">
             <div class="col-md-6 col-xl-2">
@@ -288,15 +75,15 @@
               <input type="number" min="1" name="os_id" class="form-control form-control-sm" value="{{ os_id_selecionado or '' }}" placeholder="Ex: 1745">
             </div>
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Periodo de</label>
+              <label class="small text-muted">Período de</label>
               <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ data_inicio_selecionada }}">
             </div>
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Periodo ate</label>
+              <label class="small text-muted">Período até</label>
               <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim_selecionada }}">
             </div>
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Mes</label>
+              <label class="small text-muted">Mês</label>
               <select name="mes" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% for numero, nome in meses.items() %}
@@ -326,9 +113,9 @@
 
             {% if pode_filtrar_regiao %}
             <div class="col-md-6 col-xl-3">
-              <label class="small text-muted">Regiao</label>
+              <label class="small text-muted">Região</label>
               <select name="regiao" class="form-select form-select-sm">
-                <option value="">Todas as Regioes</option>
+                <option value="">Todas as Regiões</option>
                 {% for regiao in regioes_disponiveis %}
                   <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
                 {% endfor %}
@@ -336,7 +123,7 @@
             </div>
             {% else %}
             <div class="col-md-6 col-xl-3">
-              <label class="small text-muted">Regiao</label>
+              <label class="small text-muted">Região</label>
               <input type="text" class="form-control form-control-sm" value="{{ regiao_nome_selecionada }}" disabled>
             </div>
             {% endif %}
@@ -353,34 +140,46 @@
             </div>
             {% endif %}
 
+            <div class="col-md-6 col-xl-3">
+              <label class="small text-muted">Equipe</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas as equipes</option>
+                {% for equipe in equipes_disponiveis %}
+                  <option value="{{ equipe.id }}" {% if equipe_id_selecionado|string == equipe.id|string %}selected{% endif %}>
+                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
             <div class="col-md-6 col-xl-2">
               <label class="small text-muted">Foco</label>
               {{ render_chip_select_values('foco', focos_disponiveis, foco_values_selecionados, 'Adicionar foco') }}
             </div>
 
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Midia</label>
+              <label class="small text-muted">Mídia</label>
               <select name="midia" class="form-select form-select-sm">
                 <option value="" {% if not midia_selecionada %}selected{% endif %}>Todas</option>
-                <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com video</option>
-                <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem video</option>
+                <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com vídeo</option>
+                <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem vídeo</option>
                 <option value="com_complementares" {% if midia_selecionada == 'com_complementares' %}selected{% endif %}>Com extras</option>
                 <option value="sem_complementares" {% if midia_selecionada == 'sem_complementares' %}selected{% endif %}>Sem extras</option>
               </select>
             </div>
 
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">OK UVIS</label>
+              <label class="small text-muted">Visualizado UVIS</label>
               <select name="ok_uvis" class="form-select form-select-sm">
                 <option value="" {% if not ok_uvis_selecionado %}selected{% endif %}>Todos</option>
-                <option value="ok" {% if ok_uvis_selecionado == 'ok' %}selected{% endif %}>Com OK</option>
+                <option value="ok" {% if ok_uvis_selecionado == 'ok' %}selected{% endif %}>Visualizados</option>
                 <option value="pendente" {% if ok_uvis_selecionado == 'pendente' %}selected{% endif %}>Pendentes</option>
               </select>
             </div>
 
             <div class="col-md-12 col-xl-2">
               <label class="small text-muted">Busca</label>
-              <input type="search" name="busca" class="form-control form-control-sm" value="{{ busca_selecionada }}" placeholder="Endereco, CEP, UVIS, foco...">
+              <input type="search" name="busca" class="form-control form-control-sm" value="{{ busca_selecionada }}" placeholder="Endereço, CEP, UVIS, foco...">
             </div>
 
             <div class="col-12">
@@ -395,13 +194,11 @@
             </div>
           </div>
         </form>
-      </div>
-    </div>
-  </div>
+  {% endcall %}
 
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div class="text-muted small">
-      Periodo selecionado: <strong>{{ periodo_label }}</strong>
+      Período selecionado: <strong>{{ periodo_label }}</strong>
       {% if os_id_selecionado %}
         <span class="ms-2">OS: <strong>#{{ os_id_selecionado }}</strong></span>
       {% endif %}
@@ -434,7 +231,7 @@
     <div class="col-6 col-md-4 col-xl">
       <div class="card media-summary-card">
         <div class="card-body">
-          <div class="media-summary-label">Regioes</div>
+          <div class="media-summary-label">Regiões</div>
           <div class="media-summary-value">{{ total_regioes_com_registro }}</div>
         </div>
       </div>
@@ -450,7 +247,7 @@
     <div class="col-6 col-md-4 col-xl">
       <div class="card media-summary-card">
         <div class="card-body">
-          <div class="media-summary-label">Videos</div>
+          <div class="media-summary-label">Vídeos</div>
           <div class="media-summary-value">{{ total_videos }}</div>
         </div>
       </div>
@@ -458,7 +255,7 @@
     <div class="col-6 col-md-4 col-xl">
       <div class="card media-summary-card">
         <div class="card-body">
-          <div class="media-summary-label">Midias totais</div>
+          <div class="media-summary-label">Mídias totais</div>
           <div class="media-summary-value">{{ total_midias }}</div>
         </div>
       </div>
@@ -469,12 +266,12 @@
     <div class="col-lg-4">
       <div class="card media-table-card h-100">
         <div class="card-body">
-          <h5 class="text-dark mb-3"><i class="bi bi-globe-americas me-2 text-primary"></i>Por Regiao</h5>
+          <h5 class="text-dark mb-3"><i class="bi bi-globe-americas me-2 text-primary"></i>Por Região</h5>
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Regiao</th>
+                  <th>Região</th>
                   <th class="text-center">Total</th>
                 </tr>
               </thead>
@@ -538,7 +335,7 @@
               <div class="media-report-empty">
                 <div>
                   <i class="bi bi-image fs-2 d-block mb-2 text-primary"></i>
-                  Sem imagem principal disponivel.
+                  Sem imagem principal disponível.
                 </div>
               </div>
             {% endif %}
@@ -559,7 +356,7 @@
                     <i class="bi bi-hourglass-split"></i>
                     Aguardando UVIS
                   </div>
-                  <div class="media-report-uvis-review-detail">Sem confirmacao de leitura</div>
+                  <div class="media-report-uvis-review-detail">Sem confirmação de leitura</div>
                 {% endif %}
               </div>
               {% if not item.uvis_visualizado and current_user.tipo_usuario == 'uvis' %}
@@ -569,7 +366,7 @@
                   class="media-report-ok-form form-no-loading"
                 >
                   <input type="hidden" name="next" value="{{ request.full_path }}">
-                  <button type="submit" class="media-report-ok-button" title="Registrar visualizacao pela UVIS" aria-label="Registrar visualizacao pela UVIS">
+                  <button type="submit" class="media-report-ok-button" title="Registrar visualização pela UVIS" aria-label="Registrar visualização pela UVIS">
                     <i class="bi bi-check2"></i>Marcar visualizado
                   </button>
                 </form>
@@ -589,13 +386,13 @@
                 <span class="badge bg-primary-subtle text-primary">Foco: {{ item.foco }}</span>
                 <span class="badge bg-light text-dark border">{{ item.outras_imagens_count }} imagem(ns) extra(s)</span>
                 {% if item.tem_video %}
-                  <span class="badge bg-light text-dark border">Video anexado</span>
+                  <span class="badge bg-light text-dark border">Vídeo anexado</span>
                 {% endif %}
               </div>
 
               <div class="media-report-meta mb-3">
                 <div class="media-report-meta-item media-report-address">
-                  <span class="media-report-meta-label">Endereco</span>
+                  <span class="media-report-meta-label">Endereço</span>
                   <div class="media-report-meta-value">{{ item.endereco }}</div>
                 </div>
                 <div class="media-report-meta-item">
@@ -674,27 +471,27 @@
               throw new Error(payload.error || "Falha ao consultar o PDF.");
             }
 
-            message.textContent = payload.message || "Gerando PDF do relatorio...";
+            message.textContent = payload.message || "Gerando arquivo do relatório...";
             setProgress(payload.progress);
 
             if (payload.status === "success") {
               download.href = payload.download_url;
               download.classList.remove("d-none");
-              message.textContent = "PDF pronto para download.";
+              message.textContent = payload.message || "Arquivo pronto para download.";
               setProgress(100);
               return;
             }
 
             if (payload.status === "error") {
               statusBox.classList.add("border-danger");
-              message.textContent = payload.error || "Nao foi possivel gerar o PDF.";
+              message.textContent = payload.error || "Não foi possível gerar o arquivo.";
               return;
             }
 
             window.setTimeout(poll, 2500);
           } catch (error) {
             statusBox.classList.add("border-danger");
-            message.textContent = error.message || "Falha ao acompanhar a geracao do PDF.";
+            message.textContent = error.message || "Falha ao acompanhar a geração do arquivo.";
           }
         };
 

@@ -1,0 +1,131 @@
+.piloto-os-form-page {
+    width: 100%;
+  }
+
+  .piloto-os-form-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .equipe-uvis-os-page {
+    max-width: 1200px;
+  }
+
+  .section-title {
+    border-left: 4px solid var(--bs-primary);
+    padding-left: 15px;
+    margin-bottom: 20px;
+    margin-top: 30px;
+  }
+
+  .form-label-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    font-weight: 700;
+  }
+
+  .bg-snapshot {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+  }
+
+  .readonly-form .form-control,
+  .readonly-form .form-select,
+  .readonly-form textarea {
+    pointer-events: none;
+    background-color: #f8fafc;
+  }
+
+  .uvis-os-summary {
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fcfdff 0%, #f5f9fd 100%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .uvis-os-summary .badge {
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    font-weight: 700;
+  }
+
+  .uvis-os-hint {
+    margin-top: 0.45rem;
+    color: #66788e;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .uvis-os-status-note {
+    border-radius: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    color: #6c757d;
+  }
+
+  .uvis-os-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 991.98px) {
+    .piloto-os-form-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .piloto-os-form-header {
+      align-items: flex-start;
+    }
+
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 1rem !important;
+    }
+
+    .piloto-os-form-page .row.g-3 {
+      --bs-gutter-x: 0.85rem;
+    }
+
+    .uvis-os-actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    .uvis-os-actions .btn {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .piloto-os-form-page .section-title {
+      padding-left: 12px;
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+
+    .piloto-os-form-page .section-title h5 {
+      font-size: 1rem;
+    }
+
+    .piloto-os-form-page input,
+    .piloto-os-form-page select,
+    .piloto-os-form-page textarea {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 0.85rem !important;
+    }
+
+    .piloto-os-form-page .form-label-header {
+      font-size: 0.68rem;
+      letter-spacing: 0.35px;
+    }
+  }

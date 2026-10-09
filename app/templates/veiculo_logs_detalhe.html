@@ -2,350 +2,7 @@
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<style>
-    .veiculo-detalhe-page { max-width: 1200px; }
-    .detail-header {
-        align-items: flex-start;
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-    }
-    .detail-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-    .timeline-chip {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 999px;
-        color: #334155;
-        display: inline-flex;
-        font-size: 0.75rem;
-        font-weight: 800;
-        padding: 0.35rem 0.65rem;
-        white-space: nowrap;
-    }
-    .summary-grid {
-        display: grid;
-        gap: 0.85rem;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-        margin-bottom: 1.25rem;
-    }
-    .summary-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-left: 4px solid #0d6efd;
-        border-radius: 0.85rem;
-        padding: 1rem;
-    }
-    .summary-card span {
-        color: #64748b;
-        display: block;
-        font-size: 0.72rem;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-    .summary-card strong {
-        color: #0f172a;
-        display: block;
-        font-size: 1.35rem;
-        margin-top: 0.2rem;
-    }
-    .km-check-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 1rem;
-        margin-bottom: 1.25rem;
-        overflow: hidden;
-    }
-    .km-check-header {
-        align-items: center;
-        background: #f8fafc;
-        border: 0;
-        border-bottom: 1px solid #e2e8f0;
-        color: inherit;
-        cursor: pointer;
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        padding: 1rem;
-        text-align: left;
-        width: 100%;
-    }
-    .km-check-header:hover,
-    .km-check-header:focus {
-        background: #f1f5f9;
-        outline: none;
-    }
-    .km-check-title {
-        color: #0f172a;
-        font-weight: 900;
-        margin: 0;
-    }
-    .km-check-subtitle {
-        color: #64748b;
-        font-size: 0.82rem;
-        margin-top: 0.15rem;
-    }
-    .km-check-table {
-        margin: 0;
-        min-width: 880px;
-    }
-    .km-check-table th {
-        background: #184d86;
-        color: #fff;
-        font-size: 0.74rem;
-        letter-spacing: 0;
-        padding: 0.85rem 1rem;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-    .km-check-table td {
-        color: #334155;
-        font-size: 0.88rem;
-        padding: 0.85rem 1rem;
-        vertical-align: middle;
-    }
-    .km-check-km {
-        color: #0f172a;
-        font-weight: 900;
-        white-space: nowrap;
-    }
-    .km-status {
-        border-radius: 999px;
-        display: inline-flex;
-        font-size: 0.74rem;
-        font-weight: 900;
-        padding: 0.35rem 0.65rem;
-        white-space: nowrap;
-    }
-    .km-status-primeiro { background: #f1f5f9; color: #475569; }
-    .km-status-ok { background: #dcfce7; color: #166534; }
-    .km-status-perdido { background: #fef3c7; color: #92400e; }
-    .km-status-sobreposto { background: #fee2e2; color: #991b1b; }
-    .km-status-anterior_aberto { background: #ffedd5; color: #9a3412; }
-    .km-check-row-perdido td { background: #fffbeb; }
-    .km-check-row-sobreposto td { background: #fff1f2; }
-    .km-check-action-chip {
-        align-items: center;
-        background: #fff;
-        color: #174f84;
-        gap: 0.35rem;
-    }
-    .km-check-action-chip i { transition: transform 0.18s ease; }
-    .km-check-header:not(.collapsed) .km-check-action-chip i { transform: rotate(180deg); }
-    .km-check-header.collapsed .km-action-close { display: none; }
-    .km-check-header:not(.collapsed) .km-action-open { display: none; }
-    .vehicle-day-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 1rem;
-        margin-bottom: 1rem;
-        overflow: hidden;
-    }
-    .vehicle-day-header {
-        align-items: center;
-        background: #f8fafc;
-        border: 0;
-        border-bottom: 1px solid #e2e8f0;
-        color: inherit;
-        cursor: pointer;
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        padding: 1rem;
-        text-align: left;
-        width: 100%;
-    }
-    .vehicle-day-header:hover,
-    .vehicle-day-header:focus {
-        background: #f1f5f9;
-        outline: none;
-    }
-    .vehicle-history-summary {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        justify-content: flex-end;
-    }
-    .vehicle-day-action-chip {
-        align-items: center;
-        background: #fff;
-        color: #174f84;
-        gap: 0.35rem;
-    }
-    .vehicle-day-action-chip i { transition: transform 0.18s ease; }
-    .vehicle-day-header:not(.collapsed) .vehicle-day-action-chip i { transform: rotate(180deg); }
-    .vehicle-day-header.collapsed .day-action-close { display: none; }
-    .vehicle-day-header:not(.collapsed) .day-action-open { display: none; }
-    .vehicle-day-body { padding: 1rem; }
-    .vehicle-turno-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 0.85rem;
-        overflow: hidden;
-    }
-    .vehicle-turno-card + .vehicle-turno-card { margin-top: 0.9rem; }
-    .vehicle-turno-toggle {
-        align-items: center;
-        background: #fff;
-        border: 0;
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        padding: 0.9rem 1rem;
-        text-align: left;
-        width: 100%;
-    }
-    .vehicle-turno-body {
-        border-top: 1px solid #e2e8f0;
-        padding: 1rem;
-    }
-    .vehicle-turno-actions {
-        background: #fff;
-        border-top: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: flex-end;
-        padding: 0 1rem 0.85rem;
-    }
-    .vehicle-timeline { position: relative; }
-    .vehicle-timeline::before {
-        background: #dbeafe;
-        bottom: 0.75rem;
-        content: "";
-        left: 0.72rem;
-        position: absolute;
-        top: 0.75rem;
-        width: 2px;
-    }
-    .timeline-event {
-        display: grid;
-        gap: 0.85rem;
-        grid-template-columns: 1.45rem minmax(0, 1fr);
-        position: relative;
-    }
-    .timeline-event + .timeline-event { margin-top: 1rem; }
-    .timeline-marker {
-        align-items: center;
-        background: #0d6efd;
-        border: 3px solid #fff;
-        border-radius: 999px;
-        box-shadow: 0 0 0 1px #bfdbfe;
-        color: #fff;
-        display: flex;
-        height: 1.45rem;
-        justify-content: center;
-        margin-top: 0.25rem;
-        position: relative;
-        width: 1.45rem;
-        z-index: 1;
-    }
-    .timeline-marker i { font-size: 0.72rem; }
-    .timeline-marker-success { background: #198754; box-shadow: 0 0 0 1px #bbf7d0; }
-    .timeline-marker-dark { background: #334155; box-shadow: 0 0 0 1px #cbd5e1; }
-    .timeline-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.85rem;
-        padding: 1rem;
-    }
-    .timeline-event-header {
-        align-items: flex-start;
-        display: flex;
-        gap: 0.75rem;
-        justify-content: space-between;
-        margin-bottom: 0.8rem;
-    }
-    .timeline-kicker {
-        color: #64748b;
-        font-size: 0.72rem;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-    .timeline-title {
-        color: #0f172a;
-        font-weight: 800;
-        margin-top: 0.1rem;
-    }
-    .timeline-time {
-        color: #64748b;
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-align: right;
-        white-space: nowrap;
-    }
-    .timeline-metrics {
-        display: grid;
-        gap: 0.65rem;
-        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-    }
-    .timeline-metric {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.65rem;
-        padding: 0.65rem 0.75rem;
-    }
-    .timeline-label {
-        color: #64748b;
-        display: block;
-        font-size: 0.7rem;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-    .timeline-value {
-        color: #0f172a;
-        display: block;
-        font-weight: 800;
-        margin-top: 0.12rem;
-    }
-    .timeline-notes {
-        color: #475569;
-        font-size: 0.82rem;
-        margin-top: 0.85rem;
-    }
-    .timeline-media-grid {
-        display: grid;
-        gap: 0.85rem;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        margin-top: 0.85rem;
-    }
-    .timeline-media {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.75rem;
-        overflow: hidden;
-    }
-    .timeline-media-title {
-        align-items: center;
-        display: flex;
-        font-size: 0.78rem;
-        font-weight: 800;
-        justify-content: space-between;
-        padding: 0.65rem 0.75rem;
-    }
-    .timeline-media-title a { text-decoration: none; }
-    .timeline-media img {
-        background: #fff;
-        display: block;
-        height: 210px;
-        object-fit: cover;
-        width: 100%;
-    }
-    .timeline-signature img {
-        height: 130px;
-        object-fit: contain;
-    }
-    @media (max-width: 768px) {
-        .detail-header,
-        .km-check-header,
-        .vehicle-day-header,
-        .vehicle-turno-toggle,
-        .timeline-event-header {
-            display: block;
-        }
-        .detail-actions,
-        .vehicle-history-summary { justify-content: flex-start; margin-top: 0.75rem; }
-        .timeline-time { margin-top: 0.3rem; text-align: left; }
-        .timeline-media-grid { grid-template-columns: 1fr; }
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/veiculo_logs_detalhe.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -356,7 +13,7 @@
                 <i class="bi bi-truck-front-fill me-2 text-primary"></i>{{ veiculo.modelo }} - {{ veiculo.placa }}
             </h2>
             <div class="text-muted">
-                {{ veiculo.responsavel or 'Sem responsavel' }}{% if veiculo.equipe %} | {{ veiculo.equipe.nome_equipe }}{% endif %}
+                {{ veiculo.responsavel_exibicao or 'Sem responsavel' }}{% if veiculo.equipe %} | {{ veiculo.equipe.nome_equipe }}{% endif %}
             </div>
         </div>
         <div class="detail-actions">
@@ -376,12 +33,23 @@
             <strong>{{ (timeline.total_km or 0)|round|int }} km</strong>
         </div>
         <div class="summary-card">
-            <span>Abastecimento</span>
+            <span>Abastecimento total</span>
             <strong>R$ {{ '%.2f'|format(timeline.total_gasto or 0) }}</strong>
+            {% if timeline.total_gasto_gerador or timeline.total_gasto_veiculo %}
+                <div class="small text-muted mt-1">
+                    Veiculo R$ {{ '%.2f'|format(timeline.total_gasto_veiculo or 0) }}
+                    {% if timeline.total_gasto_gerador %} | Gerador R$ {{ '%.2f'|format(timeline.total_gasto_gerador or 0) }}{% endif %}
+                </div>
+            {% endif %}
         </div>
         <div class="summary-card">
             <span>Registros</span>
             <strong>{{ timeline.total_abastecimentos }}</strong>
+        </div>
+        <div class="summary-card">
+            <span>Limpezas realizadas</span>
+            <strong class="text-info">{{ timeline.total_limpezas_realizadas.quantidade or 0 }}</strong>
+            <div class="small text-muted mt-1">R$ {{ '%.2f'|format(timeline.total_limpezas_realizadas.valor_total or 0) }}</div>
         </div>
     </div>
 
@@ -471,7 +139,19 @@
                 <div class="vehicle-history-summary">
                     <span class="timeline-chip">{{ (dia.km_rodado or 0)|round|int }} km rodados</span>
                     <span class="timeline-chip">R$ {{ '%.2f'|format(dia.gasto or 0) }}</span>
+                    {% if dia.gasto_gerador %}
+                        <span class="timeline-chip">Veiculo R$ {{ '%.2f'|format(dia.gasto_veiculo or 0) }}</span>
+                        <span class="timeline-chip">Gerador R$ {{ '%.2f'|format(dia.gasto_gerador or 0) }}</span>
+                    {% endif %}
                     <span class="timeline-chip">{{ dia.abastecimentos }} abastecimento(s)</span>
+                    {% if can_view_retorno_automatico_audit and dia.retornos_automaticos_count %}
+                        <span class="timeline-chip">{{ dia.retornos_automaticos_count }} retorno(s) automatico(s)</span>
+                    {% endif %}
+                    {% if dia.limpezas_realizadas %}
+                        <span class="timeline-chip timeline-chip-cleaning">
+                            {{ dia.limpezas_realizadas }} limpeza(s) | R$ {{ '%.2f'|format(dia.valor_limpezas_realizadas or 0) }}
+                        </span>
+                    {% endif %}
                     <span class="timeline-chip vehicle-day-action-chip">
                         <i class="bi bi-chevron-down"></i>
                         <span class="day-action-open">Abrir dia</span>
@@ -495,12 +175,19 @@
                                     <span class="timeline-chip">{{ turno.status }}</span>
                                     <span class="timeline-chip">{{ (turno.km_rodado or 0)|round|int }} km</span>
                                     <span class="timeline-chip">R$ {{ '%.2f'|format(turno.gasto or 0) }}</span>
+                                    {% if turno.gasto_gerador %}
+                                        <span class="timeline-chip">Veiculo R$ {{ '%.2f'|format(turno.gasto_veiculo or 0) }}</span>
+                                        <span class="timeline-chip">Gerador R$ {{ '%.2f'|format(turno.gasto_gerador or 0) }}</span>
+                                    {% endif %}
+                                    {% if can_view_retorno_automatico_audit and turno.retornos_automaticos_count %}
+                                        <span class="timeline-chip">{{ turno.retornos_automaticos_count }} retorno(s) automatico(s)</span>
+                                    {% endif %}
                                 </div>
                             </button>
                             {% if can_edit_logs %}
                                 <div class="vehicle-turno-actions">
                                     <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button" data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ turno.id }}">
-                                        <i class="bi bi-pencil-square me-1"></i> Corrigir KM
+                                        <i class="bi bi-pencil-square me-1"></i> Corrigir log
                                     </button>
                                 </div>
                             {% endif %}
@@ -531,7 +218,7 @@
                                                                 <span>Painel inicial</span>
                                                                 <a href="{{ painel_inicial_url }}" target="_blank">Abrir</a>
                                                             </div>
-                                                            <img src="{{ painel_inicial_url }}" alt="Foto do painel inicial">
+                                                            <img data-lazy-src="{{ painel_inicial_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel inicial">
                                                         </div>
                                                     </div>
                                                 {% endif %}
@@ -545,7 +232,12 @@
                                                     <div class="timeline-event-header">
                                                         <div>
                                                             <div class="timeline-kicker">Abastecimento</div>
-                                                            <div class="timeline-title">Abastecimento</div>
+                                                            <div class="timeline-title">
+                                                                Abastecimento - {{ abastecimento.tipo or 'Tipo nao informado' }}
+                                                                <span class="badge {{ 'bg-warning text-dark' if abastecimento.tipo_key == 'gerador' else 'bg-success' }} ms-1">
+                                                                    {{ 'Gerador' if abastecimento.tipo_key == 'gerador' else 'Veiculo' }}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                         <div class="timeline-time">{{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}</div>
                                                     </div>
@@ -572,7 +264,7 @@
                                                                         <span>Painel no abastecimento</span>
                                                                         <a href="{{ painel_abastecimento_url }}" target="_blank">Abrir</a>
                                                                     </div>
-                                                                    <img src="{{ painel_abastecimento_url }}" alt="Foto do painel no abastecimento">
+                                                                    <img data-lazy-src="{{ painel_abastecimento_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel no abastecimento">
                                                                 </div>
                                                             {% endif %}
                                                             {% if abastecimento.foto_nf_path %}
@@ -582,7 +274,7 @@
                                                                         <span>Nota fiscal</span>
                                                                         <a href="{{ nota_url }}" target="_blank">Abrir</a>
                                                                     </div>
-                                                                    <img src="{{ nota_url }}" alt="Foto da nota fiscal">
+                                                                    <img data-lazy-src="{{ nota_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto da nota fiscal">
                                                                 </div>
                                                             {% endif %}
                                                         </div>
@@ -597,6 +289,97 @@
                                                 </div>
                                             </div>
                                         {% endfor %}
+
+                                        {% for limpeza in turno.eventos_limpeza %}
+                                            <div class="timeline-event">
+                                                <div class="timeline-marker timeline-marker-info"><i class="bi bi-droplet-half"></i></div>
+                                                <div class="timeline-card">
+                                                    <div class="timeline-event-header">
+                                                        <div>
+                                                            <div class="timeline-kicker">Limpeza</div>
+                                                            <div class="timeline-title">{{ 'Limpeza realizada' if limpeza.realizada else 'Limpeza nao realizada' }}</div>
+                                                        </div>
+                                                        <div class="timeline-time">Limpeza em {{ limpeza.data.strftime('%d/%m/%Y %H:%M') if limpeza.data else '-' }}</div>
+                                                    </div>
+                                                    <div class="timeline-metrics">
+                                                        <div class="timeline-metric">
+                                                            <span class="timeline-label">Registrado em</span>
+                                                            <span class="timeline-value">{{ limpeza.data_registro.strftime('%d/%m/%Y %H:%M') if limpeza.data_registro else '-' }}</span>
+                                                        </div>
+                                                        <div class="timeline-metric">
+                                                            <span class="timeline-label">Tipo</span>
+                                                            <span class="timeline-value">{{ limpeza.tipo_label }}</span>
+                                                        </div>
+                                                        <div class="timeline-metric">
+                                                            <span class="timeline-label">Valor</span>
+                                                            <span class="timeline-value">R$ {{ '%.2f'|format(limpeza.valor or 0) }}</span>
+                                                        </div>
+                                                        {% if limpeza.observacao %}
+                                                        <div class="timeline-metric">
+                                                            <span class="timeline-label">Obs.</span>
+                                                            <span class="timeline-value">{{ limpeza.observacao }}</span>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+
+                                        {% if can_view_retorno_automatico_audit and turno.retornos_automaticos %}
+                                            <div class="timeline-event">
+                                                <div class="timeline-marker timeline-marker-info"><i class="bi bi-arrow-repeat"></i></div>
+                                                <div class="timeline-card">
+                                                    <div class="timeline-event-header">
+                                                        <div>
+                                                            <div class="timeline-kicker">Auditoria</div>
+                                                            <div class="timeline-title">Retornos automaticos do dia da equipe</div>
+                                                        </div>
+                                                        <div class="timeline-time">{{ turno.retornos_automaticos|length }} endereco(s)</div>
+                                                    </div>
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-sm align-middle mb-0">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th>OS</th>
+                                                                    <th>Endereco</th>
+                                                                    <th>UVIS</th>
+                                                                    <th>Status</th>
+                                                                    <th class="text-end">Acao</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for retorno in turno.retornos_automaticos %}
+                                                                    <tr>
+                                                                        <td>
+                                                                            <strong>#{{ retorno.id }}</strong>
+                                                                            {% if retorno.identificador_os %}
+                                                                                <div class="small text-muted">{{ retorno.identificador_os }}</div>
+                                                                            {% endif %}
+                                                                            {% if retorno.origem_id %}
+                                                                                <div class="small text-primary">Origem #{{ retorno.origem_id }}</div>
+                                                                            {% endif %}
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="fw-semibold text-dark">{{ retorno.endereco }}</div>
+                                                                            {% if retorno.data %}
+                                                                                <div class="small text-muted">Referencia {{ retorno.data.strftime('%d/%m/%Y') }}</div>
+                                                                            {% endif %}
+                                                                        </td>
+                                                                        <td>{{ retorno.uvis }}</td>
+                                                                        <td><span class="badge bg-light text-dark border">{{ retorno.status or '-' }}</span></td>
+                                                                        <td class="text-end">
+                                                                            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.admin_os_formulario_view', os_id=retorno.id) }}" title="Abrir OS">
+                                                                                <i class="bi bi-box-arrow-up-right"></i>
+                                                                            </a>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
 
                                         <div class="timeline-event">
                                             <div class="timeline-marker timeline-marker-dark"><i class="bi bi-check2-circle"></i></div>
@@ -634,7 +417,7 @@
                                                                     <span>Painel final</span>
                                                                     <a href="{{ painel_final_url }}" target="_blank">Abrir</a>
                                                                 </div>
-                                                                <img src="{{ painel_final_url }}" alt="Foto do painel final">
+                                                                <img data-lazy-src="{{ painel_final_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel final">
                                                             </div>
                                                         {% endif %}
                                                         {% if turno.assinatura_piloto %}
@@ -642,7 +425,7 @@
                                                                 <div class="timeline-media-title">
                                                                     <span>Assinatura</span>
                                                                 </div>
-                                                                <img src="{{ turno.assinatura_piloto }}" alt="Assinatura do piloto">
+                                                                <img data-lazy-src="{{ turno.assinatura_piloto }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Assinatura do piloto">
                                                             </div>
                                                         {% endif %}
                                                     </div>
@@ -667,11 +450,11 @@
         {% for turno in timeline.logs %}
             <div class="modal fade" id="modalCorrigirKmLog{{ turno.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ turno.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content border-0 shadow rounded-4">
+                    <div class="modal-content border-0 shadow rounded-4 vehicle-action-modal">
                         <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=turno.id, return_to='veiculo', veiculo_id=veiculo.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
-                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ turno.id }}Label">Corrigir KM do turno #{{ turno.id }}</h5>
+                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ turno.id }}Label">Corrigir log do turno #{{ turno.id }}</h5>
                                     <div class="small text-muted">
                                         {{ veiculo.modelo }}{% if veiculo.placa %} - {{ veiculo.placa }}{% endif %}
                                     </div>
@@ -685,11 +468,11 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold text-muted">KM inicial</label>
-                                        <input type="number" step="1" min="0" name="km_inicial" class="form-control" value="{{ turno.km_inicial if turno.km_inicial is not none else '' }}" required>
+                                        <input type="number" step="any" inputmode="decimal" min="0" name="km_inicial" class="form-control" value="{{ turno.km_inicial if turno.km_inicial is not none else '' }}" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold text-muted">KM final</label>
-                                        <input type="number" step="1" min="0" name="km_final" class="form-control" value="{{ turno.km_final if turno.status != 'Aberto' and turno.km_final is not none else '' }}" placeholder="Deixe vazio se o turno estiver aberto">
+                                        <input type="number" step="any" inputmode="decimal" min="0" name="km_final" class="form-control" value="{{ turno.km_final if turno.status != 'Aberto' and turno.km_final is not none else '' }}" placeholder="Deixe vazio se o turno estiver aberto">
                                     </div>
                                     {% if turno.eventos_abastecimento %}
                                         <div class="col-12">
@@ -703,7 +486,8 @@
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    step="1"
+                                                    step="any"
+                                                    inputmode="decimal"
                                                     min="0"
                                                     name="abastecimento_{{ abastecimento.id }}_km"
                                                     class="form-control"
@@ -714,6 +498,32 @@
                                                     {{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}
                                                     {% if abastecimento.tipo %} | {{ abastecimento.tipo }}{% endif %}
                                                 </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    Valor abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    name="abastecimento_{{ abastecimento.id }}_valor"
+                                                    class="form-control"
+                                                    value="{{ '%.2f'|format(abastecimento.valor or 0) }}"
+                                                    required
+                                                >
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    Litros abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    name="abastecimento_{{ abastecimento.id }}_litros"
+                                                    class="form-control"
+                                                    value="{{ '%.2f'|format(abastecimento.litros or 0) }}"
+                                                    required
+                                                >
                                             </div>
                                         {% endfor %}
                                     {% endif %}
@@ -732,4 +542,24 @@
         {% endfor %}
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const loadLazyVehicleMedia = (root) => {
+        root.querySelectorAll('img[data-lazy-src]').forEach((img) => {
+            if (!img.getClientRects().length) return;
+            const source = img.dataset.lazySrc;
+            if (!source) return;
+            img.src = source;
+            img.removeAttribute('data-lazy-src');
+        });
+    };
+
+    document.addEventListener('shown.bs.collapse', (event) => {
+        loadLazyVehicleMedia(event.target);
+    });
+})();
+</script>
 {% endblock %}

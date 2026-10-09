@@ -78,6 +78,12 @@
               {% if can_assign_dev %}
               <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
               {% endif %}
+              {% if can_assign_director %}
+              <option value="diretor" {% if tipo == 'diretor' %}selected{% endif %}>Diretor</option>
+              {% endif %}
+              {% if can_assign_ti_manager %}
+              <option value="gestor_ti" {% if tipo == 'gestor_ti' %}selected{% endif %}>Gestor de TI</option>
+              {% endif %}
               <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
               <option value="covisa" {% if tipo == 'covisa' %}selected{% endif %}>COVISA</option>
               <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
@@ -85,6 +91,7 @@
               <option value="financeiro_admin" {% if tipo == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
               <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
               <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
+              <option value="sup_veiculos" {% if tipo == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
             </select>
 
             {% if errors.get('tipo_usuario') %}
@@ -125,6 +132,49 @@
               <div class="invalid-feedback">{{ errors.get('login') }}</div>
             {% endif %}
           </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-check border rounded-3 p-3 h-100 d-flex align-items-start gap-2">
+              <input
+                class="form-check-input mt-1"
+                type="checkbox"
+                name="trabalha_oceano_azul"
+                value="1"
+                {% if form.get('trabalha_oceano_azul') == '1' %}checked{% endif %}
+                {% if not can_manage_work_flags %}disabled{% endif %}
+              />
+              <span>
+                <strong class="d-block">Trabalha na Oceano Azul</strong>
+                <small class="text-muted">Marca este usuario como membro da Oceano Azul para regras futuras do sistema.</small>
+              </span>
+            </label>
+          </div>
+          <div class="col-md-6">
+            <label class="form-check border rounded-3 p-3 h-100 d-flex align-items-start gap-2">
+              <input
+                class="form-check-input mt-1"
+                type="checkbox"
+                name="trabalha_agro"
+                value="1"
+                {% if form.get('trabalha_agro') == '1' %}checked{% endif %}
+                {% if not can_manage_work_flags %}disabled{% endif %}
+              />
+              <span>
+                <strong class="d-block">Trabalha no Agro</strong>
+                <small class="text-muted">Permite acessar o modulo Agro sem remover outros vinculos do usuario.</small>
+              </span>
+            </label>
+          </div>
+          {% if not can_manage_work_flags %}
+            <div class="col-12">
+              <div class="form-text small text-warning">
+                <i class="bi bi-lock-fill me-1"></i>
+                Apenas diretor e desenvolvedor podem alterar os vinculos de trabalho.
+              </div>
+            </div>
+          {% endif %}
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
@@ -183,7 +233,6 @@
               type="password"
               class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
               name="senha"
-              value="{{ form.get('senha', '') }}"
               placeholder="Crie uma senha"
               required
             />
@@ -200,7 +249,6 @@
               type="password"
               class="form-control {% if errors.get('senha2') %}is-invalid{% endif %}"
               name="senha2"
-              value="{{ form.get('senha2', '') }}"
               placeholder="Repita a senha"
               required
             />

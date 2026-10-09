@@ -1,24 +1,50 @@
-import unittest
 import os
+import unittest
+from datetime import datetime, time, timedelta
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from unittest.mock import patch
 
-from flask import Flask
+from flask import Flask, request
 from werkzeug.datastructures import FileStorage
+from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
-from app.models import Abastecimento, Equipe, LogVeiculo, Prefeitura, Veiculos
+from app.models import (
+    Abastecimento,
+    AuditoriaUsuario,
+    Equipe,
+    EquipePiloto,
+    LimpezaVeiculo,
+    LimpezaVeiculoAlertaCiencia,
+    LogVeiculo,
+    OrdemServico,
+    Pilotos,
+    Prefeitura,
+    Solicitacao,
+    Usuario,
+    Veiculos,
+)
 from app.modules.veiculos import service as veiculos_service
 from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
     build_piloto_veiculos_context,
+    build_veiculos_deleted_logs_context,
+    list_veiculos_limpezas,
     delete_veiculo_log,
     encerrar_turno_piloto,
     iniciar_turno_piloto,
+    list_equipes_choices,
     registrar_abastecimento_turno_piloto,
+    build_limpeza_alertas_admin_context,
+    build_limpeza_alertas_operacionais_context,
+    confirmar_alerta_limpeza_operacional,
+    delete_veiculo,
+    update_veiculos_equipes,
     update_veiculo,
     update_veiculo_log_km,
+    validate_veiculo_form,
 )
 
 
@@ -101,6 +127,150 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
 
         self.assertEqual(veiculo.prefeitura_id, 1)
 
+    def test_team_choices_include_linked_pilot_name(self):
+        piloto = Pilotos(nome_piloto="Leonardo Moreira Rodrigues", prefeitura_id=1)
+        auxiliar = Pilotos(nome_piloto="Auxiliar Teste", prefeitura_id=1)
+        db.session.add_all([piloto, auxiliar])
+        db.session.flush()
+        db.session.add_all(
+            [
+                EquipePiloto(equipe_id=self.equipe.id, piloto_id=piloto.id, papel="piloto"),
+                EquipePiloto(equipe_id=self.equipe.id, piloto_id=auxiliar.id, papel="auxiliar"),
+            ]
+        )
+        db.session.commit()
+        user = SimpleNamespace(prefeitura_id=1)
+
+        choices = list_equipes_choices(user=user)
+
+        self.assertEqual(choices[0]["label"], "PLOA 23")
+        self.assertEqual(choices[0]["piloto_label"], "Leonardo Moreira Rodrigues")
+
+    def test_vehicle_form_breaks_legacy_responsavel_link(self):
+        veiculo = self._novo_veiculo(responsavel="Piloto Antigo")
+        form, cleaned, errors = validate_veiculo_form(
+            {
+                "modelo": "FIORINO",
+                "ano_fabricacao": "2024",
+                "frota": "PROPRIA",
+                "operacao": "PMSP",
+                "placa": "ABC1D23",
+                "responsavel": "Piloto Antigo",
+                "equipe_id": str(self.equipe.id),
+                "km_atual": "1000",
+                "status": "Ativo",
+            },
+            equipes=[{"value": str(self.equipe.id), "label": self.equipe.nome_equipe}],
+            existing_veiculo=veiculo,
+        )
+
+        self.assertFalse(errors)
+        self.assertIsNone(cleaned["responsavel"])
+
+        update_veiculo(veiculo, cleaned)
+
+        self.assertIsNone(veiculo.responsavel)
+
+    def test_bulk_team_update_clears_legacy_responsavel_link(self):
+        veiculo = self._novo_veiculo(responsavel="Piloto Antigo", prefeitura_id=1)
+        nova_equipe = Equipe(nome_equipe="PLOA 24", regiao="LESTE", ativa=True, prefeitura_id=1)
+        db.session.add(nova_equipe)
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        message = update_veiculos_equipes(
+            user,
+            MultiDict(
+                [
+                    ("veiculo_ids", str(veiculo.id)),
+                    (f"equipe_id_{veiculo.id}", str(nova_equipe.id)),
+                ]
+            ),
+        )
+
+        db.session.refresh(veiculo)
+        self.assertEqual(message, "Equipe responsavel atualizada em 1 veiculo.")
+        self.assertEqual(veiculo.equipe_id, nova_equipe.id)
+        self.assertIsNone(veiculo.responsavel)
+
+    def test_vehicle_delete_deactivates_and_closes_open_turno_preserving_logs(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=42845,
+            km_final=None,
+            data_registro=datetime(2026, 8, 21, 7, 28),
+        )
+        db.session.add(log)
+        db.session.flush()
+        db.session.add(
+            Abastecimento(
+                log_veiculo_id=log.id,
+                data_hora=datetime(2026, 8, 21, 7, 28),
+                km_registro=42845,
+                tipo_abastecimento="Veiculo",
+                litros=10,
+                valor_total=126,
+                foto_nf_path="notas/nf.jpg",
+            )
+        )
+        db.session.commit()
+
+        message = delete_veiculo(veiculo)
+
+        db.session.refresh(veiculo)
+        db.session.refresh(log)
+        self.assertEqual(message, "Veiculo retirado de operacao. Os logs historicos foram mantidos.")
+        self.assertEqual(veiculo.status, "Inativo")
+        self.assertIsNone(veiculo.equipe_id)
+        self.assertEqual(veiculo.km_atual, 42845)
+        self.assertEqual(log.km_final, 42845)
+        self.assertEqual(LogVeiculo.query.filter_by(veiculo_id=veiculo.id).count(), 1)
+
+    def test_default_vehicle_list_hides_inactive_vehicles(self):
+        ativo = self._novo_veiculo(placa="AAA1A11", renomacao="AAA1A11", prefeitura_id=1)
+        inativo = self._novo_veiculo(placa="BBB2B22", renomacao="BBB2B22", status="Inativo", prefeitura_id=1)
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        context = veiculos_service.list_veiculos("admin", MultiDict(), user=user)
+
+        self.assertEqual([item.id for item in context["veiculos"]], [ativo.id])
+
+        context = veiculos_service.list_veiculos("admin", MultiDict([("status", "Inativo")]), user=user)
+
+        self.assertEqual([item.id for item in context["veiculos"]], [inativo.id])
+
+    def test_pilot_vehicle_context_ignores_legacy_responsavel_without_team_link(self):
+        self._novo_veiculo(equipe_id=None, responsavel="Leonardo Moreira Rodrigues")
+        user = SimpleNamespace(
+            tipo_usuario="piloto",
+            nome_uvis="Leonardo Moreira Rodrigues",
+            piloto_id=10,
+            prefeitura_id=1,
+        )
+
+        context = build_piloto_veiculos_context(user)
+
+        self.assertFalse(context["piloto_vinculado"])
+        self.assertEqual(context["veiculos"], [])
+
+    def test_pilot_vehicle_context_uses_team_link(self):
+        veiculo = self._novo_veiculo(responsavel="Outro Piloto", prefeitura_id=1)
+        db.session.add(EquipePiloto(equipe_id=self.equipe.id, piloto_id=10, papel="piloto"))
+        db.session.commit()
+        user = SimpleNamespace(
+            tipo_usuario="piloto",
+            nome_uvis="Leonardo Moreira Rodrigues",
+            piloto_id=10,
+            prefeitura_id=1,
+        )
+
+        context = build_piloto_veiculos_context(user)
+
+        self.assertTrue(context["piloto_vinculado"])
+        self.assertEqual([item.id for item in context["veiculos"]], [veiculo.id])
+
     def test_pilot_vehicle_context_uses_last_closed_km_as_initial_reference(self):
         veiculo = self._novo_veiculo(km_atual=1200)
         log = LogVeiculo(
@@ -124,6 +294,184 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(referencia["km"], 1234)
         self.assertEqual(referencia["origem"], "ultimo_fechamento")
         self.assertEqual(referencia["log_id"], log.id)
+
+    def test_cleaning_alert_reaches_operational_inbox_after_14_days(self):
+        veiculo = self._novo_veiculo(criado_em=datetime.now() - timedelta(days=30))
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.flush()
+        db.session.add(
+            LimpezaVeiculo(
+                log_veiculo_id=log.id,
+                veiculo_id=veiculo.id,
+                equipe_id=self.equipe.id,
+                data_hora=datetime.now() - timedelta(days=15),
+                limpeza_realizada=True,
+                tipo_limpeza="completa",
+                valor_total=80,
+            )
+        )
+        usuario = Usuario(
+            nome_uvis="Equipe PLOA 23",
+            login="equipe-alerta",
+            senha_hash="x",
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add(usuario)
+        db.session.commit()
+
+        context = build_limpeza_alertas_operacionais_context(usuario)
+
+        self.assertEqual(len(context["alertas"]), 1)
+        self.assertEqual(context["alertas"][0]["veiculo"].id, veiculo.id)
+        self.assertEqual(context["total_pendentes"], 1)
+
+    def test_operational_user_can_confirm_cleaning_alert(self):
+        veiculo = self._novo_veiculo(criado_em=datetime.now() - timedelta(days=16))
+        usuario = Usuario(
+            nome_uvis="Equipe PLOA 23",
+            login="equipe-confirma",
+            senha_hash="x",
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add(usuario)
+        db.session.commit()
+
+        message = confirmar_alerta_limpeza_operacional(usuario, veiculo.id)
+
+        ciencia = LimpezaVeiculoAlertaCiencia.query.one()
+        self.assertEqual(message, "Ciencia do alerta de limpeza registrada.")
+        self.assertEqual(ciencia.usuario_id, usuario.id)
+        self.assertEqual(ciencia.veiculo_id, veiculo.id)
+        self.assertEqual(ciencia.prazo_dias, 14)
+        self.assertIsNotNone(ciencia.reconhecido_em)
+
+    def test_admin_cleaning_alert_after_21_days_shows_operational_ack(self):
+        veiculo = self._novo_veiculo(criado_em=datetime.now() - timedelta(days=30))
+        usuario_equipe = Usuario(
+            nome_uvis="Equipe PLOA 23",
+            login="equipe-admin-ciencia",
+            senha_hash="x",
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        usuario_admin = Usuario(
+            nome_uvis="Admin OA",
+            login="admin-oa",
+            senha_hash="x",
+            tipo_usuario="admin",
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add_all([usuario_equipe, usuario_admin])
+        db.session.commit()
+        confirmar_alerta_limpeza_operacional(usuario_equipe, veiculo.id)
+
+        context = build_limpeza_alertas_admin_context(usuario_admin)
+
+        self.assertEqual(context["total_alertas"], 1)
+        self.assertEqual(context["alertas"][0]["veiculo"].id, veiculo.id)
+        self.assertEqual(context["total_atores"], 1)
+        self.assertEqual(context["total_cientes"], 1)
+        self.assertEqual(context["alertas"][0]["atores"][0]["usuario"].id, usuario_equipe.id)
+        self.assertIsNotNone(context["alertas"][0]["atores"][0]["ciencia"])
+
+    def test_admin_cleaning_alert_excludes_agro_vehicles(self):
+        self._novo_veiculo(
+            placa="AGR1A21",
+            renomacao="AGR1A21",
+            operacao="AGRO",
+            criado_em=datetime.now() - timedelta(days=45),
+            prefeitura_id=1,
+        )
+        usuario_admin = Usuario(
+            nome_uvis="Admin OA",
+            login="admin-oa-agro-filter",
+            senha_hash="x",
+            tipo_usuario="admin",
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add(usuario_admin)
+        db.session.commit()
+
+        context = build_limpeza_alertas_admin_context(usuario_admin)
+
+        self.assertEqual(context["total_alertas"], 0)
+
+    def test_vehicle_cleaning_logs_list_filters_and_summarizes_cleanings(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        agro = self._novo_veiculo(
+            placa="AGR1B22",
+            renomacao="AGR1B22",
+            operacao="AGRO",
+            prefeitura_id=1,
+        )
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        agro_log = LogVeiculo(
+            veiculo_id=agro.id,
+            equipe_id=self.equipe.id,
+            km_inicial=2000,
+            km_final=2010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        db.session.add_all([log, agro_log])
+        db.session.flush()
+        db.session.add_all(
+            [
+                LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=veiculo.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 2, 9, 0),
+                    limpeza_realizada=True,
+                    tipo_limpeza="completa",
+                    valor_total=80,
+                ),
+                LimpezaVeiculo(
+                    log_veiculo_id=agro_log.id,
+                    veiculo_id=agro.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 3, 9, 0),
+                    limpeza_realizada=False,
+                    tipo_limpeza="ducha",
+                    valor_total=10,
+                ),
+            ]
+        )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        with self.app.test_request_context("/veiculos/limpezas?operacao=PMSP&tipo_limpeza=completa&limpeza_realizada=1"):
+            context = list_veiculos_limpezas("admin", request.args, user=user)
+
+        self.assertEqual(context["resumo"]["total"], 1)
+        self.assertEqual(context["resumo"]["realizadas"], 1)
+        self.assertEqual(context["resumo"]["nao_realizadas"], 0)
+        self.assertEqual(context["resumo"]["valor_total"], 80)
+        self.assertEqual([item.veiculo_id for item in context["limpezas"]], [veiculo.id])
 
     def test_start_shift_rejects_initial_km_different_from_last_closed_shift(self):
         veiculo = self._novo_veiculo(km_atual=1300)
@@ -209,15 +557,18 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(log.km_final, 32457)
         self.assertEqual(veiculo.km_atual, 32457)
 
-    def test_vehicle_km_parser_accepts_thousand_separator_but_rejects_decimal_km(self):
+    def test_vehicle_km_parser_accepts_thousand_separator_and_decimal_km(self):
         self.assertEqual(veiculos_service._parse_km_form("32,000"), 32000)
         self.assertEqual(veiculos_service._parse_km_form("32.000"), 32000)
         self.assertEqual(veiculos_service._parse_km_form("32000,0"), 32000)
+        self.assertEqual(veiculos_service._parse_km_form("32000,5"), 32000.5)
+        self.assertEqual(veiculos_service._parse_km_form("32.000,5"), 32000.5)
+        self.assertEqual(veiculos_service._parse_km_form("32,000.5"), 32000.5)
 
         with self.assertRaises(ValueError):
-            veiculos_service._parse_km_form("32000,5")
+            veiculos_service._parse_km_form("32a000")
 
-    def test_update_vehicle_log_km_rejects_decimal_km(self):
+    def test_update_vehicle_log_km_accepts_decimal_km(self):
         veiculo = self._novo_veiculo(km_atual=32337, prefeitura_id=1)
         log = LogVeiculo(
             veiculo_id=veiculo.id,
@@ -230,18 +581,159 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.commit()
         user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
 
-        with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "KM final.*inteiro"):
-            update_veiculo_log_km(
-                user,
-                log.id,
-                {"km_inicial": "32337", "km_final": "32337,6"},
+        message = update_veiculo_log_km(
+            user,
+            log.id,
+            {"km_inicial": "32337", "km_final": "32337,6"},
+        )
+
+        db.session.refresh(log)
+        db.session.refresh(veiculo)
+        self.assertEqual(message, f"Log #{log.id} corrigido com sucesso.")
+        self.assertEqual(log.km_final, 32337.6)
+        self.assertEqual(veiculo.km_atual, 32337.6)
+
+    def test_update_vehicle_log_km_can_correct_fuel_amount_with_decimal_comma(self):
+        veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1030,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.flush()
+        abastecimento = Abastecimento(
+            log_veiculo_id=log.id,
+            data_hora=datetime(2026, 7, 2, 9, 0),
+            km_registro=1020,
+            tipo_abastecimento="Veiculo",
+            litros=10,
+            valor_total=14024,
+            foto_nf_path="uploads/veiculos/notas/teste.png",
+        )
+        db.session.add(abastecimento)
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        message = update_veiculo_log_km(
+            user,
+            log.id,
+            {
+                "km_inicial": "1000",
+                "km_final": "1030",
+                f"abastecimento_{abastecimento.id}_km": "1020",
+                f"abastecimento_{abastecimento.id}_valor": "140,24",
+            },
+        )
+
+        db.session.refresh(abastecimento)
+        self.assertEqual(message, f"Log #{log.id} corrigido com sucesso.")
+        self.assertEqual(abastecimento.valor_total, 140.24)
+
+    def test_admin_can_delete_vehicle_log_and_recalculate_current_km(self):
+        veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
+        older_log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        newer_log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1010,
+            km_final=1030,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 2, 8, 0),
+        )
+        db.session.add_all([older_log, newer_log])
+        db.session.flush()
+        db.session.add(
+            Abastecimento(
+                log_veiculo_id=newer_log.id,
+                data_hora=datetime(2026, 7, 2, 9, 0),
+                km_registro=1020,
+                tipo_abastecimento="Veiculo",
+                litros=10,
+                valor_total=100,
+                foto_nf_path="uploads/veiculos/notas/teste.png",
             )
+        )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        message = delete_veiculo_log(user, newer_log.id)
+
+        db.session.refresh(veiculo)
+        self.assertEqual(message, f"Log #{newer_log.id} removido com sucesso.")
+        self.assertIsNone(db.session.get(LogVeiculo, newer_log.id))
+        self.assertEqual(Abastecimento.query.count(), 0)
+        self.assertEqual(veiculo.km_atual, 1010)
+        audit_log = AuditoriaUsuario.query.filter_by(endpoint="main.deletar_log_veiculo.snapshot").one()
+        self.assertIn(f'"log_id": {newer_log.id}', audit_log.query_string)
+        self.assertIn('"placa": "ABC1D23"', audit_log.query_string)
+        self.assertIn('"total_valor_abastecido": 100', audit_log.query_string)
+
+    def test_non_admin_cannot_delete_vehicle_log(self):
+        veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1030,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.commit()
+        for role in ("dev", "diretor", "sup_veiculos", "operario", "visualizar"):
+            with self.subTest(role=role):
+                user = SimpleNamespace(tipo_usuario=role, prefeitura_id=1)
+                with self.assertRaises(PermissionError):
+                    delete_veiculo_log(user, log.id)
 
         db.session.rollback()
-        db.session.refresh(log)
-        self.assertEqual(log.km_final, 32340)
+        self.assertIsNotNone(db.session.get(LogVeiculo, log.id))
+        self.assertEqual(AuditoriaUsuario.query.count(), 0)
 
-    def test_closing_shift_rejects_more_than_500_km_in_turn(self):
+    def test_dev_can_view_deleted_vehicle_log_history_from_existing_audit_table(self):
+        db.session.add(
+            AuditoriaUsuario(
+                usuario_nome="Admin",
+                usuario_login="admin",
+                tipo_usuario="admin",
+                metodo="POST",
+                tipo_evento="EXCLUSAO",
+                endpoint="main.deletar_log_veiculo.snapshot",
+                path="/veiculos/logs/10/deletar",
+                query_string=(
+                    '{"log_id": 10, "veiculo": {"placa": "ABC1D23", "modelo": "FIORINO"}, '
+                    '"operador": {"equipe_nome": "PLOA 01"}, '
+                    '"turno": {"km_inicial": 1000, "km_final": 1010, "km_rodado": 10}, '
+                    '"totais": {"qtd_abastecimentos": 1, "total_valor_abastecido": 100}, '
+                    '"abastecimentos": []}'
+                ),
+                status_code=200,
+            )
+        )
+        db.session.commit()
+
+        with self.app.test_request_context("/admin/veiculos/logs-excluidos?q=ABC1D23"):
+            context = build_veiculos_deleted_logs_context("dev", request.args)
+
+        self.assertEqual(context["paginacao"].total, 1)
+        self.assertEqual(context["logs_excluidos"][0]["snapshot"]["log_id"], 10)
+        self.assertEqual(context["logs_excluidos"][0]["veiculo"]["placa"], "ABC1D23")
+
+    def test_non_dev_cannot_view_deleted_vehicle_log_history(self):
+        with self.app.test_request_context("/admin/veiculos/logs-excluidos"):
+            with self.assertRaises(PermissionError):
+                build_veiculos_deleted_logs_context("admin", request.args)
+
+    def test_closing_shift_accepts_more_than_500_km_in_turn(self):
         veiculo = self._novo_veiculo(km_atual=1000)
         user = SimpleNamespace(
             tipo_usuario="equipe_oceano",
@@ -259,16 +751,21 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.commit()
 
         with TemporaryDirectory() as tmp_dir:
-            with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "500 km por turno"):
-                encerrar_turno_piloto(
-                    user,
-                    veiculo.id,
-                    {"km_final": "1601", "qtd_fazendas_enderecos": "1", "observacao": ""},
-                    {
-                        "foto_painel_final": FileStorage(stream=BytesIO(b"fim"), filename="fim.png", content_type="image/png"),
-                    },
-                    tmp_dir,
-                )
+            message = encerrar_turno_piloto(
+                user,
+                veiculo.id,
+                {"km_final": "1601", "qtd_fazendas_enderecos": "1", "observacao": ""},
+                {
+                    "foto_painel_final": FileStorage(stream=BytesIO(b"fim"), filename="fim.png", content_type="image/png"),
+                },
+                tmp_dir,
+            )
+
+        db.session.refresh(log)
+        db.session.refresh(veiculo)
+        self.assertEqual(message, "Turno encerrado com sucesso!")
+        self.assertEqual(log.km_final, 1601)
+        self.assertEqual(veiculo.km_atual, 1601)
 
     def test_vehicle_local_media_path_resolves_to_skybox_path(self):
         self.assertEqual(
@@ -279,7 +776,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             "registros abastecimento/ABC1D23/2026-07-08/foto do painel/painel_inicial_ABC1D23_2026-07-08_09-23-31-123.jpg",
         )
 
-    def test_vehicle_photo_upload_is_copied_to_skybox_when_enabled(self):
+    def test_vehicle_photo_upload_uses_skybox_only_when_enabled(self):
         self.app.config.update(
             SKYBOX_WEBDAV_URL="https://skybox.example/remote.php/dav/files/user",
             SKYBOX_USERNAME="user",
@@ -303,7 +800,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                     content_type="image/jpeg",
                 )
 
-                rel_path = veiculos_service._salvar_upload_veiculo(
+                media_path = veiculos_service._salvar_upload_veiculo(
                     storage,
                     tmp_dir,
                     "paineis",
@@ -313,10 +810,10 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                 )
 
                 self.assertRegex(
-                    rel_path,
-                    r"^uploads/veiculos/paineis/painel_inicial_ABC1D23_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.jpg$",
+                    media_path,
+                    r"^skybox://registros abastecimento/ABC1D23/\d{4}-\d{2}-\d{2}/foto do painel/painel_inicial_ABC1D23_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.jpg$",
                 )
-                self.assertTrue(os.path.isfile(os.path.join(tmp_dir, "static", rel_path.replace("/", os.sep))))
+                self.assertFalse(os.path.exists(os.path.join(tmp_dir, "static", "uploads", "veiculos", "paineis")))
         finally:
             veiculos_service.upload_file_to_skybox = original_upload
 
@@ -327,51 +824,207 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         )
         self.assertEqual(captured[0][1], b"foto-painel")
 
-    def test_dev_can_delete_vehicle_log_with_fuel_records(self):
-        veiculo = self._novo_veiculo()
+    def test_vehicle_logs_list_keeps_cards_aggregated_while_table_is_paginated(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        for index in range(25):
+            log = LogVeiculo(
+                veiculo_id=veiculo.id,
+                equipe_id=self.equipe.id,
+                km_inicial=1000 + index,
+                km_final=1001 + index,
+                check_diario=True,
+                data_registro=datetime(2026, 7, 1, 8, 0) + timedelta(days=index),
+            )
+            db.session.add(log)
+            db.session.flush()
+            db.session.add(
+                Abastecimento(
+                    log_veiculo_id=log.id,
+                    data_hora=log.data_registro,
+                    km_registro=1001 + index,
+                    tipo_abastecimento="Gerador" if index == 0 else "Veiculo",
+                    litros=1,
+                    valor_total=10,
+                    foto_nf_path="uploads/veiculos/notas/teste.png",
+                )
+            )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        with self.app.test_request_context("/veiculos/logs?page=1"):
+            context = veiculos_service.list_veiculos_logs("admin", request.args, user=user)
+
+        self.assertEqual(context["total_logs"], 25)
+        self.assertEqual(context["total_abastecido"], 250)
+        self.assertEqual(len(context["logs"]), 20)
+        self.assertEqual(context["veiculos_timeline"][0]["total_logs"], 25)
+        self.assertEqual(context["veiculos_timeline"][0]["total_km"], 25)
+        self.assertEqual(context["veiculos_timeline"][0]["total_gasto"], 250)
+        self.assertEqual(context["veiculos_timeline"][0]["total_gasto_veiculo"], 240)
+        self.assertEqual(context["veiculos_timeline"][0]["total_gasto_gerador"], 10)
+        self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos"], 25)
+        self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_veiculo"], 24)
+        self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_gerador"], 1)
+        self.assertEqual(len(context["logistica_dias"]), 25)
+        self.assertEqual(sum(dia["total_turnos"] for dia in context["logistica_dias"]), 25)
+        self.assertEqual(sum(dia["total_gasto"] for dia in context["logistica_dias"]), 250)
+        self.assertEqual(sum(dia["total_km"] for dia in context["logistica_dias"]), 25)
+
+        with self.app.test_request_context("/veiculos/logs?data_inicio=2026-07-02&data_fim=2026-07-03"):
+            filtered = veiculos_service.list_veiculos_logs("admin", request.args, user=user)
+
+        self.assertEqual(filtered["total_logs"], 2)
+        self.assertEqual([dia["date"] for dia in filtered["logistica_dias"]], ["2026-07-03", "2026-07-02"])
+        self.assertEqual(sum(dia["total_gasto"] for dia in filtered["logistica_dias"]), 20)
+        self.assertEqual(filtered["logistica_dias"][0]["vehicles"][0]["operadores"], [self.equipe.nome_equipe])
+
+    def test_logistics_summary_respects_municipality_and_cleaning_filters(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        db.session.add(Prefeitura(id=2, nome="Outra Prefeitura", slug="outra-prefeitura"))
+        outro = self._novo_veiculo(prefeitura_id=2, placa="XYZ9A12")
+        clean_log = None
+        for current, day in ((veiculo, 1), (veiculo, 2), (outro, 1)):
+            log = LogVeiculo(
+                veiculo_id=current.id,
+                equipe_id=self.equipe.id,
+                km_inicial=1000,
+                km_final=1010,
+                data_registro=datetime(2026, 7, day, 8, 0),
+            )
+            db.session.add(log)
+            db.session.flush()
+            if day == 1:
+                db.session.add(LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=current.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, day, 9, 0),
+                    limpeza_realizada=True,
+                    tipo_limpeza="completa",
+                    valor_total=100,
+                ))
+                if current == veiculo:
+                    clean_log = log
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="sup_veiculos", prefeitura_id=1)
+
+        with self.app.test_request_context("/veiculos/logs?limpeza_realizada=1&tipo_limpeza=completa"):
+            context = veiculos_service.list_veiculos_logs("sup_veiculos", request.args, user=user)
+
+        self.assertEqual([log.id for log in context["logs"]], [clean_log.id])
+        self.assertEqual(len(context["logistica_dias"]), 1)
+        self.assertEqual(context["logistica_dias"][0]["total_turnos"], 1)
+        self.assertEqual(context["logistica_dias"][0]["vehicles"][0]["id"], veiculo.id)
+        self.assertTrue(context["can_edit_logs"])
+        self.assertFalse(context["can_delete_logs"])
+
+    def test_vehicle_log_detail_shows_automatic_returns_for_audit_profiles(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
         log = LogVeiculo(
             veiculo_id=veiculo.id,
             equipe_id=self.equipe.id,
             km_inicial=1000,
-            km_final=1020,
+            km_final=1010,
             check_diario=True,
+            data_registro=datetime(2026, 7, 31, 8, 0),
         )
-        db.session.add(log)
+        uvis = Usuario(
+            nome_uvis="UVIS Teste",
+            login="uvis-teste",
+            senha_hash="x",
+            tipo_usuario="uvis",
+            prefeitura_id=1,
+        )
+        db.session.add_all([log, uvis])
+        db.session.flush()
+        solicitacao = Solicitacao(
+            prefeitura_id=1,
+            data_agendamento=datetime(2026, 7, 31).date(),
+            hora_agendamento=time(9, 0),
+            foco="Aedes",
+            cep="00000-000",
+            logradouro="Rua Teste",
+            numero="123",
+            bairro="Centro",
+            cidade="Sao Paulo",
+            uf="SP",
+            usuario_id=uvis.id,
+            equipe_id=self.equipe.id,
+            status="CONCLUIDO",
+            gerada_automaticamente=True,
+        )
+        db.session.add(solicitacao)
         db.session.flush()
         db.session.add(
-            Abastecimento(
-                log_veiculo_id=log.id,
-                km_registro=1010,
-                tipo_abastecimento="Veiculo",
-                litros=20,
-                valor_total=100,
-                foto_nf_path="uploads/veiculos/notas/nf.png",
+            OrdemServico(
+                solicitacao_id=solicitacao.id,
+                equipe_id=self.equipe.id,
+                identificador_os="OS-RET-1",
+                data_aplicacao=datetime(2026, 7, 31).date(),
             )
         )
         db.session.commit()
+        user = SimpleNamespace(tipo_usuario="visualizar", prefeitura_id=1)
 
-        deleted = delete_veiculo_log(log.id, SimpleNamespace(tipo_usuario="dev"))
+        with self.app.test_request_context(f"/veiculos/logs/veiculo/{veiculo.id}"):
+            context = veiculos_service.build_veiculo_logs_detalhe_context("visualizar", veiculo.id, request.args, user=user)
 
-        self.assertTrue(deleted)
-        self.assertIsNone(db.session.get(LogVeiculo, log.id))
-        self.assertEqual(Abastecimento.query.count(), 0)
-        self.assertIsNotNone(db.session.get(Veiculos, veiculo.id))
+        turno = context["timeline"]["dias"][0]["turnos"][0]
+        self.assertTrue(context["can_view_retorno_automatico_audit"])
+        self.assertEqual(turno["retornos_automaticos_count"], 1)
+        self.assertEqual(turno["retornos_automaticos"][0]["id"], solicitacao.id)
+        self.assertIn("Rua Teste", turno["retornos_automaticos"][0]["endereco"])
 
-    def test_only_dev_can_delete_vehicle_log(self):
-        veiculo = self._novo_veiculo()
+    def test_vehicle_logs_detail_summarizes_completed_cleanings(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
         log = LogVeiculo(
             veiculo_id=veiculo.id,
             equipe_id=self.equipe.id,
             km_inicial=1000,
+            km_final=1010,
             check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
         )
         db.session.add(log)
+        db.session.flush()
+        db.session.add_all(
+            [
+                LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=veiculo.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 1, 9, 0),
+                    limpeza_realizada=True,
+                    tipo_limpeza="completa",
+                    valor_total=167,
+                ),
+                LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=veiculo.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 1, 10, 0),
+                    limpeza_realizada=False,
+                    tipo_limpeza="ducha",
+                    valor_total=99,
+                ),
+            ]
+        )
         db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
 
-        with self.assertRaises(PermissionError):
-            delete_veiculo_log(log.id, SimpleNamespace(tipo_usuario="admin"))
+        with self.app.test_request_context(f"/veiculos/logs/veiculo/{veiculo.id}"):
+            context = veiculos_service.build_veiculo_logs_detalhe_context(
+                "admin",
+                veiculo.id,
+                request.args,
+                user=user,
+            )
 
-        self.assertIsNotNone(db.session.get(LogVeiculo, log.id))
+        self.assertEqual(context["timeline"]["total_limpezas"], 2)
+        self.assertEqual(context["timeline"]["total_limpezas_realizadas"]["quantidade"], 1)
+        self.assertEqual(context["timeline"]["total_limpezas_realizadas"]["valor_total"], 167)
+        self.assertEqual(context["timeline"]["dias"][0]["limpezas_realizadas"], 1)
+        self.assertEqual(context["timeline"]["dias"][0]["valor_limpezas_realizadas"], 167)
 
     def test_fuel_record_requires_and_saves_panel_photo(self):
         veiculo = self._novo_veiculo()
@@ -395,7 +1048,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                 user,
                 veiculo.id,
                 {
-                    "km_abastecimento": "1010",
+                    "km_abastecimento": "1010,3",
                     "litros": "20",
                     "valor_abastecimento": "100",
                     "tipo_abastecimento": "Veiculo",
@@ -420,7 +1073,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             db.session.refresh(veiculo)
             self.assertEqual(veiculo.km_atual, 1000)
 
-    def test_fuel_record_rejects_more_than_500_km_from_shift_initial(self):
+    def test_fuel_record_accepts_brazilian_decimal_comma(self):
         veiculo = self._novo_veiculo()
         user = SimpleNamespace(
             tipo_usuario="equipe_oceano",
@@ -438,22 +1091,138 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.commit()
 
         with TemporaryDirectory() as tmp_dir:
-            with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "500 km por turno"):
-                registrar_abastecimento_turno_piloto(
-                    user,
-                    veiculo.id,
-                    {
-                        "km_abastecimento": "1501",
-                        "litros": "20",
-                        "valor_abastecimento": "100",
-                        "tipo_abastecimento": "Veiculo",
-                    },
-                    {
-                        "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
-                        "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
-                    },
-                    tmp_dir,
-                )
+            registrar_abastecimento_turno_piloto(
+                user,
+                veiculo.id,
+                {
+                    "km_abastecimento": "1010,3",
+                    "litros": "40,5",
+                    "valor_abastecimento": "1.402,40",
+                    "tipo_abastecimento": "Veiculo",
+                },
+                {
+                    "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
+                    "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
+                },
+                tmp_dir,
+            )
+
+        abastecimento = Abastecimento.query.one()
+        self.assertEqual(abastecimento.km_registro, 1010.3)
+        self.assertEqual(abastecimento.litros, 40.5)
+        self.assertEqual(abastecimento.valor_total, 1402.40)
+
+    def test_first_fuel_record_rejects_more_than_500_km_from_shift_initial(self):
+        veiculo = self._novo_veiculo()
+        user = SimpleNamespace(
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+        )
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=None,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        with patch.object(veiculos_service, "_salvar_upload_veiculo") as upload:
+            with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "primeiro abastecimento"):
+                self._registrar_abastecimento(user, veiculo, "1500,01")
+            upload.assert_not_called()
+
+        self.assertEqual(Abastecimento.query.count(), 0)
+        self.assertEqual(veiculo.km_atual, 1000)
+
+    def _registrar_abastecimento(self, user, veiculo, km, tipo="Veículo"):
+        return registrar_abastecimento_turno_piloto(
+            user,
+            veiculo.id,
+            {
+                "km_abastecimento": km,
+                "litros": "20",
+                "valor_abastecimento": "100",
+                "tipo_abastecimento": tipo,
+            },
+            {
+                "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
+                "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
+            },
+            self.app.root_path,
+        )
+
+    def test_fuel_limit_uses_last_vehicle_fuel_across_shifts(self):
+        veiculo = self._novo_veiculo(km_atual=1700)
+        user = SimpleNamespace(tipo_usuario="equipe_oceano", codigo_setor=str(self.equipe.id), prefeitura_id=1)
+        turno_anterior = LogVeiculo(veiculo_id=veiculo.id, km_inicial=1000, km_final=1700,
+                                   data_registro=datetime(2026, 7, 1, 8))
+        turno_atual = LogVeiculo(veiculo_id=veiculo.id, equipe_id=self.equipe.id, km_inicial=1700,
+                                km_final=None, data_registro=datetime(2026, 7, 2, 8))
+        outro_veiculo = self._novo_veiculo(placa="DEF2G34", renomacao="DEF2G34")
+        outro_turno = LogVeiculo(veiculo_id=outro_veiculo.id, km_inicial=9000, km_final=9500)
+        db.session.add_all([turno_anterior, turno_atual, outro_turno])
+        db.session.flush()
+
+        # O registro mais recente é definido por data, e não pelo maior KM ou ID.
+        for turno, km, tipo, data in (
+            (turno_anterior, 1300, "Veiculo", datetime(2026, 7, 1, 12)),
+            (turno_anterior, 1400, "Veículo", datetime(2026, 7, 1, 10)),
+            (turno_atual, 1700, "Gerador", datetime(2026, 7, 2, 9)),
+            (outro_turno, 9400, "Veículo", datetime(2026, 7, 2, 10)),
+        ):
+            db.session.add(Abastecimento(log_veiculo_id=turno.id, km_registro=km, tipo_abastecimento=tipo,
+                                        data_hora=data, litros=20, valor_total=100, foto_nf_path="nf.png"))
+        db.session.commit()
+
+        context = build_piloto_veiculos_context(user)
+        self.assertEqual(context["km_abastecimento_referencias"][veiculo.id],
+                         {"km": 1300, "limite": 1800, "origem": "ultimo_abastecimento"})
+        with patch.object(veiculos_service, "_salvar_upload_veiculo", return_value="foto.png") as upload:
+            for km in ("1.800,01", "1900"):
+                with self.subTest(km=km):
+                    with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "Limite permitido: 1800.00"):
+                        self._registrar_abastecimento(user, veiculo, km)
+            upload.assert_not_called()
+            self.assertEqual(Abastecimento.query.count(), 4)
+
+            message = self._registrar_abastecimento(user, veiculo, "1.800,00")
+            self.assertEqual(message, "Abastecimento registrado com sucesso!")
+            self.assertEqual(Abastecimento.query.filter_by(log_veiculo_id=turno_atual.id, tipo_abastecimento="Veículo").one().km_registro, 1800)
+
+            # O novo abastecimento redefine o limite, mesmo no mesmo turno.
+            self.assertEqual(build_piloto_veiculos_context(user)["km_abastecimento_referencias"][veiculo.id]["limite"], 2300)
+            self._registrar_abastecimento(user, veiculo, "2299,99")
+
+    def test_fuel_limit_keeps_zero_reference_and_breaks_date_ties_by_id(self):
+        veiculo = self._novo_veiculo()
+        log = LogVeiculo(veiculo_id=veiculo.id, equipe_id=self.equipe.id, km_inicial=1000, km_final=None)
+        db.session.add(log)
+        db.session.flush()
+        for km in (100, 0):
+            db.session.add(Abastecimento(log_veiculo_id=log.id, km_registro=km, tipo_abastecimento="Veículo",
+                                        data_hora=datetime(2026, 7, 1, 12), litros=20, foto_nf_path="nf.png"))
+            db.session.flush()
+        db.session.commit()
+
+        self.assertEqual(veiculos_service._build_km_abastecimento_referencias({veiculo.id: log})[veiculo.id],
+                         {"km": 0, "limite": 500, "origem": "ultimo_abastecimento"})
+
+    def test_generator_fuel_does_not_apply_or_reset_vehicle_limit(self):
+        veiculo = self._novo_veiculo()
+        user = SimpleNamespace(tipo_usuario="equipe_oceano", codigo_setor=str(self.equipe.id), prefeitura_id=1)
+        log = LogVeiculo(veiculo_id=veiculo.id, equipe_id=self.equipe.id, km_inicial=1000, km_final=None)
+        db.session.add(log)
+        db.session.commit()
+
+        with patch.object(veiculos_service, "_salvar_upload_veiculo", return_value="foto.png"):
+            self._registrar_abastecimento(user, veiculo, "2000", tipo="Gerador")
+
+        self.assertEqual(Abastecimento.query.one().km_registro, 2000)
+        self.assertEqual(build_piloto_veiculos_context(user)["km_abastecimento_referencias"][veiculo.id],
+                         {"km": 1000, "limite": 1500, "origem": "km_inicial"})
 
     def test_closing_shift_rejects_final_km_lower_than_fuel_km(self):
         veiculo = self._novo_veiculo(km_atual=1000)

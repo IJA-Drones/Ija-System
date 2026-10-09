@@ -1,0 +1,37 @@
+/* =========================================
+   BUTTONS
+   ========================================= */
+
+body.dark-mode .btn-outline-secondary {
+  --app-btn-outline-color: var(--color-text-muted);
+  --app-btn-outline-hover-color: var(--color-bg-body);
+  border-color: var(--color-text-muted);
+}
+
+body.dark-mode .btn-outline-dark {
+  --app-btn-outline-color: #8fa0b5;
+  --app-btn-outline-hover-color: var(--color-bg-body);
+}
+
+body.dark-mode .btn-outline-light {
+  --app-btn-outline-color: #c3cfdd;
+  --app-btn-outline-hover-color: #152233;
+}
+
+body.dark-mode .btn-dark {
+  --app-btn-bg: #42556b;
+  --app-btn-border: #42556b;
+  --app-btn-color: #edf3fb;
+  --app-btn-hover-bg: #536a83;
+  --app-btn-hover-border: #536a83;
+  --app-btn-hover-color: #fff;
+}
+
+body.dark-mode .btn-light {
+  --app-btn-bg: #d8e2ed;
+  --app-btn-border: #d8e2ed;
+  --app-btn-color: #182433;
+  --app-btn-hover-bg: #edf3fb;
+  --app-btn-hover-border: #edf3fb;
+  --app-btn-hover-color: #0d1622;
+}

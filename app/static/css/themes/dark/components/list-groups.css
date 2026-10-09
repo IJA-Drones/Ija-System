@@ -1,0 +1,25 @@
+/* =========================================
+   LIST GROUPS
+   ========================================= */
+
+body.dark-mode .list-group-item {
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-main) !important;
+  border-color: #233549 !important;
+}
+
+body.dark-mode .list-group-item-action:hover {
+  background-color: #1f2a3e !important;
+}
+
+body.dark-mode .list-group-item .text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+body.dark-mode .list-group-item .text-dark {
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .list-group-item-light-custom {
+  background-color: #3f98b3a1 !important;
+}

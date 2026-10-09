@@ -37,7 +37,7 @@ from app.modules.piloto_os.service import (
     salvar_admin_os_form,
     salvar_piloto_os_form,
 )
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, VEICULOS_SUPERVISOR_USER_TYPES, can_access_regiao, normalize_role
 from app.shared.skybox import (
     SkyboxError,
     build_os_video_remote_path,
@@ -75,7 +75,11 @@ VIDEO_BACKGROUND_UPLOAD_EXECUTOR = ThreadPoolExecutor(
 
 
 def _require_piloto():
-    if not is_piloto_os_user(current_user):
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
+        "piloto",
+        "equipe_oceano",
+        *VEICULOS_SUPERVISOR_USER_TYPES,
+    }:
         abort(403)
 
 
@@ -126,13 +130,16 @@ def _send_local_os_media(media_path, *, as_attachment=False):
     if not os.path.isfile(abs_path):
         abort(404)
 
-    return send_file(
+    response = send_file(
         abs_path,
         mimetype=mimetypes.guess_type(abs_path)[0] or "application/octet-stream",
         as_attachment=as_attachment,
         download_name=os.path.basename(abs_path),
         conditional=True,
     )
+    response.cache_control.private = True
+    response.cache_control.max_age = 86400
+    return response
 
 
 def _send_os_media(media_path, *, as_attachment=False):
@@ -145,7 +152,12 @@ def _send_os_media(media_path, *, as_attachment=False):
 
     if is_skybox_path(media_path):
         try:
-            return stream_skybox_file(media_path, request.headers.get("Range"), as_attachment=as_attachment)
+            return stream_skybox_file(
+                media_path,
+                request.headers.get("Range"),
+                as_attachment=as_attachment,
+                conditional_headers=request.headers,
+            )
         except SkyboxError:
             current_app.logger.exception("Erro ao servir midia da OS pelo Skybox.")
             abort(404)
@@ -282,6 +294,9 @@ def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
     headers = {}
     if range_header:
         headers["Range"] = range_header
+    for header in ("If-None-Match", "If-Modified-Since"):
+        if request.headers.get(header):
+            headers[header] = request.headers[header]
 
     remote_path = _webdav_remote_path_from_marker(value)
     upstream = requests.get(
@@ -294,6 +309,13 @@ def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
     if upstream.status_code == 404:
         upstream.close()
         abort(404)
+    if upstream.status_code == 304:
+        upstream.close()
+        response_headers = {"Cache-Control": "private, max-age=86400"}
+        for header in ("Last-Modified", "ETag"):
+            if upstream.headers.get(header):
+                response_headers[header] = upstream.headers[header]
+        return current_app.response_class(status=304, headers=response_headers)
     if upstream.status_code not in (200, 206):
         status_code = upstream.status_code
         upstream.close()
@@ -328,6 +350,7 @@ def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
                 "Last-Modified": upstream.headers.get("Last-Modified"),
                 "ETag": upstream.headers.get("ETag"),
                 "Content-Disposition": _content_disposition(remote_path, as_attachment=as_attachment),
+                "Cache-Control": "private, max-age=86400",
             }.items()
             if value
         },
@@ -1348,17 +1371,27 @@ def register_routes(bp):
                 return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
 
             try:
-                flash(
-                    salvar_piloto_os_form(
-                        current_user,
-                        os_id,
-                        request.form,
-                        request.files,
-                        current_app.root_path,
-                    ),
-                    "success",
+                # 1. Salva os dados padrão da OS (Ordem de Serviço)
+                msg_sucesso = salvar_piloto_os_form(
+                    current_user,
+                    os_id,
+                    request.form,
+                    request.files,
+                    current_app.root_path,
                 )
+
+                # 2. Atualiza a flag de bloqueio na Solicitação pai
+                solicitacao = context.get("solicitacao")
+                if solicitacao:
+                    # Captura a marcação do switch (se o switch estiver visível e marcado, envia 'true')
+                    solicitacao.endereco_bloqueado = (request.form.get("endereco_concluido") == "true")
+                    
+                    from app.extensions import db
+                    db.session.commit()
+
+                flash(msg_sucesso, "success")
                 return redirect(url_for("main.piloto_os"))
+
             except PilotoOsError as exc:
                 flash(str(exc), exc.category)
                 return _redirect_from_piloto_os_error(exc, os_id=os_id)

@@ -1,0 +1,43 @@
+/* =========================================
+   VARIÁVEIS DARK
+   ========================================= */
+
+body.dark-mode,
+html.dark-mode {
+  --color-bg-body: #0d1622;
+  --color-bg-white: #182433;
+  --color-bg-surface: #142030;
+
+  --color-text-main: #edf3fb;
+  --color-text-muted: #9aa8ba;
+  --color-text-notificação: rgba(39, 192, 214, 0.12);
+  --color-filter: #c4d1e0;
+
+  --color-primary-dark: #7cb8ff;
+  --color-primary: #4f94f0;
+
+  --color-accent: #23c0d6;
+  --color-accent-hover: #169eb1;
+  --color-accent-soft: rgba(35, 192, 214, 0.14);
+  --color-accent-soft-hover: rgba(35, 192, 214, 0.2);
+
+  --color-success: #339a6b;
+  --color-success-hover: #25845a;
+
+  --color-warning: #e0c44b;
+  --color-danger: #e46060;
+  --color-danger-hover: #c94f4f;
+  --color-recomended: #ea8334;
+  --color-completed: #6f8cf1;
+
+  --shadow-sm: 0 2px 6px rgba(2, 8, 20, 0.36);
+  --shadow-md: 0 4px 14px rgba(2, 8, 20, 0.52);
+  --shadow-lg: 0 10px 18px -3px rgba(2, 8, 20, 0.68);
+}
+
+body.dark-mode,
+html.dark-mode {
+  background: var(--color-bg-body) !important;
+  color: var(--color-text-main) !important;
+  color-scheme: dark;
+}

@@ -1,6 +1,7 @@
 import unittest
 from datetime import date, time
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from flask import Blueprint, Flask, g
 from flask_login import LoginManager
@@ -187,10 +188,10 @@ class HeatmapFilterTests(unittest.TestCase):
             uvis_id=self.uvis.id, mes=10, ano=2026, larva_visualizada="SIM"
         ), {match.id})
 
-    def test_admin_and_dev_can_filter_any_uvis_across_cities(self):
+    def test_global_admin_roles_can_filter_any_uvis_across_cities(self):
         here = self._new_request(drone="SIM")
         elsewhere = self._new_request(drone="SIM", user=self.uvis_other_city)
-        for role in ["admin", "dev"]:
+        for role in ["admin", "dev", "diretor"]:
             user = SimpleNamespace(tipo_usuario=role, prefeitura_id=1)
             with self.subTest(role=role):
                 self.assertEqual(self._ids(user, larva_visualizada="SIM"), {here.id, elsewhere.id})
@@ -233,6 +234,7 @@ class HeatmapFilterTests(unittest.TestCase):
         cases = [
             (self.admin, all_uvis),
             (SimpleNamespace(tipo_usuario="dev"), all_uvis),
+            (SimpleNamespace(tipo_usuario="diretor", prefeitura_id=1), all_uvis),
             (SimpleNamespace(tipo_usuario="prefeitura_admin", prefeitura_id=1), all_uvis - {self.uvis_other_city.id}),
             (SimpleNamespace(tipo_usuario="regional", prefeitura_id=1, regiao="OESTE"), {self.uvis.id, self.uvis_same_region.id}),
             (self.uvis, set()),
@@ -296,6 +298,44 @@ class HeatmapFilterTests(unittest.TestCase):
     def test_endpoint_requires_authentication(self):
         self.endpoint_user = None
         self.assertEqual(self._get().status_code, 401)
+
+    def test_geocode_endpoint_returns_coordinates_and_place_id(self):
+        with patch(
+            "app.modules.mapas.routes.geocode_endereco_google",
+            return_value=(-23.55, -46.63, "synthetic-place-id"),
+        ):
+            response = self.app.test_client().post("/api/geocode", json={
+                "logradouro": "Rua Sintética",
+                "numero": "1",
+                "cidade": "Cidade Teste",
+                "uf": "SP",
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            "ok": True,
+            "lat": -23.55,
+            "lng": -46.63,
+            "place_id": "synthetic-place-id",
+        })
+
+    def test_geocode_endpoint_handles_no_result_with_three_value_return(self):
+        with patch(
+            "app.modules.mapas.routes.geocode_endereco_google",
+            return_value=(None, None, None),
+        ):
+            response = self.app.test_client().post("/api/geocode", json={
+                "logradouro": "Rua Sintética",
+                "numero": "1",
+                "cidade": "Cidade Teste",
+                "uf": "SP",
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            "ok": False,
+            "message": "Não foi possível geocodificar",
+        })
 
 
 if __name__ == "__main__":

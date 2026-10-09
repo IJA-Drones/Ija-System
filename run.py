@@ -1,5 +1,26 @@
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+
+
+def _env_flag(name, default=False):
+    default_value = "1" if default else "0"
+    return os.getenv(name, default_value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Local debug sessions expire after eight hours of inactivity by default.
+if __name__ == "__main__" and _env_flag("FLASK_DEBUG", default=True):
+    os.environ.setdefault("FLASK_DEBUG", "1")
+    os.environ.setdefault("SESSION_IDLE_TIMEOUT_MINUTES", "480")
+
+os.environ.setdefault("CSS_BUNDLE_AUTO_BUILD", "1")
+
+from scripts.build_css_bundle import build_css_bundle
+
+build_css_bundle()
+
 from app import create_app, db
 
 
@@ -11,4 +32,6 @@ if __name__ == "__main__":
         with app.app_context():
             db.create_all()
 
-    app.run(host="0.0.0.0", port=5003, debug=True)
+    debug = _env_flag("FLASK_DEBUG", default=True)
+    use_reloader = _env_flag("FLASK_USE_RELOADER", default=False)
+    app.run(host="0.0.0.0", port=5003, debug=debug, use_reloader=use_reloader)

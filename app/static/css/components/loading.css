@@ -1,0 +1,12 @@
+/* =========================================
+   LOADING
+   ========================================= */
+
+.loading-spinner {
+  background: white url("data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%230d6efd%22%20d%3D%22M12%204V2A10%2010%200%200%201%2022%2012h-2a8%208%200%200%200-8-8z%22%2F%3E%3CanimateTransform%20attributeName%3D%22transform%22%20type%3D%22rotate%22%20from%3D%220%2012%2012%22%20to%3D%22360%2012%2012%22%20dur%3D%221s%22%20repeatCount%3D%22indefinite%22%2F%3E%3C%2Fsvg%3E")
+    no-repeat right 10px center;
+
+  background-size: 16px;
+  padding-right: 35px !important;
+  cursor: wait;
+}

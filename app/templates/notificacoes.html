@@ -4,8 +4,8 @@
 {% endblock %}
 {% block content %}
 
-<div class="container-fluid py-4" style="max-width: 1200px;">
-  <div class="d-flex align-items-center justify-content-between mb-3">
+<div class="container-fluid py-4 notificacoes-page" style="max-width: 1200px;">
+  <div class="d-flex align-items-center justify-content-between gap-3 mb-3 notificacoes-toolbar">
     <h2 class="text-dark"><i class="bi bi-bell-fill me-2 text-primary"></i>Notificações</h2>
 
     {% if itens %}
@@ -22,27 +22,27 @@
     {% endif %}
   </div>
 
-  <div class="card shadow-sm rounded-4">
+  <div class="card shadow-sm rounded-4 notificacoes-card">
     <div class="card-body p-0">
       {% if not itens %}
-      <div class="text-muted p-4 text-center">
+      <div class="text-muted p-4 text-center notificacoes-empty">
         <i class="bi bi-chat-left-dots fs-1 d-block mb-2 opacity-50"></i>
         Nenhuma notificação por enquanto.
       </div>
       {% else %}
-      <div class="alert alert-light border-0 border-bottom rounded-0 mb-0 px-4 py-3 small text-muted">
+      <div class="alert alert-light border-0 border-bottom rounded-0 mb-0 px-4 py-3 small text-muted notificacoes-banner">
         Alertas automáticos podem reaparecer enquanto a pendência continuar ativa. Para remover de forma definitiva, é preciso resolver o item sinalizado.
       </div>
-      <div class="list-group list-group-flush">
+      <div class="list-group list-group-flush notificacoes-list">
         {% for n in itens %}
         {% set titulo_normalizado = (n.titulo or '').lower() %}
         {% set is_alerta_automatico = titulo_normalizado.startswith('alerta automático:') or titulo_normalizado.startswith('alerta automatico:') %}
         <div
-          class="list-group-item d-flex justify-content-between align-items-start {% if not n.lida_em %}list-group-item-light-custom{% endif %}"
+          class="list-group-item d-flex justify-content-between align-items-start notificacoes-item {% if not n.lida_em %}list-group-item-light-custom notificacoes-item-unread{% else %}notificacoes-item-read{% endif %}"
         >
           <a
             href="{{ url_for('main.ler_notificacao', notif_id=n.id) }}"
-            class="flex-grow-1 text-decoration-none"
+            class="flex-grow-1 text-decoration-none notificacoes-link"
           >
             <div class="me-3">
               <div class="d-flex align-items-center mb-1">
@@ -51,9 +51,7 @@
                   style="font-size: 1.1rem"
                 ></i>
 
-                <div
-                  class="fw-bold {% if not n.lida_em %}text-dark{% else %}text-muted{% endif %}"
-                >
+                <div class="fw-bold {% if not n.lida_em %}text-dark{% else %}text-muted{% endif %}">
                   {{ n.titulo }}
                   {% if is_alerta_automatico %}
                   <span class="badge bg-warning text-dark ms-2">Automático</span>
@@ -76,11 +74,11 @@
           <form
             method="POST"
             action="{{ url_for('main.excluir_notificacao', notif_id=n.id) }}"
-            class="form-deletar"
+            class="form-deletar notificacoes-delete-form"
           >
             <button
               type="submit"
-              class="btn btn-sm btn-outline-danger ms-2"
+              class="btn btn-sm btn-outline-danger ms-2 notificacoes-delete-btn"
               title="Excluir notificação"
             >
               <i class="bi bi-x-lg"></i>

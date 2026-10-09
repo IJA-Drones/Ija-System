@@ -1,5 +1,6 @@
 import requests
 import unicodedata
+from flask import current_app
 from urllib.parse import quote
 
 
@@ -25,6 +26,10 @@ def _normalize_text(value: str) -> str:
 
 
 def lookup_cep(cep_digits: str, logger=None):
+    correios_payload = _lookup_cep_correios(cep_digits, logger=logger)
+    if correios_payload:
+        return correios_payload
+
     try:
         data = _request_json(f"https://viacep.com.br/ws/{cep_digits}/json/")
         if data.get("erro"):
@@ -101,3 +106,67 @@ def lookup_cep_by_address(*, logradouro: str, bairro: str, cidade: str, uf: str,
         if logger:
             logger.exception("Falha ViaCEP busca por endereco: %s", exc)
         raise CepLookupError("Falha ao consultar o servico de CEP pelo endereco.") from exc
+
+
+def _lookup_cep_correios(cep_digits: str, logger=None):
+    token = _setting("CORREIOS_CEP_TOKEN") or _setting("CORREIOS_API_TOKEN")
+    if not token:
+        return None
+
+    base_url = (_setting("CORREIOS_CEP_BASE_URL") or "https://api.correios.com.br/cep").rstrip("/")
+    urls = [
+        f"{base_url}/v2/enderecos/{cep_digits}",
+        f"{base_url}/v2/endereços/{cep_digits}",
+    ]
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+
+    last_exc = None
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=5, headers=headers)
+            if response.status_code == 404:
+                raise CepNotFoundError("CEP nao encontrado.")
+            if response.status_code in (401, 403):
+                if logger:
+                    logger.warning("Credencial da API Busca CEP dos Correios recusada (%s).", response.status_code)
+                return None
+            response.raise_for_status()
+            data = response.json()
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            if not data:
+                return None
+            return _normalize_correios_address(data)
+        except CepNotFoundError:
+            raise
+        except Exception as exc:
+            last_exc = exc
+            continue
+
+    if logger and last_exc:
+        logger.exception("Falha Correios Busca CEP: %s", last_exc)
+    return None
+
+
+def _normalize_correios_address(data):
+    cep = str(data.get("cep") or "").strip()
+    cep_digits = "".join(ch for ch in cep if ch.isdigit())
+    formatted_cep = f"{cep_digits[:5]}-{cep_digits[5:]}" if len(cep_digits) == 8 else cep
+    return {
+        "cep": formatted_cep,
+        "logradouro": data.get("logradouro") or data.get("endereco") or "",
+        "complemento": data.get("complemento") or "",
+        "bairro": data.get("bairro") or "",
+        "cidade": data.get("localidade") or data.get("municipio") or "",
+        "uf": data.get("uf") or "",
+    }
+
+
+def _setting(name):
+    try:
+        return current_app.config.get(name)
+    except RuntimeError:
+        return None

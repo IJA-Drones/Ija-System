@@ -1,16 +1,26 @@
 from datetime import datetime
 
-from flask import url_for
+from flask import g, request, url_for
 from flask_login import current_user
 from werkzeug.routing import BuildError
 
 from app import db
 from app.models import Notificacao
 from app.modules.agenda_notificacoes.service import can_view_all_notifications
-from app.modules.feedback.service import build_support_notification_snapshot, can_access_feedback
-from app.shared.access import is_admin_global_user, is_dev_user
+from app.modules.veiculos.service import count_limpeza_alertas_admin, count_limpeza_alertas_operacionais
+from app.modules.feedback.service import (
+    FEEDBACK_NOTIFICATIONS_ENABLED,
+    build_support_notification_snapshot,
+    can_access_feedback,
+)
+from app.modules.denuncias.service import can_access_denuncias, count_denuncias_alerta
+from app.modules.agro.service import can_access_agro_panel
+from app.shared.access import is_admin_global_user, is_agro_finance_user, is_covisa_user, is_dev_user, is_veiculos_supervisor
 from app.shared.formatters import format_currency_br, format_phone_br
+from app.shared.financeiro_navigation import is_financeiro_endpoint
 from app.shared.solicitacao_focos import build_focus_catalog
+from app.modules.solicitacoes.service import is_solicitacao_quadra
+from app.modules.admin_dashboard.service import is_solicitacao_quadra as is_admin_solicitacao_quadra
 
 
 def register_template_helpers(bp):
@@ -25,7 +35,7 @@ def register_template_helpers(bp):
                 raise
 
         focus_catalog = build_focus_catalog()
-        if current_user.is_authenticated:
+        if current_user.is_authenticated and not (is_financeiro_endpoint(request.endpoint) or getattr(g, "financeiro_empresa", None) is not None or is_agro_finance_user(current_user)):
             try:
                 query = db.session.query(db.func.count(Notificacao.id)).filter(
                     Notificacao.lida_em.is_(None),
@@ -35,32 +45,50 @@ def register_template_helpers(bp):
                 if not can_view_all_notifications(current_user):
                     query = query.filter(Notificacao.usuario_id == current_user.id)
 
-                support_snapshot = (
-                    build_support_notification_snapshot(current_user)
-                    if can_access_feedback(current_user)
-                    else {"count": 0, "latest_id": 0}
-                )
+                support_snapshot = {"count": 0, "latest_id": 0}
+                if FEEDBACK_NOTIFICATIONS_ENABLED and can_access_feedback(current_user):
+                    support_snapshot = build_support_notification_snapshot(current_user)
 
                 return {
                     "notif_count": query.scalar() or 0,
+                    "limpeza_alertas_operacionais_count": count_limpeza_alertas_operacionais(current_user),
+                    "limpeza_alertas_admin_count": count_limpeza_alertas_admin(current_user),
                     "support_nav_count": support_snapshot["count"],
+                    "denuncias_nav_count": count_denuncias_alerta(current_user),
                     "support_nav_latest_id": support_snapshot["latest_id"],
+                    "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
+                    "can_access_feedback": can_access_feedback,
+                    "can_access_denuncias": can_access_denuncias,
+                    "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
+                    "is_veiculos_supervisor": is_veiculos_supervisor,
+                    "is_covisa_user": is_covisa_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
+                    "is_solicitacao_quadra": is_solicitacao_quadra,
+                    "is_admin_solicitacao_quadra": is_admin_solicitacao_quadra,
                     "solicitacao_tipo_imovel_opcoes": focus_catalog["tipo_imovel_opcoes"],
                 }
             except Exception:
                 db.session.rollback()
                 return {
                     "notif_count": 0,
+                    "limpeza_alertas_operacionais_count": 0,
+                    "limpeza_alertas_admin_count": 0,
                     "support_nav_count": 0,
+                    "denuncias_nav_count": 0,
                     "support_nav_latest_id": 0,
+                    "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
+                    "can_access_feedback": can_access_feedback,
+                    "can_access_denuncias": can_access_denuncias,
+                    "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
+                    "is_veiculos_supervisor": is_veiculos_supervisor,
+                    "is_covisa_user": is_covisa_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
@@ -70,10 +98,19 @@ def register_template_helpers(bp):
 
         return {
             "notif_count": 0,
+            "limpeza_alertas_operacionais_count": 0,
+            "limpeza_alertas_admin_count": 0,
             "support_nav_count": 0,
+            "denuncias_nav_count": 0,
             "support_nav_latest_id": 0,
+            "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
             "safe_url_for": safe_url_for,
+            "can_access_feedback": can_access_feedback,
+            "can_access_denuncias": can_access_denuncias,
+            "can_access_agro_panel": can_access_agro_panel,
             "is_admin_global_user": is_admin_global_user,
+            "is_veiculos_supervisor": is_veiculos_supervisor,
+            "is_covisa_user": is_covisa_user,
             "is_dev_user": is_dev_user,
             "solicitacao_focus_catalog": focus_catalog,
             "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
@@ -100,3 +137,23 @@ def register_template_helpers(bp):
     @bp.app_template_filter("phonebr")
     def phonebr(value):
         return format_phone_br(value)
+
+    @bp.app_template_filter("bugdetails")
+    def bugdetails(value):
+        details = []
+        in_details = False
+        for line in str(value or "").splitlines():
+            clean_line = line.strip()
+            clean_lower = clean_line.lower()
+            if clean_lower.startswith("impacto:"):
+                continue
+            if clean_lower.startswith("página onde aconteceu:") or clean_lower.startswith("pagina onde aconteceu:"):
+                continue
+            if clean_lower.startswith("navegador/dispositivo:"):
+                continue
+            if clean_lower == "detalhes:":
+                in_details = True
+                continue
+            if clean_line or in_details:
+                details.append(line)
+        return "\n".join(details).strip() or str(value or "").strip()

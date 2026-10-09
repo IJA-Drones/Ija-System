@@ -1,0 +1,34 @@
+/* =========================================
+   LOGS DE VOO AGRO
+   ========================================= */
+
+body.dark-mode.agro-mode .agro-flight-page .agro-flight-metric {
+  color: #dfece7;
+  background: linear-gradient(180deg, #192b35, #172832);
+  border: 1px solid #304750;
+  box-shadow: 0 10px 22px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-flight-label {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-flight-value {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-route-pill {
+  color: #9fe2ba;
+  background: rgba(79, 182, 122, 0.12);
+  border-color: rgba(145, 223, 177, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-route-pill:hover {
+  color: #c8f1d8;
+  background: rgba(79, 182, 122, 0.18);
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-route-map {
+  background: #14252f;
+  border: 1px solid #304750;
+}
