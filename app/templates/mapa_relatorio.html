@@ -183,9 +183,9 @@
     <div class="collapse show" id="collapseFiltros">
       <div class="card-body pt-0">
         <div class="row g-2 align-items-end">
-          {% if current_user.tipo_usuario in ['dev', 'admin', 'regional'] %}
-          <div class="col-md-3">
-            <label class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
+          {% if current_user.tipo_usuario in ['dev', 'admin', 'regional', 'prefeitura_admin'] %}
+          <div class="col-md-4 col-lg-2">
+            <label for="uvisFilter" class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
             <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               <option value="">Todas as Unidades</option>
               {% for id, nome_uvis in uvis_disponiveis %}
@@ -195,9 +195,10 @@
           </div>
           {% endif %}
 
-          <div class="col-md-3">
-            <label class="small text-muted mb-1 fw-bold">Mês de Referência</label>
+          <div class="col-md-4 col-lg-2">
+            <label for="mesFilter" class="small text-muted mb-1 fw-bold">Mês do agendamento</label>
             <select id="mesFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+              <option value="">Todos os meses</option>
               {% for val in range(1, 13) %}
               <option value="{{ val }}" {% if val == mes_atual %}selected{% endif %}>
                 {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][val-1] }}
@@ -206,25 +207,47 @@
             </select>
           </div>
 
-          <div class="col-md-3">
-            <label class="small text-muted mb-1 fw-bold">Tipo de Foco</label>
+          <div class="col-md-4 col-lg-2">
+            <label for="anoFilter" class="small text-muted mb-1 fw-bold">Ano do agendamento</label>
+            <input id="anoFilter" type="number" min="1" max="9999" step="1" required
+              value="{{ ano_atual }}" class="form-control form-control-sm" onchange="atualizarMapas()">
+          </div>
+
+          <div class="col-md-4 col-lg-2">
+            <label for="focoFilter" class="small text-muted mb-1 fw-bold">Tipo de Foco</label>
             <select id="focoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               <option value="todos">Todos os Focos</option>
               {% for opcao in solicitacao_filter_foco_opcoes %}
               <option value="{{ opcao }}">{{ opcao }}</option>
               {% endfor %}
+              <option value="Outros">Outros</option>
             </select>
           </div>
 
-          <div class="col-md-3 d-flex gap-2">
-            <button onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
+          <div class="col-md-4 col-lg-2">
+            <label for="larvaFilter" class="small text-muted mb-1 fw-bold">Larva visualizada</label>
+            <select id="larvaFilter" class="form-select form-select-sm" onchange="atualizarMapas()" aria-describedby="mapScopeNote">
+              <option value="">Todos</option>
+              <option value="SIM">Sim</option>
+              <option value="NAO">Não</option>
+              <option value="NAO_INFORMADO">Não informado</option>
+            </select>
+          </div>
+
+          <div class="col-md-4 col-lg-2 d-flex gap-2">
+            <button type="button" onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
               <i class="bi bi-funnel me-1"></i> Filtrar
             </button>
           </div>
         </div>
+        <p id="mapScopeNote" class="small text-muted mt-3 mb-0">
+          Registros aprovados e concluídos por data de agendamento. “Sim” mostra solicitações com larva visualizada na OS de piloto ou da equipe UVIS; não confirma casos de dengue.
+        </p>
       </div>
     </div>
   </div>
+
+  <div id="mapFeedback" class="alert alert-info py-2 small d-none" role="status" aria-live="polite"></div>
 
   <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
     <div class="card-header border-0 py-3 d-flex justify-content-center">
@@ -257,7 +280,7 @@
 
       <div class="focos-counter-card glass-panel border-0 text-center">
         <small class="text-muted text-uppercase fw-bold"
-          style="font-size: 0.55rem; min-width: 100px; min-height: 40px; letter-spacing: 1px;">Volume de Focos</small>
+          style="font-size: 0.55rem; min-width: 100px; min-height: 40px; letter-spacing: 1px;">Registros no mapa</small>
         <h3 class="mb-0 fw-bold text-primary" id="count-total">0</h3>
       </div>
 
@@ -266,7 +289,7 @@
           <div id="mapHeatmap" class="map-container"></div>
 
           <div class="map-legend-overlay glass-panel border-0">
-            <h6 class="fw-bold mb-2 text-uppercase">Densidade de Focos</h6>
+            <h6 class="fw-bold mb-2 text-uppercase">Densidade de registros</h6>
 
             <div class="gradient-bar"></div>
 
@@ -327,6 +350,10 @@
   let mapHeat, mapArea, mapLogistics, heatmap;
   let markers = [];
   let circles = [];
+  let pontosAtuais = [];
+  let mapasRequestSequence = 0;
+  let mapasAbortController = null;
+  const MES_RELATORIO_ATUAL = {{ mes_atual|tojson }};
   const ANO_RELATORIO_ATUAL = {{ ano_atual|tojson }};
   const MAPA_FOCOS_CENTER = { lat: -23.5505, lng: -46.6333 };
   const MAPA_FOCOS_ZOOM = 11;
