@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
@@ -43,7 +44,7 @@ def register_routes(bp):
     @bp.route("/agenda/exportar_excel", endpoint="agenda_exportar_excel")
     @login_required
     def agenda_exportar_excel():
-        if not can_export_agenda(current_user):
+        if not route_access(current_user, can_export_agenda(current_user)):
             abort(403)
 
         output, nome = build_agenda_export(current_user, request.args)

@@ -26,7 +26,7 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ url_for('main.agro_piloto_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_piloto_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
     </div>
@@ -49,7 +49,7 @@
 
     <div class="collapse {% if filters.q or filters.status %}show{% endif %}" id="collapseFiltrosOsPilotoAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_piloto_os_listar') }}">
+        <form method="GET" action="{{ url_for('main.agro_piloto_os_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_os_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-8">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -78,7 +78,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if filters.q or filters.status %}
-                <a href="{{ url_for('main.agro_piloto_os_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_piloto_os_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -135,7 +135,7 @@
                 </td>
                 <td data-label="Acoes" class="listing-cell-actions">
                   <div class="listing-actions-group">
-                    <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
+                    <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-sm btn-success text-white shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_nova', contrato_id=contrato.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-clipboard2-plus"></i> Criar OS
                     </a>
                   </div>
@@ -183,7 +183,7 @@
                 </td>
                 <td data-label="Acoes" class="listing-cell-actions">
                   <div class="listing-actions-group">
-                    <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
+                    <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_editar', os_id=os_agro.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-pencil-square"></i> Continuar
                     </a>
                   </div>

@@ -25,12 +25,12 @@
 
     <div class="usuarios-toolbar-actions page-toolbar-actions">
       <a href="{{ url_for('main.admin_dashboard') }}"
-         class="btn btn-outline-secondary d-flex align-items-center gap-2">
+         class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
       <a href="{{ url_for('main.admin_usuario_novo') }}"
-         class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
+         class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuario_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-person-plus-fill"></i> Novo Usuário
       </a>
     </div>
@@ -57,7 +57,7 @@
 
     <div class="collapse {% if q or tipo %}show{% endif %}" id="collapseFiltrosUsers">
       <div class="card-body pt-0">
-        <form method="GET" action="{{ url_for('main.admin_usuarios_listar') }}">
+        <form method="GET" action="{{ url_for('main.admin_usuarios_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuarios_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-6">
               <label class="small text-muted">Buscar (nome ou login):</label>
@@ -94,7 +94,7 @@
               {% if q or tipo %}
                 <a href="{{ url_for('main.admin_usuarios_listar') }}"
                    class="btn btn-outline-secondary btn-sm w-100"
-                   title="Limpar filtros">
+                   title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuarios_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -189,13 +189,13 @@
                   <div class="usuarios-actions-row">
                     <a class="btn btn-sm btn-success text-white shadow-sm"
                        href="{{ url_for('main.admin_usuario_editar', id=u.id) }}"
-                       {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %}>
+                       {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %} data-ti-allowed="{{ 'true' if ((central_ti_url_allowed(url_for('main.admin_usuario_editar', id=u.id)) and (not central_ti_profile_active|default(false) or central_ti_manage_account(u))) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-pencil-square me-1"></i> Editar
                     </a>
 
                     <form class="form-deletar m-0"
                           method="POST"
-                          action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}">
+                          action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}" data-ti-allowed="{{ 'true' if ((central_ti_url_allowed(url_for('main.admin_usuario_excluir', id=u.id), 'POST') and (not central_ti_profile_active|default(false) or central_ti_manage_account(u))) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <button type="submit"
                               class="btn btn-sm btn-danger shadow-sm"
                               {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}disabled title="Apenas dev pode excluir esta conta"{% endif %}
@@ -208,7 +208,7 @@
                       <div class="p-3 border rounded-3 bg-light usuarios-reset-panel">
                         <form method="POST"
                               action="{{ url_for('main.admin_usuario_reset_senha', id=u.id) }}"
-                              class="row g-2 align-items-end m-0">
+                              class="row g-2 align-items-end m-0" data-ti-allowed="{{ 'true' if ((central_ti_url_allowed(url_for('main.admin_usuario_reset_senha', id=u.id), 'POST') and (not central_ti_profile_active|default(false) or central_ti_manage_account(u))) if central_ti_url_allowed is defined else true) else 'false' }}">
                           <div class="col-md-5">
                             <label class="small text-muted">Nova senha</label>
                             <input type="password" name="senha" class="form-control form-control-sm" required>
@@ -251,7 +251,7 @@
         <ul class="pagination mb-0 flex-wrap justify-content-center">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('main.admin_usuarios_listar', page=paginacao.prev_num, q=q, tipo=tipo) }}">
+               href="{{ url_for('main.admin_usuarios_listar', page=paginacao.prev_num, q=q, tipo=tipo) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuarios_listar', page=paginacao.prev_num, q=q, tipo=tipo)) if central_ti_url_allowed is defined else true) else 'false' }}">
               Anterior
             </a>
           </li>
@@ -259,7 +259,7 @@
           {% for p in range(1, paginacao.pages + 1) %}
             <li class="page-item {% if p == paginacao.page %}active{% endif %}">
               <a class="page-link"
-                 href="{{ url_for('main.admin_usuarios_listar', page=p, q=q, tipo=tipo) }}">
+                 href="{{ url_for('main.admin_usuarios_listar', page=p, q=q, tipo=tipo) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuarios_listar', page=p, q=q, tipo=tipo)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 {{ p }}
               </a>
             </li>
@@ -267,7 +267,7 @@
 
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('main.admin_usuarios_listar', page=paginacao.next_num, q=q, tipo=tipo) }}">
+               href="{{ url_for('main.admin_usuarios_listar', page=paginacao.next_num, q=q, tipo=tipo) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuarios_listar', page=paginacao.next_num, q=q, tipo=tipo)) if central_ti_url_allowed is defined else true) else 'false' }}">
               Próxima
             </a>
           </li>

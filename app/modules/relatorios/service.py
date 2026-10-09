@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import capability
 import json
 import os
 from datetime import datetime
@@ -274,10 +276,12 @@ def _agrupar_os_por_valores_informados(base_query, campo):
     return [(valor, total) for valor, total in rows if _is_relatorio_os_informed_value(valor)]
 
 
+@capability(['prefeitura.relatorios.consultar'])
 def can_access_relatorios_menu(user) -> bool:
     return getattr(user, "tipo_usuario", None) in RELATORIOS_MENU_TYPES
 
 
+@capability(['prefeitura.relatorios.consultar'])
 def can_access_relatorio_coleta_imagens(user) -> bool:
     return getattr(user, "tipo_usuario", None) in RELATORIOS_COLETA_IMAGENS_TYPES
 
@@ -340,7 +344,7 @@ class SimplePagination:
 
 def build_uvis_disponiveis(user, regiao: str | None = None):
     user_type = getattr(user, "tipo_usuario", None)
-    if user_type not in RELATORIOS_COLETA_IMAGENS_TYPES:
+    if not route_access(user, user_type in RELATORIOS_COLETA_IMAGENS_TYPES):
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
@@ -356,7 +360,7 @@ def build_uvis_disponiveis(user, regiao: str | None = None):
 
 def build_regioes_disponiveis(user):
     user_type = getattr(user, "tipo_usuario", None)
-    if user_type not in RELATORIOS_COLETA_IMAGENS_TYPES:
+    if not route_access(user, user_type in RELATORIOS_COLETA_IMAGENS_TYPES):
         return []
     if user_type == "uvis":
         regiao = (getattr(user, "regiao", None) or "").strip()

@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import has_permission
 import json
 import os
 import unicodedata
@@ -724,7 +726,7 @@ def get_piloto_drone_payload(user, drone_id):
 
 
 def build_admin_os_form_context(user, os_id):
-    if getattr(user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
+    if not route_access(user, getattr(user, 'tipo_usuario', None) in ADMIN_PANEL_VIEW_TYPES):
         raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
 
     query = (
@@ -1017,7 +1019,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
 
 
 def _admin_can_edit_os_form(user, solicitacao) -> bool:
-    if getattr(user, "tipo_usuario", None) not in ADMIN_PANEL_EDIT_TYPES:
+    if not has_permission(user, "prefeitura.os.editar", legacy=getattr(user, "tipo_usuario", None) in ADMIN_PANEL_EDIT_TYPES):
         return False
 
     return (getattr(solicitacao, "status", "") or "").strip().upper() != "CANCELADO"

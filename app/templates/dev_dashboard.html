@@ -24,14 +24,14 @@
           <button class="btn btn-outline-light btn-sm" type="button" id="devCopySnapshot">
             <i class="bi bi-copy me-1"></i> Copiar diagnóstico
           </button>
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}">
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-clipboard-data me-1"></i> Auditoria
           </a>
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.financeiro_central') }}">
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.financeiro_central') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-bank me-1"></i> Central Financeiro
           </a>
           {% if can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.central_ti') }}">
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-shield-check me-1"></i> Central de TI
           </a>
           {% endif %}

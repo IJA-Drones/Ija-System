@@ -14,10 +14,10 @@
       <p class="text-muted small mb-0">Registro de abertura, encerramento e peças usadas em cada manutenção.</p>
     </div>
     <div class="page-toolbar-actions">
-      <a href="{{ url_for('main.equipamentos_manutencoes_historico_excel') }}" class="btn btn-outline-success btn-sm">
+      <a href="{{ url_for('main.equipamentos_manutencoes_historico_excel') }}" class="btn btn-outline-success btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_historico_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
       </a>
-      <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm">
+      <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencao')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
     </div>
@@ -61,10 +61,10 @@
               </td>
               <td class="text-end pe-3">
                 <div class="manutencoes-historico-actions">
-                  <a href="{{ url_for('main.equipamento_manutencao_detalhe', manutencao_id=manutencao.id) }}" class="btn btn-sm btn-outline-primary">
+                  <a href="{{ url_for('main.equipamento_manutencao_detalhe', manutencao_id=manutencao.id) }}" class="btn btn-sm btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_detalhe', manutencao_id=manutencao.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-eye me-1"></i> Ver
                   </a>
-                  <a href="{{ url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                  <a href="{{ url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id) }}" class="btn btn-sm btn-outline-primary" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                   </a>
                 </div>

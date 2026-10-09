@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from io import BytesIO
 from pathlib import Path
 
@@ -24,12 +25,12 @@ from app.shared.query_filters import id_search_clause
 
 
 def _require_access():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in ADMIN_PANEL_VIEW_TYPES:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in ADMIN_PANEL_VIEW_TYPES):
         abort(403)
 
 
 def _require_edit():
-    if not can_edit_agro_panel(current_user):
+    if not route_access(current_user, can_edit_agro_panel(current_user)):
         abort(403)
 
 

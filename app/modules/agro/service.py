@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.modules.gestao_ti.permissions import capability
 
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -92,11 +93,13 @@ def build_agro_categoria_composta(categoria, subcategoria) -> str:
     return categoria or subcategoria
 
 
+@capability(['area:agro'])
 def can_access_agro_panel(user) -> bool:
     role = normalize_role(getattr(user, "tipo_usuario", None))
     return role == ADMIN_USER_TYPE or (role in ADMIN_PANEL_VIEW_TYPES and bool(getattr(user, "trabalha_agro", False)))
 
 
+@capability(['agro.*.criar', 'agro.*.editar', 'agro.*.excluir', 'agro.*.concluir', 'agro.*.configurar'])
 def can_edit_agro_panel(user) -> bool:
     return can_access_agro_panel(user) and normalize_role(getattr(user, "tipo_usuario", None)) in ADMIN_PANEL_EDIT_TYPES
 
@@ -106,6 +109,7 @@ def can_access_agro_finance_panel(user) -> bool:
     return can_access_financeiro_panel(user)
 
 
+@capability(['financeiro.*.criar', 'financeiro.*.editar', 'financeiro.*.excluir', 'financeiro.*.operar', 'financeiro.comprovantes.midias'])
 def can_edit_agro_finance_panel(user) -> bool:
     role = normalize_role(getattr(user, "tipo_usuario", None))
     return can_access_agro_finance_panel(user) and (role in AGRO_FINANCE_EDIT_TYPES or is_dev_user(user))

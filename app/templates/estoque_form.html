@@ -25,7 +25,7 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0 estoque-form-card">
     <div class="card-body p-4">
-      <form method="post" novalidate class="estoque-form-fields">
+      <form method="post" novalidate class="estoque-form-fields" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">Modelo da peça *</label>
@@ -76,7 +76,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-5 estoque-form-actions">
-          <a href="{{ url_for('main.estoque_listar') }}" class="btn btn-outline-danger btn-sm">Cancelar</a>
+          <a href="{{ url_for('main.estoque_listar') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">Cancelar</a>
           <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
             <i class="bi bi-check-lg me-1"></i> Salvar
           </button>

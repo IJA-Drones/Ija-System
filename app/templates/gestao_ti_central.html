@@ -2,7 +2,7 @@
 {% block title %}Central de TI | Oceano Azul{% endblock %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/gestao-ti-central.css', v='20261008e') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/gestao-ti-central.css', v='20261009a') }}">
 {% endblock %}
 
 {% block content %}
@@ -45,7 +45,7 @@
   </div>
 
   <div class="ti-save-bar">
-    <span class="ti-preview-label">{{ 'Configuração em validação' if central_ti_data is defined else 'Prévia visual' }}</span>
+    <span class="ti-preview-label">{{ 'Permissões ativas' if central_ti_data is defined and central_ti_data.active else ('Configuração em validação' if central_ti_data is defined else 'Prévia visual') }}</span>
     <button class="btn btn-primary" type="button" id="ti-save" disabled aria-haspopup="dialog"><i class="bi bi-save me-2" aria-hidden="true"></i>Salvar alterações</button>
   </div>
   <p class="ti-feedback" id="ti-feedback" role="status" aria-live="polite" hidden></p>
@@ -56,5 +56,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261008e') }}" defer></script>
+<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261009a') }}" defer></script>
 {% endblock %}

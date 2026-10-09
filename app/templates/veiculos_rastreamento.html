@@ -13,7 +13,7 @@
 <div class="tracking-page" id="trackingPage" data-url="{{ url_for('main.veiculos_rastreamento_dados') }}">
   <header class="tracking-header dashboard-header">
     <div>
-      <a class="tracking-back" href="{{ url_for('main.veiculos_menu') }}"><i class="bi bi-arrow-left"></i> Central de veículos</a>
+      <a class="tracking-back" href="{{ url_for('main.veiculos_menu') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left"></i> Central de veículos</a>
       <div class="tracking-title"><h2>Rastreamento</h2><span class="badge bg-light text-primary border tracking-provider" id="trackingProvider">Google Maps · RedGPS</span></div>
       <p class="text-muted mb-0">Uma visão da frota, do deslocamento aos detalhes de cada veículo.</p>
     </div>

@@ -16,7 +16,7 @@
       <i class="bi bi-people-fill me-2 text-primary"></i> Minhas Equipes (UVIS)
     </h2>
 
-    <a href="{{ url_for('main.criar_equipe_uvis') }}" class="btn btn-outline-primary btn-sm">
+    <a href="{{ url_for('main.criar_equipe_uvis') }}" class="btn btn-outline-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.criar_equipe_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-plus-lg me-1"></i> Nova equipe
     </a>
   </div>
@@ -113,7 +113,7 @@
                       href="{{ url_for('main.listar_membros_equipe_uvis', nome_equipe=e.nome_equipe) }}"
                       class="btn btn-outline-primary btn-sm"
                       title="Ver membros"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_membros_equipe_uvis', nome_equipe=e.nome_equipe)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-eye me-1"></i> Ver
                     </a>
 
@@ -122,7 +122,7 @@
                       class="btn btn-outline-success btn-sm {% if e.total >= 5 %}disabled{% endif %}"
                       {% if e.total >= 5 %}aria-disabled="true"{% endif %}
                       title="Adicionar pessoa"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.adicionar_membro_equipe_uvis', nome_equipe=e.nome_equipe)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-person-plus me-1"></i> Adicionar
                     </a>
 
@@ -144,7 +144,7 @@
                 <td colspan="4" class="text-center text-muted py-4">
                   Nenhuma equipe cadastrada ainda.
                   <div class="mt-2">
-                    <a href="{{ url_for('main.criar_equipe_uvis') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ url_for('main.criar_equipe_uvis') }}" class="btn btn-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.criar_equipe_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-plus-lg me-1"></i> Criar primeira equipe
                     </a>
                   </div>
@@ -157,7 +157,7 @@
 
       {# BOTÕES #}
       <div class="d-flex justify-content-end gap-2 mt-5 uvis-equipes-actions-footer">
-        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-danger btn-sm">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-arrow-left me-1"></i> Voltar
         </a>
       </div>
@@ -186,7 +186,7 @@
             {# 🔁 Ajuste a rota abaixo conforme você criar:
                @bp.route("/uvis/equipes/<nome_equipe>/credenciais", methods=["POST"], endpoint="atualizar_credenciais_equipe_uvis")
             #}
-            <form method="POST" action="{{ url_for('main.atualizar_credenciais_equipe_uvis', nome_equipe=e.nome_equipe) }}">
+            <form method="POST" action="{{ url_for('main.atualizar_credenciais_equipe_uvis', nome_equipe=e.nome_equipe) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.atualizar_credenciais_equipe_uvis', nome_equipe=e.nome_equipe), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="modal-body">
 
                 <div class="mb-2">

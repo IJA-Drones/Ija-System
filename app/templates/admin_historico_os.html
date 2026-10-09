@@ -28,28 +28,28 @@
       <a
         href="{{ url_for('main.admin_historico_os_exportar_excel', **pagination_args) }}"
         class="btn btn-success px-3"
-      >
+       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os_exportar_excel', **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar filtro
       </a>
       <a
         href="{{ url_for('main.admin_historico_os_exportar_excel_individuais', **pagination_args) }}"
         class="btn btn-outline-primary px-3"
-      >
+       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os_exportar_excel_individuais', **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-zip me-1"></i> Excels individuais
       </a>
       <a
         href="{{ url_for('main.admin_historico_os_exportar_pdf_individuais', **pagination_args) }}"
         class="btn btn-outline-danger px-3"
-      >
+       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os_exportar_pdf_individuais', **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-zip me-1"></i> PDFs individuais
       </a>
       <a
         href="{{ url_for('main.admin_historico_os_exportar_excel', tipo_os='piloto', all=1) }}"
         class="btn btn-secondary px-3"
-      >
+       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os_exportar_excel', tipo_os='piloto', all=1)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar tudo
       </a>
-      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary px-3">
+      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary px-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
     </div>
@@ -92,7 +92,7 @@
 
     <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltros">
       <div class="card-body pt-0">
-        <form method="GET">
+        <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <input type="hidden" name="tipo_os" value="piloto">
           <div class="row g-2 filter-chip-row">
             <div class="col-md-3">
@@ -223,7 +223,7 @@
                   <i class="bi bi-search"></i> Filtrar
                 </button>
                 {% if filtros_ativos %}
-                  <a href="{{ url_for('main.admin_historico_os', tipo_os='piloto') }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
+                  <a href="{{ url_for('main.admin_historico_os', tipo_os='piloto') }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os', tipo_os='piloto')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-x-lg"></i> Limpar
                   </a>
                 {% endif %}
@@ -318,18 +318,18 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3"
                       aria-labelledby="historicoOsAcoes{{ p.id }}">
                     <li>
-                      <a class="dropdown-item py-2" href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}">
+                      <a class="dropdown-item py-2" href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_os_formulario_view', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-clipboard2-check text-primary me-2" aria-hidden="true"></i> Ver formulário
                       </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                      <a class="dropdown-item py-2" href="{{ url_for('main.admin_export_os_pdf_v2', os_id=p.id) }}">
+                      <a class="dropdown-item py-2" href="{{ url_for('main.admin_export_os_pdf_v2', os_id=p.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_export_os_pdf_v2', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-file-earmark-pdf text-danger me-2" aria-hidden="true"></i> Exportar PDF
                       </a>
                     </li>
                     <li>
-                      <a class="dropdown-item py-2" href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}">
+                      <a class="dropdown-item py-2" href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_export_os_excel_v2', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-file-earmark-excel text-success me-2" aria-hidden="true"></i> Exportar Excel
                       </a>
                     </li>

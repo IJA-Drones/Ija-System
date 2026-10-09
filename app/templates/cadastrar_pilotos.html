@@ -17,7 +17,7 @@
   {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" action="{{ url_for('main.cadastrar_pilotos') }}" novalidate>
+      <form method="post" action="{{ url_for('main.cadastrar_pilotos') }}" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_pilotos'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
 
         {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
@@ -176,7 +176,7 @@
 
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.listar_pilotos') }}" class="btn btn-outline-danger btn-sm">
+          <a href="{{ url_for('main.listar_pilotos') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_pilotos')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
 

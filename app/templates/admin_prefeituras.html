@@ -28,10 +28,10 @@
       </p>
     </div>
     <div class="listing-actions">
-      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ safe_url_for('main.admin_prefeitura_nova', '/admin/prefeituras/nova') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
+      <a href="{{ safe_url_for('main.admin_prefeitura_nova', '/admin/prefeituras/nova') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(safe_url_for('main.admin_prefeitura_nova', '/admin/prefeituras/nova')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-plus-lg"></i> Nova Prefeitura
       </a>
     </div>
@@ -54,7 +54,7 @@
 
     <div class="collapse {% if q or ativa %}show{% endif %}" id="collapseFiltrosPrefeituras">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.admin_prefeituras') }}">
+        <form method="GET" action="{{ url_for('main.admin_prefeituras') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_prefeituras'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-6">
               <label for="search_q" class="small text-muted">Buscar (nome ou slug):</label>
@@ -80,7 +80,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if q or ativa %}
-              <a href="{{ url_for('main.admin_prefeituras') }}" class="btn btn-outline-secondary btn-sm" title="Remover todos os filtros">
+              <a href="{{ url_for('main.admin_prefeituras') }}" class="btn btn-outline-secondary btn-sm" title="Remover todos os filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_prefeituras')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-x-lg"></i> Limpar
               </a>
               {% endif %}
@@ -130,13 +130,13 @@
               <td data-label="Acoes" class="listing-cell-actions prefeitura-actions-cell">
                 <div class="listing-actions-group">
                   <a href="{{ url_for('main.admin_prefeitura_editar', id=prefeitura.id) }}"
-                     class="btn btn-sm btn-success text-white shadow-sm">
+                     class="btn btn-sm btn-success text-white shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_prefeitura_editar', id=prefeitura.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-pencil-square me-1"></i> Editar
                   </a>
                   <form method="POST"
                         action="{{ url_for('main.admin_prefeitura_excluir', id=prefeitura.id) }}"
                         class="m-0"
-                        onsubmit="return confirm('Tem certeza que deseja excluir a prefeitura {{ prefeitura.nome }}?');">
+                        onsubmit="return confirm('Tem certeza que deseja excluir a prefeitura {{ prefeitura.nome }}?');" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_prefeitura_excluir', id=prefeitura.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                     <button type="submit" class="btn btn-sm btn-danger shadow-sm">
                       <i class="bi bi-trash me-1"></i> Excluir
                     </button>

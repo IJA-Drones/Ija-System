@@ -26,7 +26,7 @@
     {# --- Card Principal com Estilo Oceano Azul --- #}
     <div class="card info status-primary shadow-sm rounded-4 border-0">
         <div class="card-body p-4">
-            <form method="POST">
+            <form method="POST" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                 
                 {# SEÇÃO 1: INFORMAÇÕES BÁSICAS #}
                 <div class="d-flex align-items-center mb-3">
@@ -171,7 +171,7 @@
                 {# SEÇÃO DE BOTÕES PADRONIZADA #}
                 <div class="d-flex justify-content-end gap-2 mt-5">
                   <a href="{{ url_for('main.listar_veiculos') }}" 
-                    class="btn btn-outline-danger btn-sm" >
+                    class="btn btn-outline-danger btn-sm"  data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-x-lg me-2"></i> Cancelar
                   </a>
                   

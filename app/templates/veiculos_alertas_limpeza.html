@@ -17,7 +17,7 @@
         Veiculos sem nova limpeza registrada dentro de {{ prazo_dias }} dias.
       </div>
     </div>
-    <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
   </div>

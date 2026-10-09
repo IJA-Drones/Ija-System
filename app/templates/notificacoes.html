@@ -14,7 +14,7 @@
       action="{{ url_for('main.limpar_notificacoes') }}"
       class="form-deletar"
       data-confirm-text="Você está prestes a apagar TODAS as notificações permanentemente."
-    >
+     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.limpar_notificacoes'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
       <button type="submit" class="btn btn-outline-danger btn-sm">
         <i class="bi bi-trash3"></i> Limpar todas
       </button>
@@ -43,7 +43,7 @@
           <a
             href="{{ url_for('main.ler_notificacao', notif_id=n.id) }}"
             class="flex-grow-1 text-decoration-none notificacoes-link"
-          >
+           data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.ler_notificacao', notif_id=n.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <div class="me-3">
               <div class="d-flex align-items-center mb-1">
                 <i
@@ -75,7 +75,7 @@
             method="POST"
             action="{{ url_for('main.excluir_notificacao', notif_id=n.id) }}"
             class="form-deletar notificacoes-delete-form"
-          >
+           data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.excluir_notificacao', notif_id=n.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
             <button
               type="submit"
               class="btn btn-sm btn-outline-danger ms-2 notificacoes-delete-btn"

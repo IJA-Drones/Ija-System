@@ -85,7 +85,7 @@
         <p>Acesse sua área com usuário e senha.</p>
       </div>
 
-      <form method="POST" autocomplete="on">
+      <form method="POST" autocomplete="on" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
         <div class="login-field">
           <i class="bi bi-person"></i>
@@ -103,7 +103,7 @@
       </form>
 
       <div class="login-alt">
-        <a href="{{ url_for('auth.login_uvis_operacional') }}" class="login-alt-link">
+        <a href="{{ url_for('auth.login_uvis_operacional') }}" class="login-alt-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('auth.login_uvis_operacional')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <span class="login-alt-icon"><i class="bi bi-person-workspace"></i></span>
           <span class="login-alt-copy">
             <span class="login-alt-title">Acesso operacional UVIS</span>
@@ -112,7 +112,7 @@
           <i class="bi bi-arrow-right-short fs-4"></i>
         </a>
 
-        <a href="{{ url_for('auth.login_piloto_agro') }}" class="login-alt-link agro">
+        <a href="{{ url_for('auth.login_piloto_agro') }}" class="login-alt-link agro" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('auth.login_piloto_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <span class="login-alt-icon"><i class="bi bi-tree"></i></span>
           <span class="login-alt-copy">
             <span class="login-alt-title">Piloto do Agro</span>
@@ -121,7 +121,7 @@
           <i class="bi bi-arrow-right-short fs-4"></i>
         </a>
 
-        <a href="{{ url_for('main.portal_cidadao') }}" class="login-alt-link citizen">
+        <a href="{{ url_for('main.portal_cidadao') }}" class="login-alt-link citizen" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <span class="login-alt-icon"><i class="bi bi-people-fill"></i></span>
           <span class="login-alt-copy">
             <span class="login-alt-title">Portal do Cidadão</span>

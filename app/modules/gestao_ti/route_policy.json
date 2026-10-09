@@ -1,0 +1,1149 @@
+{
+  "main.forcar_erro": {
+    "GET": "sistema.tecnico.operar"
+  },
+  "main.test_error_code": {
+    "GET": "sistema.tecnico.consultar"
+  },
+  "main.veiculos_rastreamento": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.veiculos_rastreamento_dados": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.veiculos_menu": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.listar_veiculos": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.atualizar_equipes_veiculos": {
+    "POST": "prefeitura.veiculos.editar"
+  },
+  "main.veiculos_logs": {
+    "GET": "prefeitura.logs_veiculos.consultar"
+  },
+  "main.veiculos_limpezas": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.veiculos_alertas_limpeza": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.veiculo_logs_detalhe": {
+    "GET": "prefeitura.logs_veiculos.consultar"
+  },
+  "main.exportar_logs_veiculos_xlsx": {
+    "GET": [
+      "prefeitura.logs_veiculos.exportar",
+      "prefeitura.veiculos.exportar"
+    ]
+  },
+  "main.veiculos_logs_excluidos": {
+    "GET": "sistema.auditoria.consultar"
+  },
+  "main.corrigir_log_veiculo": {
+    "POST": [
+      "prefeitura.logs_veiculos.corrigir",
+      "prefeitura.veiculos.corrigir"
+    ]
+  },
+  "main.deletar_log_veiculo": {
+    "POST": "prefeitura.logs_veiculos.excluir"
+  },
+  "main.veiculo_log_midia_skybox": {
+    "GET": "prefeitura.logs_veiculos.consultar"
+  },
+  "main.veiculo_abastecimento_midia_skybox": {
+    "GET": "prefeitura.logs_veiculos.consultar"
+  },
+  "main.cadastrar_veiculo": {
+    "GET": "prefeitura.veiculos.criar",
+    "POST": "prefeitura.veiculos.criar"
+  },
+  "main.editar_veiculo": {
+    "GET": "prefeitura.veiculos.editar",
+    "POST": "prefeitura.veiculos.editar"
+  },
+  "main.deletar_veiculo": {
+    "POST": "prefeitura.veiculos.excluir"
+  },
+  "main.piloto_veiculos": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.piloto_caixa_entrada": {
+    "GET": "prefeitura.veiculos.consultar"
+  },
+  "main.piloto_confirmar_alerta_limpeza": {
+    "POST": "prefeitura.veiculos.operar"
+  },
+  "main.piloto_atualizar_km_veiculo": {
+    "POST": "prefeitura.veiculos.operar"
+  },
+  "main.piloto_registrar_abastecimento_turno": {
+    "POST": "prefeitura.veiculos.operar"
+  },
+  "main.piloto_registrar_limpeza_turno": {
+    "POST": "prefeitura.veiculos.operar"
+  },
+  "main.piloto_encerrar_turno": {
+    "POST": "prefeitura.veiculos.operar"
+  },
+  "main.admin_uvis_novo": {
+    "GET": "prefeitura.clientes.criar",
+    "POST": "prefeitura.clientes.criar"
+  },
+  "main.admin_uvis_listar": {
+    "GET": "prefeitura.clientes.consultar"
+  },
+  "main.admin_uvis_editar": {
+    "GET": "prefeitura.clientes.editar",
+    "POST": "prefeitura.clientes.editar"
+  },
+  "main.admin_uvis_excluir": {
+    "POST": "prefeitura.clientes.excluir"
+  },
+  "main.admin_uvis_exportar": {
+    "GET": "prefeitura.clientes.exportar"
+  },
+  "main.api_solicitacao_checar_bloqueio": {
+    "GET": "prefeitura.solicitacoes.consultar"
+  },
+  "main.novo": {
+    "GET": "prefeitura.solicitacoes.criar",
+    "POST": "prefeitura.solicitacoes.criar"
+  },
+  "main.editar_solicitacao": {
+    "GET": "prefeitura.solicitacoes.editar",
+    "POST": "prefeitura.solicitacoes.editar"
+  },
+  "main.deletar_registro": {
+    "POST": "prefeitura.solicitacoes.excluir"
+  },
+  "main.uvis_chatbot": {
+    "POST": "prefeitura.solicitacoes.editar"
+  },
+  "main.admin_chatbot": {
+    "POST": "prefeitura.solicitacoes.editar"
+  },
+  "main.agro_admin_chatbot": {
+    "POST": "agro.comercial.editar"
+  },
+  "main.agro_piloto_chatbot": {
+    "POST": "agro.os.editar"
+  },
+  "main.admin_dashboard": {
+    "GET": "prefeitura.solicitacoes.consultar"
+  },
+  "main.exportar_excel": {
+    "GET": "prefeitura.solicitacoes.exportar"
+  },
+  "main.atualizar": {
+    "POST": "prefeitura.solicitacoes.editar"
+  },
+  "main.cancelar_solicitacao_admin": {
+    "POST": "prefeitura.solicitacoes.cancelar"
+  },
+  "main.admin_canceladas": {
+    "GET": "prefeitura.solicitacoes.consultar"
+  },
+  "main.admin_historico_os": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.admin_historico_os_exportar_excel": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.admin_historico_os_exportar_excel_individuais": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.admin_historico_os_exportar_pdf_individuais": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.admin_historico_os_pdf_job_status": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.admin_historico_os_pdf_job_download": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.admin_equipe_uvis_os_formulario_view": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.piloto_os": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.piloto_dosagem": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.piloto_os_dosagem": {
+    "GET": "prefeitura.os.consultar",
+    "POST": "prefeitura.os.editar"
+  },
+  "main.piloto_os_historico": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.piloto_concluir_os": {
+    "POST": "prefeitura.os.concluir"
+  },
+  "main.piloto_os_formulario_redirect": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.piloto_os_formulario_view": {
+    "GET": "prefeitura.os.consultar",
+    "POST": "prefeitura.os.editar"
+  },
+  "main.os_video": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.os_imagem_principal": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.os_imagem_complementar": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.piloto_api_drone": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.os_upload_stream": {
+    "PUT": "prefeitura.os.midias"
+  },
+  "main.os_upload_video_stream": {
+    "PUT": "prefeitura.os.midias"
+  },
+  "main.os_upload_video_background": {
+    "PUT": "prefeitura.os.midias"
+  },
+  "main.os_upload_video_background_init": {
+    "POST": "prefeitura.os.midias"
+  },
+  "main.video_upload_session_chunk": {
+    "PUT": "prefeitura.os.midias"
+  },
+  "main.video_upload_session_complete": {
+    "POST": "prefeitura.os.midias"
+  },
+  "main.video_upload_job_status": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.os_upload_complementary_stream": {
+    "PUT": "prefeitura.os.midias"
+  },
+  "main.os_delete_principal_image": {
+    "DELETE": "prefeitura.os.midias"
+  },
+  "main.os_delete_video": {
+    "DELETE": "prefeitura.os.midias"
+  },
+  "main.os_delete_complementary_image": {
+    "DELETE": "prefeitura.os.midias"
+  },
+  "main.admin_os_formulario_view": {
+    "GET": "prefeitura.os.consultar",
+    "POST": "prefeitura.os.editar"
+  },
+  "main.admin_export_os_pdf_v2": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.admin_export_os_excel_v2": {
+    "GET": "prefeitura.os.exportar"
+  },
+  "main.cadastrar_equipes": {
+    "GET": "prefeitura.equipes.criar",
+    "POST": "prefeitura.equipes.criar"
+  },
+  "main.listar_equipes": {
+    "GET": "prefeitura.equipes.consultar"
+  },
+  "main.atualizar_credenciais_equipe": {
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.editar_equipe": {
+    "GET": "prefeitura.equipes.editar",
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.deletar_equipe": {
+    "POST": "prefeitura.equipes.excluir"
+  },
+  "main.piloto_checklist_semanal": {
+    "GET": "prefeitura.checklists.consultar",
+    "POST": "prefeitura.checklists.editar"
+  },
+  "main.dashboard_equipe_uvis": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.equipe_uvis_os_formulario_view": {
+    "GET": "prefeitura.os.consultar",
+    "POST": "prefeitura.os.editar"
+  },
+  "main.equipe_uvis_os_historico": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.equipe_uvis_concluir_os": {
+    "POST": "prefeitura.os.concluir"
+  },
+  "main.cancelar_solicitacao": {
+    "POST": "prefeitura.solicitacoes.cancelar"
+  },
+  "main.solicitacoes_canceladas": {
+    "GET": "prefeitura.solicitacoes.consultar"
+  },
+  "main.feedback_notificacoes_status": {
+    "GET": "sistema.suporte.consultar"
+  },
+  "main.feedback_listar": {
+    "GET": "sistema.suporte.consultar"
+  },
+  "main.bugs_listar": {
+    "GET": "sistema.bugs.consultar"
+  },
+  "main.bugs_ajuda": {
+    "GET": "sistema.bugs.consultar"
+  },
+  "main.feedback_novo": {
+    "GET": "sistema.suporte.criar",
+    "POST": "sistema.suporte.criar"
+  },
+  "main.bug_report_novo": {
+    "GET": "sistema.bugs.criar",
+    "POST": "sistema.bugs.criar"
+  },
+  "main.feedback_detalhe": {
+    "GET": "sistema.suporte.consultar"
+  },
+  "main.bug_acompanhamento": {
+    "GET": "sistema.bugs.consultar"
+  },
+  "main.feedback_status": {
+    "GET": "sistema.suporte.consultar"
+  },
+  "main.feedback_comentar": {
+    "POST": "sistema.suporte.atender"
+  },
+  "main.feedback_anexo": {
+    "GET": "sistema.suporte.consultar"
+  },
+  "main.feedback_comentario_editar": {
+    "POST": "sistema.bugs.atender"
+  },
+  "main.feedback_comentario_apagar": {
+    "POST": "sistema.bugs.atender"
+  },
+  "main.feedback_atualizar": {
+    "POST": "sistema.bugs.atender"
+  },
+  "main.feedback_assumir": {
+    "POST": "sistema.bugs.atender"
+  },
+  "main.feedback_corrigir": {
+    "POST": "sistema.bugs.atender"
+  },
+  "main.dev_dashboard": {
+    "GET": "sistema.tecnico.consultar"
+  },
+  "main.dev_dashboard_data": {
+    "GET": "sistema.tecnico.consultar"
+  },
+  "main.dev_dashboard_error_detail": {
+    "GET": "sistema.tecnico.consultar"
+  },
+  "main.dev_dashboard_manual_check": {
+    "POST": "sistema.tecnico.operar"
+  },
+  "main.agenda": {
+    "GET": "prefeitura.mapas.consultar"
+  },
+  "main.agenda_rotas_dia": {
+    "GET": "prefeitura.mapas.consultar"
+  },
+  "main.agenda_exportar_excel": {
+    "GET": "prefeitura.mapas.exportar"
+  },
+  "main.painel_operacional": {
+    "GET": "sistema.operacional.consultar"
+  },
+  "main.api_painel_operacional_contexto": {
+    "POST": "sistema.operacional.consultar"
+  },
+  "main.dashboard": {
+    "GET": "prefeitura.solicitacoes.consultar"
+  },
+  "main.uvis_historico_os": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.uvis_os_formulario_view": {
+    "GET": "prefeitura.os.consultar",
+    "POST": "prefeitura.os.editar"
+  },
+  "main.uvis_equipe_os_formulario_view": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.admin_prefeitura_nova": {
+    "GET": "prefeitura.prefeituras.criar",
+    "POST": "prefeitura.prefeituras.criar"
+  },
+  "main.admin_prefeituras": {
+    "GET": "prefeitura.prefeituras.consultar"
+  },
+  "main.admin_prefeitura_editar": {
+    "GET": "prefeitura.prefeituras.editar",
+    "POST": "prefeitura.prefeituras.editar"
+  },
+  "main.admin_prefeitura_excluir": {
+    "POST": "prefeitura.prefeituras.excluir"
+  },
+  "main.admin_usuario_novo": {
+    "GET": "sistema.usuarios.criar",
+    "POST": "sistema.usuarios.criar"
+  },
+  "main.admin_usuarios_listar": {
+    "GET": "sistema.usuarios.consultar"
+  },
+  "main.admin_usuario_editar": {
+    "GET": "sistema.usuarios.editar",
+    "POST": "sistema.usuarios.editar"
+  },
+  "main.admin_usuario_reset_senha": {
+    "POST": "sistema.usuarios.gerenciar"
+  },
+  "main.admin_usuario_excluir": {
+    "POST": "sistema.usuarios.excluir"
+  },
+  "main.financeiro_central": {
+    "GET": "area:financeiro"
+  },
+  "main.financeiro_empresa": {
+    "GET": "area:financeiro"
+  },
+  "main.financeiro_empresa_logo": {
+    "GET": "area:financeiro"
+  },
+  "main.financeiro_empresa_configuracoes": {
+    "GET": "financeiro.configuracoes.consultar"
+  },
+  "main.financeiro_empresa_configuracoes_salvar": {
+    "POST": "financeiro.configuracoes.configurar"
+  },
+  "main.financeiro_empresa_clientes": {
+    "GET": "financeiro.comercial.consultar"
+  },
+  "main.financeiro_empresa_relacionamentos": {
+    "GET": [
+      "financeiro.comercial.consultar",
+      "financeiro.relacionamentos.consultar"
+    ]
+  },
+  "main.financeiro_empresa_fornecedores": {
+    "GET": "financeiro.relacionamentos.consultar"
+  },
+  "main.financeiro_empresa_comercial": {
+    "GET": "financeiro.comercial.consultar"
+  },
+  "main.listar_equipamentos": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.listar_drones": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.listar_baterias": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.cadastrar_drone": {
+    "GET": "prefeitura.equipamentos.criar",
+    "POST": "prefeitura.equipamentos.criar"
+  },
+  "main.editar_drone": {
+    "GET": "prefeitura.equipamentos.editar",
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.deletar_drone": {
+    "POST": "prefeitura.equipamentos.excluir"
+  },
+  "main.cadastrar_bateria": {
+    "GET": "prefeitura.equipamentos.criar",
+    "POST": "prefeitura.equipamentos.criar"
+  },
+  "main.editar_bateria": {
+    "GET": "prefeitura.equipamentos.editar",
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.deletar_bateria": {
+    "POST": "prefeitura.equipamentos.excluir"
+  },
+  "main.equipamentos_manutencao": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.equipamentos_manutencoes_historico": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.equipamentos_manutencoes_historico_excel": {
+    "GET": "prefeitura.equipamentos.exportar"
+  },
+  "main.equipamentos_manutencoes_pecas_historico": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.equipamentos_manutencoes_pecas_historico_excel": {
+    "GET": "prefeitura.equipamentos.exportar"
+  },
+  "main.equipamento_manutencao_detalhe": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.equipamento_manutencao_pecas": {
+    "GET": "prefeitura.equipamentos.consultar",
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.equipamento_manutencao_pdf": {
+    "GET": "prefeitura.equipamentos.exportar"
+  },
+  "main.equipamento_manutencao_historico_pdf": {
+    "GET": "prefeitura.equipamentos.exportar"
+  },
+  "main.equipamento_manutencao_encerrar": {
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.update_ciclos": {
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.enviar_manutencao_drone": {
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.relatorios_dji_logs": {
+    "GET": "prefeitura.voos.consultar"
+  },
+  "main.exportar_dji_logs_excel": {
+    "GET": "prefeitura.voos.exportar"
+  },
+  "main.importar_dji_logs": {
+    "POST": "prefeitura.voos.importar"
+  },
+  "main.importar_dji_kml": {
+    "POST": "prefeitura.voos.importar"
+  },
+  "main.api_dji_kml_route": {
+    "GET": [
+      "prefeitura.voos.consultar",
+      "prefeitura.os.consultar"
+    ]
+  },
+  "main.vincular_dji_kml_route_os": {
+    "POST": "prefeitura.voos.editar"
+  },
+  "main.excluir_dji_kml_route": {
+    "POST": "prefeitura.voos.excluir"
+  },
+  "main.visualizar_dji_kml_route": {
+    "GET": [
+      "prefeitura.voos.consultar",
+      "prefeitura.os.consultar"
+    ]
+  },
+  "main.baixar_dji_kml_route": {
+    "GET": [
+      "prefeitura.voos.exportar",
+      "prefeitura.os.exportar"
+    ]
+  },
+  "main.cadastrar_pilotos": {
+    "GET": "prefeitura.equipes.criar",
+    "POST": "prefeitura.equipes.criar"
+  },
+  "main.listar_pilotos": {
+    "GET": "prefeitura.equipes.consultar"
+  },
+  "main.editar_piloto": {
+    "GET": "prefeitura.equipes.editar",
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.deletar_piloto": {
+    "POST": "prefeitura.equipes.excluir"
+  },
+  "main.uvis_acesso_operacional": {
+    "GET": "prefeitura.equipes.consultar",
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.listar_equipes_uvis": {
+    "GET": "prefeitura.equipes.consultar"
+  },
+  "main.atualizar_credenciais_equipe_uvis": {
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.listar_membros_equipe_uvis": {
+    "GET": "prefeitura.equipes.consultar"
+  },
+  "main.adicionar_membro_equipe_uvis": {
+    "GET": "prefeitura.equipes.criar",
+    "POST": "prefeitura.equipes.criar"
+  },
+  "main.criar_equipe_uvis": {
+    "GET": "prefeitura.equipes.criar",
+    "POST": "prefeitura.equipes.criar"
+  },
+  "main.editar_membro_equipe_uvis": {
+    "GET": "prefeitura.equipes.editar",
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.deletar_membro_equipe_uvis": {
+    "POST": "prefeitura.equipes.excluir"
+  },
+  "main.atribuir_equipe_uvis_solicitacao": {
+    "POST": "prefeitura.equipes.atribuir"
+  },
+  "main.admin_listar_equipes_uvis": {
+    "GET": "prefeitura.equipes.consultar"
+  },
+  "main.admin_atualizar_acesso_operacional_uvis": {
+    "POST": "prefeitura.equipes.editar"
+  },
+  "main.admin_listar_membros_equipe_uvis": {
+    "GET": "prefeitura.equipes.consultar"
+  },
+  "main.api_geocode": {
+    "POST": "prefeitura.mapas.consultar"
+  },
+  "main.heatmap_data": {
+    "GET": "prefeitura.mapas.consultar"
+  },
+  "main.mapa_relatorio": {
+    "GET": "prefeitura.mapas.consultar"
+  },
+  "main.consultar_endereco_geolocalizacao": {
+    "GET": "prefeitura.mapas.consultar"
+  },
+  "main.relatorios_solicitacoes": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios_os": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios_retornos_automaticos": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios_retornos_automaticos_equipe": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios_retornos_automaticos_sem_equipe": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios_coleta_imagens": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.relatorios_coleta_imagens_ok_uvis": {
+    "POST": "prefeitura.relatorios.editar"
+  },
+  "main.exportar_relatorio_pdf": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.exportar_relatorio_excel": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.relatorios_os_export_excel": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.relatorios_os_export_pdf": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.relatorios_coleta_imagens_export_pdf": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.relatorios_coleta_imagens_export_pdf_zip": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.relatorios_coleta_imagens_pdf_job_status": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.relatorios_coleta_imagens_pdf_job_download": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.baixar_anexo": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.baixar_anexo_admin": {
+    "GET": "prefeitura.os.consultar"
+  },
+  "main.remover_anexo": {
+    "POST": "prefeitura.os.midias"
+  },
+  "main.vigilancia_validacao": {
+    "GET": "prefeitura.vigilancia.consultar",
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_validacao_api": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_modelo_csv": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.importar_planilha_drones": {
+    "GET": "prefeitura.equipamentos.importar"
+  },
+  "main.agro_importar_planilha_drones": {
+    "GET": "agro.equipamentos.importar"
+  },
+  "main.importar_planilha_drones_api": {
+    "POST": "prefeitura.equipamentos.importar"
+  },
+  "main.admin_checklists_semanais": {
+    "GET": "prefeitura.checklists.consultar"
+  },
+  "main.admin_checklist_semanal_detalhe": {
+    "GET": "prefeitura.checklists.consultar"
+  },
+  "main.admin_checklist_semanal_detalhe_actor": {
+    "GET": "prefeitura.checklists.consultar"
+  },
+  "main.editar_checklist_semanal": {
+    "GET": "prefeitura.checklists.corrigir",
+    "POST": "prefeitura.checklists.corrigir"
+  },
+  "main.backup_page": {
+    "GET": "sistema.backups.operar"
+  },
+  "main.backup_status": {
+    "GET": "sistema.backups.consultar"
+  },
+  "main.backups_list_page": {
+    "GET": "sistema.backups.consultar"
+  },
+  "main.admin_logs_usuarios": {
+    "GET": "sistema.auditoria.consultar"
+  },
+  "main.denuncias_listar": {
+    "GET": "prefeitura.denuncias.consultar"
+  },
+  "main.denuncia_detalhe": {
+    "GET": "prefeitura.denuncias.consultar"
+  },
+  "main.coordenadoria_denuncias_listar": {
+    "GET": "prefeitura.denuncias.consultar"
+  },
+  "main.coordenadoria_denuncia_detalhe": {
+    "GET": "prefeitura.denuncias.consultar"
+  },
+  "main.denuncia_encaminhar_coordenadoria": {
+    "POST": "prefeitura.denuncias.encaminhar"
+  },
+  "main.coordenadoria_denuncia_designar_uvis": {
+    "POST": "prefeitura.denuncias.atribuir"
+  },
+  "main.uvis_denuncias_listar": {
+    "GET": "prefeitura.denuncias.consultar"
+  },
+  "main.uvis_denuncia_detalhe": {
+    "GET": "prefeitura.denuncias.consultar",
+    "POST": "prefeitura.denuncias.converter"
+  },
+  "main.denuncia_arquivar": {
+    "POST": "prefeitura.denuncias.arquivar"
+  },
+  "main.denuncia_anexo": {
+    "GET": "prefeitura.denuncias.consultar"
+  },
+  "main.clientes_menu": {
+    "GET": "prefeitura.clientes.consultar"
+  },
+  "main.cadastrar_clientes": {
+    "GET": "prefeitura.clientes.criar",
+    "POST": "prefeitura.clientes.criar"
+  },
+  "main.listar_clientes": {
+    "GET": "prefeitura.clientes.consultar"
+  },
+  "main.editar_cliente": {
+    "GET": "prefeitura.clientes.editar",
+    "POST": "prefeitura.clientes.editar"
+  },
+  "main.deletar_cliente": {
+    "POST": "prefeitura.clientes.excluir"
+  },
+  "main.estoque_listar": {
+    "GET": "sistema.estoque.consultar"
+  },
+  "main.estoque_export_excel": {
+    "GET": "sistema.estoque.exportar"
+  },
+  "main.estoque_novo": {
+    "GET": "sistema.estoque.criar",
+    "POST": "sistema.estoque.criar"
+  },
+  "main.estoque_editar": {
+    "GET": "sistema.estoque.editar",
+    "POST": "sistema.estoque.editar"
+  },
+  "main.estoque_deletar": {
+    "POST": "sistema.estoque.excluir"
+  },
+  "main.agro_talentos_listar": {
+    "GET": "agro.talentos.consultar"
+  },
+  "main.agro_talento_novo": {
+    "GET": "agro.talentos.criar",
+    "POST": "agro.talentos.criar"
+  },
+  "main.agro_talento_detalhe": {
+    "GET": "agro.talentos.consultar",
+    "POST": "agro.talentos.editar"
+  },
+  "main.agro_talento_pdf": {
+    "GET": "agro.talentos.consultar"
+  },
+  "main.agro_talento_reprocessar": {
+    "POST": "agro.talentos.editar"
+  },
+  "main.agro_talento_deletar": {
+    "POST": "agro.talentos.excluir"
+  },
+  "main.agro_root": {
+    "GET": "area:agro"
+  },
+  "main.agro_piloto_dashboard": {
+    "GET": "area:agro"
+  },
+  "main.agro_piloto_os_listar": {
+    "GET": "agro.os.consultar"
+  },
+  "main.agro_piloto_mapeamentos_listar": {
+    "GET": "agro.mapeamentos.consultar"
+  },
+  "main.admin_agro": {
+    "GET": "area:agro"
+  },
+  "main.agro_financeiro_dashboard": {
+    "GET": "financeiro.relatorios.consultar"
+  },
+  "main.agro_financeiro_categorias_listar": {
+    "GET": "financeiro.configuracoes.consultar"
+  },
+  "main.agro_financeiro_categoria_nova": {
+    "GET": "financeiro.configuracoes.configurar",
+    "POST": "financeiro.configuracoes.configurar"
+  },
+  "main.agro_financeiro_categoria_editar": {
+    "GET": "financeiro.configuracoes.configurar",
+    "POST": "financeiro.configuracoes.configurar"
+  },
+  "main.agro_financeiro_categoria_alternar": {
+    "POST": "financeiro.configuracoes.configurar"
+  },
+  "main.agro_bancos_listar": {
+    "GET": "financeiro.bancos.consultar"
+  },
+  "main.agro_bancos_conciliacao": {
+    "GET": "financeiro.bancos.consultar"
+  },
+  "main.agro_banco_novo": {
+    "GET": "financeiro.bancos.criar",
+    "POST": "financeiro.bancos.criar"
+  },
+  "main.agro_banco_editar": {
+    "GET": "financeiro.bancos.editar",
+    "POST": "financeiro.bancos.editar"
+  },
+  "main.agro_banco_deletar": {
+    "POST": "financeiro.bancos.excluir"
+  },
+  "main.agro_fluxo_caixa_exportar_excel": {
+    "GET": "financeiro.relatorios.exportar"
+  },
+  "main.agro_dre_gerencial_exportar_excel": {
+    "GET": "financeiro.relatorios.exportar"
+  },
+  "main.agro_clientes_listar": {
+    "GET": "agro.clientes.consultar"
+  },
+  "main.agro_clientes_menu": {
+    "GET": "agro.clientes.consultar"
+  },
+  "main.agro_cliente_novo": {
+    "GET": "agro.clientes.criar",
+    "POST": "agro.clientes.criar"
+  },
+  "main.agro_cliente_editar": {
+    "GET": "agro.clientes.editar",
+    "POST": "agro.clientes.editar"
+  },
+  "main.agro_cliente_deletar": {
+    "POST": "agro.clientes.excluir"
+  },
+  "main.agro_fornecedores_listar": {
+    "GET": [
+      "agro.clientes.consultar",
+      "financeiro.relacionamentos.consultar"
+    ]
+  },
+  "main.agro_fornecedor_novo": {
+    "GET": [
+      "agro.clientes.criar",
+      "financeiro.relacionamentos.criar"
+    ],
+    "POST": [
+      "agro.clientes.criar",
+      "financeiro.relacionamentos.criar"
+    ]
+  },
+  "main.agro_fornecedor_editar": {
+    "GET": [
+      "agro.clientes.editar",
+      "financeiro.relacionamentos.editar"
+    ],
+    "POST": [
+      "agro.clientes.editar",
+      "financeiro.relacionamentos.editar"
+    ]
+  },
+  "main.agro_fornecedor_deletar": {
+    "POST": [
+      "agro.clientes.excluir",
+      "financeiro.relacionamentos.excluir"
+    ]
+  },
+  "main.agro_orcamentos_listar": {
+    "GET": "agro.comercial.consultar"
+  },
+  "main.agro_orcamento_novo": {
+    "GET": "agro.comercial.criar",
+    "POST": "agro.comercial.criar"
+  },
+  "main.agro_orcamento_editar": {
+    "GET": "agro.comercial.editar",
+    "POST": "agro.comercial.editar"
+  },
+  "main.agro_rd_mapeamento_editar": {
+    "GET": "agro.mapeamentos.editar",
+    "POST": "agro.mapeamentos.editar"
+  },
+  "main.agro_orcamentos_template_mapeamento": {
+    "GET": "agro.mapeamentos.consultar"
+  },
+  "main.agro_orcamento_template_mapeamento_salvar": {
+    "POST": "agro.mapeamentos.configurar"
+  },
+  "main.agro_piloto_rd_mapeamento": {
+    "GET": "agro.mapeamentos.consultar",
+    "POST": "agro.mapeamentos.concluir"
+  },
+  "main.agro_contrato_editar": {
+    "GET": "agro.contratos.editar",
+    "POST": "agro.contratos.editar"
+  },
+  "main.agro_contratos_listar": {
+    "GET": "agro.contratos.consultar"
+  },
+  "main.agro_contratos_comprovantes": {
+    "GET": "financeiro.comprovantes.consultar"
+  },
+  "main.agro_financeiro_contas": {
+    "GET": "financeiro.contas.consultar"
+  },
+  "main.agro_relatorio_contas_geral": {
+    "GET": "financeiro.relatorios.consultar"
+  },
+  "main.agro_relatorio_contas_geral_excel": {
+    "GET": "financeiro.relatorios.exportar"
+  },
+  "main.agro_relatorio_contas_geral_pdf": {
+    "GET": "financeiro.relatorios.exportar"
+  },
+  "main.agro_contas_receber_listar": {
+    "GET": "financeiro.contas.consultar"
+  },
+  "main.agro_contas_pagar_listar": {
+    "GET": "financeiro.contas.consultar"
+  },
+  "main.agro_financeiro_listar": {
+    "GET": "financeiro.contas.consultar"
+  },
+  "main.agro_financeiro_configuracoes": {
+    "GET": "financeiro.configuracoes.consultar"
+  },
+  "main.agro_financeiro_configuracoes_salvar": {
+    "POST": "financeiro.configuracoes.configurar"
+  },
+  "main.agro_financeiro_novo": {
+    "GET": "financeiro.contas.criar",
+    "POST": "financeiro.contas.criar"
+  },
+  "main.agro_financeiro_editar": {
+    "GET": "financeiro.contas.editar",
+    "POST": "financeiro.contas.editar"
+  },
+  "main.agro_financeiro_receber_os_concluida": {
+    "POST": "financeiro.contas.operar"
+  },
+  "main.agro_financeiro_deletar": {
+    "POST": "financeiro.contas.excluir"
+  },
+  "main.agro_financeiro_entrada_listar": {
+    "GET": "financeiro.contas.consultar"
+  },
+  "main.agro_financeiro_entrada_novo": {
+    "GET": "financeiro.contas.criar",
+    "POST": "financeiro.contas.criar"
+  },
+  "main.agro_financeiro_entrada_editar": {
+    "GET": "financeiro.contas.editar",
+    "POST": "financeiro.contas.editar"
+  },
+  "main.agro_financeiro_entrada_deletar": {
+    "POST": "financeiro.contas.excluir"
+  },
+  "main.agro_financeiro_saida_listar": {
+    "GET": "financeiro.contas.consultar"
+  },
+  "main.agro_financeiro_saida_novo": {
+    "GET": "financeiro.contas.criar",
+    "POST": "financeiro.contas.criar"
+  },
+  "main.agro_financeiro_saida_editar": {
+    "GET": "financeiro.contas.editar",
+    "POST": "financeiro.contas.editar"
+  },
+  "main.agro_financeiro_saida_deletar": {
+    "POST": "financeiro.contas.excluir"
+  },
+  "main.agro_caixa_diario": {
+    "GET": "financeiro.caixa.consultar"
+  },
+  "main.agro_caixa_abrir": {
+    "POST": "financeiro.caixa.operar"
+  },
+  "main.agro_caixa_fechar": {
+    "POST": "financeiro.caixa.operar"
+  },
+  "main.agro_contratos_template": {
+    "GET": "agro.contratos.consultar"
+  },
+  "main.agro_contrato_template_salvar": {
+    "POST": "agro.contratos.configurar"
+  },
+  "main.agro_contrato_deletar": {
+    "POST": "agro.contratos.excluir"
+  },
+  "main.agro_contrato_comprovante_pagamento_upload": {
+    "POST": [
+      "financeiro.comprovantes.midias",
+      "agro.contratos.midias"
+    ]
+  },
+  "main.agro_contrato_comprovante_pagamento": {
+    "GET": [
+      "financeiro.comprovantes.consultar",
+      "agro.contratos.consultar"
+    ]
+  },
+  "main.agro_contrato_comprovante_pagamento_remover": {
+    "POST": [
+      "financeiro.comprovantes.midias",
+      "agro.contratos.midias"
+    ]
+  },
+  "main.agro_orcamento_anexo": {
+    "GET": [
+      "agro.comercial.consultar",
+      "financeiro.comercial.consultar"
+    ]
+  },
+  "main.agro_orcamento_pdf": {
+    "GET": [
+      "agro.comercial.exportar",
+      "financeiro.comercial.exportar"
+    ]
+  },
+  "main.agro_contrato_pdf": {
+    "GET": [
+      "agro.contratos.exportar",
+      "financeiro.comercial.exportar"
+    ]
+  },
+  "main.agro_os_relatorio_pdf": {
+    "GET": "agro.os.exportar"
+  },
+  "main.agro_os_deletar": {
+    "POST": "agro.os.excluir"
+  },
+  "main.agro_os_listar": {
+    "GET": "agro.os.consultar"
+  },
+  "main.agro_logs_voo": {
+    "GET": "agro.voos.consultar"
+  },
+  "main.agro_logs_voo_exportar": {
+    "GET": "agro.voos.exportar"
+  },
+  "main.agro_logs_voo_importar_excel": {
+    "POST": "agro.voos.importar"
+  },
+  "main.agro_logs_voo_importar_kml": {
+    "POST": "agro.voos.importar"
+  },
+  "main.agro_logs_voo_vincular_os": {
+    "POST": "agro.voos.editar"
+  },
+  "main.agro_logs_voo_desvincular_os": {
+    "POST": "agro.voos.editar"
+  },
+  "main.api_agro_kml_route": {
+    "GET": [
+      "agro.voos.consultar",
+      "agro.os.consultar"
+    ]
+  },
+  "main.agro_logs_voo_baixar_kml": {
+    "GET": [
+      "agro.voos.exportar",
+      "agro.os.exportar"
+    ]
+  },
+  "main.agro_os_nova": {
+    "GET": "agro.os.criar",
+    "POST": "agro.os.criar"
+  },
+  "main.agro_os_editar": {
+    "GET": "agro.os.editar",
+    "POST": "agro.os.editar"
+  },
+  "main.agro_orcamento_deletar": {
+    "POST": "agro.comercial.excluir"
+  },
+  "main.agro_equipes_listar": {
+    "GET": "agro.equipes.consultar"
+  },
+  "main.agro_equipe_nova": {
+    "GET": "agro.equipes.criar",
+    "POST": "agro.equipes.criar"
+  },
+  "main.agro_equipe_editar": {
+    "GET": "agro.equipes.editar",
+    "POST": "agro.equipes.editar"
+  },
+  "main.agro_equipe_deletar": {
+    "POST": "agro.equipes.excluir"
+  },
+  "main.agro_pilotos_listar": {
+    "GET": "agro.equipes.consultar"
+  },
+  "main.agro_piloto_novo": {
+    "GET": "agro.equipes.criar",
+    "POST": "agro.equipes.criar"
+  },
+  "main.agro_piloto_editar": {
+    "GET": "agro.equipes.editar",
+    "POST": "agro.equipes.editar"
+  },
+  "main.agro_piloto_deletar": {
+    "POST": "agro.equipes.excluir"
+  },
+  "main.agro_equipamentos_listar": {
+    "GET": "agro.equipamentos.consultar"
+  },
+  "main.agro_equipamento_novo": {
+    "GET": "agro.equipamentos.criar",
+    "POST": "agro.equipamentos.criar"
+  },
+  "main.agro_equipamento_editar": {
+    "GET": "agro.equipamentos.editar",
+    "POST": "agro.equipamentos.editar"
+  },
+  "main.agro_equipamento_deletar": {
+    "POST": "agro.equipamentos.excluir"
+  }
+}

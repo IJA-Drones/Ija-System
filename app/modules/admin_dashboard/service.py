@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import capability
+from app.modules.gestao_ti.permissions import active_configuration, require_permission
 from datetime import date, datetime, time, timedelta
 from io import BytesIO
 import os
@@ -158,10 +160,12 @@ def _apply_foco_filter(query, filtro_foco):
     return query.filter(Solicitacao.foco.in_(focos))
 
 
+@capability(['prefeitura.*.consultar'])
 def can_access_admin_panel(user) -> bool:
     return getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES
 
 
+@capability(['prefeitura.*.criar', 'prefeitura.*.editar', 'prefeitura.*.concluir', 'prefeitura.*.aprovar', 'prefeitura.*.cancelar'])
 def can_edit_admin_panel(user) -> bool:
     return getattr(user, "tipo_usuario", None) in ADMIN_PANEL_EDIT_TYPES
 
@@ -1029,8 +1033,16 @@ def build_admin_historico_os_individual_pdf_zip(
 
 
 def apply_admin_update_fields(pedido, form, *, user=None):
+    if active_configuration(user) is not None:
+        new_status = (form.get("status") or "").strip().upper()
+        old_status = (pedido.status or "").strip().upper()
+        if new_status and new_status != old_status:
+            require_permission(user, "prefeitura.solicitacoes.cancelar" if new_status == "CANCELADO" else "prefeitura.solicitacoes.aprovar")
+        if "equipe_id" in form and str(form.get("equipe_id") or "") != str(pedido.equipe_id or ""):
+            require_permission(user, "prefeitura.equipes.atribuir")
     pedido.protocolo = form.get("protocolo")
-    pedido.status = form.get("status")
+    if "status" in form or active_configuration(user) is None:
+        pedido.status = form.get("status")
     pedido.justificativa = form.get("justificativa")
     pedido.latitude = form.get("latitude")
     pedido.longitude = form.get("longitude")
@@ -1041,7 +1053,7 @@ def apply_admin_update_fields(pedido, form, *, user=None):
             pedido.quadra_visualizada_admin = True
             pedido.quadra_visualizada_admin_em = datetime.now()
 
-    equipe_id = form.get("equipe_id")
+    equipe_id = form.get("equipe_id", pedido.equipe_id) if active_configuration(user) is not None else form.get("equipe_id")
     if equipe_id in (None, "", "null", "undefined"):
         pedido.equipe_id = None
         equipe_nome = None

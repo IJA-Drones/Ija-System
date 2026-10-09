@@ -24,12 +24,12 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_piloto_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_piloto_novo') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-lg"></i> Novo piloto
         </a>
       {% endif %}
@@ -53,7 +53,7 @@
 
     <div class="collapse {% if filters.q %}show{% endif %}" id="collapseFiltrosPilotosAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_pilotos_listar') }}">
+        <form method="GET" action="{{ url_for('main.agro_pilotos_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_pilotos_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-8">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -72,7 +72,7 @@
               </button>
 
               {% if filters.q %}
-                <a href="{{ url_for('main.agro_pilotos_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_pilotos_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_pilotos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -143,13 +143,13 @@
                       </button>
                       <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                         <li>
-                          <a href="{{ url_for('main.agro_piloto_editar', piloto_id=piloto.id) }}" class="dropdown-item py-2">
+                          <a href="{{ url_for('main.agro_piloto_editar', piloto_id=piloto.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_editar', piloto_id=piloto.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar
                           </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                          <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_piloto_deletar', piloto_id=piloto.id) }}">
+                          <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_piloto_deletar', piloto_id=piloto.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_deletar', piloto_id=piloto.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                             <button type="submit" class="dropdown-item py-2 text-danger">
                               <i class="bi bi-trash me-2"></i> Excluir
                             </button>

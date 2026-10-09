@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import jsonify, render_template
 from flask_login import current_user, login_required
 
@@ -18,7 +19,7 @@ def register_routes(bp):
     @bp.route("/backup", methods=["GET"], endpoint="backup_page")
     @login_required
     def backup_page():
-        if not is_dev_user(current_user):
+        if not route_access(current_user, is_dev_user(current_user)):
             return (
                 render_template(
                     "backup_aguarde.html",
@@ -43,7 +44,7 @@ def register_routes(bp):
     @bp.route("/backup/status", methods=["GET"], endpoint="backup_status")
     @login_required
     def backup_status():
-        if not is_dev_user(current_user):
+        if not route_access(current_user, is_dev_user(current_user)):
             return jsonify({"ok": False, "error": "forbidden"}), 403
 
         return jsonify(get_backup_state())
@@ -51,7 +52,7 @@ def register_routes(bp):
     @bp.route("/backups", methods=["GET"], endpoint="backups_list_page")
     @login_required
     def backups_list_page():
-        if not is_dev_user(current_user):
+        if not route_access(current_user, is_dev_user(current_user)):
             return (
                 render_template(
                     "backup_lista.html",

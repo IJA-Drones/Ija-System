@@ -18,7 +18,7 @@
     {# --- CARDS DE RESUMO / NAVEGAÇÃO --- #}
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <a href="{{ url_for('main.listar_drones') }}" class="text-decoration-none">
+            <a href="{{ url_for('main.listar_drones') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_drones')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -38,7 +38,7 @@
         </div>
 
         <div class="col-md-4">
-            <a href="{{ url_for('main.listar_baterias') }}" class="text-decoration-none">
+            <a href="{{ url_for('main.listar_baterias') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_baterias')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -58,7 +58,7 @@
         </div>
 
         <div class="col-md-4">
-            <a href="{{ url_for('main.equipamentos_manutencao') }}" class="text-decoration-none">
+            <a href="{{ url_for('main.equipamentos_manutencao') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencao')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>

@@ -1,10 +1,11 @@
+from app.modules.gestao_ti.permissions import active_configuration, capability, route_access
 import os
 from datetime import datetime
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
-from app.models import Denuncia, DenunciaAnexo, Usuario
+from app.models import Denuncia, DenunciaAnexo, Solicitacao, Usuario
 from app.extensions import db
 from app.shared.access import get_user_regiao, is_admin_global_user, is_covisa_user, is_regional_user
 from app.shared.uploads import get_upload_folder
@@ -26,6 +27,7 @@ COORDENADORIAS_DENUNCIA = (
 )
 
 
+@capability(['prefeitura.denuncias.consultar'])
 def can_access_denuncias(user):
     return bool(
         is_covisa_user(user)
@@ -36,6 +38,8 @@ def can_access_denuncias(user):
 
 
 def can_access_denuncia(user, denuncia):
+    if active_configuration(user) is not None:
+        return _scope_denuncias(Denuncia.query, user).filter(Denuncia.id == denuncia.id).first() is not None
     if is_covisa_user(user) or is_admin_global_user(user):
         return True
     if is_regional_user(user):
@@ -45,10 +49,30 @@ def can_access_denuncia(user, denuncia):
     return False
 
 
+def _scope_denuncias(query, user):
+    if active_configuration(user) is None or is_covisa_user(user) or is_admin_global_user(user):
+        return query
+    role = getattr(user, "tipo_usuario", None)
+    from app.shared.access import apply_prefeitura_scope, central_ti_team_ids, get_user_prefeitura_id
+    query = apply_prefeitura_scope(query, user, Denuncia.prefeitura_id)
+    teams = central_ti_team_ids(user)
+    if teams is not None:
+        query = query.filter(Denuncia.solicitacao.has(Solicitacao.equipe_id.in_(teams)))
+    if role in {"uvis", "equipe_uvis"}:
+        owner = user.id if role == "uvis" else getattr(user, "equipe_uvis_uvis_usuario_id", None)
+        return query.filter(Denuncia.uvis_usuario_id == owner) if owner is not None else query.filter(db.false())
+    regiao = get_user_regiao(user)
+    if regiao:
+        return query.filter(func.upper(func.coalesce(Denuncia.coordenadoria, "")) == regiao)
+    if not is_regional_user(user) and (get_user_prefeitura_id(user) is not None or teams):
+        return query
+    return query.filter(db.false())
+
+
 def count_denuncias_alerta(user):
     if not can_access_denuncias(user):
         return 0
-    query = Denuncia.query
+    query = _scope_denuncias(Denuncia.query, user)
     if is_regional_user(user):
         regiao = get_user_regiao(user)
         if not regiao:
@@ -73,6 +97,10 @@ def build_denuncias_query(args):
     tipo_visita = (args.get("tipo_visita") or "").strip()
 
     query = Denuncia.query.options(joinedload(Denuncia.anexos))
+    from flask import has_request_context
+    if has_request_context():
+        from flask_login import current_user
+        query = _scope_denuncias(query, current_user)
 
     if status:
         query = query.filter(Denuncia.status == status)
@@ -186,7 +214,7 @@ def build_uvis_options_for_denuncia(denuncia):
 
 
 def designar_denuncia_para_uvis(denuncia, uvis_id, user):
-    if not is_regional_user(user) and not is_admin_global_user(user):
+    if not route_access(user, is_regional_user(user) or is_admin_global_user(user)):
         raise ValueError("Usuario sem permissao para designar UVIS.")
 
     user_regiao = get_user_regiao(user)

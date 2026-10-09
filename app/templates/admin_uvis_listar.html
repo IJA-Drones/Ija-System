@@ -24,14 +24,14 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.admin_uvis_exportar', q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}" class="btn btn-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_uvis_exportar', q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}" class="btn btn-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_exportar', q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
-      {% if is_admin %}
-      <a href="{{ url_for('main.admin_uvis_novo') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
+      {% if (central_ti_ui_guard(['main.admin_uvis_novo'], (is_admin)) if central_ti_ui_guard is defined else (is_admin)) %}
+      <a href="{{ url_for('main.admin_uvis_novo') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-plus-lg"></i> Cadastrar UVIS
       </a>
       {% endif %}
@@ -55,7 +55,7 @@
 
     <div class="collapse {% if q or regiao or codigo_setor or prefeitura_id %}show{% endif %}" id="collapseFiltrosUvis">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for(request.endpoint) }}">
+        <form method="GET" action="{{ url_for(request.endpoint) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(request.endpoint), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-3">
               <label for="search_q" class="small text-muted">Buscar (nome ou login):</label>
@@ -99,7 +99,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if q or regiao or codigo_setor or prefeitura_id %}
-              <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm" title="Remover todos os filtros">
+              <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm" title="Remover todos os filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(request.endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-x-lg"></i> Limpar
               </a>
               {% endif %}
@@ -134,12 +134,12 @@
                 <td data-label="Região">{{ u.regiao or "-" }}</td>
                 <td data-label="Login"><code>{{ u.login }}</code></td>
                 <td data-label="Ações" class="listing-cell-actions">
-                  {% if is_admin %}
+                  {% if (central_ti_ui_guard(['main.admin_uvis_editar', 'main.admin_uvis_excluir'], (is_admin)) if central_ti_ui_guard is defined else (is_admin)) %}
                   <div class="listing-actions-group">
-                    <a class="btn btn-sm btn-success text-white shadow-sm" href="{{ url_for('main.admin_uvis_editar', id=u.id) }}">
+                    <a class="btn btn-sm btn-success text-white shadow-sm" href="{{ url_for('main.admin_uvis_editar', id=u.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_editar', id=u.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-pencil-square me-1"></i>Editar
                     </a>
-                    <form class="form-deletar m-0" method="POST" action="{{ url_for('main.admin_uvis_excluir', id=u.id) }}">
+                    <form class="form-deletar m-0" method="POST" action="{{ url_for('main.admin_uvis_excluir', id=u.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_excluir', id=u.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                       <button type="submit" class="btn btn-sm btn-danger shadow-sm">
                         <i class="bi bi-trash me-1"></i>Excluir
                       </button>
@@ -166,15 +166,15 @@
       <nav>
         <ul class="pagination mb-0 listing-pagination">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=paginacao.prev_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}">Anterior</a>
+            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=paginacao.prev_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_listar', page=paginacao.prev_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
           </li>
           {% for p in range(1, paginacao.pages + 1) %}
           <li class="page-item {% if p == paginacao.page %}active{% endif %}">
-            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=p, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}">{{ p }}</a>
+            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=p, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_listar', page=p, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ p }}</a>
           </li>
           {% endfor %}
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=paginacao.next_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}">Próxima</a>
+            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=paginacao.next_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_listar', page=paginacao.next_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id)) if central_ti_url_allowed is defined else true) else 'false' }}">Próxima</a>
           </li>
         </ul>
       </nav>

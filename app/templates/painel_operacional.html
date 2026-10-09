@@ -27,7 +27,7 @@
     </div>
   </div>
 
-  <form id="opSearchForm" class="op-search mb-3">
+  <form id="opSearchForm" class="op-search mb-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
     <label for="opAddress" class="form-label fw-bold small text-muted">
       <i class="bi bi-geo-alt-fill me-1 text-primary"></i>Endereço operacional
     </label>

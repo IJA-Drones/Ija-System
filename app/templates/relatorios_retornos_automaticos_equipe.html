@@ -23,10 +23,10 @@
     </div>
 
     <div class="retornos-toolbar-actions page-toolbar-actions">
-      <a href="{{ url_for('main.relatorios_retornos_automaticos', **central_return_args) }}" class="btn btn-outline-secondary">
+      <a href="{{ url_for('main.relatorios_retornos_automaticos', **central_return_args) }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_retornos_automaticos', **central_return_args)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Central
       </a>
-      <a href="{{ url_for('main.admin_historico_os', retorno_automatico='RETORNO') }}" class="btn btn-outline-primary">
+      <a href="{{ url_for('main.admin_historico_os', retorno_automatico='RETORNO') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os', retorno_automatico='RETORNO')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-clock-history me-1"></i> Historico OS
       </a>
     </div>

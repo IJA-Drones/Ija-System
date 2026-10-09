@@ -25,12 +25,12 @@
       </p>
     </div>
     <div class="listing-actions page-toolbar-actions">
-      <a href="{{ back_url }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left" aria-hidden="true"></i>Voltar</a>
+      <a href="{{ back_url }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(back_url) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Voltar</a>
     </div>
   </header>
 
   {% call render_filter_card('Filtros de busca', collapse_id='denunciasFiltros', active=has_filters, header_class='listing-filter-header', body_class='listing-filter-body') %}
-    <form method="get" action="{{ url_for(list_endpoint) }}">
+    <form method="get" action="{{ url_for(list_endpoint) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(list_endpoint), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="row g-3 align-items-end">
         <div class="col-12 col-lg-5">
           <label class="form-label" for="denunciaBusca">Busca</label>
@@ -58,7 +58,7 @@
           <div class="listing-filter-actions">
             <button class="btn btn-success btn-sm" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i>Filtrar</button>
             {% if has_filters %}
-            <a class="btn btn-outline-secondary btn-sm" href="{{ clear_url }}"><i class="bi bi-x-lg" aria-hidden="true"></i>Limpar filtros</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ clear_url }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(clear_url) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-x-lg" aria-hidden="true"></i>Limpar filtros</a>
             {% endif %}
           </div>
         </div>
@@ -87,7 +87,7 @@
           <tr>
             <td data-label="Protocolo">
               <div>
-                <a class="denuncia-protocol" href="{{ url_for(detail_endpoint, denuncia_id=denuncia.id) }}">{{ denuncia.protocolo }}</a>
+                <a class="denuncia-protocol" href="{{ url_for(detail_endpoint, denuncia_id=denuncia.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(detail_endpoint, denuncia_id=denuncia.id)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ denuncia.protocolo }}</a>
                 <div class="text-muted small mt-1">{{ denuncia.criado_em.strftime('%d/%m/%Y %H:%M') if denuncia.criado_em else 'Data não informada' }}</div>
               </div>
             </td>
@@ -109,7 +109,7 @@
             <td data-label="Cidadão"><div>{{ denuncia.cidadao_nome }}<div class="text-muted small mt-1">{{ denuncia.cidadao_telefone }}</div></div></td>
             <td data-label="Status"><div>{{ status_badge(denuncia.status) }}</div></td>
             <td data-label="Ações" class="listing-cell-actions text-end">
-              <a class="btn btn-sm btn-outline-primary" href="{{ url_for(detail_endpoint, denuncia_id=denuncia.id) }}" aria-label="Visualizar denúncia {{ denuncia.protocolo }}"><i class="bi bi-eye" aria-hidden="true"></i>Visualizar</a>
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for(detail_endpoint, denuncia_id=denuncia.id) }}" aria-label="Visualizar denúncia {{ denuncia.protocolo }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(detail_endpoint, denuncia_id=denuncia.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-eye" aria-hidden="true"></i>Visualizar</a>
             </td>
           </tr>
           {% endfor %}
@@ -123,7 +123,7 @@
       <i class="bi {{ 'bi-search' if has_filters else 'bi-inbox' }}" aria-hidden="true"></i>
       <h3 class="mt-3">Nenhuma denúncia encontrada</h3>
       <p class="text-muted mb-0">{{ 'Ajuste os filtros para consultar outros relatos.' if has_filters else 'Os relatos recebidos pela sua área aparecerão aqui.' }}</p>
-      {% if has_filters %}<a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm mt-3">Limpar filtros</a>{% endif %}
+      {% if has_filters %}<a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm mt-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(clear_url) if central_ti_url_allowed is defined else true) else 'false' }}">Limpar filtros</a>{% endif %}
     </div>
   </div>
   {% endif %}

@@ -43,7 +43,7 @@
                   <i class="bi bi-card-list me-1"></i> Ver dados
                 </button>
                 <a class="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                   href="{{ url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id) }}">
+                   href="{{ url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-pencil me-1"></i> Corrigir
                 </a>
               </td>
@@ -157,7 +157,7 @@
         {{ piloto_nome }} • Semana de {{ semana_inicio.strftime('%d/%m/%Y') }} a {{ semana_fim.strftime('%d/%m/%Y') }}
       </div>
     </div>
-    <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary d-flex align-items-center">
+    <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_checklists_semanais')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i> Voltar para a lista
     </a>
   </div>

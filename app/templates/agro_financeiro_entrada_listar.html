@@ -22,13 +22,13 @@
       </p>
     </div>
     <div class="listing-actions manual-finance-actions">
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebíveis</a>
-      <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2"><i class="bi bi-arrow-up-circle"></i> Saídas</a>
-      {% if can_manage_competencias %}
-        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-sliders"></i> Configurações</a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-cash-coin"></i> Recebíveis</a>
+      <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_saida_listar')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-up-circle"></i> Saídas</a>
+      {% if (central_ti_ui_guard(['main.agro_financeiro_configuracoes'], (can_manage_competencias)) if central_ti_ui_guard is defined else (can_manage_competencias)) %}
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_configuracoes')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-sliders"></i> Configurações</a>
       {% endif %}
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i> Nova entrada</a>
+        <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_novo')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-plus-circle-fill"></i> Nova entrada</a>
       {% endif %}
     </div>
   </div>
@@ -59,7 +59,7 @@
 
     <div class="collapse {% if filters.q or filters.status or filters.mes or filters.ano %}show{% endif %}" id="collapseFiltrosEntradasAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_financeiro_entrada_listar') }}">
+        <form method="GET" action="{{ url_for('main.agro_financeiro_entrada_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-5">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -85,7 +85,7 @@
             <div class="col-12 listing-filter-actions">
               <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
               {% if filters.q or filters.status or filters.mes or filters.ano %}
-                <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
+                <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_listar')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-x-lg"></i> Limpar</a>
               {% endif %}
             </div>
           </div>
@@ -135,8 +135,8 @@
                 <td>
                   <div class="d-flex gap-2">
                     {% if is_editable %}
-                      <a href="{{ url_for('main.agro_financeiro_entrada_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
-                      <form class="form-deletar" method="POST" action="{{ url_for('main.agro_financeiro_entrada_deletar', lancamento_id=item.id) }}">
+                      <a href="{{ url_for('main.agro_financeiro_entrada_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_editar', lancamento_id=item.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil-square"></i></a>
+                      <form class="form-deletar" method="POST" action="{{ url_for('main.agro_financeiro_entrada_deletar', lancamento_id=item.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_deletar', lancamento_id=item.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
                       </form>
                     {% endif %}

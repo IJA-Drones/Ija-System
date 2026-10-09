@@ -26,7 +26,7 @@
 
   <section class="vigilancia-preview-panel" aria-labelledby="arquivo-heading">
     <h2 id="arquivo-heading">Conferir arquivo</h2>
-    <form method="post" action="{{ url_for('main.vigilancia_validacao') }}" enctype="multipart/form-data">
+    <form method="post" action="{{ url_for('main.vigilancia_validacao') }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_validacao'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
       <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
       <div class="vigilancia-preview-form-grid">
         <div>

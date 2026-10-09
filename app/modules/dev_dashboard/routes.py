@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import hmac
 import os
 
@@ -18,7 +19,7 @@ from app.shared.access import is_dev_user
 
 def register_routes(bp):
     def require_dev_user():
-        if not is_dev_user(current_user):
+        if not route_access(current_user, is_dev_user(current_user)):
             abort(403)
 
     def require_watchdog_token():

@@ -53,7 +53,7 @@ def authenticate_piloto_agro(login_value, password):
     return user, None
 
 
-def get_authenticated_redirect_endpoint(user):
+def _legacy_redirect_endpoint(user):
     if is_dev_user(user):
         return "main.dev_dashboard"
     if user.tipo_usuario == "gestor_ti" and has_app_context() and current_app.config.get("CENTRAL_TI_ENABLED", False):
@@ -69,3 +69,13 @@ def get_authenticated_redirect_endpoint(user):
     if user.tipo_usuario == "equipe_uvis":
         return "main.dashboard_equipe_uvis"
     return "main.dashboard"
+
+
+def get_authenticated_redirect_endpoint(user):
+    from app.modules.gestao_ti.permissions import active_configuration, can_access_endpoint
+    endpoint = _legacy_redirect_endpoint(user)
+    if active_configuration(user) is not None and not can_access_endpoint(user, endpoint):
+        if user.tipo_usuario in {"dev", "gestor_ti"}:
+            return "main.central_ti"
+        return "main.acessos_dashboard"
+    return endpoint

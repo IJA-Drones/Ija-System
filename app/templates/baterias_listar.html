@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block content %}
+{% if central_ti_profile_active|default(false) %}
+{% set can_manage = (central_ti_permission('prefeitura.equipamentos.editar')) %}
+{% endif %}
+
 <div class="container-fluid py-4" style="max-width: 1200px">
 
     {# --- CABEÇALHO PADRONIZADO (BOTÕES NA DIREITA) --- #}
@@ -22,11 +26,11 @@
         </div>
 
         <div class="header-actions">
-            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary d-flex align-items-center">
+            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipamentos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            {% if can_manage %}
-            <a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-success shadow-sm">
+            {% if (central_ti_ui_guard(['main.cadastrar_bateria'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+            <a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-success shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_bateria')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-plus-lg"></i> Nova Bateria
             </a>
             {% endif %}
@@ -63,11 +67,11 @@
                                     </div>
                                     {% if can_manage %}
                                     <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
-                                        <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub', this)">
+                                        <button class="btn btn-outline-danger border-0 px-2" type="button" data-ti-allowed="{{ 'true' if (central_ti_permission('prefeitura.equipamentos.editar') if central_ti_profile_active|default(false) else can_manage) else 'false' }}" onclick="atualizarCiclo({{ b.id }}, 'sub', this)">
                                             <i class="bi bi-dash-lg"></i>
                                         </button>
                                         <input type="number" id="inputCiclo{{ b.id }}" class="form-control border-0 text-center bg-white" style="font-size: 0.8rem; height: 30px;" placeholder="1">
-                                        <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add', this)">
+                                        <button class="btn btn-outline-success border-0 px-2" type="button" data-ti-allowed="{{ 'true' if (central_ti_permission('prefeitura.equipamentos.editar') if central_ti_profile_active|default(false) else can_manage) else 'false' }}" onclick="atualizarCiclo({{ b.id }}, 'add', this)">
                                             <i class="bi bi-plus-lg"></i>
                                         </button>
                                     </div>
@@ -103,11 +107,11 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                        {% if can_manage %}
-                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_bateria', bateria_id=b.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
+                                        {% if (central_ti_ui_guard(['main.deletar_bateria', 'main.editar_bateria'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_bateria', bateria_id=b.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_bateria', bateria_id=b.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" class="form-deletar m-0">
+                                            <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" class="form-deletar m-0" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_bateria', bateria_id=b.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                                                 <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Bateria</button>
                                             </form>
                                         </li>

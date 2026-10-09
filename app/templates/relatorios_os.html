@@ -30,7 +30,7 @@
       <div class="d-grid flex-grow-1 flex-md-grow-0" style="width: 220px; min-width: 180px;">
         <a href="{{ url_for('main.relatorios_solicitacoes') }}"
            class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2"
-           style="height: 38px;">
+           style="height: 38px;" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_solicitacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-bar-chart-fill"></i>
           <span>Relat&oacute;rios de Solicita&ccedil;&otilde;es</span>
         </a>
@@ -38,7 +38,7 @@
 
       <form method="GET" action="{{ url_for('main.relatorios_os_export_pdf') }}"
             class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0"
-            style="width: 180px; min-width: 150px;">
+            style="width: 180px; min-width: 150px;" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_os_export_pdf'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% for nome, valor in filtros_exportacao.items() %}
           <input type="hidden" name="{{ nome }}" value="{{ valor }}">
         {% endfor %}
@@ -53,7 +53,7 @@
 
       <form method="GET" action="{{ url_for('main.relatorios_os_export_excel') }}"
             class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0"
-            style="width: 180px; min-width: 150px;">
+            style="width: 180px; min-width: 150px;" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_os_export_excel'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% for nome, valor in filtros_exportacao.items() %}
           <input type="hidden" name="{{ nome }}" value="{{ valor }}">
         {% endfor %}
@@ -87,7 +87,7 @@
 
     <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosRelatorioOs">
       <div class="card-body rel-os-filter-body">
-        <form method="GET">
+        <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-3">
             <div class="col-md-4">
               <div class="mb-3">
@@ -205,7 +205,7 @@
                   <button class="btn btn-primary w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center" type="submit" style="height: 38px;">
                     <i class="bi bi-search me-2"></i> Filtrar
                   </button>
-                  <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" style="height: 38px;">
+                  <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" style="height: 38px;" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-x-lg me-2"></i> Limpar
                   </a>
                 </div>

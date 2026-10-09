@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import active_configuration, has_permission, require_permission, route_access
 import os
 import math
 import calendar
@@ -279,40 +280,40 @@ def _require_agro_access():
         return
     if request.endpoint == "main.agro_contrato_comprovante_pagamento":
         # Receipt files are shared by Finance and the operational contract view.
-        if not (can_access_agro_finance_panel(current_user) or can_access_agro_panel(current_user)):
+        if not route_access(current_user, can_access_agro_finance_panel(current_user) or can_access_agro_panel(current_user)):
             abort(403)
         return
     allowed = (can_access_agro_finance_panel(current_user)
                if is_financeiro_legacy_endpoint(request.endpoint)
                else can_access_agro_panel(current_user))
-    if not allowed:
+    if not route_access(current_user, allowed):
         abort(403)
 
 
 def _require_agro_edit():
-    if not can_edit_agro_panel(current_user):
+    if not route_access(current_user, can_edit_agro_panel(current_user)):
         abort(403)
 
 
 def _require_agro_finance_edit():
-    if not can_edit_agro_finance_panel(current_user):
+    if not route_access(current_user, can_edit_agro_finance_panel(current_user)):
         abort(403)
 
 
 def _require_agro_fornecedor_edit():
-    if not can_edit_agro_fornecedores(current_user):
+    if not route_access(current_user, can_edit_agro_fornecedores(current_user)):
         abort(403)
 
 
 def _require_agro_payment_receipt_edit():
-    if not (can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user)):
+    if not route_access(current_user, can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user)):
         abort(403)
 
 
 def _require_agro_admin():
     if request.endpoint == "main.financeiro_empresa_comercial" and request.args.get("aba") == "mapeamentos" and getattr(g, "financeiro_empresa", None) is not None:
         return
-    if not is_admin_global_user(current_user):
+    if not route_access(current_user, is_admin_global_user(current_user)):
         abort(403)
 
 
@@ -360,7 +361,7 @@ def _enforce_agro_caixa_open_or_redirect(origem_label: str):
 
 
 def _require_piloto_agro():
-    if getattr(current_user, "tipo_usuario", None) != "piloto_agro":
+    if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) == 'piloto_agro'):
         abort(403)
 
 
@@ -3715,6 +3716,14 @@ def register_routes(bp):
     @login_required
     def agro_piloto_dashboard():
         _require_piloto_agro()
+        if active_configuration(current_user) is not None and not all(
+            has_permission(current_user, f"agro.{module}.consultar")
+            for module in ("equipamentos", "contratos", "mapeamentos", "os")
+        ):
+            from app.modules.gestao_ti.navigation import build_navigation
+            return render_template("acessos_dashboard.html", central_ti_navigation=[
+                group for group in build_navigation(current_user) if group["area"] in {"agro", "sistema"}
+            ])
 
         piloto = _get_logged_piloto_agro()
         if piloto is None:
@@ -3864,6 +3873,14 @@ def register_routes(bp):
     @login_required
     def admin_agro():
         _require_agro_access()
+        if active_configuration(current_user) is not None and not all(
+            has_permission(current_user, f"agro.{module}.consultar")
+            for module in ("clientes", "comercial", "contratos", "talentos", "equipes", "equipamentos", "os")
+        ):
+            from app.modules.gestao_ti.navigation import build_navigation
+            return render_template("acessos_dashboard.html", central_ti_navigation=[
+                group for group in build_navigation(current_user) if group["area"] in {"agro", "sistema"}
+            ])
         if is_financeiro_agro_only_user(current_user):
             return redirect(url_for("main.financeiro_empresa", empresa_slug="ija"))
         context = get_agro_dashboard_context(current_user)
@@ -3880,7 +3897,7 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_categorias_listar():
         _require_agro_access()
-        if not can_manage_agro_finance_settings(current_user):
+        if not route_access(current_user, can_manage_agro_finance_settings(current_user)):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -3934,7 +3951,7 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_categoria_nova():
         _require_agro_access()
-        if not can_manage_agro_finance_settings(current_user):
+        if not route_access(current_user, can_manage_agro_finance_settings(current_user)):
             abort(403)
 
         errors = {}
@@ -3972,7 +3989,7 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_categoria_editar(subcategoria_id):
         _require_agro_access()
-        if not can_manage_agro_finance_settings(current_user):
+        if not route_access(current_user, can_manage_agro_finance_settings(current_user)):
             abort(403)
 
         query = FinanceiroAgroSubcategoria.query.join(FinanceiroAgroCategoria)
@@ -4038,7 +4055,7 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_categoria_alternar(subcategoria_id):
         _require_agro_access()
-        if not can_manage_agro_finance_settings(current_user):
+        if not route_access(current_user, can_manage_agro_finance_settings(current_user)):
             abort(403)
 
         query = FinanceiroAgroSubcategoria.query.join(FinanceiroAgroCategoria)
@@ -5507,7 +5524,7 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_configuracoes():
         _require_agro_access()
-        if not can_manage_agro_finance_settings(current_user):
+        if not route_access(current_user, can_manage_agro_finance_settings(current_user)):
             abort(403)
 
         secao = request.args.get("secao", "dados")
@@ -5525,7 +5542,7 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_configuracoes_salvar():
         _require_agro_access()
-        if not can_manage_agro_finance_settings(current_user):
+        if not route_access(current_user, can_manage_agro_finance_settings(current_user)):
             abort(403)
 
         ano = request.form.get("ano", type=int)
@@ -6769,7 +6786,7 @@ def register_routes(bp):
     @bp.route("/agro/logs-voo", methods=["GET"], endpoint="agro_logs_voo")
     @login_required
     def agro_logs_voo():
-        if not can_access_agro_flight_logs(current_user):
+        if not route_access(current_user, can_access_agro_flight_logs(current_user)):
             abort(403)
 
         try:
@@ -6797,7 +6814,7 @@ def register_routes(bp):
     @bp.route("/agro/logs-voo/exportar", methods=["GET"], endpoint="agro_logs_voo_exportar")
     @login_required
     def agro_logs_voo_exportar():
-        if not can_access_agro_flight_logs(current_user):
+        if not route_access(current_user, can_access_agro_flight_logs(current_user)):
             abort(403)
 
         output, nome = build_agro_logs_excel_export(request.args)
@@ -6811,7 +6828,7 @@ def register_routes(bp):
     @bp.route("/agro/logs-voo/importar-excel", methods=["POST"], endpoint="agro_logs_voo_importar_excel")
     @login_required
     def agro_logs_voo_importar_excel():
-        if not can_import_agro_flight_logs(current_user):
+        if not route_access(current_user, can_import_agro_flight_logs(current_user)):
             abort(403)
 
         try:
@@ -6837,7 +6854,7 @@ def register_routes(bp):
     @bp.route("/agro/logs-voo/importar-kml", methods=["POST"], endpoint="agro_logs_voo_importar_kml")
     @login_required
     def agro_logs_voo_importar_kml():
-        if not can_import_agro_flight_logs(current_user):
+        if not route_access(current_user, can_import_agro_flight_logs(current_user)):
             abort(403)
 
         try:
@@ -6866,7 +6883,7 @@ def register_routes(bp):
     @bp.route("/agro/logs-voo/rota/<int:route_id>/vincular-os", methods=["POST"], endpoint="agro_logs_voo_vincular_os")
     @login_required
     def agro_logs_voo_vincular_os(route_id):
-        if not can_import_agro_flight_logs(current_user):
+        if not route_access(current_user, can_import_agro_flight_logs(current_user)):
             abort(403)
 
         try:
@@ -6885,7 +6902,7 @@ def register_routes(bp):
     @bp.route("/agro/logs-voo/rota/<int:route_id>/desvincular-os", methods=["POST"], endpoint="agro_logs_voo_desvincular_os")
     @login_required
     def agro_logs_voo_desvincular_os(route_id):
-        if not can_import_agro_flight_logs(current_user):
+        if not route_access(current_user, can_import_agro_flight_logs(current_user)):
             abort(403)
 
         count = unlink_agro_kml_route_from_os(route_id)
@@ -7120,6 +7137,8 @@ def register_routes(bp):
         errors = {}
         if request.method == "POST":
             form = _normalize_os_agro_form(request.form)
+            if form["status"] != ordem_servico.status and OrdemServicoAgro.STATUS_CONCLUIDA in {form["status"], ordem_servico.status}:
+                require_permission(current_user, "agro.os.concluir")
             if pilot_form_mode:
                 form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
             if not form.get("area_total_ha"):

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import json
 import os
 import threading
@@ -297,7 +298,7 @@ def register_routes(bp):
     @bp.route("/relatorios/solicitacoes", methods=["GET"], endpoint="relatorios_solicitacoes")
     @login_required
     def relatorios_solicitacoes():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -317,7 +318,7 @@ def register_routes(bp):
     @bp.route("/relatorios", methods=["GET"], endpoint="relatorios")
     @login_required
     def relatorios_menu():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
         return render_template("relatorios_menu.html")
@@ -325,7 +326,7 @@ def register_routes(bp):
     @bp.route("/relatorios-os", methods=["GET"], endpoint="relatorios_os")
     @login_required
     def relatorios_os():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -345,7 +346,7 @@ def register_routes(bp):
     @bp.route("/relatorios/retornos-automaticos", methods=["GET"], endpoint="relatorios_retornos_automaticos")
     @login_required
     def relatorios_retornos_automaticos():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -369,7 +370,7 @@ def register_routes(bp):
     )
     @login_required
     def relatorios_retornos_automaticos_equipe(equipe_id):
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -401,7 +402,7 @@ def register_routes(bp):
     )
     @login_required
     def relatorios_retornos_automaticos_sem_equipe():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -421,7 +422,7 @@ def register_routes(bp):
     @bp.route("/relatorios-coleta-imagens", methods=["GET"], endpoint="relatorios_coleta_imagens")
     @login_required
     def relatorios_coleta_imagens():
-        if not can_access_relatorio_coleta_imagens(current_user):
+        if not route_access(current_user, can_access_relatorio_coleta_imagens(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -463,7 +464,7 @@ def register_routes(bp):
     @bp.route("/admin/exportar_relatorio_pdf", endpoint="exportar_relatorio_pdf")
     @login_required
     def exportar_relatorio_pdf():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -482,7 +483,7 @@ def register_routes(bp):
     @bp.route("/admin/exportar_relatorio_excel", endpoint="exportar_relatorio_excel")
     @login_required
     def exportar_relatorio_excel():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -497,7 +498,7 @@ def register_routes(bp):
     @bp.route("/relatorios-os/export/excel", methods=["GET"], endpoint="relatorios_os_export_excel")
     @login_required
     def relatorios_os_export_excel():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -512,7 +513,7 @@ def register_routes(bp):
     @bp.route("/relatorios-os/export/pdf", methods=["GET"], endpoint="relatorios_os_export_pdf")
     @login_required
     def relatorios_os_export_pdf():
-        if not can_access_relatorios_menu(current_user):
+        if not route_access(current_user, can_access_relatorios_menu(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -531,7 +532,7 @@ def register_routes(bp):
     @bp.route("/relatorios-coleta-imagens/export/pdf", methods=["GET"], endpoint="relatorios_coleta_imagens_export_pdf")
     @login_required
     def relatorios_coleta_imagens_export_pdf():
-        if not can_access_relatorio_coleta_imagens(current_user):
+        if not route_access(current_user, can_access_relatorio_coleta_imagens(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -551,7 +552,7 @@ def register_routes(bp):
     )
     @login_required
     def relatorios_coleta_imagens_export_pdf_zip():
-        if not can_access_relatorio_coleta_imagens(current_user):
+        if not route_access(current_user, can_access_relatorio_coleta_imagens(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -571,7 +572,7 @@ def register_routes(bp):
     )
     @login_required
     def relatorios_coleta_imagens_pdf_job_status(job_id):
-        if not can_access_relatorio_coleta_imagens(current_user):
+        if not route_access(current_user, can_access_relatorio_coleta_imagens(current_user)):
             return jsonify({"success": False, "error": "Acesso restrito."}), 403
 
         job = _get_coleta_pdf_job(job_id)
@@ -587,7 +588,7 @@ def register_routes(bp):
     )
     @login_required
     def relatorios_coleta_imagens_pdf_job_download(job_id):
-        if not can_access_relatorio_coleta_imagens(current_user):
+        if not route_access(current_user, can_access_relatorio_coleta_imagens(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 

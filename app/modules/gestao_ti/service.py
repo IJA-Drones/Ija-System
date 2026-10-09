@@ -1,8 +1,4 @@
-"""Save proposed responsibilities by profile without applying them to the system.
-
-Current route guards, user types and data scopes remain the source of authorization.
-All changes in this module are configuration awaiting a separate validation stage.
-"""
+"""Save role capabilities atomically, retaining independent data scopes."""
 
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -17,6 +13,7 @@ from app.models import CentralTiAuditoria, CentralTiPerfilConfiguracao, CentralT
 from app.modules.gestao_ti.catalog import AREA_CODES, CATALOG, PERMISSION_CODES, PROFILE_CODES
 from app.modules.gestao_ti.current_rules import current_rules
 from app.shared.access import normalize_role
+from app.modules.gestao_ti.permissions import enforcement_enabled
 
 
 class ConfigurationConflict(ValueError):
@@ -73,17 +70,25 @@ def load_configurations():
                         and not selections[code] and code in initialized)
         configured = row is not None and not seeded_empty
         current = current_rules(code)
+        notes = dict(current["notes"])
+        if configured and enforcement_enabled() and code != "piloto_agro":
+            notes.pop("agro", None)
         states.append({
             "id": code, "version": row.versao if row else 0, "configured": configured,
             "source": "saved_configuration" if configured else "current_rules",
-            "current_rules": current,
+            "current_rules": ({**snapshot, "notes": notes}
+                              if configured and enforcement_enabled() else current),
             **(snapshot if configured else {"areas": current["areas"], "permissions": current["permissions"]}),
         })
     return states
 
 
 def build_editor_data():
-    return {**CATALOG, "states": load_configurations()}
+    # These old catalogue entries have no corresponding operation in the
+    # application yet. Keep stored selections compatible, without advertising
+    # an operation the user cannot perform.
+    unavailable = ["prefeitura.equipes.exportar", "financeiro.bancos.operar", "sistema.tecnico.importar"]
+    return {**CATALOG, "states": load_configurations(), "unavailable_permissions": unavailable}
 
 
 def _codes(value, allowed, name):
@@ -116,6 +121,8 @@ def validate_configurations(payload):
             raise ValueError("Versão de configuração inválida.")
         areas = _codes(profile["areas"], AREA_CODES, "áreas")
         permissions = _codes(profile["permissions"], PERMISSION_CODES, "permissões")
+        if code not in {"dev", "gestor_ti"} and any(p.startswith("sistema.perfis.") for p in permissions):
+            raise ValueError("A Central de TI é exclusiva dos perfis Dev e Gestor de TI.")
         for permission in permissions:
             area, module, action = permission.split(".")
             if area not in areas:

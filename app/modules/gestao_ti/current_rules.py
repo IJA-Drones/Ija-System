@@ -69,6 +69,8 @@ def current_rules(profile_code):
             allow("prefeitura.solicitacoes", "excluir")
         if administrative:
             allow("prefeitura.solicitacoes", "exportar")
+        if is_admin_global_user(user):
+            allow("prefeitura.prefeituras", "consultar criar editar excluir")
 
         if administrative or operational or role in {"uvis", "equipe_uvis"}:
             allow("prefeitura.os", "consultar")
@@ -88,6 +90,7 @@ def current_rules(profile_code):
         if role in MANAGEMENT_ROLES:
             allow("prefeitura.equipes", "consultar criar editar excluir")
             allow("prefeitura.equipamentos", "consultar criar editar excluir")
+            allow("prefeitura.equipamentos", "exportar")
         elif role in {"regional", "visualizar", "uvis"}:
             allow("prefeitura.equipes", "consultar")
         if editable or role == "uvis":
@@ -105,12 +108,20 @@ def current_rules(profile_code):
             allow("prefeitura.veiculos", "consultar")
         if operational or role == "sup_veiculos":
             allow("prefeitura.veiculos", "operar")
+        if role in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "sup_veiculos", "sup_veiculo", "visualizar"}:
+            allow("prefeitura.logs_veiculos", "consultar exportar")
+        if role in {"dev", "diretor", "admin", "sup_veiculos"}:
+            allow("prefeitura.logs_veiculos", "corrigir")
+        if role == "admin":
+            allow("prefeitura.logs_veiculos", "excluir")
         if is_admin_global_user(user) or role in VEICULOS_SUPERVISOR_USER_TYPES:
             allow("prefeitura.checklists", "consultar editar corrigir")
         elif operational:
             allow("prefeitura.checklists", "consultar editar")
         if can_access_relatorios_menu(user) or can_access_relatorio_coleta_imagens(user):
             allow("prefeitura.relatorios", "consultar exportar")
+        if role == "uvis":
+            allow("prefeitura.relatorios", "editar")
         if administrative or operational or role in {"uvis", "equipe_uvis", "operador"}:
             allow("prefeitura.mapas", "consultar")
             if can_export_agenda(user):
@@ -118,24 +129,31 @@ def current_rules(profile_code):
         if can_access_denuncias(user):
             allow("prefeitura.denuncias", "consultar")
             if is_admin_global_user(user) or is_covisa_user(user):
-                allow("prefeitura.denuncias", "encaminhar")
+                allow("prefeitura.denuncias", "encaminhar arquivar")
             elif role == "regional":
                 allow("prefeitura.denuncias", "atribuir")
+            if role == "uvis":
+                allow("prefeitura.denuncias", "converter")
+        if is_admin_global_user(user) or is_prefeitura_admin_user(user):
+            allow("prefeitura.vigilancia", "consultar editar")
 
         if can_access_agro_panel(user):
             for module in ("clientes", "comercial", "mapeamentos", "os", "equipes", "equipamentos"):
                 allow(f"agro.{module}", "consultar")
             allow("agro.comercial", "exportar")
+            allow("agro.contratos", "consultar exportar midias")
             if can_edit_agro_panel(user):
                 for module in ("clientes", "comercial", "equipes", "equipamentos"):
                     allow(f"agro.{module}", "criar editar excluir")
                 allow("agro.mapeamentos", "editar concluir")
+                allow("agro.contratos", "editar")
                 allow("agro.os", "editar exportar")
                 if role in DRONE_IMPORT_ROLES:
                     allow("agro.equipamentos", "importar")
             if is_admin_global_user(user):
                 allow("agro.mapeamentos", "configurar")
                 allow("agro.os", "excluir")
+                allow("agro.contratos", "excluir configurar")
             if role != "admin":
                 notes["agro"] = "Depende da habilitação Trabalha no Agro no cadastro do usuário."
         if can_access_agro_flight_logs(user):
@@ -171,6 +189,10 @@ def current_rules(profile_code):
             allow("sistema.perfis", "consultar configurar")
             allow("sistema.auditoria", "consultar exportar")
             allow("sistema.tecnico", "consultar operar importar")
+            allow("sistema.backups", "consultar operar")
+            allow("sistema.bugs", "consultar atender")
+        if role in {"regional", "covisa"} or is_covisa_user(user):
+            allow("sistema.bugs", "consultar criar")
         if can_access_feedback(user):
             allow("sistema.suporte", "consultar")
         if can_open_support_ticket(user):
@@ -182,9 +204,9 @@ def current_rules(profile_code):
         if can_access_operational_panel(user):
             allow("sistema.operacional", "consultar")
         if can_access_dji_logs(user):
-            allow("sistema.tecnico", "consultar")
+            allow("prefeitura.voos", "consultar exportar")
         if can_import_dji_logs(user):
-            allow("sistema.tecnico", "importar")
+            allow("prefeitura.voos", "importar editar excluir")
 
     if not permissions <= PERMISSION_CODES:
         raise ValueError("Mapeamento atual contém opções ausentes no catálogo.")

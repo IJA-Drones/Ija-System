@@ -16,10 +16,10 @@
       <p class="text-muted small mb-0">Acompanhe os bugs enviados pela sua coordenadoria ao suporte técnico.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('main.bugs_ajuda') }}" class="btn btn-outline-secondary">
+      <a href="{{ url_for('main.bugs_ajuda') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_ajuda')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-question-circle"></i> Como usar
       </a>
-      <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-outline-danger">
+      <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-outline-danger" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bug_report_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-bug-fill"></i> Reportar bug
       </a>
     </div>
@@ -56,7 +56,7 @@
 
   <div class="card shadow-sm border-0 feedback-filter-card mb-4">
     <div class="card-body">
-      <form method="GET" action="{{ url_for('main.bugs_listar') }}">
+      <form method="GET" action="{{ url_for('main.bugs_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-2 align-items-end">
           <div class="col-lg-7 col-md-6">
             <label class="form-label small" for="bug-q">Busca</label>
@@ -76,7 +76,7 @@
               <i class="bi bi-funnel"></i> Filtrar
             </button>
             {% if q or status %}
-            <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+            <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-x-lg"></i>
             </a>
             {% endif %}
@@ -87,17 +87,17 @@
   </div>
 
   <div class="feedback-quick-tabs mb-4">
-    <a href="{{ url_for('main.bugs_listar') }}" class="{% if not status %}active{% endif %}">Caixa ativa</a>
-    <a href="{{ url_for('main.bugs_listar', status='aberto') }}" class="{% if status == 'aberto' %}active{% endif %}">Recebidos</a>
-    <a href="{{ url_for('main.bugs_listar', status='em_analise') }}" class="{% if status == 'em_analise' %}active{% endif %}">Em análise</a>
-    <a href="{{ url_for('main.bugs_listar', status='em_desenvolvimento') }}" class="{% if status == 'em_desenvolvimento' %}active{% endif %}">Em correção</a>
-    <a href="{{ url_for('main.bugs_listar', status='concluido') }}" class="{% if status == 'concluido' %}active{% endif %}">Corrigidos</a>
+    <a href="{{ url_for('main.bugs_listar') }}" class="{% if not status %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">Caixa ativa</a>
+    <a href="{{ url_for('main.bugs_listar', status='aberto') }}" class="{% if status == 'aberto' %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar', status='aberto')) if central_ti_url_allowed is defined else true) else 'false' }}">Recebidos</a>
+    <a href="{{ url_for('main.bugs_listar', status='em_analise') }}" class="{% if status == 'em_analise' %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar', status='em_analise')) if central_ti_url_allowed is defined else true) else 'false' }}">Em análise</a>
+    <a href="{{ url_for('main.bugs_listar', status='em_desenvolvimento') }}" class="{% if status == 'em_desenvolvimento' %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar', status='em_desenvolvimento')) if central_ti_url_allowed is defined else true) else 'false' }}">Em correção</a>
+    <a href="{{ url_for('main.bugs_listar', status='concluido') }}" class="{% if status == 'concluido' %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar', status='concluido')) if central_ti_url_allowed is defined else true) else 'false' }}">Corrigidos</a>
   </div>
 
   {% if bugs %}
   <div class="feedback-list">
     {% for bug in bugs %}
-    <a href="{{ url_for('main.bug_acompanhamento', topico_id=bug.id) }}" class="feedback-card">
+    <a href="{{ url_for('main.bug_acompanhamento', topico_id=bug.id) }}" class="feedback-card" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bug_acompanhamento', topico_id=bug.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="feedback-card-main">
         <div class="feedback-card-title-row">
           <div class="feedback-card-heading">
@@ -130,7 +130,7 @@
     <i class="bi bi-check2-circle"></i>
     <h5>Nenhum bug em aberto</h5>
     <p class="text-muted mb-3">Quando você reportar um problema no sistema, ele aparece aqui para acompanhamento.</p>
-    <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-outline-danger">
+    <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-outline-danger" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bug_report_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-bug-fill"></i> Reportar bug
     </a>
   </div>

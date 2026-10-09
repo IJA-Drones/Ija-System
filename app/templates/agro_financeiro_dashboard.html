@@ -17,53 +17,53 @@
     </div>
 
     <div class="agro-actions-inline agro-finance-top-actions">
-      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug='ija')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_fluxo_caixa_exportar_excel') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_fluxo_caixa_exportar_excel') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_fluxo_caixa_exportar_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
       <div class="dropdown">
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
           <li>
-            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_contas')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-wallet2 text-primary me-2"></i> Contas
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-cash-stack text-success me-2"></i> Contas a receber
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-credit-card-2-front text-danger me-2"></i> Contas a pagar
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-receipt-cutoff text-primary me-2"></i> Recebiveis
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_caixa_diario') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_caixa_diario') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-journal-text text-success me-2"></i> Caixa diario
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_conciliacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-bank2 text-secondary me-2"></i> Conciliacao bancaria
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_bancos_listar') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_bancos_listar') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-bank text-secondary me-2"></i> Bancos Agro
             </a>
           </li>
         </ul>
       </div>
-      {% if can_manage_competencias %}
-        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+      {% if (central_ti_ui_guard(['main.agro_financeiro_configuracoes'], (can_manage_competencias)) if central_ti_ui_guard is defined else (can_manage_competencias)) %}
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_configuracoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-sliders"></i> Configuracoes
         </a>
       {% endif %}
@@ -112,28 +112,28 @@
         </div>
         <div class="agro-card-body">
           <div class="agro-shortcut-grid agro-finance-shortcut-grid">
-            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card">
+            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_contas')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span class="agro-shortcut-icon">
                 <i class="bi bi-wallet2"></i>
               </span>
               <h6 class="agro-shortcut-title">Contas</h6>
               <p class="agro-shortcut-copy">Visao central das contas a pagar e a receber.</p>
             </a>
-            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-success">
+            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-success" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span class="agro-shortcut-icon">
                 <i class="bi bi-cash-stack"></i>
               </span>
               <h6 class="agro-shortcut-title">Contas a receber</h6>
               <p class="agro-shortcut-copy">Acompanhe pendencias e baixas de recebimento.</p>
             </a>
-            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-danger">
+            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-danger" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span class="agro-shortcut-icon">
                 <i class="bi bi-credit-card-2-front"></i>
               </span>
               <h6 class="agro-shortcut-title">Contas a pagar</h6>
               <p class="agro-shortcut-copy">Controle os compromissos e pagamentos do Agro.</p>
             </a>
-            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card">
+            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span class="agro-shortcut-icon">
                 <i class="bi bi-receipt-cutoff"></i>
               </span>
@@ -141,14 +141,14 @@
               <p class="agro-shortcut-copy">Consulte os lancamentos vinculados aos contratos.</p>
             </a>
             {% if is_editable %}
-              <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-success">
+              <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-success" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <span class="agro-shortcut-icon">
                   <i class="bi bi-plus-circle"></i>
                 </span>
                 <h6 class="agro-shortcut-title">Nova entrada manual</h6>
                 <p class="agro-shortcut-copy">Cadastre receitas avulsas fora do fluxo de contrato.</p>
               </a>
-              <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-danger">
+              <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-danger" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_saida_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <span class="agro-shortcut-icon">
                   <i class="bi bi-plus-circle"></i>
                 </span>
@@ -156,14 +156,14 @@
                 <p class="agro-shortcut-copy">Registre despesas avulsas com o mesmo padrao visual.</p>
               </a>
             {% endif %}
-            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-secondary">
+            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_conciliacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span class="agro-shortcut-icon">
                 <i class="bi bi-bank2"></i>
               </span>
               <h6 class="agro-shortcut-title">Conciliacao bancaria</h6>
               <p class="agro-shortcut-copy">Conferencias e ajustes por banco e competencia.</p>
             </a>
-            <a href="{{ url_for('main.agro_bancos_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-secondary">
+            <a href="{{ url_for('main.agro_bancos_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span class="agro-shortcut-icon">
                 <i class="bi bi-bank"></i>
               </span>
@@ -201,7 +201,7 @@
             </div>
           {% endif %}
 
-          <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-primary btn-sm mt-4 d-inline-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-primary btn-sm mt-4 d-inline-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-arrow-right-circle"></i> Ir para o caixa
           </a>
         </div>

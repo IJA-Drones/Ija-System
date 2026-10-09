@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import json
 import os
 import threading
@@ -260,7 +261,7 @@ def register_routes(bp):
     @bp.route("/admin")
     @login_required
     def admin_dashboard():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -345,7 +346,7 @@ def register_routes(bp):
     @bp.route("/admin/exportar_excel")
     @login_required
     def exportar_excel():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Permissao negada para exportar.", "danger")
             return redirect(url_for("main.admin_dashboard"))
 
@@ -398,7 +399,7 @@ def register_routes(bp):
     @bp.route("/admin/atualizar/<int:id>", methods=["POST"])
     @login_required
     def atualizar(id):
-        if not can_edit_admin_panel(current_user):
+        if not route_access(current_user, can_edit_admin_panel(current_user)):
             return _admin_update_error("Permissao negada.", 403, "danger")
 
         pedido = _get_scoped_solicitacao_or_404(id)
@@ -461,7 +462,7 @@ def register_routes(bp):
     @bp.route("/admin/canceladas")
     @login_required
     def admin_canceladas():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -512,7 +513,7 @@ def register_routes(bp):
     @bp.route("/admin/historico-os")
     @login_required
     def admin_historico_os():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -560,7 +561,7 @@ def register_routes(bp):
     @bp.route("/admin/historico-os/exportar-excel")
     @login_required
     def admin_historico_os_exportar_excel():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Permissao negada para exportar.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -594,7 +595,7 @@ def register_routes(bp):
     @bp.route("/admin/historico-os/exportar-excel-individuais")
     @login_required
     def admin_historico_os_exportar_excel_individuais():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Permissao negada para exportar.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -624,7 +625,7 @@ def register_routes(bp):
     @bp.route("/admin/historico-os/exportar-pdf-individuais")
     @login_required
     def admin_historico_os_exportar_pdf_individuais():
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Permissao negada para exportar.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -644,7 +645,7 @@ def register_routes(bp):
     )
     @login_required
     def admin_historico_os_pdf_job_status(job_id):
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             return jsonify({"success": False, "error": "Acesso restrito."}), 403
 
         job = _get_historico_os_pdf_job(job_id)
@@ -660,7 +661,7 @@ def register_routes(bp):
     )
     @login_required
     def admin_historico_os_pdf_job_download(job_id):
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -683,7 +684,7 @@ def register_routes(bp):
     @bp.route("/admin/os/<int:os_id>/equipe-uvis-formulario", methods=["GET"], endpoint="admin_equipe_uvis_os_formulario_view")
     @login_required
     def admin_equipe_uvis_os_formulario_view(os_id):
-        if not can_access_admin_panel(current_user):
+        if not route_access(current_user, can_access_admin_panel(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 

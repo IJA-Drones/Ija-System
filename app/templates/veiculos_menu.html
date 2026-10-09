@@ -18,11 +18,11 @@
     </div>
 
     <div class="d-flex gap-2 flex-wrap page-actions">
-      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      {% if can_manage %}
-      <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
+      {% if (central_ti_ui_guard(['main.cadastrar_veiculo'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+      <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_veiculo')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-plus-lg"></i> Novo Veículo
       </a>
       {% endif %}
@@ -31,7 +31,7 @@
 
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.listar_veiculos') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.listar_veiculos') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--frota border-start border-primary border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
@@ -54,7 +54,7 @@
     </div>
 
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.veiculos_rastreamento') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.veiculos_rastreamento') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_rastreamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card border-start border-info border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
@@ -73,7 +73,7 @@
 
     {% if can_view_logs %}
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.veiculos_logs') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.veiculos_logs') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--logs border-start border-success border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
@@ -96,7 +96,7 @@
     </div>
 
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.veiculos_limpezas') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.veiculos_limpezas') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_limpezas')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--limpezas border-start border-info border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
@@ -121,7 +121,7 @@
 
     {% if can_view_checklist %}
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.admin_checklists_semanais') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.admin_checklists_semanais') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_checklists_semanais')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--checklist border-start border-warning border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
@@ -146,7 +146,7 @@
 
     {% if current_user.trabalha_oceano_azul %}
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.veiculos_alertas_limpeza') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.veiculos_alertas_limpeza') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_alertas_limpeza')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--alertas border-start border-danger border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>

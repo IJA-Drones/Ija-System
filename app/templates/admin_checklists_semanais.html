@@ -19,7 +19,7 @@
     </div>
 
     <div class="header-actions">
-      <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center">
+      <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar para central
       </a>
     </div>
@@ -79,7 +79,7 @@
 
     <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim %}show{% endif %}" id="collapseFiltrosChecklistAdmin">
       <div class="card-body pt-0 pb-4">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="col-md-6">
             <label class="small text-muted">Piloto, placa, modelo, renomacao ou serie:</label>
             <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Ex.: Piloto Exemplo, PLOA, placa, serie...">
@@ -99,7 +99,7 @@
           </div>
           {% if filters.q or filters.data_inicio or filters.data_fim %}
           <div class="col-md-2 d-flex gap-2">
-            <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary w-100">
+            <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary w-100" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_checklists_semanais')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-x-lg"></i> Limpar
             </a>
           </div>
@@ -153,7 +153,7 @@
               </td>
               <td class="pe-4" data-label="Detalhes">
                 <a class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                   href="{{ url_for('main.admin_checklist_semanal_detalhe_actor', actor_type=grupo.actor_type, actor_id=grupo.actor_id, semana_inicio=grupo.semana_inicio.isoformat()) }}">
+                   href="{{ url_for('main.admin_checklist_semanal_detalhe_actor', actor_type=grupo.actor_type, actor_id=grupo.actor_id, semana_inicio=grupo.semana_inicio.isoformat()) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_checklist_semanal_detalhe_actor', actor_type=grupo.actor_type, actor_id=grupo.actor_id, semana_inicio=grupo.semana_inicio.isoformat())) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-card-list me-1"></i> Ver checklist
                 </a>
               </td>

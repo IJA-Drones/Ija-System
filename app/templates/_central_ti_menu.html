@@ -1,0 +1,24 @@
+{% set current_area = 'financeiro' if is_financeiro_context else 'agro' if is_agro_context else 'prefeitura' %}
+{% set system_page = request.endpoint in ['main.central_ti', 'main.acessos_dashboard'] or central_ti_navigation|selectattr('area', 'equalto', 'sistema')|selectattr('active')|list|length > 0 %}
+{% if is_financeiro_context and central_ti_permission('area:financeiro') %}
+<li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.financeiro_central' %}active{% endif %}" href="{{ url_for('main.financeiro_central') }}"><i class="bi bi-buildings me-2" aria-hidden="true"></i><span>Empresas</span></a></li>
+{% endif %}
+{% for item in central_ti_navigation if (system_page or item.area in [current_area, 'sistema']) and (request.endpoint != 'main.financeiro_central' or item.area == 'sistema') %}
+{% if system_page and loop.changed(item.area) %}
+<li class="nav-item px-3 pt-3 pb-1"><span class="small text-muted">{{ {'prefeitura': 'Prefeitura', 'agro': 'Agro', 'financeiro': 'Financeiro', 'sistema': 'Sistema'}[item.area] }}</span></li>
+{% endif %}
+<li class="nav-item">
+  {% if item.children|length > 1 %}
+  <button type="button" class="nav-link nav-link-toggle {% if item.active %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#{{ item.id }}" aria-expanded="{{ 'true' if item.active else 'false' }}">
+    <span><i class="bi {{ item.icon }} me-2" aria-hidden="true"></i><span>{{ item.label }}</span></span><i class="bi bi-chevron-down chevron" aria-hidden="true"></i>
+  </button>
+  <div class="collapse {% if item.active %}show{% endif %}" id="{{ item.id }}"><ul class="nav flex-column sub-nav">
+    {% for child in item.children %}
+    <li class="nav-item"><a class="nav-link sub-link {% if child.active %}active{% endif %}" href="{{ child.url }}"><i class="bi bi-chevron-right me-2" aria-hidden="true"></i><span>{{ child.label }}</span></a></li>
+    {% endfor %}
+  </ul></div>
+  {% else %}
+  <a class="nav-link {% if item.active %}active{% endif %}" href="{{ item.children[0].url }}"><i class="bi {{ item.icon }} me-2" aria-hidden="true"></i><span>{{ item.label }}</span></a>
+  {% endif %}
+</li>
+{% endfor %}

@@ -13,14 +13,14 @@
       <i class="bi bi-plus-square-fill me-2 text-success"></i>
       {{ 'Nova entrada manual' if modo == 'novo' else 'Editar entrada manual' }}
     </h2>
-    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar', origem='entrada')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" novalidate id="agroEntradaManualForm">
+      <form method="post" novalidate id="agroEntradaManualForm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <input type="hidden" name="confirmar_lancamento_retroativo" id="confirmar_lancamento_retroativo" value="{{ form.get('confirmar_lancamento_retroativo', '') }}">
 
         {% if modo == 'editar' and lancamento and lancamento.parcela_total > 1 %}
@@ -179,7 +179,7 @@
         </small>
 
         <div class="d-flex justify-content-end flex-wrap gap-2 mt-5">
-          <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar', origem='entrada')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg"></i> Cancelar
           </a>
           {% if modo == 'editar' and lancamento %}

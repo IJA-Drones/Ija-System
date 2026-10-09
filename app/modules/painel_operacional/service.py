@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import capability
 import math
 import os
 from datetime import datetime
@@ -92,6 +93,7 @@ def _weather_unavailable(message="Clima temporariamente indisponível."):
     }
 
 
+@capability(['sistema.operacional.consultar'])
 def can_access_operational_panel(user) -> bool:
     return getattr(user, "tipo_usuario", None) in OPERATIONAL_PANEL_TYPES
 

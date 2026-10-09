@@ -22,7 +22,7 @@
 
     <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosHistoricoOs">
       <div class="card-body pt-0 pb-4">
-        <form method="GET">
+        <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           {% for key, value in (extra_params or {}).items() %}
             <input type="hidden" name="{{ key }}" value="{{ value }}">
           {% endfor %}
@@ -119,7 +119,7 @@
             <div class="col-md-3 d-flex gap-2">
               <button class="btn btn-info text-white btn-sm flex-grow-1" type="submit"><i class="bi bi-search"></i> Filtrar</button>
               {% if filtros_ativos %}
-                <a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros"><i class="bi bi-x-lg"></i></a>
+                <a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(clear_url) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-x-lg"></i></a>
               {% endif %}
             </div>
           </div>

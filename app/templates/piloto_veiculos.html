@@ -19,7 +19,7 @@
         {% if current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] %}Gerencie seu veículo e acompanhe a frota das equipes.{% else %}Gerencie os veículos sob responsabilidade da equipe e registre os turnos conforme os padrões Oceano Azul.{% endif %}
       </div>
     </div>
-    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -151,7 +151,7 @@
       <div class="modal fade" id="modalChecklist{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
-            <form method="POST" action="{{ url_for('main.piloto_atualizar_km_veiculo', veiculo_id=v.id) }}" enctype="multipart/form-data" class="check-form">
+            <form method="POST" action="{{ url_for('main.piloto_atualizar_km_veiculo', veiculo_id=v.id) }}" enctype="multipart/form-data" class="check-form" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_atualizar_km_veiculo', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="modal-header border-0 bg-light rounded-top-4">
                 <h5 class="fw-bold m-0"><i class="bi bi-shield-check text-primary me-2"></i>Início de Turno - {{ v.placa }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -224,7 +224,7 @@
       <div class="modal fade" id="modalAbastecimento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
-            <form method="POST" action="{{ url_for('main.piloto_registrar_abastecimento_turno', veiculo_id=v.id) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ url_for('main.piloto_registrar_abastecimento_turno', veiculo_id=v.id) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_registrar_abastecimento_turno', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="modal-header border-0 bg-light rounded-top-4">
                 <h5 class="fw-bold m-0 text-success"><i class="bi bi-fuel-pump-fill me-2"></i>Registrar Abastecimento - {{ v.placa }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -283,7 +283,7 @@
       <div class="modal fade" id="modalLimpeza{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
-            <form method="POST" action="{{ url_for('main.piloto_registrar_limpeza_turno', veiculo_id=v.id) }}">
+            <form method="POST" action="{{ url_for('main.piloto_registrar_limpeza_turno', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_registrar_limpeza_turno', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="modal-header border-0 bg-light rounded-top-4">
                 <h5 class="fw-bold m-0 text-info"><i class="bi bi-droplet-half me-2"></i>Registrar Limpeza - {{ v.placa }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -354,7 +354,7 @@
       <div class="modal fade" id="modalEncerramento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
-            <form method="POST" action="{{ url_for('main.piloto_encerrar_turno', veiculo_id=v.id) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ url_for('main.piloto_encerrar_turno', veiculo_id=v.id) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_encerrar_turno', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="modal-header border-0 bg-light rounded-top-4">
                 <h5 class="fw-bold m-0 text-dark"><i class="bi bi-flag-fill text-warning me-2"></i>Finalizar Turno - {{ v.placa }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

@@ -1,4 +1,4 @@
-"""Options for the central editor; these are not active authorization rules."""
+"""Capabilities offered by the editor and validated by server policies."""
 
 import json
 from pathlib import Path

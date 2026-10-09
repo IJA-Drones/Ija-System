@@ -24,10 +24,10 @@
     </div>
 
     <div class="listing-actions agro-template-page-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_contratos_comprovantes') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_contratos_comprovantes') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_comprovantes')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-receipt-cutoff"></i> Comprovantes
       </a>
       <div class="dropdown">
@@ -36,12 +36,12 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
           <li>
-            <a href="{{ url_for('main.agro_contratos_listar') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_contratos_listar') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-file-earmark-text-fill text-primary me-2"></i> Contratos
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="dropdown-item py-2">
+            <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-file-earmark-text text-primary me-2"></i> Orcamentos
             </a>
           </li>
@@ -67,7 +67,7 @@
 
     <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosContratosTemplate">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_contratos_template') }}">
+        <form method="GET" action="{{ url_for('main.agro_contratos_template') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_template'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-7">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -96,7 +96,7 @@
               </button>
 
               {% if filters.q or filters.equipe_id %}
-                <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_template')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -145,7 +145,7 @@
                   <div class="text-muted small">
                     Comprovante:
                     {% if contrato.comprovante_pagamento_path %}
-                      <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank">enviado</a>
+                      <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id)) if central_ti_url_allowed is defined else true) else 'false' }}">enviado</a>
                     {% else %}
                       pendente
                     {% endif %}
@@ -169,7 +169,7 @@
                       </div>
                     </div>
 
-                    <form method="POST" action="{{ url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id) }}" class="agro-template-form">
+                    <form method="POST" action="{{ url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id) }}" class="agro-template-form" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                       <div class="agro-template-field agro-template-field-equipe">
                         <label class="small text-muted mb-1">Equipe</label>
                         <select class="form-select form-select-sm" name="equipe_agro_id">
@@ -208,25 +208,25 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                       <li>
-                        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
+                        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                           <i class="bi bi-pencil-square text-success me-2"></i> Editar contrato
                         </a>
                       </li>
                       <li>
-                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="dropdown-item py-2">
+                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                           <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
                         </a>
                       </li>
                       {% if contrato.comprovante_pagamento_path %}
                         <li>
-                          <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="dropdown-item py-2">
+                          <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-receipt text-primary me-2"></i> Ver comprovante
                           </a>
                         </li>
                       {% endif %}
-                      {% if can_edit_payment_receipts %}
+                      {% if (central_ti_ui_guard(['main.agro_contrato_comprovante_pagamento_remover', 'main.agro_contrato_comprovante_pagamento_upload'], (can_edit_payment_receipts)) if central_ti_ui_guard is defined else (can_edit_payment_receipts)) %}
                         <li>
-                          <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data">
+                          <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                             <label class="dropdown-item py-2 mb-0" for="comprovantePagamentoTemplate{{ contrato.id }}">
                               <i class="bi bi-upload text-warning me-2"></i>
                               {% if contrato.comprovante_pagamento_path %}Trocar comprovante{% else %}Enviar comprovante{% endif %}
@@ -236,7 +236,7 @@
                         </li>
                         {% if contrato.comprovante_pagamento_path %}
                           <li>
-                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}">
+                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                               <button type="submit" class="dropdown-item py-2 text-danger">
                                 <i class="bi bi-x-circle me-2"></i> Remover comprovante
                               </button>
@@ -246,7 +246,7 @@
                       {% endif %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}">
+                        <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_deletar', contrato_id=contrato.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                           <button type="submit" class="dropdown-item py-2 text-danger">
                             <i class="bi bi-trash me-2"></i> Excluir contrato
                           </button>

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from datetime import datetime, timedelta
 from math import isfinite
 
@@ -100,7 +101,7 @@ def _checklist_edit_config(tipo):
 
 
 def get_admin_checklist_for_edit(user, tipo, checklist_id):
-    if not (is_admin_global_user(user) or is_veiculos_supervisor(user)):
+    if not route_access(user, is_admin_global_user(user) or is_veiculos_supervisor(user)):
         raise PermissionError
     model, equipamento, *_ = _checklist_edit_config(tipo)
     query = model.query.join(equipamento).filter(model.id == checklist_id)

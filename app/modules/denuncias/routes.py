@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import os
 from datetime import date
 
@@ -37,7 +38,7 @@ def register_routes(bp):
     @bp.route("/denuncias", methods=["GET"], endpoint="denuncias_listar")
     @login_required
     def denuncias_listar():
-        if not can_access_denuncias(current_user):
+        if not route_access(current_user, can_access_denuncias(current_user)):
             abort(403)
         if is_regional_user(current_user):
             return redirect(url_for("main.coordenadoria_denuncias_listar"))
@@ -69,7 +70,7 @@ def register_routes(bp):
     @bp.route("/denuncias/<int:denuncia_id>", methods=["GET"], endpoint="denuncia_detalhe")
     @login_required
     def denuncia_detalhe(denuncia_id):
-        if not can_access_denuncias(current_user):
+        if not route_access(current_user, can_access_denuncias(current_user)):
             abort(403)
 
         denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
@@ -85,7 +86,7 @@ def register_routes(bp):
     @bp.route("/coordenadoria/denuncias", methods=["GET"], endpoint="coordenadoria_denuncias_listar")
     @login_required
     def coordenadoria_denuncias_listar():
-        if not is_regional_user(current_user):
+        if not route_access(current_user, is_regional_user(current_user)):
             abort(403)
 
         paginacao = build_denuncias_coordenadoria_query(current_user, request.args).paginate(
@@ -113,7 +114,7 @@ def register_routes(bp):
     @bp.route("/coordenadoria/denuncias/<int:denuncia_id>", methods=["GET"], endpoint="coordenadoria_denuncia_detalhe")
     @login_required
     def coordenadoria_denuncia_detalhe(denuncia_id):
-        if not is_regional_user(current_user):
+        if not route_access(current_user, is_regional_user(current_user)):
             abort(403)
 
         denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
@@ -129,10 +130,10 @@ def register_routes(bp):
     @bp.route("/denuncias/<int:denuncia_id>/encaminhar-coordenadoria", methods=["POST"], endpoint="denuncia_encaminhar_coordenadoria")
     @login_required
     def denuncia_encaminhar_coordenadoria(denuncia_id):
-        if not can_access_denuncias(current_user):
+        if not route_access(current_user, can_access_denuncias(current_user)):
             abort(403)
 
-        denuncia = get_denuncia_or_404(denuncia_id)
+        denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
         try:
             encaminhar_denuncia_para_coordenadoria(
                 denuncia,
@@ -148,7 +149,7 @@ def register_routes(bp):
     @bp.route("/coordenadoria/denuncias/<int:denuncia_id>/designar-uvis", methods=["POST"], endpoint="coordenadoria_denuncia_designar_uvis")
     @login_required
     def coordenadoria_denuncia_designar_uvis(denuncia_id):
-        if not is_regional_user(current_user):
+        if not route_access(current_user, is_regional_user(current_user)):
             abort(403)
 
         denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
@@ -163,7 +164,7 @@ def register_routes(bp):
     @bp.route("/uvis/denuncias", methods=["GET"], endpoint="uvis_denuncias_listar")
     @login_required
     def uvis_denuncias_listar():
-        if getattr(current_user, "tipo_usuario", None) != "uvis":
+        if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) == 'uvis'):
             abort(403)
 
         paginacao = build_denuncias_uvis_query(current_user, request.args).paginate(
@@ -191,7 +192,7 @@ def register_routes(bp):
     @bp.route("/uvis/denuncias/<int:denuncia_id>", methods=["GET", "POST"], endpoint="uvis_denuncia_detalhe")
     @login_required
     def uvis_denuncia_detalhe(denuncia_id):
-        if getattr(current_user, "tipo_usuario", None) != "uvis":
+        if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) == 'uvis'):
             abort(403)
 
         denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
@@ -229,10 +230,10 @@ def register_routes(bp):
     @bp.route("/denuncias/<int:denuncia_id>/arquivar", methods=["POST"], endpoint="denuncia_arquivar")
     @login_required
     def denuncia_arquivar(denuncia_id):
-        if not can_access_denuncias(current_user):
+        if not route_access(current_user, can_access_denuncias(current_user)):
             abort(403)
 
-        denuncia = get_denuncia_or_404(denuncia_id)
+        denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
         try:
             arquivar_denuncia(denuncia, request.form.get("motivo"), current_user)
             flash("Denúncia arquivada com sucesso.", "success")
@@ -244,7 +245,7 @@ def register_routes(bp):
     @bp.route("/denuncias/anexos/<int:anexo_id>", methods=["GET"], endpoint="denuncia_anexo")
     @login_required
     def denuncia_anexo(anexo_id):
-        if not can_access_denuncias(current_user):
+        if not route_access(current_user, can_access_denuncias(current_user)):
             abort(403)
 
         anexo = get_anexo_or_404(anexo_id)

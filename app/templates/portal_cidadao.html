@@ -40,7 +40,7 @@
           <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
           Registrar um relato
         </a>
-        <a class="portal-cidadao-back-link" href="{{ url_for('auth.login') }}">
+        <a class="portal-cidadao-back-link" href="{{ url_for('auth.login') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('auth.login')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-arrow-left" aria-hidden="true"></i>
           Voltar para o acesso interno
         </a>
@@ -110,11 +110,11 @@
       {% endif %}
 
       <div class="portal-cidadao-dengue-actions">
-        <a class="btn btn-success" href="{{ url_for('main.portal_cidadao_boletim_dengue') }}">
+        <a class="btn btn-success" href="{{ url_for('main.portal_cidadao_boletim_dengue') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao_boletim_dengue')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-bar-chart-line" aria-hidden="true"></i> Ver relatório completo
           <i class="bi bi-arrow-right" aria-hidden="true"></i>
         </a>
-        <a class="portal-cidadao-data-link" href="{{ infodengue_alert.source_url if infodengue_alert else 'https://info.dengue.mat.br/services/api' }}" target="_blank" rel="noopener noreferrer" aria-label="Consultar dados no InfoDengue (abre em nova aba)">
+        <a class="portal-cidadao-data-link" href="{{ infodengue_alert.source_url if infodengue_alert else 'https://info.dengue.mat.br/services/api' }}" target="_blank" rel="noopener noreferrer" aria-label="Consultar dados no InfoDengue (abre em nova aba)" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(infodengue_alert.source_url if infodengue_alert else 'https://info.dengue.mat.br/services/api') if central_ti_url_allowed is defined else true) else 'false' }}">
           Consultar dados no InfoDengue <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
         </a>
       </div>
@@ -129,11 +129,11 @@
             <span>{{ noticia.source }}</span>
             <span>{{ noticia.published_label }}</span>
           </div>
-          <h3><a href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer">{{ noticia.title }}</a></h3>
+          <h3><a href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(noticia.url) if central_ti_url_allowed is defined else true) else 'false' }}">{{ noticia.title }}</a></h3>
           {% if noticia.summary %}
           <p>{{ noticia.summary }}</p>
           {% endif %}
-          <a class="portal-cidadao-news-read" href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer" aria-label="Ler na fonte oficial: {{ noticia.title }} (abre em nova aba)">
+          <a class="portal-cidadao-news-read" href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer" aria-label="Ler na fonte oficial: {{ noticia.title }} (abre em nova aba)" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(noticia.url) if central_ti_url_allowed is defined else true) else 'false' }}">
             Ler publicação
             <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
           </a>
@@ -193,7 +193,7 @@
           action="{{ url_for('main.portal_cidadao_denuncias_criar') }}"
           enctype="multipart/form-data"
           novalidate
-        >
+         data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao_denuncias_criar'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
           <input type="hidden" id="portalTipoVisita" name="tipo_visita">
           <input type="hidden" id="portalUf" name="uf" value="SP">
           <input type="hidden" id="portalLatitude" name="latitude">
@@ -364,7 +364,7 @@
 
   <footer class="portal-cidadao-footer">
     <span><i class="bi bi-shield-check" aria-hidden="true"></i> Canal de participação cidadã</span>
-    <a href="{{ url_for('auth.login') }}">Acessar área interna <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+    <a href="{{ url_for('auth.login') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('auth.login')) if central_ti_url_allowed is defined else true) else 'false' }}">Acessar área interna <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
   </footer>
 
   <script type="application/json" id="portalCidadaoFocusCatalog">{{ focus_catalog | tojson }}</script>

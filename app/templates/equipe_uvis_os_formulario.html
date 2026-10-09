@@ -12,7 +12,7 @@
     <h2 class="m-0 text-dark">
       <i class="bi bi-clipboard-check-fill me-2 text-primary"></i>OS da Equipe UVIS
     </h2>
-    <a href="{{ url_voltar }}" class="btn btn-outline-secondary">
+    <a href="{{ url_voltar }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_voltar) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i>Voltar
     </a>
   </div>
@@ -40,7 +40,7 @@
 
       {% include "_retorno_ciclo.html" %}
 
-      <form method="post" action="{{ form_action }}" novalidate>
+      <form method="post" action="{{ form_action }}" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="section-title mt-0">
           <h5 class="m-0 text-primary fw-bold">Identifica&ccedil;&atilde;o</h5>
         </div>

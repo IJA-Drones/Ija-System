@@ -20,13 +20,13 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 financeiro-config-actions">
-      <a href="{{ url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-cash-coin"></i> Recebíveis
       </a>
-      <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-success d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_categorias_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-tags"></i> Categorias
       </a>
     </div>
@@ -36,7 +36,7 @@
   <nav class="finance-settings-nav mb-4" aria-label="Seções das configurações">
     {% for chave, rotulo, icone in [('dados', 'Dados da empresa', 'bi-building'), ('layout', 'Logo e aparência', 'bi-image'), ('competencias', 'Competências', 'bi-calendar3')] %}
     {% if chave != 'competencias' or empresa.slug == 'ija' %}
-    <a class="btn {{ 'btn-primary' if secao == chave else 'btn-outline-primary' }}" href="{{ url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao=chave) }}" {% if secao == chave %}aria-current="page"{% endif %}><i class="bi {{ icone }} me-2" aria-hidden="true"></i>{{ rotulo }}</a>
+    <a class="btn {{ 'btn-primary' if secao == chave else 'btn-outline-primary' }}" href="{{ url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao=chave) }}" {% if secao == chave %}aria-current="page"{% endif %} data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao=chave)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi {{ icone }} me-2" aria-hidden="true"></i>{{ rotulo }}</a>
     {% endif %}
     {% endfor %}
   </nav>
@@ -45,7 +45,7 @@
     <div class="card-body p-4">
       <h3 class="h5 mb-2">{{ 'Dados da empresa' if secao == 'dados' else 'Logo e aparência' }}</h3>
       <p class="text-muted">{{ 'Mantenha o nome, a razão social e o CNPJ da empresa atualizados.' if secao == 'dados' else 'A logo aparece no cartão da empresa, na visão geral e no cabeçalho do financeiro.' }}</p>
-      <form method="post" enctype="multipart/form-data" action="{{ url_for('main.financeiro_empresa_configuracoes_salvar', empresa_slug=empresa.slug) }}" class="row g-3">
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('main.financeiro_empresa_configuracoes_salvar', empresa_slug=empresa.slug) }}" class="row g-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa_configuracoes_salvar', empresa_slug=empresa.slug), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
         <input type="hidden" name="secao" value="{{ secao }}">
         {% if secao == 'dados' %}
@@ -90,7 +90,7 @@
         <h5 class="m-0 text-primary fw-bold">Selecionar Competência</h5>
       </div>
 
-      <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}" id="competenciaSelectorForm" class="row g-3 align-items-end">
+      <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}" id="competenciaSelectorForm" class="row g-3 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_configuracoes_salvar'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="col-lg-8">
           <label class="form-label fw-bold small text-muted">Competencia</label>
           <select name="competencia_select" id="competencia_select" class="form-select">
@@ -170,7 +170,7 @@
                     <div class="small text-muted mb-3">Última ação por {{ item.controle.atualizado_por_nome }}</div>
                   {% endif %}
 
-                  <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}">
+                  <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_configuracoes_salvar'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                     <input type="hidden" name="ano" value="{{ item.ano }}">
                     <input type="hidden" name="mes" value="{{ item.mes }}">
                     <input type="hidden" name="acao" value="{{ 'bloquear' if item.explicitamente_liberado else 'liberar' }}">

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
@@ -26,17 +27,17 @@ from app.shared.access import is_admin_global_user, is_veiculos_supervisor, norm
 
 
 def _uvis_only():
-    if getattr(current_user, "tipo_usuario", None) != "uvis":
+    if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) == 'uvis'):
         abort(403)
 
 
 def _admin_only():
-    if not is_admin_global_user(current_user):
+    if not route_access(current_user, is_admin_global_user(current_user)):
         abort(403)
 
 
 def _admin_or_operario_view_only():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador"}:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'dev', 'diretor', 'admin', 'operario', 'operador'}):
         abort(403)
 
 
@@ -334,7 +335,7 @@ def register_routes(bp):
     @bp.route("/solicitacao/<int:id>/atribuir-equipe-uvis", methods=["POST"], endpoint="atribuir_equipe_uvis_solicitacao")
     @login_required
     def atribuir_equipe_uvis_solicitacao(id):
-        if is_veiculos_supervisor(current_user):
+        if not route_access(current_user, not (is_veiculos_supervisor(current_user))):
             abort(403)
         solicitacao = Solicitacao.query.get_or_404(id)
 

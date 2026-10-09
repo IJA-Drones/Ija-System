@@ -25,18 +25,18 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ financeiro_consulta_url('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ financeiro_consulta_url('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
       {% if is_admin_agro %}
-        <a href="{{ financeiro_consulta_url('main.agro_orcamentos_template_mapeamento') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <a href="{{ financeiro_consulta_url('main.agro_orcamentos_template_mapeamento') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_orcamentos_template_mapeamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-map"></i> Listagem de Mapeamentos
         </a>
       {% endif %}
 
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-lg"></i> Novo Orçamento
         </a>
       {% endif %}
@@ -60,7 +60,7 @@
 
     <div class="collapse {% if filters.q or filters.cliente_id or filters.mapeamento %}show{% endif %}" id="collapseFiltrosOrcamentosAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ financeiro_consulta_url('main.agro_orcamentos_listar') }}">
+        <form method="GET" action="{{ financeiro_consulta_url('main.agro_orcamentos_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_orcamentos_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           {% if request.endpoint == "main.financeiro_empresa_comercial" %}<input type="hidden" name="aba" value="orcamentos">{% endif %}
           <div class="row g-2 align-items-end">
             <div class="col-md-5">
@@ -99,7 +99,7 @@
               </button>
 
               {% if filters.q or filters.cliente_id or filters.mapeamento %}
-                <a href="{{ financeiro_consulta_url('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ financeiro_consulta_url('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_orcamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -178,7 +178,7 @@
                       target="_blank"
                       class="btn agro-icon-btn agro-icon-btn-pdf"
                       title="Gerar PDF"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-filetype-pdf"></i>
                     </a>
 
@@ -188,7 +188,7 @@
                         target="_blank"
                         class="btn agro-icon-btn agro-icon-btn-attachment"
                         title="Abrir anexo"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-paperclip"></i>
                       </a>
                     {% endif %}
@@ -210,12 +210,12 @@
                       {% if is_editable %}
                         {% if (not orcamento.contrato) and orcamento.inclui_mapeamento and (not orcamento.rd_mapeamento or orcamento.rd_mapeamento.status != 'PREENCHIDO') %}
                           <li>
-                            <a href="{{ financeiro_consulta_url('main.agro_orcamentos_template_mapeamento') }}" class="dropdown-item py-2">
+                            <a href="{{ financeiro_consulta_url('main.agro_orcamentos_template_mapeamento') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_orcamentos_template_mapeamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-map-fill text-primary me-2"></i> Listagem de Mapeamentos
                             </a>
                           </li>
                           <li>
-                            <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                            <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-map text-primary me-2"></i>
                               {{ 'Acompanhar RD de mapeamento' if orcamento.rd_mapeamento else 'Preencher RD de mapeamento' }}
                             </a>
@@ -227,14 +227,14 @@
                           </li>
                         {% else %}
                           <li>
-                            <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                            <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_editar', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-file-earmark-text text-primary me-2"></i>
                               {{ 'Editar contrato' if orcamento.contrato else 'Montar contrato' }}
                             </a>
                           </li>
                           {% if orcamento.inclui_mapeamento %}
                             <li>
-                              <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                              <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                 <i class="bi bi-map text-primary me-2"></i> Ver RD de mapeamento
                               </a>
                             </li>
@@ -242,28 +242,28 @@
                         {% endif %}
                         {% if orcamento.contrato and orcamento.contrato.status == 'APROVADO' %}
                           <li>
-                            <a href="{{ url_for('main.agro_contratos_template') }}" class="dropdown-item py-2">
+                            <a href="{{ url_for('main.agro_contratos_template') }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_template')) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-diagram-3 text-primary me-2"></i> Abrir listagem operacional
                             </a>
                           </li>
                         {% endif %}
                       {% endif %}
                       <li>
-                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="dropdown-item py-2">
+                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                           <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
                         </a>
                       </li>
 
                       {% if is_editable %}
                         <li>
-                          <a href="{{ url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                          <a href="{{ url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar orçamento
                           </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
 
                         <li>
-                          <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_orcamento_deletar', orcamento_id=orcamento.id) }}">
+                          <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_orcamento_deletar', orcamento_id=orcamento.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_deletar', orcamento_id=orcamento.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                             <button type="submit" class="dropdown-item py-2 text-danger">
                               <i class="bi bi-trash me-2"></i> Excluir orçamento
                             </button>
@@ -293,11 +293,11 @@
           <nav>
             <ul class="pagination pagination-sm mb-0 listing-pagination">
               <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
-                <a class="page-link shadow-none" href="{{ financeiro_consulta_url('main.agro_orcamentos_listar', page=filters.page-1, **pagination_args) }}">Anterior</a>
+                <a class="page-link shadow-none" href="{{ financeiro_consulta_url('main.agro_orcamentos_listar', page=filters.page-1, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_orcamentos_listar', page=filters.page-1, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
               </li>
               <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
               <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
-                <a class="page-link shadow-none" href="{{ financeiro_consulta_url('main.agro_orcamentos_listar', page=filters.page+1, **pagination_args) }}">Próxima</a>
+                <a class="page-link shadow-none" href="{{ financeiro_consulta_url('main.agro_orcamentos_listar', page=filters.page+1, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_orcamentos_listar', page=filters.page+1, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Próxima</a>
               </li>
             </ul>
           </nav>
@@ -435,16 +435,16 @@
               </h6>
 
               <div class="d-flex flex-wrap gap-2">
-                <a href="{{ url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-filetype-pdf"></i> PDF comercial
                 </a>
 
-                <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-file-earmark-text"></i> PDF do contrato
                 </a>
 
                 {% if orcamento.anexo_path %}
-                  <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                  <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-paperclip"></i> Anexo enviado
                   </a>
                 {% endif %}

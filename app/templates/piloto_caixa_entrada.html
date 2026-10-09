@@ -16,7 +16,7 @@
         Alertas de limpeza dos veiculos da equipe.
       </div>
     </div>
-    <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-truck-front-fill me-1"></i> Veiculos
     </a>
   </div>
@@ -64,7 +64,7 @@
                   Ciente em {{ alerta.ciencia.reconhecido_em.strftime('%d/%m/%Y %H:%M') if alerta.ciencia.reconhecido_em else '-' }}
                 </span>
               {% else %}
-                <form method="POST" action="{{ url_for('main.piloto_confirmar_alerta_limpeza', veiculo_id=alerta.veiculo.id) }}" class="form-no-loading">
+                <form method="POST" action="{{ url_for('main.piloto_confirmar_alerta_limpeza', veiculo_id=alerta.veiculo.id) }}" class="form-no-loading" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_confirmar_alerta_limpeza', veiculo_id=alerta.veiculo.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                   <button type="submit" class="btn btn-warning fw-bold rounded-pill px-4">
                     <i class="bi bi-check2-circle me-1"></i> Confirmar ciencia
                   </button>

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import capability, route_access
 import json
 import os
 import re
@@ -7,6 +8,7 @@ from io import BytesIO
 from zoneinfo import ZoneInfo
 
 from flask import current_app, make_response, send_file
+from flask_login import current_user
 from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -96,7 +98,7 @@ class VeiculoTurnoError(Exception):
 
 def list_veiculos(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario not in VEICULOS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_ALLOWED_TYPES):
         raise PermissionError
 
     q = (args.get("q") or "").strip()
@@ -403,7 +405,7 @@ def update_veiculo(veiculo, cleaned):
 
 def update_veiculos_equipes(user, form_data):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
-    if tipo_usuario not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(user):
+    if not route_access(user, tipo_usuario in {'dev', 'diretor', 'admin', 'operario', 'operador', 'prefeitura_admin'} or is_veiculos_supervisor(user)):
         raise PermissionError
 
     getlist = getattr(form_data, "getlist", None)
@@ -644,6 +646,7 @@ def build_piloto_veiculos_context(user):
         "agora_brasilia": _now_brazil(),
     }
 
+@capability(['prefeitura.veiculos.consultar'])
 def can_access_limpeza_alertas_operacionais(user):
     return (
         getattr(user, "tipo_usuario", None) in {"piloto", EQUIPE_OCEANO_USER_TYPE, "sup_veiculos"}
@@ -651,6 +654,7 @@ def can_access_limpeza_alertas_operacionais(user):
     )
 
 
+@capability(['prefeitura.veiculos.consultar'])
 def can_access_limpeza_alertas_admin(user):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
     return (
@@ -1665,7 +1669,7 @@ def _dia_media_veiculo(filename):
 
 def get_veiculo_log_for_media(user, log_id):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
-    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_LOGS_ALLOWED_TYPES):
         raise PermissionError
 
     return _build_veiculos_logs_query(user=user).filter(LogVeiculo.id == log_id).first()
@@ -1716,7 +1720,7 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa, *, copi
 
 def build_veiculos_export_response(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario not in VEICULOS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_ALLOWED_TYPES):
         raise PermissionError
 
     veiculos = list_veiculos(tipo_usuario, args, user=user)["veiculos"]
@@ -2590,7 +2594,7 @@ def _ultima_movimentacao_log_subquery():
 
 def list_veiculos_logs(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_LOGS_ALLOWED_TYPES):
         raise PermissionError
 
     q = (args.get("q") or "").strip()
@@ -2680,7 +2684,7 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
 
 def list_veiculos_limpezas(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_LOGS_ALLOWED_TYPES):
         raise PermissionError
 
     q = (args.get("q") or "").strip()
@@ -2739,7 +2743,7 @@ def list_veiculos_limpezas(tipo_usuario, args, user=None):
 
 def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_LOGS_ALLOWED_TYPES):
         raise PermissionError
 
     data_inicio = (args.get("data_inicio") or "").strip()
@@ -2786,7 +2790,7 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
 
 def build_veiculos_deleted_logs_context(tipo_usuario, args):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario != "dev":
+    if not route_access(current_user, tipo_usuario == "dev"):
         raise PermissionError
 
     q = (args.get("q") or "").strip()
@@ -2873,7 +2877,7 @@ def _get_veiculo_logs_scoped(veiculo_id, user):
 
 def update_veiculo_log_km(user, log_id, form_data):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
-    if tipo_usuario not in VEICULOS_LOGS_EDIT_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_LOGS_EDIT_TYPES):
         raise PermissionError
 
     log = (
@@ -2937,7 +2941,7 @@ def update_veiculo_log_km(user, log_id, form_data):
 
 def delete_veiculo_log(user, log_id, request_info=None):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
-    if tipo_usuario != "admin":
+    if not route_access(user, tipo_usuario == 'admin'):
         raise PermissionError
 
     log = (
@@ -3128,7 +3132,7 @@ def _recalcular_km_atual_veiculo(veiculo_id):
 
 def build_veiculos_logs_export(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
-    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+    if not route_access(user, tipo_usuario in VEICULOS_LOGS_ALLOWED_TYPES):
         raise PermissionError
 
     q = (args.get("q") or "").strip()

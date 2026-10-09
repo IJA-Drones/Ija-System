@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import capability
 from datetime import datetime
 from io import BytesIO
 
@@ -18,6 +19,7 @@ from app.shared.access import (
 )
 
 
+@capability(['prefeitura.clientes.consultar'])
 def can_access_admin_uvis(user) -> bool:
     return getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES
 

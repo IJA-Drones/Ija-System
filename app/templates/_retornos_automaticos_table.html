@@ -63,7 +63,7 @@
               {% endif %}
             </td>
             <td class="text-end">
-              <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
+              <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_os_formulario_view', os_id=item.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-eye"></i>
               </a>
             </td>

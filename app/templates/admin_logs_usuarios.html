@@ -46,7 +46,7 @@
     <div class="listing-actions">
       <span class="auditoria-retention"><i class="bi bi-database-check"></i> Retenção: <strong>15 mil</strong></span>
       <a href="{{ url_for('main.admin_dashboard') }}"
-         class="btn btn-outline-secondary d-flex align-items-center gap-2">
+         class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
     </div>
@@ -127,7 +127,7 @@
 
     <div class="collapse {% if ns.filtered %}show{% endif %}" id="collapseFiltrosAuditoria">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.admin_logs_usuarios') }}">
+        <form method="GET" action="{{ url_for('main.admin_logs_usuarios') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="auditoria-filter-hint"><i class="bi bi-info-circle"></i> Combine filtros para localizar uma ação específica ou investigar falhas.</div>
           <div class="row g-3 align-items-end">
             <div class="col-12">
@@ -206,7 +206,7 @@
               {% if ns.filtered %}
                 <a href="{{ url_for('main.admin_logs_usuarios') }}"
                    class="btn btn-outline-secondary btn-sm w-100"
-                   title="Limpar filtros">
+                   title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}

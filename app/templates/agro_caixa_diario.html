@@ -27,16 +27,16 @@
           <i class="bi bi-unlock-fill" aria-hidden="true"></i> Abrir caixa
         </a>
       {% endif %}
-      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug='ija')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-cash-coin"></i> Recebiveis
       </a>
-      <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar', origem='entrada')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-down-circle"></i> Entradas
       </a>
-      <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-up-circle"></i> Saidas
       </a>
     </div>
@@ -102,7 +102,7 @@
   {% if report.dia_anterior_pendente %}
     <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
       O dia anterior ainda nao foi fechado. Para manter o caixa batendo certinho, feche primeiro
-      <a href="{{ url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat()) }}" class="alert-link">
+      <a href="{{ url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat()) }}" class="alert-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat())) if central_ti_url_allowed is defined else true) else 'false' }}">
         o caixa de {{ report.caixa_anterior.data_caixa.strftime('%d/%m/%Y') }}
       </a>.
     </div>
@@ -133,7 +133,7 @@
               <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
             </a>
           {% endif %}
-          <a href="{{ url_for('main.agro_caixa_diario', data_caixa=data_caixa_iso) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+          <a href="{{ url_for('main.agro_caixa_diario', data_caixa=data_caixa_iso) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=data_caixa_iso)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-journal-text"></i> Ver caixa do dia
           </a>
         </div>
@@ -158,7 +158,7 @@
 
     <div class="collapse {% if request.args.get('data_caixa') %}show{% endif %}" id="collapseFiltrosCaixaDiario">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_caixa_diario') }}">
+        <form method="GET" action="{{ url_for('main.agro_caixa_diario') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-8">
               <label class="small text-muted mb-1">Data do caixa</label>
@@ -169,7 +169,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if request.args.get('data_caixa') %}
-                <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -198,7 +198,7 @@
           </div>
 
           {% if is_editable and not report.caixa_aberto and not report.caixa_fechado %}
-            <form method="post" action="{{ url_for('main.agro_caixa_abrir') }}" class="row g-3" id="abrir-caixa-form">
+            <form method="post" action="{{ url_for('main.agro_caixa_abrir') }}" class="row g-3" id="abrir-caixa-form" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_abrir'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <input type="hidden" name="data_caixa" value="{{ data_caixa_iso }}">
               <div class="col-md-6">
                 <label class="form-label small text-muted">Saldo de abertura</label>
@@ -228,7 +228,7 @@
               </div>
             </form>
           {% elif is_editable and report.caixa_aberto %}
-            <form method="post" action="{{ url_for('main.agro_caixa_fechar') }}" class="row g-3">
+            <form method="post" action="{{ url_for('main.agro_caixa_fechar') }}" class="row g-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_fechar'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <input type="hidden" name="data_caixa" value="{{ data_caixa_iso }}">
               <div class="col-md-6">
                 <label class="form-label small text-muted">Saldo de fechamento</label>
@@ -279,7 +279,7 @@
                     {{ caixa.status }} | abertura {{ caixa.saldo_abertura|currencybr }} | fechamento {{ caixa.saldo_fechamento|currencybr }}
                   </div>
                 </div>
-                <a href="{{ url_for('main.agro_caixa_diario', data_caixa=caixa.data_caixa.isoformat()) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+                <a href="{{ url_for('main.agro_caixa_diario', data_caixa=caixa.data_caixa.isoformat()) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=caixa.data_caixa.isoformat())) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-eye"></i> Ver dia
                 </a>
               </div>

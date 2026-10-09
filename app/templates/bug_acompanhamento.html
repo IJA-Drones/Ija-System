@@ -14,7 +14,7 @@
       <h2 class="mb-1">Acompanhamento do bug</h2>
       <p class="text-muted small mb-0">As atualizações dos devs sobre o problema reportado aparecem aqui.</p>
     </div>
-    <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -73,7 +73,7 @@
           {% if atualizacao.anexos %}
           <div class="feedback-comment-gallery mt-2">
             {% for anexo in atualizacao.anexos %}
-            <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link">
+            <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_anexo', anexo_id=anexo.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
               <img src="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" alt="{{ anexo.arquivo_nome }}" class="feedback-comment-image">
             </a>
             {% endfor %}

@@ -21,7 +21,7 @@
       {{ render_result_summary(paginacao.total, 'Solicitações canceladas filtradas') }}
     </div>
 
-    <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary shadow-sm">
+    <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -31,7 +31,7 @@
   {# filtros (unidade/região) #}
   <div class="card shadow-sm rounded-4 mb-4 border-0 canceladas-filters">
     <div class="card-body">
-      <form method="GET">
+      <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-2 filter-chip-row">
           <div class="col-md-4">
             <label class="small text-muted">Unidade:</label>
@@ -125,7 +125,7 @@
               <i class="bi bi-search"></i> Filtrar
             </button>
             {% if canceladas_has_filters %}
-              <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-outline-secondary btn-sm w-100">
+              <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-outline-secondary btn-sm w-100" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_canceladas')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-x-lg"></i> Limpar
               </a>
             {% endif %}

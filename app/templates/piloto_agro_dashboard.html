@@ -22,10 +22,10 @@
       </div>
 
       <div class="listing-actions agro-pilot-header-actions">
-        <a href="{{ url_for('main.agro_piloto_mapeamentos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_piloto_mapeamentos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_mapeamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-map"></i> Meus mapeamentos
         </a>
-        <a href="{{ url_for('main.agro_piloto_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_piloto_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-clipboard2-data"></i> Minhas OS
         </a>
         <a href="#agroEquipamentos" class="btn btn-success btn-sm d-flex align-items-center gap-2">
@@ -178,7 +178,7 @@
                             </div>
                           </div>
                           <div class="agro-pilot-demand-action">
-                            <a href="{{ url_for('main.agro_piloto_rd_mapeamento', rd_id=rd.id) }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+                            <a href="{{ url_for('main.agro_piloto_rd_mapeamento', rd_id=rd.id) }}" class="btn btn-success btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_rd_mapeamento', rd_id=rd.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-map"></i> Abrir RD
                             </a>
                           </div>
@@ -211,7 +211,7 @@
                             </div>
                           </div>
                           <div class="agro-pilot-demand-action">
-                            <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+                            <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-success btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_nova', contrato_id=contrato.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-clipboard2-plus"></i> Criar OS
                             </a>
                           </div>
@@ -244,7 +244,7 @@
                             </div>
                           </div>
                           <div class="agro-pilot-demand-action">
-                            <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+                            <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_editar', os_id=os_agro.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-pencil-square"></i> Continuar
                             </a>
                           </div>

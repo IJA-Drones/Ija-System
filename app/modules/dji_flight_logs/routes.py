@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import os
 
 from flask import current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
@@ -24,7 +25,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs", methods=["GET"], endpoint="relatorios_dji_logs")
     @login_required
     def relatorios_dji_logs():
-        if not can_access_dji_logs(current_user):
+        if not route_access(current_user, can_access_dji_logs(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -53,7 +54,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/exportar", methods=["GET"], endpoint="exportar_dji_logs_excel")
     @login_required
     def exportar_dji_logs_excel():
-        if not can_access_dji_logs(current_user):
+        if not route_access(current_user, can_access_dji_logs(current_user)):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -68,7 +69,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/importar", methods=["POST"], endpoint="importar_dji_logs")
     @login_required
     def importar_dji_logs():
-        if not can_import_dji_logs(current_user):
+        if not route_access(current_user, can_import_dji_logs(current_user)):
             flash("Apenas administradores podem importar logs DJI.", "danger")
             return redirect(url_for("main.relatorios_dji_logs"))
 
@@ -96,7 +97,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/importar-kml", methods=["POST"], endpoint="importar_dji_kml")
     @login_required
     def importar_dji_kml():
-        if not can_import_dji_logs(current_user):
+        if not route_access(current_user, can_import_dji_logs(current_user)):
             flash("Apenas administradores podem importar rotas KML.", "danger")
             return redirect(url_for("main.relatorios_dji_logs"))
 
@@ -134,7 +135,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/rota/<int:route_id>/vincular-os", methods=["POST"], endpoint="vincular_dji_kml_route_os")
     @login_required
     def vincular_dji_kml_route_os(route_id):
-        if not can_import_dji_logs(current_user):
+        if not route_access(current_user, can_import_dji_logs(current_user)):
             flash("Apenas administradores podem vincular rotas KML a OS.", "danger")
             return redirect(url_for("main.relatorios_dji_logs"))
 
@@ -162,7 +163,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/rota/<int:route_id>/excluir", methods=["POST"], endpoint="excluir_dji_kml_route")
     @login_required
     def excluir_dji_kml_route(route_id):
-        if not can_import_dji_logs(current_user):
+        if not route_access(current_user, can_import_dji_logs(current_user)):
             flash("Apenas administradores podem excluir rotas KML.", "danger")
             return redirect(url_for("main.relatorios_dji_logs"))
 

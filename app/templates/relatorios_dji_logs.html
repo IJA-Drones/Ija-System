@@ -18,7 +18,7 @@
         Importe semanalmente o Excel da DJI e acompanhe o consolidado acumulado dos voos.
       </p>
     </div>
-    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
   </div>
@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <form method="POST" action="{{ url_for('main.importar_dji_logs') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
+      <form method="POST" action="{{ url_for('main.importar_dji_logs') }}" enctype="multipart/form-data" class="row g-3 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.importar_dji_logs'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="col-lg-8">
           <label class="form-label small text-muted">Arquivo Excel da DJI</label>
           <input type="file" name="arquivo" class="form-control" accept=".xlsx" required>
@@ -62,7 +62,7 @@
         </div>
       </div>
 
-      <form method="POST" action="{{ url_for('main.importar_dji_kml') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
+      <form method="POST" action="{{ url_for('main.importar_dji_kml') }}" enctype="multipart/form-data" class="row g-3 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.importar_dji_kml'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="col-lg-8">
           <label class="form-label small text-muted">Arquivos KML das rotas</label>
           <input type="file" name="arquivos" class="form-control" accept=".kml" multiple required>
@@ -128,12 +128,12 @@
         <a
           href="{{ url_for('main.exportar_dji_logs_excel', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota) }}"
           class="btn btn-success"
-        >
+         data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.exportar_dji_logs_excel', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota)) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar Excel
         </a>
       </div>
 
-          <form method="GET" class="row g-3 align-items-end">
+          <form method="GET" class="row g-3 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
             <input type="hidden" name="kml_page" value="{{ kml_paginacao.page if kml_paginacao else 1 }}">
             <input type="hidden" name="kml_q" value="{{ kml_filtros.q }}">
             <input type="hidden" name="kml_data_inicio" value="{{ kml_filtros.data_inicio }}">
@@ -203,7 +203,7 @@
               <button type="submit" class="btn btn-primary">
                 <i class="bi bi-search me-1"></i> Filtrar
               </button>
-              <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-outline-secondary">
+              <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-x-lg me-1"></i> Limpar
               </a>
             </div>
@@ -614,7 +614,7 @@
         </button>
         <div class="collapse {% if kml_filtros_ativos %}show{% endif %}" id="collapseFiltrosKml">
           <div class="p-3 border-top">
-            <form method="GET" class="row g-3 align-items-end">
+            <form method="GET" class="row g-3 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
               <input type="hidden" name="page" value="{{ paginacao.page }}">
               <input type="hidden" name="kml_page" value="1">
               <input type="hidden" name="data_inicio" value="{{ filtros.data_inicio }}">
@@ -687,7 +687,7 @@
                 <a
                   href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, _anchor='rotas-kml') }}"
                   class="btn btn-outline-secondary"
-                >
+                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, _anchor='rotas-kml')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg me-1"></i> Limpar KML
                 </a>
               </div>
@@ -732,7 +732,7 @@
                     <a
                       href="{{ url_for('main.relatorios_dji_logs', page=1, kml_page=kml_paginacao.page, data_inicio='', data_fim='', piloto='', aeronave='', equipe='', q='', endereco='', voo_id=item.flight_record.id, status_rota='com_kml', kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}"
                       class="linked-route-pill"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=1, kml_page=kml_paginacao.page, data_inicio='', data_fim='', piloto='', aeronave='', equipe='', q='', endereco='', voo_id=item.flight_record.id, status_rota='com_kml', kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados')) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-arrow-left-right"></i> Voo #{{ item.flight_record.id }}
                     </a>
                     <div class="linked-route-muted mt-1">{{ item.flight_record.flight_start.strftime("%d/%m/%Y %H:%M") if item.flight_record.flight_start else "-" }}</div>
@@ -748,7 +748,7 @@
                       <a
                         href="{{ url_for('main.admin_os_formulario_view', os_id=linked_os.solicitacao_id) }}"
                         class="fw-semibold text-success text-decoration-none"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_os_formulario_view', os_id=linked_os.solicitacao_id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-clipboard-check me-1"></i>
                         {{ linked_os.identificador_os or ("OS #" ~ linked_os.solicitacao_id) }}
                       </a>
@@ -779,22 +779,22 @@
                       <a
                         href="{{ url_for('main.visualizar_dji_kml_route', route_id=item.id) }}"
                         class="dropdown-item"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.visualizar_dji_kml_route', route_id=item.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-map me-2"></i> Ver mapa
                       </a>
                       <a
                         href="{{ url_for('main.baixar_dji_kml_route', route_id=item.id) }}"
                         class="dropdown-item"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.baixar_dji_kml_route', route_id=item.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-download me-2"></i> Baixar KML
                       </a>
-                    {% if can_import %}
+                    {% if (central_ti_ui_guard(['main.vincular_dji_kml_route_os', 'main.excluir_dji_kml_route'], can_import) if central_ti_ui_guard is defined else can_import) %}
                       <div class="dropdown-divider"></div>
                       <form
                         method="POST"
                         action="{{ url_for('main.vincular_dji_kml_route_os', route_id=item.id) }}"
                         class="kml-link-form"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vincular_dji_kml_route_os', route_id=item.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <label class="form-label small text-muted mb-1">ID visual da OS</label>
                         <div class="input-group input-group-sm">
                           <input
@@ -815,7 +815,7 @@
                         action="{{ url_for('main.excluir_dji_kml_route', route_id=item.id) }}"
                         class="m-0"
                         onsubmit="return confirm('Excluir esta rota KML? Se ela estiver vinculada a uma OS, o vinculo sera removido.');"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.excluir_dji_kml_route', route_id=item.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <button type="submit" class="dropdown-item text-danger">
                           <i class="bi bi-trash me-2"></i> Excluir rota
                         </button>
@@ -849,7 +849,7 @@
                   <a
                     class="page-link"
                     href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=kml_paginacao.prev_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='rotas-kml') }}"
-                  >Anterior</a>
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=kml_paginacao.prev_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='rotas-kml')) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
                 </li>
                 <li class="page-item disabled">
                   <span class="page-link">{{ kml_paginacao.page }} / {{ kml_paginacao.pages }}</span>
@@ -858,7 +858,7 @@
                   <a
                     class="page-link"
                     href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=kml_paginacao.next_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='rotas-kml') }}"
-                  >Proxima</a>
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=kml_paginacao.next_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='rotas-kml')) if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
                 </li>
               </ul>
             </nav>
@@ -897,7 +897,7 @@
         </button>
         <div class="collapse {% if filtros_voo_ativos %}show{% endif %}" id="collapseFiltrosVoos">
           <div class="p-3 border-top">
-            <form method="GET" class="row g-3 align-items-end">
+            <form method="GET" class="row g-3 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
               <input type="hidden" name="page" value="1">
               <input type="hidden" name="kml_page" value="{{ kml_paginacao.page if kml_paginacao else 1 }}">
               <input type="hidden" name="kml_q" value="{{ kml_filtros.q }}">
@@ -971,7 +971,7 @@
                 <a
                   href="{{ url_for('main.relatorios_dji_logs', kml_page=kml_paginacao.page, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}"
                   class="btn btn-outline-secondary"
-                >
+                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', kml_page=kml_paginacao.page, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg me-1"></i> Limpar voos
                 </a>
               </div>
@@ -1031,7 +1031,7 @@
                     <a
                       href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=1, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=registro.route_kml.route_code, kml_endereco='', kml_status_voo='com_voo', kml_voo_id='', _anchor='rotas-kml') }}"
                       class="linked-route-pill"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=1, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=registro.route_kml.route_code, kml_endereco='', kml_status_voo='com_voo', kml_voo_id='', _anchor='rotas-kml')) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-diagram-3"></i> {{ registro.route_kml.route_code }}
                     </a>
                     <button
@@ -1045,7 +1045,7 @@
                       <a
                         href="{{ url_for('main.admin_os_formulario_view', os_id=registro_linked_os.solicitacao_id) }}"
                         class="small text-success fw-semibold text-decoration-none"
-                      >
+                       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_os_formulario_view', os_id=registro_linked_os.solicitacao_id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         OS #{{ registro_linked_os.solicitacao_id }}
                       </a>
                     {% else %}
@@ -1068,13 +1068,13 @@
       <nav class="mt-4">
         <ul class="pagination justify-content-center flex-wrap">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.prev_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}">Anterior</a>
+            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.prev_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=paginacao.prev_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados')) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
           </li>
           <li class="page-item disabled">
             <span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span>
           </li>
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.next_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}">Proxima</a>
+            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.next_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs', page=paginacao.next_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados')) if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
           </li>
         </ul>
       </nav>

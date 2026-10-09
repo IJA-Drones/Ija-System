@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block content %}
+{% if central_ti_profile_active|default(false) %}
+{% set can_manage = (central_ti_permission('prefeitura.veiculos.criar') or central_ti_permission('prefeitura.veiculos.editar') or central_ti_permission('prefeitura.veiculos.excluir')) %}
+{% endif %}
+
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
     {# --- CABEÇALHO PADRONIZADO --- #}
@@ -20,19 +24,19 @@
         </div>
 
         <div class="header-actions">
-            <a href="{{ url_for('main.veiculos_rastreamento') }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('main.veiculos_rastreamento') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_rastreamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-crosshair me-1"></i> Rastreamento
             </a>
-            <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center">
+            <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
             
-            {% if can_manage %}
-                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm">
+            {% if (central_ti_ui_guard(['main.cadastrar_veiculo', 'main.listar_veiculos'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_veiculo')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-plus-lg"></i> Novo Veículo
                 </a>
 
-                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm">
+                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos', export=1, **request.args)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-file-earmark-excel-fill"></i> Exportar
                 </a>
             {% endif %}
@@ -91,7 +95,7 @@
 
         <div class="collapse {% if filters.q or filters.operacao or filters.status %}show{% endif %}" id="collapseFiltros">
             <div class="card-body pt-0 pb-4">
-                <form method="GET">
+                <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                     <div class="row g-2 align-items-end">
                         <div class="col-md-4">
                             <label class="small text-muted">Busca Rápida:</label>
@@ -119,7 +123,7 @@
                                 <i class="bi bi-search"></i> Filtrar
                             </button>
                             {% if filters.q or filters.operacao or filters.status %}
-                                <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center">
+                                <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                                     <i class="bi bi-x-lg"></i> Limpar
                                 </a>
                             {% endif %}
@@ -131,10 +135,10 @@
     </div>
 
     {# --- TABELA / CARDS --- #}
-    {% if can_manage %}
+    {% if (central_ti_ui_guard(['main.atualizar_equipes_veiculos'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
     <form id="bulk-equipes-form"
           method="POST"
-          action="{{ url_for('main.atualizar_equipes_veiculos', **request.args) }}"></form>
+          action="{{ url_for('main.atualizar_equipes_veiculos', **request.args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.atualizar_equipes_veiculos', **request.args), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}"></form>
     {% endif %}
 
     <div class="card shadow-sm border-0 rounded-4 menu-actions-table-wrap">
@@ -304,11 +308,11 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                        {% if can_manage %}
-                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
+                                        {% if (central_ti_ui_guard(['main.deletar_veiculo', 'main.editar_veiculo'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_veiculo', veiculo_id=v.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}">
+                                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_veiculo', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                                                 <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
                                             </form>
                                         </li>

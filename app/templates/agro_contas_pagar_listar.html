@@ -23,14 +23,14 @@
     </div>
 
     <div class="listing-actions contas-pagar-actions">
-      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_contas')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_fornecedores_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_fornecedores_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_fornecedores_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-buildings-fill"></i> Fornecedores
         </a>
-        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_saida_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-circle-fill"></i> Nova conta a pagar
         </a>
       {% endif %}
@@ -38,7 +38,7 @@
   </div>
 
   <div class="contas-pagar-shortcuts">
-    <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="contas-pagar-shortcut {% if not filters.tipo_saida %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="contas-pagar-shortcut {% if not filters.tipo_saida %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-pagar-shortcut-head">
         <span class="contas-pagar-shortcut-icon">
           <i class="bi bi-grid"></i>
@@ -47,7 +47,7 @@
       </div>
       <p class="contas-pagar-shortcut-copy">Visão completa com todas as saídas do financeiro, independentemente da classificação.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='DESPESA') }}" class="contas-pagar-shortcut {% if filters.tipo_saida == 'DESPESA' %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='DESPESA') }}" class="contas-pagar-shortcut {% if filters.tipo_saida == 'DESPESA' %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar', tipo_saida='DESPESA')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-pagar-shortcut-head">
         <span class="contas-pagar-shortcut-icon">
           <i class="bi bi-receipt-cutoff"></i>
@@ -56,7 +56,7 @@
       </div>
       <p class="contas-pagar-shortcut-copy">Mostra apenas os pagamentos operacionais e administrativos classificados como despesa.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='IMPOSTO') }}" class="contas-pagar-shortcut is-warning {% if filters.tipo_saida == 'IMPOSTO' %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='IMPOSTO') }}" class="contas-pagar-shortcut is-warning {% if filters.tipo_saida == 'IMPOSTO' %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar', tipo_saida='IMPOSTO')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-pagar-shortcut-head">
         <span class="contas-pagar-shortcut-icon">
           <i class="bi bi-bank"></i>
@@ -65,7 +65,7 @@
       </div>
       <p class="contas-pagar-shortcut-copy">Filtra os lançamentos ligados a tributos, encargos e obrigações fiscais.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='RETENCAO') }}" class="contas-pagar-shortcut is-warning {% if filters.tipo_saida == 'RETENCAO' %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='RETENCAO') }}" class="contas-pagar-shortcut is-warning {% if filters.tipo_saida == 'RETENCAO' %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar', tipo_saida='RETENCAO')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-pagar-shortcut-head">
         <span class="contas-pagar-shortcut-icon">
           <i class="bi bi-percent"></i>
@@ -137,7 +137,7 @@
 
     <div class="collapse {% if filters.q or filters.situacao or filters.tipo_saida or filters.mes or filters.ano %}show{% endif %}" id="collapseFiltrosContasPagar">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_contas_pagar_listar') }}">
+        <form method="GET" action="{{ url_for('main.agro_contas_pagar_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-4">
               <label class="small text-muted mb-1">Busca geral</label>
@@ -174,7 +174,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if filters.q or filters.situacao or filters.tipo_saida or filters.mes or filters.ano %}
-                <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -235,7 +235,7 @@
                 </td>
                 {% if is_editable %}
                   <td>
-                    <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1">
+                    <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(item.edit_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-pencil-square"></i>
                       <span>Editar</span>
                     </a>

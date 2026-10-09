@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import active_configuration
 from io import BytesIO
 import warnings
 
@@ -41,7 +43,7 @@ PREFEITURA_MAP_ENDPOINTS = {
 
 
 def _require_financeiro_access():
-    if not can_access_financeiro_panel(current_user):
+    if not route_access(current_user, can_access_financeiro_panel(current_user)):
         abort(403)
 
 
@@ -81,9 +83,10 @@ def register_routes(bp):
         endpoint = request.endpoint or ""
         if endpoint in SHARED_FINANCE_ENDPOINTS:
             # Shared files/suppliers are needed by the existing finance screens.
-            g.financeiro_empresa = _resolve_empresa("ija", existing_data=True)
+            if active_configuration(current_user) is None or can_access_financeiro_panel(current_user):
+                g.financeiro_empresa = _resolve_empresa("ija", existing_data=True)
             return None
-        if endpoint in PREFEITURA_MAP_ENDPOINTS or (endpoint.startswith("main.agro_") and not is_financeiro_legacy_endpoint(endpoint)):
+        if active_configuration(current_user) is None and (endpoint in PREFEITURA_MAP_ENDPOINTS or (endpoint.startswith("main.agro_") and not is_financeiro_legacy_endpoint(endpoint))):
             abort(403)
 
     @bp.before_request
@@ -96,7 +99,7 @@ def register_routes(bp):
         empresa = next((item for item in build_financeiro_empresas(current_user) if item["slug"] == "ija"), None)
         if empresa is None or not empresa["disponivel"]:
             abort(403)
-        if is_financeiro_settings_endpoint(request.endpoint) and not can_manage_financeiro_settings(current_user):
+        if is_financeiro_settings_endpoint(request.endpoint) and not route_access(current_user, can_manage_financeiro_settings(current_user)):
             abort(403)
         g.financeiro_empresa = empresa
 
@@ -105,7 +108,7 @@ def register_routes(bp):
         return {
             "can_access_financeiro_panel": can_access_financeiro_panel,
             "can_manage_financeiro_settings": can_manage_financeiro_settings,
-            "is_financeiro_endpoint": lambda endpoint: is_financeiro_endpoint(endpoint) or getattr(g, "financeiro_empresa", None) is not None or is_agro_finance_user(current_user),
+            "is_financeiro_endpoint": lambda endpoint: is_financeiro_endpoint(endpoint) or getattr(g, "financeiro_empresa", None) is not None or (active_configuration(current_user) is None and is_agro_finance_user(current_user)),
             "financeiro_empresa_atual": getattr(g, "financeiro_empresa", None),
             "build_financeiro_menu": build_financeiro_menu,
             "financeiro_consulta_url": _consulta_url,
@@ -155,7 +158,7 @@ def register_routes(bp):
     @login_required
     def financeiro_empresa_configuracoes(empresa_slug):
         g.financeiro_empresa = _resolve_empresa(empresa_slug)
-        if not can_manage_financeiro_settings(current_user):
+        if not route_access(current_user, can_manage_financeiro_settings(current_user)):
             abort(403)
         secao = request.args.get("secao", "dados")
         if secao == "competencias" and empresa_slug == "ija":
@@ -168,7 +171,7 @@ def register_routes(bp):
     @login_required
     def financeiro_empresa_configuracoes_salvar(empresa_slug):
         _resolve_empresa(empresa_slug)
-        if not can_manage_financeiro_settings(current_user):
+        if not route_access(current_user, can_manage_financeiro_settings(current_user)):
             abort(403)
         secao = request.form.get("secao")
         destino = url_for("main.financeiro_empresa_configuracoes", empresa_slug=empresa_slug, secao=secao)

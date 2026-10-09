@@ -19,7 +19,7 @@
 
   <div class="row g-3">
     <div class="col-md-6 col-xl-5">
-      <a href="{{ url_for('main.admin_uvis_listar') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.admin_uvis_listar') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_uvis_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow clientes-menu-card clientes-menu-card--uvis" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -42,7 +42,7 @@
     </div>
 
     <div class="col-md-6 col-xl-5">
-      <a href="{{ url_for('main.listar_clientes') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.listar_clientes') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_clientes')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 hover-shadow clientes-menu-card clientes-menu-card--clientes" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>

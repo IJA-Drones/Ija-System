@@ -25,15 +25,15 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug='ija')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      {% if is_global_admin %}
-        <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      {% if (central_ti_ui_guard(['main.agro_contratos_template'], (is_global_admin)) if central_ti_ui_guard is defined else (is_global_admin)) %}
+        <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_template')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-diagram-3-fill"></i> Contratos Aprovados
         </a>
       {% endif %}
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-cash-coin"></i> Financeiro
       </a>
     </div>
@@ -75,7 +75,7 @@
 
     <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosComprovantesAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_contratos_comprovantes') }}">
+        <form method="GET" action="{{ url_for('main.agro_contratos_comprovantes') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_comprovantes'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-7">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -103,7 +103,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if filters.q or filters.equipe_id %}
-                <a href="{{ url_for('main.agro_contratos_comprovantes') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_contratos_comprovantes') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_comprovantes')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -177,20 +177,20 @@
 
                 <td data-label="Acoes" class="listing-cell-actions">
                   <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="btn btn-outline-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-box-arrow-up-right"></i> Abrir
                     </a>
-                    <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-filetype-pdf"></i> Contrato
                     </a>
-                    {% if can_edit_payment_receipts %}
-                      <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data">
+                    {% if (central_ti_ui_guard(['main.agro_contrato_comprovante_pagamento_remover', 'main.agro_contrato_comprovante_pagamento_upload'], (can_edit_payment_receipts)) if central_ti_ui_guard is defined else (can_edit_payment_receipts)) %}
+                      <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <label class="btn btn-outline-warning btn-sm mb-0" for="comprovantePagamentoTela{{ contrato.id }}">
                           <i class="bi bi-upload"></i> Trocar
                         </label>
                         <input id="comprovantePagamentoTela{{ contrato.id }}" class="d-none" type="file" name="comprovante_pagamento" accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg,.jfif" onchange="this.form.submit()">
                       </form>
-                      <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}">
+                      <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <button type="submit" class="btn btn-outline-danger btn-sm">
                           <i class="bi bi-trash"></i> Remover
                         </button>
@@ -218,11 +218,11 @@
           <nav>
             <ul class="pagination pagination-sm mb-0 listing-pagination">
               <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
-                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_comprovantes', page=filters.page-1, **pagination_args) }}">Anterior</a>
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_comprovantes', page=filters.page-1, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_comprovantes', page=filters.page-1, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
               </li>
               <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
               <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
-                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_comprovantes', page=filters.page+1, **pagination_args) }}">Proxima</a>
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_comprovantes', page=filters.page+1, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_comprovantes', page=filters.page+1, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
               </li>
             </ul>
           </nav>

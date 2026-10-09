@@ -30,11 +30,11 @@
       </p>
     </div>
     <div class="listing-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_talento_novo') }}" class="btn btn-success">
+        <a href="{{ url_for('main.agro_talento_novo') }}" class="btn btn-success" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talento_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Enviar currículo
         </a>
       {% endif %}
@@ -43,7 +43,7 @@
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div class="card-body">
-      <form method="GET" class="row g-2 align-items-end">
+      <form method="GET" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="col-lg-6">
           <label class="form-label small text-muted">Busca geral</label>
           <input type="text" name="q" value="{{ filters.q }}" class="form-control"
@@ -71,7 +71,7 @@
         </div>
         <div class="col-lg-2 d-flex gap-2">
           <button class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i></button>
-          <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-secondary">
+          <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg"></i>
           </a>
         </div>
@@ -129,7 +129,7 @@
                 <td data-label="Cadastro" class="text-muted">{{ curriculo.criado_em.strftime('%d/%m/%Y') }}</td>
                 <td data-label="Ações" class="listing-cell-actions">
                   <a href="{{ url_for('main.agro_talento_detalhe', curriculo_id=curriculo.id) }}"
-                     class="btn btn-sm btn-primary">
+                     class="btn btn-sm btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talento_detalhe', curriculo_id=curriculo.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-eye-fill me-1"></i> Ver perfil
                   </a>
                 </td>

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import os
 
 from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
@@ -45,7 +46,7 @@ def register_routes(bp):
     @bp.route("/novo_cadastro", methods=["GET", "POST"], endpoint="novo")
     @login_required
     def novo():
-        if getattr(current_user, "tipo_usuario", None) not in {"uvis", "dev", "diretor", "admin", "visualizar", "prefeitura_admin", "sup_veiculos", "sup_veiculo"}:
+        if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) in {'uvis', 'dev', 'diretor', 'admin', 'visualizar', 'prefeitura_admin', 'sup_veiculos', 'sup_veiculo'}):
             flash("Seu perfil nao possui permissao para criar solicitacoes.", "warning")
             return redirect(url_for("main.dashboard"))
 

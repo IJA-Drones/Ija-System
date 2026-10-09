@@ -1,0 +1,21 @@
+{
+  "main.serve_sw": "public, personal or separately protected endpoint",
+  "main.portal_cidadao": "public, personal or separately protected endpoint",
+  "main.portal_cidadao_boletim_dengue": "public, personal or separately protected endpoint",
+  "main.portal_cidadao_denuncias_criar": "public, personal or separately protected endpoint",
+  "main.portal_cidadao_cep": "public, personal or separately protected endpoint",
+  "main.portal_cidadao_reverse_geocode": "public, personal or separately protected endpoint",
+  "main.login": "public, personal or separately protected endpoint",
+  "main.login_uvis_operacional": "public, personal or separately protected endpoint",
+  "main.login_piloto_agro": "public, personal or separately protected endpoint",
+  "main.logout": "public, personal or separately protected endpoint",
+  "main.watchdog_deploy_event": "public, personal or separately protected endpoint",
+  "main.ler_notificacao": "public, personal or separately protected endpoint",
+  "main.notificacoes": "public, personal or separately protected endpoint",
+  "main.excluir_notificacao": "public, personal or separately protected endpoint",
+  "main.limpar_notificacoes": "public, personal or separately protected endpoint",
+  "main.central_ti": "public, personal or separately protected endpoint",
+  "main.central_ti_salvar": "public, personal or separately protected endpoint",
+  "main.api_cep": "public, personal or separately protected endpoint",
+  "main.api_cep_by_address": "public, personal or separately protected endpoint"
+}

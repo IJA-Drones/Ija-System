@@ -26,7 +26,7 @@
       </div>
     </div>
     <div class="listing-actions page-toolbar-actions">
-      <a href="{{ back_url }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left" aria-hidden="true"></i>Voltar para denúncias</a>
+      <a href="{{ back_url }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(back_url) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Voltar para denúncias</a>
     </div>
   </header>
 {%- endmacro %}
@@ -89,13 +89,13 @@
           Seu navegador não suporta a reprodução deste vídeo. Use o link abaixo para abri-lo.
         </video>
         {% else %}
-        <a href="{{ media_url }}" target="_blank" rel="noopener" aria-label="Abrir foto: {{ anexo.arquivo_nome }}">
+        <a href="{{ media_url }}" target="_blank" rel="noopener" aria-label="Abrir foto: {{ anexo.arquivo_nome }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(media_url) if central_ti_url_allowed is defined else true) else 'false' }}">
           <img src="{{ media_url }}" alt="{{ anexo.arquivo_nome }}" class="denuncia-media-preview" loading="lazy">
         </a>
         {% endif %}
         <figcaption class="d-flex align-items-center justify-content-between gap-2 p-3">
           <span class="text-muted small text-break">{{ anexo.arquivo_nome }}</span>
-          <a class="btn btn-outline-primary btn-sm" href="{{ media_url }}" target="_blank" rel="noopener" aria-label="Abrir anexo: {{ anexo.arquivo_nome }}">Abrir<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
+          <a class="btn btn-outline-primary btn-sm" href="{{ media_url }}" target="_blank" rel="noopener" aria-label="Abrir anexo: {{ anexo.arquivo_nome }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(media_url) if central_ti_url_allowed is defined else true) else 'false' }}">Abrir<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
         </figcaption>
       </figure>
     </div>

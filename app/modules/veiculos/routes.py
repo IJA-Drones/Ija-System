@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import mimetypes
 import os
 
@@ -46,30 +47,22 @@ from app.shared.skybox import SkyboxError, stream_skybox_file
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
-        "dev",
-        "diretor",
-        "admin",
-        "operario",
-        "operador",
-        "prefeitura_admin",
-        "sup_veiculos",
-    }:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'dev', 'diretor', 'admin', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'}):
         abort(403)
 
 
 def _require_admin():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "sup_veiculos"}:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'dev', 'diretor', 'admin', 'sup_veiculos'}):
         abort(403)
 
 
 def _require_dev():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "dev":
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) == 'dev'):
         abort(403)
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE, "sup_veiculos"}:
+    if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) in {'piloto', EQUIPE_OCEANO_USER_TYPE, 'sup_veiculos'}):
         abort(403)
 
 
@@ -148,7 +141,7 @@ def register_routes(bp):
     @login_required
     def veiculos_menu():
         tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
-        if tipo not in VEICULOS_ALLOWED_TYPES:
+        if not route_access(current_user, tipo in VEICULOS_ALLOWED_TYPES):
             abort(403)
 
         return render_template(

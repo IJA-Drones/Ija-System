@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import capability
 import json
 import os
 from datetime import date, datetime, timedelta
@@ -116,6 +117,7 @@ def can_view_all_agenda(user):
     return getattr(user, "tipo_usuario", None) in AGENDA_VIEW_TYPES
 
 
+@capability(['prefeitura.mapas.exportar'])
 def can_export_agenda(user):
     return getattr(user, "tipo_usuario", None) in AGENDA_EXPORT_TYPES
 

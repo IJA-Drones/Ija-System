@@ -1,4 +1,4 @@
-"""Central configuration only. No existing authorization guard consumes this data."""
+"""Editor for role permissions, with environment-controlled activation."""
 
 import json
 import secrets
@@ -11,6 +11,7 @@ from app.modules.gestao_ti.service import (
     ConfigurationConflict, build_editor_data, can_manage_central_ti, save_configurations,
 )
 from app.shared.access import normalize_role
+from app.modules.gestao_ti.permissions import active_configuration, enforcement_enabled, invalidate_request_permissions
 
 
 CSRF_SESSION_KEY = "_ija_central_ti_csrf"
@@ -51,6 +52,7 @@ def register_routes(bp):
         if (
             current_user.is_authenticated
             and normalize_role(getattr(current_user, "tipo_usuario", None)) == "gestor_ti"
+            and active_configuration(current_user) is None
             and request.endpoint not in CENTRAL_ENDPOINTS
         ):
             abort(403)
@@ -74,7 +76,8 @@ def register_routes(bp):
         except SQLAlchemyError:
             current_app.logger.exception("Central de TI: falha ao carregar configurações.")
             return "Central de TI indisponível. Verifique a migração no ambiente autorizado.", 503
-        data.update(save_url=url_for("main.central_ti_salvar"), csrf_token=_csrf_token())
+        data.update(save_url=url_for("main.central_ti_salvar"), csrf_token=_csrf_token(),
+                    active=enforcement_enabled())
         return render_template("gestao_ti_central.html", central_ti_data=data)
 
     @bp.post("/central-ti/configuracoes", endpoint="central_ti_salvar")
@@ -104,4 +107,5 @@ def register_routes(bp):
         except SQLAlchemyError:
             current_app.logger.exception("Central de TI: falha ao salvar configurações.")
             return jsonify(error="Não foi possível salvar. Tente novamente em instantes."), 503
-        return jsonify(ok=True, profiles=profiles, active_rules_changed=False)
+        invalidate_request_permissions()
+        return jsonify(ok=True, profiles=profiles, active_rules_changed=enforcement_enabled())

@@ -30,10 +30,10 @@
     </p>
     {% if os_context %}
     <div class="d-flex gap-2 flex-wrap mt-3">
-      <a href="{{ url_for('main.piloto_os_formulario_view', os_id=os_context.id) }}" class="btn btn-light">
+      <a href="{{ url_for('main.piloto_os_formulario_view', os_id=os_context.id) }}" class="btn btn-light" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_formulario_view', os_id=os_context.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-clipboard2-check me-1"></i> Voltar para a OS
       </a>
-      <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-light">
+      <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-light" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-grid me-1"></i> Painel do piloto
       </a>
     </div>
@@ -107,7 +107,7 @@
   </div>
 
   {% if os_context and not modo_visualizacao %}
-  <form method="post" novalidate>
+  <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
   {% endif %}
   <div class="dosagem-shell-card p-3 p-lg-4 mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">

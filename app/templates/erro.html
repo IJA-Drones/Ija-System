@@ -37,7 +37,7 @@
           <!-- Botões -->
           <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-4">
             <a href="{{ url_for('main.dashboard') }}"
-               class="btn btn-primary px-4 rounded-pill shadow-sm">
+               class="btn btn-primary px-4 rounded-pill shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-house-door-fill me-2"></i>
               Voltar ao início
             </a>

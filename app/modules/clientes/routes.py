@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import math
 
 from flask import abort, flash, redirect, render_template, request, send_file, url_for
@@ -39,7 +40,7 @@ def register_routes(bp):
     @bp.route("/clientes", methods=["GET"], endpoint="clientes_menu")
     @login_required
     def clientes_menu():
-        if not _can_manage_clientes(current_user):
+        if not route_access(current_user, _can_manage_clientes(current_user)):
             abort(403)
 
         total_clientes = build_clientes_query("", "", "", "", "id_desc", user=current_user).count()
@@ -54,7 +55,7 @@ def register_routes(bp):
     @bp.route("/clientes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_clientes")
     @login_required
     def cadastrar_clientes():
-        if not _can_manage_clientes(current_user):
+        if not route_access(current_user, _can_manage_clientes(current_user)):
             abort(403)
 
         errors = {}
@@ -150,7 +151,7 @@ def register_routes(bp):
     @bp.route("/clientes/listar", methods=["GET"], endpoint="listar_clientes")
     @login_required
     def listar_clientes():
-        if not _can_manage_clientes(current_user):
+        if not route_access(current_user, _can_manage_clientes(current_user)):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -212,7 +213,7 @@ def register_routes(bp):
     @bp.route("/clientes/<int:cliente_id>/editar", methods=["GET", "POST"], endpoint="editar_cliente")
     @login_required
     def editar_cliente(cliente_id):
-        if not _can_manage_clientes(current_user):
+        if not route_access(current_user, _can_manage_clientes(current_user)):
             abort(403)
 
         cliente = _get_scoped_cliente_or_404(cliente_id)
@@ -292,7 +293,7 @@ def register_routes(bp):
     @bp.route("/clientes/<int:cliente_id>/deletar", methods=["POST"], endpoint="deletar_cliente")
     @login_required
     def deletar_cliente(cliente_id):
-        if not _can_manage_clientes(current_user):
+        if not route_access(current_user, _can_manage_clientes(current_user)):
             abort(403)
 
         cliente = _get_scoped_cliente_or_404(cliente_id)

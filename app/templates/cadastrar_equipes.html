@@ -19,7 +19,7 @@
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
 
-      <form method="post" action="{{ url_for('main.cadastrar_equipes') }}" novalidate>
+      <form method="post" action="{{ url_for('main.cadastrar_equipes') }}" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_equipes'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
 
         {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
@@ -168,7 +168,7 @@
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
           <a
-            href="{% if is_admin_global_user(current_user) %}{{ url_for('main.listar_equipes') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}"
+            href="{% if (central_ti_ui_guard(['main.dashboard', 'main.listar_equipes'], (is_admin_global_user(current_user))) if central_ti_ui_guard is defined else (is_admin_global_user(current_user))) %}{{ url_for('main.listar_equipes') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}"
             class="btn btn-outline-danger btn-sm"
           >
             <i class="bi bi-x-lg me-1"></i> Cancelar

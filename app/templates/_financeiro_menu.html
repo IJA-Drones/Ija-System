@@ -12,12 +12,12 @@
     <ul class="nav flex-column sub-nav">
       {% for child in item.children %}
       {% set selected = request.endpoint == child.endpoint and (child.params.get('aba') is none or request.args.get('aba', 'orcamentos') == child.params.aba) %}
-      <li class="nav-item"><a class="nav-link sub-link {% if selected %}active{% endif %}" href="{{ url_for(child.endpoint, **child.params) }}" {% if selected %}aria-current="page"{% endif %}><i class="bi {{ child.icon }} me-2" aria-hidden="true"></i><span>{{ child.label }}</span></a></li>
+      <li class="nav-item"><a class="nav-link sub-link {% if selected %}active{% endif %}" href="{{ url_for(child.endpoint, **child.params) }}" {% if selected %}aria-current="page"{% endif %} data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(child.endpoint, **child.params)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi {{ child.icon }} me-2" aria-hidden="true"></i><span>{{ child.label }}</span></a></li>
       {% endfor %}
     </ul>
   </div>
   {% else %}
-  <a class="nav-link {% if active %}active{% endif %}" href="{{ url_for(item.endpoint, **item.params) }}" {% if active %}aria-current="page"{% endif %}>
+  <a class="nav-link {% if active %}active{% endif %}" href="{{ url_for(item.endpoint, **item.params) }}" {% if active %}aria-current="page"{% endif %} data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(item.endpoint, **item.params)) if central_ti_url_allowed is defined else true) else 'false' }}">
     <i class="bi {{ item.icon }} me-2" aria-hidden="true"></i><span>{{ item.label }}</span>
   </a>
   {% endif %}

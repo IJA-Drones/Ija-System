@@ -21,7 +21,7 @@
       {{ render_result_summary(paginacao.total, 'OS filtradas') }}
     </div>
     <div>
-      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary shadow-sm">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar para Dashboard
       </a>
     </div>
@@ -110,10 +110,10 @@
             <td class="text-center pe-4" data-label="Acao">
               <div class="historico-os-cell-value">
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='dados') }}" class="btn btn-sm btn-outline-primary">
+                  <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='dados') }}" class="btn btn-sm btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='dados')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-clipboard2-check me-1"></i> Abrir OS
                   </a>
-                  <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='uvis') }}" class="btn btn-sm btn-outline-success">
+                  <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='uvis') }}" class="btn btn-sm btn-outline-success" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-arrow-repeat me-1"></i> Preencher complemento
                   </a>
                 </div>
@@ -136,13 +136,13 @@
       <nav class="mt-4 pb-3">
         <ul class="pagination pagination-sm justify-content-center">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link shadow-sm" href="{{ url_for('main.uvis_historico_os', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
+            <a class="page-link shadow-sm" href="{{ url_for('main.uvis_historico_os', page=paginacao.prev_num, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.uvis_historico_os', page=paginacao.prev_num, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
           </li>
           <li class="page-item active">
             <span class="page-link shadow-sm">{{ paginacao.page }} / {{ paginacao.pages }}</span>
           </li>
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link shadow-sm" href="{{ url_for('main.uvis_historico_os', page=paginacao.next_num, **pagination_args) }}">Proxima</a>
+            <a class="page-link shadow-sm" href="{{ url_for('main.uvis_historico_os', page=paginacao.next_num, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.uvis_historico_os', page=paginacao.next_num, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
           </li>
         </ul>
       </nav>

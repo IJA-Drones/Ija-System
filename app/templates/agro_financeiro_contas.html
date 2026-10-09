@@ -15,20 +15,20 @@
       </h2>
     </div>
     <div class="agro-finance-contas-actions">
-      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug='ija')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-journal-text"></i> Caixa Diario
       </a>
-      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_conciliacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-bank2"></i> Conciliacao
       </a>
-      <a href="{{ url_for('main.agro_relatorio_contas_geral') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_relatorio_contas_geral') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_relatorio_contas_geral')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-clipboard-data"></i> Relatorio Geral
       </a>
-      {% if can_manage_competencias %}
-        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+      {% if (central_ti_ui_guard(['main.agro_financeiro_configuracoes'], (can_manage_competencias)) if central_ti_ui_guard is defined else (can_manage_competencias)) %}
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_configuracoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-sliders"></i> Configuracoes
         </a>
       {% endif %}
@@ -67,14 +67,14 @@
         </div>
 
         <div class="agro-finance-conta-actions">
-          <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-arrow-right-circle"></i> Abrir contas a receber
           </a>
           {% if is_editable %}
-            <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+            <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-plus-circle"></i> Novo recebivel
             </a>
-            <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+            <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-plus-circle"></i> Nova entrada manual
             </a>
           {% endif %}
@@ -113,14 +113,14 @@
         </div>
 
         <div class="agro-finance-conta-actions">
-          <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-danger d-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-arrow-right-circle"></i> Abrir contas a pagar
           </a>
           {% if is_editable %}
-            <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+            <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-outline-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_saida_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-plus-circle"></i> Nova conta a pagar
             </a>
-            <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+            <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-outline-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_saida_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-plus-circle"></i> Nova saída manual
             </a>
           {% endif %}

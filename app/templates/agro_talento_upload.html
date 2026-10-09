@@ -17,14 +17,14 @@
         O PDF será armazenado no Dropbox e analisado pelo Gemini para criar o perfil profissional.
       </p>
     </div>
-    <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
   </div>
 
   <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
     <div class="card-body p-4 p-lg-5">
-      <form method="POST" enctype="multipart/form-data">
+      <form method="POST" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="border rounded-4 p-4 bg-light bg-opacity-50 mb-4 agro-talent-upload-panel">
           <div class="d-flex align-items-start gap-3">
             <span class="d-inline-flex align-items-center justify-content-center rounded-4 bg-primary-subtle text-primary agro-talent-upload-icon">
@@ -59,7 +59,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-danger">
+          <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-danger" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             Cancelar
           </a>
           <button type="submit" class="btn btn-success" id="submitResume">

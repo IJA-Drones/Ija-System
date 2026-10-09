@@ -301,7 +301,9 @@ class CentralTiTests(unittest.TestCase):
     def test_all_catalog_options_fit_and_save_together(self):
         self.login()
         self.editor_data()
-        profiles = [{"id": p["id"], "version": 0, "areas": sorted(AREA_CODES), "permissions": sorted(PERMISSION_CODES)} for p in CATALOG["profiles"]]
+        profiles = [{"id": p["id"], "version": 0, "areas": sorted(AREA_CODES), "permissions": sorted(
+            code for code in PERMISSION_CODES if p["id"] in {"dev", "gestor_ti"} or not code.startswith("sistema.perfis.")
+        )} for p in CATALOG["profiles"]]
         self.assertLess(len(json.dumps({"profiles": profiles}).encode()), MAX_PAYLOAD_BYTES)
         response = self.save(profiles)
         self.assertEqual(response.status_code, 200)

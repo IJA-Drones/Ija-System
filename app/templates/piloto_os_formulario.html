@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block content %}
+{% set can_manage_media = central_ti_media_allowed(modo_visualizacao, solicitacao) if central_ti_media_allowed is defined else not modo_visualizacao %}
 <div class="container-fluid py-4 piloto-os-form-page" style="max-width: 1200px">
   <div class="piloto-os-form-header mb-4">
     <h2 class="text-dark m-0">
@@ -40,7 +41,7 @@
       {% include "_retorno_ciclo.html" %}
 
       {% set current_os_tab = active_os_tab|default('dados') %}
-      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main">
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link {% if current_os_tab == 'dados' %}active{% endif %}" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="{{ 'true' if current_os_tab == 'dados' else 'false' }}">
@@ -252,7 +253,7 @@
               <a href="{{ url_for('main.visualizar_dji_kml_route', route_id=selected_dji_route.id) }}"
                  class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
                  target="_blank"
-                 rel="noopener">
+                 rel="noopener" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.visualizar_dji_kml_route', route_id=selected_dji_route.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-map-fill"></i>
                 <span>Visualizar rota KML</span>
               </a>
@@ -360,8 +361,8 @@
                 A base da planilha continua a mesma: <strong>500 g de Bti WDG para 10 L de água</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta área você confere o planejamento, informa o realizado e usa a comparação automática como conferência final.
               </p>
             </div>
-            {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
-            <a href="{{ url_for('main.piloto_os_dosagem', os_id=solicitacao.id) }}" class="btn btn-primary btn-sm">
+            {% if (central_ti_ui_guard(['main.piloto_os_dosagem'], (current_user.tipo_usuario in ['piloto', 'equipe_oceano'])) if central_ti_ui_guard is defined else (current_user.tipo_usuario in ['piloto', 'equipe_oceano'])) %}
+            <a href="{{ url_for('main.piloto_os_dosagem', os_id=solicitacao.id) }}" class="btn btn-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_dosagem', os_id=solicitacao.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-calculator me-1"></i>{% if modo_visualizacao %}Ver planejamento{% else %}Planejar dosagem{% endif %}
             </a>
             {% endif %}
@@ -773,7 +774,7 @@
             {% endif %}
           </div>
         </div>
-        <div class="tab-pane fade {% if current_os_tab == 'imagens' %}show active{% endif %} os-tab-pane" id="os-imagens-pane" role="tabpanel" aria-labelledby="os-imagens-tab">
+        <div class="tab-pane fade {% if current_os_tab == 'imagens' %}show active{% endif %} os-tab-pane" id="os-imagens-pane" data-ti-independent="{{ 'true' if can_manage_media else 'false' }}" role="tabpanel" aria-labelledby="os-imagens-tab">
           <div class="os-media-shell">
             <div class="os-media-hero">
               <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -841,10 +842,10 @@
                       <img src="{{ imagem_principal_url if imagem_principal_path else '' }}" alt="Foto principal da OS" class="os-image-preview" id="imagem-principal-salva-img">
                     </div>
                     <div class="os-media-actions mt-3 {% if not imagem_principal_path %}d-none{% endif %}" id="imagem-principal-salva-acoes">
-                      <a href="{{ imagem_principal_url if imagem_principal_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary" id="imagem-principal-salva-link">
+                      <a href="{{ imagem_principal_url if imagem_principal_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary" id="imagem-principal-salva-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(imagem_principal_url if imagem_principal_path else '#') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
                       </a>
-                      {% if not modo_visualizacao %}
+                      {% if can_manage_media %}
                       <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoverImagemPrincipal">
                         <i class="bi bi-trash me-1"></i>Remover
                       </button>
@@ -864,7 +865,7 @@
                     </div>
                   </div>
 
-                  {% if not modo_visualizacao %}
+                  {% if can_manage_media %}
                   <div class="os-media-upload-box">
                     <label class="form-label-header">Enviar nova foto principal</label>
                     <input type="file" id="imagemPrincipal" class="form-control" accept="image/png,image/jpeg,image/jpg" />
@@ -891,7 +892,7 @@
                     <span class="os-media-pill" id="outras-imagens-badge" data-saved-count="{{ outras_imagens_paths|length }}">{{ outras_imagens_paths|length }} arquivo(s)</span>
                   </div>
 
-                  {% if not modo_visualizacao %}
+                  {% if can_manage_media %}
                   <div class="os-media-upload-box mb-3">
                     <label class="form-label-header">Adicionar imagens</label>
                     <input type="file" id="outras_imagens_files" class="form-control" accept="image/png,image/jpeg,image/jpg" multiple />
@@ -924,10 +925,10 @@
                         {% set imagem_url = url_for('main.os_imagem_complementar', os_id=solicitacao.id, image_index=loop.index) %}
                         <div class="os-image-thumb-card" data-complementary-card data-image-index="{{ loop.index }}">
                           <img src="{{ imagem_url }}" alt="Imagem complementar {{ loop.index }}" class="os-image-thumb mb-2">
-                          <a href="{{ imagem_url }}" target="_blank" class="os-media-thumb-link">
+                          <a href="{{ imagem_url }}" target="_blank" class="os-media-thumb-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(imagem_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                             Abrir imagem {{ loop.index }}
                           </a>
-                          {% if not modo_visualizacao %}
+                          {% if can_manage_media %}
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-danger mt-2 w-100"
@@ -992,10 +993,10 @@
                       </video>
                     </div>
                     <div class="os-media-actions mt-3 {% if not video_path %}d-none{% endif %}" id="video-salvo-acoes">
-                      <a href="{{ video_download_url if video_path else '#' }}" class="btn btn-sm btn-outline-primary" id="video-salvo-link" download>
+                      <a href="{{ video_download_url if video_path else '#' }}" class="btn btn-sm btn-outline-primary" id="video-salvo-link" download data-ti-allowed="{{ 'true' if (central_ti_url_allowed(video_download_url if video_path else '#') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-download me-1"></i>Baixar video
                       </a>
-                      {% if not modo_visualizacao %}
+                      {% if can_manage_media %}
                       <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoverVideo">
                         <i class="bi bi-trash me-1"></i>Remover
                       </button>
@@ -1015,7 +1016,7 @@
                     </div>
                   </div>
 
-                  {% if not modo_visualizacao %}
+                  {% if can_manage_media %}
                   <div class="os-media-upload-box">
                     <label class="form-label-header">Enviar novo vídeo</label>
                     <input type="file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v,.lrf" />
@@ -1042,7 +1043,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-5 piloto-os-form-actions">
-          <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Voltar</a>
+          <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_voltar or url_for('main.piloto_os')) if central_ti_url_allowed is defined else true) else 'false' }}">Voltar</a>
           {% if not modo_visualizacao %}
           <button type="submit" class="btn btn-primary btn-sm px-4">
             <i class="bi bi-check-lg me-1"></i> Salvar formulário
@@ -1234,7 +1235,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!modoVisualizacao) return;
 
   document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
-    if (el.type === "hidden" || el.dataset.bsToggle === "tab") return;
+    if (el.type === "hidden" || el.dataset.bsToggle === "tab" || el.closest('[data-ti-independent="true"]')) return;
     if (canEditUvisTab && el.dataset.uvisEditable === "true") return;
     el.setAttribute("disabled", "disabled");
   });

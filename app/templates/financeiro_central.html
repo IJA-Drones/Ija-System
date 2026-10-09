@@ -63,7 +63,7 @@
         <p class="finance-company-description">Um espaço próprio para a gestão financeira da {{ item.nome }}.</p>
         <div class="finance-company-card-footer">
           {% if item.disponivel %}
-          <a class="btn btn-primary finance-company-open" href="{{ url_for('main.financeiro_empresa', empresa_slug=item.slug) }}" aria-label="Acessar empresa {{ item.nome }}">
+          <a class="btn btn-primary finance-company-open" href="{{ url_for('main.financeiro_empresa', empresa_slug=item.slug) }}" aria-label="Acessar empresa {{ item.nome }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug=item.slug)) if central_ti_url_allowed is defined else true) else 'false' }}">
             Acessar empresa <i class="bi bi-arrow-right" aria-hidden="true"></i>
           </a>
           {% else %}

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
@@ -19,7 +20,7 @@ from app.modules.admin_uvis.service import (
 
 
 def _admin_only_redirect():
-    if not is_admin_or_prefeitura_admin(current_user):
+    if not route_access(current_user, is_admin_or_prefeitura_admin(current_user)):
         flash("Voce nao tem permissao para acessar esta funcao.", "danger")
         return redirect(request.referrer or url_for("main.admin_uvis_listar"))
     return None
@@ -39,7 +40,7 @@ def register_routes(bp):
     @bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
     @login_required
     def admin_uvis_novo():
-        if not is_admin_or_prefeitura_admin(current_user):
+        if not route_access(current_user, is_admin_or_prefeitura_admin(current_user)):
             abort(403)
 
         prefeituras = _prefeituras_ativas() if is_admin_user(current_user) else []
@@ -107,7 +108,7 @@ def register_routes(bp):
     @bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
     @login_required
     def admin_uvis_listar():
-        if not can_access_admin_uvis(current_user):
+        if not route_access(current_user, can_access_admin_uvis(current_user)):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -272,7 +273,7 @@ def register_routes(bp):
     @bp.route("/admin/uvis/exportar", methods=["GET"], endpoint="admin_uvis_exportar")
     @login_required
     def admin_uvis_exportar():
-        if not can_access_admin_uvis(current_user):
+        if not route_access(current_user, can_access_admin_uvis(current_user)):
             abort(403)
 
         q = (request.args.get("q") or "").strip()

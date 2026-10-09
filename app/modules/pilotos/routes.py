@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
@@ -28,7 +29,7 @@ def _query_args_without_page():
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(current_user):
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'dev', 'diretor', 'admin', 'operario', 'operador', 'prefeitura_admin'} or is_veiculos_supervisor(current_user)):
         abort(403)
 
 
@@ -129,7 +130,7 @@ def register_routes(bp):
     @login_required
     def listar_pilotos():
         user_tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
-        if user_tipo not in ("dev", "diretor", "admin", "uvis", "visualizar", "regional", "operario", "operador", "prefeitura_admin"):
+        if not route_access(current_user, user_tipo in ('dev', 'diretor', 'admin', 'uvis', 'visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin')):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -159,7 +160,7 @@ def register_routes(bp):
         query = build_pilotos_query(user_tipo, regiao, telefone, q, sort, user=current_user)
 
         if export == "xlsx":
-            if user_tipo not in ["dev", "diretor", "admin", "visualizar", "regional"]:
+            if not route_access(current_user, user_tipo in ['dev', 'diretor', 'admin', 'visualizar', 'regional']):
                 abort(403)
 
             output, filename = build_pilotos_export(query.all(), user_tipo, uvis_regiao)

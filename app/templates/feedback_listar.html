@@ -40,14 +40,14 @@
   </div>
 
   {% call render_filter_card('Filtros', collapsible=False) %}
-      <form method="GET" action="{{ url_for('main.feedback_listar') }}">
+      <form method="GET" action="{{ url_for('main.feedback_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-2 align-items-end">
           <div class="col-12">
             <div class="feedback-quick-filters">
-              <a href="{{ url_for('main.feedback_listar') }}" class="feedback-quick-filter {% if not status %}active{% endif %}">
+              <a href="{{ url_for('main.feedback_listar') }}" class="feedback-quick-filter {% if not status %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-bug-fill"></i> Bugs técnicos
               </a>
-              <a href="{{ url_for('main.feedback_listar', status='aberto') }}" class="feedback-quick-filter {% if status == 'aberto' %}active{% endif %}">
+              <a href="{{ url_for('main.feedback_listar', status='aberto') }}" class="feedback-quick-filter {% if status == 'aberto' %}active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_listar', status='aberto')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-exclamation-circle-fill"></i> Bugs abertos
               </a>
             </div>
@@ -90,7 +90,7 @@
               <i class="bi bi-funnel"></i> Filtrar
             </button>
           {% if q or status or prioridade or uvis_id %}
-            <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+            <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-x-lg"></i>
             </a>
             {% endif %}
@@ -103,7 +103,7 @@
   <div class="feedback-list">
     {% for item in feedbacks %}
     {% set visible_comments = item.comentarios if can_moderate else item.comentarios|selectattr('interno', 'equalto', false)|list %}
-    <a href="{{ url_for('main.feedback_detalhe', topico_id=item.id) }}" class="feedback-card">
+    <a href="{{ url_for('main.feedback_detalhe', topico_id=item.id) }}" class="feedback-card" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_detalhe', topico_id=item.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="feedback-card-main">
         <div class="feedback-card-title-row">
           <div class="feedback-card-heading">

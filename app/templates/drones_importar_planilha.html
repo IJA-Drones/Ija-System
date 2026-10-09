@@ -19,7 +19,7 @@
     <a
       href="{{ url_for('main.agro_equipamentos_listar') if default_agro else url_for('main.listar_drones') }}"
       class="btn btn-outline-secondary d-flex align-items-center gap-2"
-    >
+     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_equipamentos_listar') if default_agro else url_for('main.listar_drones')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>

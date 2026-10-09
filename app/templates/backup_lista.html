@@ -23,11 +23,11 @@
           </div>
 
           <div class="backup-actions">
-            <a href="{{ url_for('main.backup_page') }}" class="btn btn-primary">
+            <a href="{{ url_for('main.backup_page') }}" class="btn btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.backup_page')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-plus-circle"></i>
               Gerar agora
             </a>
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-house-door"></i>
               Voltar
             </a>

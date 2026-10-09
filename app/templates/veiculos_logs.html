@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block content %}
+{% if central_ti_profile_active|default(false) %}
+{% set can_edit_logs = (central_ti_permission('prefeitura.logs_veiculos.corrigir') or central_ti_permission('prefeitura.logs_veiculos.excluir')) %}
+{% endif %}
+
 <div class="container-fluid py-4 veiculos-logs-page">
     {% set limpeza_filters_active = filters.limpeza_realizada or filters.tipo_limpeza or filters.data_limpeza_inicio or filters.data_limpeza_fim or filters.valor_limpeza_min or filters.valor_limpeza_max %}
     <div class="dashboard-header mb-4">
@@ -20,11 +24,11 @@
         </div>
 
         <div class="header-actions">
-            <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center">
+            <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-arrow-left"></i> Voltar para central
             </a>
             {% if can_view_deleted_logs %}
-                <a href="{{ url_for('main.veiculos_logs_excluidos') }}" class="btn btn-outline-danger d-flex align-items-center">
+                <a href="{{ url_for('main.veiculos_logs_excluidos') }}" class="btn btn-outline-danger d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs_excluidos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-shield-lock me-1"></i> Historico de apagados
                 </a>
             {% endif %}
@@ -38,7 +42,16 @@
                                 data_limpeza_fim=filters.data_limpeza_fim,
                                 valor_limpeza_min=filters.valor_limpeza_min,
                                 valor_limpeza_max=filters.valor_limpeza_max) }}"
-            class="btn btn-secondary shadow-sm">
+            class="btn btn-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.exportar_logs_veiculos_xlsx',
+                                q=filters.q,
+                                data_inicio=filters.data_inicio,
+                                data_fim=filters.data_fim,
+                                limpeza_realizada=filters.limpeza_realizada,
+                                tipo_limpeza=filters.tipo_limpeza,
+                                data_limpeza_inicio=filters.data_limpeza_inicio,
+                                data_limpeza_fim=filters.data_limpeza_fim,
+                                valor_limpeza_min=filters.valor_limpeza_min,
+                                valor_limpeza_max=filters.valor_limpeza_max)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
             </a>
         </div>
@@ -78,7 +91,7 @@
 
         <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim or limpeza_filters_active %}show{% endif %}" id="collapseFiltrosLogs">
             <div class="card-body pt-0 pb-4">
-                <form method="GET" class="row g-2 align-items-end">
+                <form method="GET" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                     <div class="col-md-3">
                         <label class="small text-muted">Veículo / Placa / Operador:</label>
                         <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
@@ -130,7 +143,7 @@
                     </div>
                     {% if filters.q or filters.data_inicio or filters.data_fim or limpeza_filters_active %}
                     <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
-                        <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary w-100">
+                        <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary w-100" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-x-lg"></i> Limpar
                         </a>
                     </div>
@@ -387,7 +400,7 @@
                                                                     <div class="timeline-media">
                                                                         <div class="timeline-media-title">
                                                                             <span>Painel inicial</span>
-                                                                            <a href="{{ painel_inicial_url }}" target="_blank">Abrir</a>
+                                                                            <a href="{{ painel_inicial_url }}" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(painel_inicial_url) if central_ti_url_allowed is defined else true) else 'false' }}">Abrir</a>
                                                                         </div>
                                                                         <img data-lazy-src="{{ painel_inicial_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel inicial">
                                                                     </div>
@@ -431,7 +444,7 @@
                                                                                 <div class="timeline-media">
                                                                                     <div class="timeline-media-title">
                                                                                         <span>Painel no abastecimento</span>
-                                                                                        <a href="{{ painel_abastecimento_url }}" target="_blank">Abrir</a>
+                                                                                        <a href="{{ painel_abastecimento_url }}" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(painel_abastecimento_url) if central_ti_url_allowed is defined else true) else 'false' }}">Abrir</a>
                                                                                     </div>
                                                                                     <img data-lazy-src="{{ painel_abastecimento_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel no abastecimento">
                                                                                 </div>
@@ -441,7 +454,7 @@
                                                                                 <div class="timeline-media">
                                                                                     <div class="timeline-media-title">
                                                                                         <span>Nota fiscal</span>
-                                                                                        <a href="{{ nota_url }}" target="_blank">Abrir</a>
+                                                                                        <a href="{{ nota_url }}" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(nota_url) if central_ti_url_allowed is defined else true) else 'false' }}">Abrir</a>
                                                                                     </div>
                                                                                     <img data-lazy-src="{{ nota_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto da nota fiscal">
                                                                                 </div>
@@ -552,7 +565,7 @@
                                                                         <div class="timeline-media">
                                                                             <div class="timeline-media-title">
                                                                                 <span>Painel final</span>
-                                                                                <a href="{{ painel_final_url }}" target="_blank">Abrir</a>
+                                                                                <a href="{{ painel_final_url }}" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(painel_final_url) if central_ti_url_allowed is defined else true) else 'false' }}">Abrir</a>
                                                                             </div>
                                                                             <img data-lazy-src="{{ painel_final_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel final">
                                                                         </div>
@@ -588,12 +601,12 @@
         </div>
     </div>
 
-    {% if can_edit_logs %}
+    {% if (central_ti_ui_guard(['main.corrigir_log_veiculo', 'main.deletar_log_veiculo'], (can_edit_logs)) if central_ti_ui_guard is defined else (can_edit_logs)) %}
         {% for log in logs %}
             <div class="modal fade" id="modalCorrigirKmLog{{ log.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ log.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content border-0 shadow rounded-4 vehicle-action-modal">
-                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">
+                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
                                     <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir log #{{ log.id }}</h5>
@@ -685,7 +698,7 @@
                 <div class="modal fade" id="modalDeletarLog{{ log.id }}" tabindex="-1" aria-labelledby="modalDeletarLog{{ log.id }}Label" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow rounded-4 vehicle-action-modal vehicle-action-modal--danger">
-                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">
+                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                                 <div class="modal-header border-0 pb-0">
                                     <div>
                                         <h5 class="modal-title fw-bold text-danger" id="modalDeletarLog{{ log.id }}Label">Apagar log #{{ log.id }}</h5>
@@ -718,13 +731,13 @@
     <nav class="mt-4 veiculos-logs-pagination">
         <ul class="pagination justify-content-center">
             <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">Anterior</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
             </li>
 
             {% for p in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
                 {% if p %}
                     <li class="page-item {{ 'active' if p == paginacao.page else '' }}">
-                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ p }}</a>
                     </li>
                 {% else %}
                     <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -732,7 +745,7 @@
             {% endfor %}
 
             <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">Próxima</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max)) if central_ti_url_allowed is defined else true) else 'false' }}">Próxima</a>
             </li>
         </ul>
     </nav>
@@ -745,7 +758,7 @@
             {% for item in veiculos_timeline %}
                 {% set v = item.veiculo %}
                 {% if v %}
-                    <a class="vehicle-summary-card" href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=v.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                    <a class="vehicle-summary-card" href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=v.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculo_logs_detalhe', veiculo_id=v.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim)) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <div>
                             <div class="vehicle-summary-eyebrow">{{ v.modelo }}</div>
                             <div class="vehicle-summary-main">{{ (item.total_km or 0)|round|int }} km</div>

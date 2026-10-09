@@ -16,7 +16,9 @@
     "corrigir": "Corrigir",
     "encaminhar": "Encaminhar",
     "atender": "Atender",
-    "gerenciar": "Gerenciar acessos"
+    "gerenciar": "Gerenciar acessos",
+    "arquivar": "Arquivar",
+    "converter": "Converter em solicitação"
   },
   "catalog": [
     {
@@ -51,14 +53,14 @@
           "Equipes e pilotos",
           "Equipes OA, membros e acessos UVIS.",
           "bi-person-badge",
-          "consultar criar editar excluir atribuir"
+          "consultar criar editar excluir atribuir exportar"
         ],
         [
           "equipamentos",
           "Equipamentos",
           "Drones, baterias e manutenção.",
           "bi-cpu",
-          "consultar criar editar excluir importar"
+          "consultar criar editar excluir importar exportar"
         ],
         [
           "veiculos",
@@ -79,7 +81,7 @@
           "Relatórios",
           "Indicadores, coleta de imagens e retornos.",
           "bi-bar-chart",
-          "consultar exportar"
+          "consultar exportar editar"
         ],
         [
           "mapas",
@@ -93,7 +95,35 @@
           "Denúncias",
           "Triagem e encaminhamento de registros.",
           "bi-megaphone",
-          "consultar encaminhar atribuir"
+          "consultar encaminhar atribuir arquivar converter"
+        ],
+        [
+          "prefeituras",
+          "Prefeituras",
+          "Cadastro de municípios.",
+          "bi-buildings",
+          "consultar criar editar excluir"
+        ],
+        [
+          "logs_veiculos",
+          "Histórico de veículos",
+          "Registros de KM, limpeza e abastecimento.",
+          "bi-journal-text",
+          "consultar corrigir excluir exportar"
+        ],
+        [
+          "voos",
+          "Logs de voo DJI",
+          "Importação e rotas dos voos municipais.",
+          "bi-airplane",
+          "consultar importar editar excluir exportar"
+        ],
+        [
+          "vigilancia",
+          "Vigilância",
+          "Prévia dos indicadores epidemiológicos.",
+          "bi-heart-pulse",
+          "consultar editar"
         ]
       ]
     },
@@ -158,6 +188,13 @@
           "Currículos e análise de candidatos.",
           "bi-file-earmark-person",
           "consultar criar editar excluir"
+        ],
+        [
+          "contratos",
+          "Contratos",
+          "Contratos, documentos e templates.",
+          "bi-file-earmark-text",
+          "consultar editar excluir exportar midias configurar"
         ]
       ]
     },
@@ -276,9 +313,23 @@
         [
           "tecnico",
           "Ferramentas técnicas",
-          "Erros, verificações, backups e importações DJI.",
+          "Erros e verificações técnicas.",
           "bi-terminal",
           "consultar operar importar"
+        ],
+        [
+          "backups",
+          "Backups",
+          "Consulta e geração de cópias de segurança.",
+          "bi-database",
+          "consultar operar"
+        ],
+        [
+          "bugs",
+          "Bugs",
+          "Registro e tratamento de problemas.",
+          "bi-bug",
+          "consultar criar atender"
         ]
       ]
     }

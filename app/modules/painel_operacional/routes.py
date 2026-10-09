@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import current_app, jsonify, render_template, request
 from flask_login import current_user, login_required
 
@@ -12,7 +13,7 @@ def register_routes(bp):
     @bp.route("/diretor/painel-operacional", methods=["GET"], endpoint="painel_operacional")
     @login_required
     def painel_operacional():
-        if not can_access_operational_panel(current_user):
+        if not route_access(current_user, can_access_operational_panel(current_user)):
             return render_template(
                 "erro.html",
                 codigo=403,
@@ -28,7 +29,7 @@ def register_routes(bp):
     @bp.route("/api/painel-operacional/contexto-local", methods=["POST"], endpoint="api_painel_operacional_contexto")
     @login_required
     def api_painel_operacional_contexto():
-        if not can_access_operational_panel(current_user):
+        if not route_access(current_user, can_access_operational_panel(current_user)):
             return jsonify({"ok": False, "error": "Acesso restrito."}), 403
 
         data = request.get_json(silent=True) or {}

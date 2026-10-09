@@ -19,7 +19,7 @@
         <span><i class="bi bi-clock"></i>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
       </div>
     </div>
-    <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -74,7 +74,7 @@
               {% if comentario.anexos %}
               <div class="feedback-comment-gallery mt-2">
                 {% for anexo in comentario.anexos %}
-                <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link">
+                <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_anexo', anexo_id=anexo.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <img src="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" alt="{{ anexo.arquivo_nome }}" class="feedback-comment-image">
                 </a>
                 {% endfor %}
@@ -107,13 +107,13 @@
         <div class="card-body p-4">
           <h5 class="mb-3">Tratativa</h5>
           <div class="d-grid gap-2 mb-3">
-            <form method="POST" action="{{ url_for('main.feedback_assumir', topico_id=topico.id) }}">
+            <form method="POST" action="{{ url_for('main.feedback_assumir', topico_id=topico.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_assumir', topico_id=topico.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <button type="submit" class="btn btn-outline-primary w-100 justify-content-center">
                 <i class="bi bi-person-check"></i> Assumir bug
               </button>
             </form>
           </div>
-          <form method="POST" action="{{ url_for('main.feedback_atualizar', topico_id=topico.id) }}">
+          <form method="POST" action="{{ url_for('main.feedback_atualizar', topico_id=topico.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_atualizar', topico_id=topico.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
             <div class="mb-3">
               <label class="form-label" for="feedback-status">Status</label>
               <select id="feedback-status" name="status" class="form-select">
@@ -148,7 +148,7 @@
             </button>
           </form>
           <hr>
-          <form method="POST" action="{{ url_for('main.feedback_corrigir', topico_id=topico.id) }}">
+          <form method="POST" action="{{ url_for('main.feedback_corrigir', topico_id=topico.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_corrigir', topico_id=topico.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
             <div class="mb-3">
               <label class="form-label" for="feedback-mensagem-conclusao">O que foi corrigido</label>
               <textarea id="feedback-mensagem-conclusao" name="mensagem_conclusao" rows="3" class="form-control" required></textarea>

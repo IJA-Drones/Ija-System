@@ -20,14 +20,14 @@
         Uma conta operacional por UVIS. Nao e mais necessario cadastrar membros.
       </p>
     </div>
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i>Voltar
     </a>
   </div>
 
   <div class="card shadow-sm rounded-4 border-0 mb-4">
     <div class="card-body p-3">
-      <form method="GET" action="{{ url_for('main.admin_listar_equipes_uvis') }}" class="row g-2">
+      <form method="GET" action="{{ url_for('main.admin_listar_equipes_uvis') }}" class="row g-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_listar_equipes_uvis'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="col-md">
           <label class="form-label small text-muted mb-1">Buscar UVIS, regiao ou login</label>
           <input
@@ -43,7 +43,7 @@
             <i class="bi bi-search me-1"></i>Buscar
           </button>
           {% if search %}
-          <a href="{{ url_for('main.admin_listar_equipes_uvis') }}" class="btn btn-outline-secondary btn-sm">
+          <a href="{{ url_for('main.admin_listar_equipes_uvis') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_listar_equipes_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
             Limpar
           </a>
           {% endif %}
@@ -120,7 +120,7 @@
       <form
         method="POST"
         action="{{ url_for('main.admin_atualizar_acesso_operacional_uvis', uvis_id=e.uvis_id) }}"
-      >
+       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_atualizar_acesso_operacional_uvis', uvis_id=e.uvis_id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="modal-header">
           <div>
             <h5 class="modal-title">Acesso operacional</h5>

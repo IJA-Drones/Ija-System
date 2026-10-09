@@ -21,16 +21,16 @@
       </h2>
     </div>
     <div class="piloto-os-header-actions">
-      <a href="{{ url_for('main.agenda') }}" class="btn btn-outline-primary">
+      <a href="{{ url_for('main.agenda') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agenda')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-calendar-event me-1"></i> Agenda
       </a>
-      <a href="{{ url_for('main.piloto_dosagem') }}" class="btn btn-outline-primary">
+      <a href="{{ url_for('main.piloto_dosagem') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_dosagem')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-calculator me-1"></i> Dosagem
       </a>
-      <a href="{{ url_for('main.piloto_checklist_semanal') }}" class="btn btn-outline-primary">
+      <a href="{{ url_for('main.piloto_checklist_semanal') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_checklist_semanal')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-ui-checks-grid me-1"></i> Checklist Semanal
       </a>
-      <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-primary">
+      <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-speedometer2 me-1"></i> Veículos da Equipe
       </a>
     </div>
@@ -113,7 +113,7 @@
   {# --- FILTRO DO DIA ATUAL --- #}
   <div class="card border-0 shadow-sm rounded-4 mb-4 piloto-os-filter-card">
     <div class="card-body p-3 p-md-4">
-      <form method="GET" action="{{ url_for('main.piloto_os') }}" class="piloto-os-filter-form">
+      <form method="GET" action="{{ url_for('main.piloto_os') }}" class="piloto-os-filter-form" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="input-group piloto-os-search">
           <span class="input-group-text bg-white border-end-0">
             <i class="bi bi-search text-primary"></i>
@@ -139,7 +139,7 @@
             <i class="bi bi-search me-1"></i> Buscar
           </button>
           {% if busca or filtro_retorno %}
-            <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-x-lg me-1"></i> Limpar
             </a>
           {% endif %}
@@ -256,15 +256,15 @@
                   <i class="bi bi-eye me-1"></i> Detalhes
                 </button>
 
-                <a href="{{ url_for('main.piloto_os_dosagem', os_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                <a href="{{ url_for('main.piloto_os_dosagem', os_id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_dosagem', os_id=s.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-calculator me-1"></i> Dosagem
                 </a>
 
-                <a href="{{ url_for('main.piloto_os_formulario_view', os_id=s.id) }}" class="btn btn-sm btn-primary">
+                <a href="{{ url_for('main.piloto_os_formulario_view', os_id=s.id) }}" class="btn btn-sm btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_formulario_view', os_id=s.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-clipboard2-check me-1"></i> Formulário
                 </a>
 
-                <form method="POST" action="{{ url_for('main.piloto_concluir_os', os_id=s.id) }}" class="m-0 form-concluir d-inline">
+                <form method="POST" action="{{ url_for('main.piloto_concluir_os', os_id=s.id) }}" class="m-0 form-concluir d-inline" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_concluir_os', os_id=s.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                   <button type="submit" class="btn btn-sm btn-success">
                     <i class="bi bi-check2-circle me-1"></i> Concluir
                   </button>
@@ -299,7 +299,7 @@
   <nav class="mt-4">
     <ul class="pagination pagination-sm justify-content-center">
       <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
+        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.prev_num, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os', page=paginacao.prev_num, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
       </li>
       {% for pg in paginacao.iter_pages() %}
         {% if pg %}
@@ -307,7 +307,7 @@
             <li class="page-item active"><span class="page-link">{{ pg }}</span></li>
           {% else %}
             <li class="page-item">
-              <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=pg, **pagination_args) }}">{{ pg }}</a>
+              <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=pg, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os', page=pg, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ pg }}</a>
             </li>
           {% endif %}
         {% else %}
@@ -315,7 +315,7 @@
         {% endif %}
       {% endfor %}
       <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.next_num, **pagination_args) }}">Próxima</a>
+        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.next_num, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os', page=paginacao.next_num, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Próxima</a>
       </li>
     </ul>
   </nav>
@@ -414,7 +414,7 @@
             <div class="detail-section">
               <div class="detail-title">Anexo</div>
               {% if p.anexo_path %}
-                <a href="{{ url_for('main.baixar_anexo', id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                <a href="{{ url_for('main.baixar_anexo', id=p.id) }}" class="btn btn-sm btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.baixar_anexo', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-download me-1"></i> Abrir / Baixar arquivo
                 </a>
               {% else %}
@@ -427,10 +427,10 @@
 
       <div class="modal-footer border-0 d-flex justify-content-between">
         <div class="d-flex gap-2 flex-wrap">
-          <a href="{{ url_for('main.piloto_os_dosagem', os_id=p.id) }}" class="btn btn-outline-secondary">
+          <a href="{{ url_for('main.piloto_os_dosagem', os_id=p.id) }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_dosagem', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-calculator me-1"></i> Planejar dosagem
           </a>
-          <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-primary">
+          <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_formulario_view', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-clipboard2-check me-1"></i> Abrir formulario
           </a>
         </div>

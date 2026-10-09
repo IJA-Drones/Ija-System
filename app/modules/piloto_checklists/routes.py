@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -12,11 +13,7 @@ from app.shared.access import VEICULOS_SUPERVISOR_USER_TYPES, normalize_role
 
 
 def _require_piloto():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
-        "piloto",
-        EQUIPE_OCEANO_USER_TYPE,
-        *VEICULOS_SUPERVISOR_USER_TYPES,
-    }:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'piloto', EQUIPE_OCEANO_USER_TYPE, *VEICULOS_SUPERVISOR_USER_TYPES}):
         abort(403)
 
 

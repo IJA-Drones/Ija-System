@@ -22,10 +22,10 @@
       </div>
     </div>
     <div class="limpezas-actions">
-      <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar para central
       </a>
-      <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-journal-text"></i> Logs de veiculos
       </a>
     </div>
@@ -69,7 +69,7 @@
     </div>
     <div class="collapse {% if filters_active %}show{% endif %}" id="collapseFiltrosLimpeza">
       <div class="card-body pt-0 pb-4">
-        <form method="GET">
+        <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-4">
               <label class="small text-muted">Busca rapida</label>
@@ -120,7 +120,7 @@
                 <i class="bi bi-search"></i> Filtrar
               </button>
               {% if filters_active %}
-                <a href="{{ url_for('main.veiculos_limpezas') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center">
+                <a href="{{ url_for('main.veiculos_limpezas') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_limpezas')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -208,7 +208,7 @@
                 <span class="small text-muted">{{ limpeza.observacao or '-' }}</span>
                 {% if limpeza.log_veiculo_id %}
                   <div class="small mt-1">
-                    <a href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=limpeza.veiculo_id) }}" class="text-decoration-none">
+                    <a href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=limpeza.veiculo_id) }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculo_logs_detalhe', veiculo_id=limpeza.veiculo_id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       Abrir historico do veiculo
                     </a>
                   </div>
@@ -227,19 +227,19 @@
   <nav class="mt-4" aria-label="Paginacao das limpezas">
     <ul class="pagination justify-content-center flex-wrap gap-1">
       <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=paginacao.prev_num, **filters) if paginacao.has_prev else '#' }}">Anterior</a>
+        <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=paginacao.prev_num, **filters) if paginacao.has_prev else '#' }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_limpezas', page=paginacao.prev_num, **filters) if paginacao.has_prev else '#') if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
       </li>
       {% for page_num in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
         {% if page_num %}
           <li class="page-item {% if page_num == paginacao.page %}active{% endif %}">
-            <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=page_num, **filters) }}">{{ page_num }}</a>
+            <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=page_num, **filters) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_limpezas', page=page_num, **filters)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ page_num }}</a>
           </li>
         {% else %}
           <li class="page-item disabled"><span class="page-link">...</span></li>
         {% endif %}
       {% endfor %}
       <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=paginacao.next_num, **filters) if paginacao.has_next else '#' }}">Proxima</a>
+        <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=paginacao.next_num, **filters) if paginacao.has_next else '#' }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_limpezas', page=paginacao.next_num, **filters) if paginacao.has_next else '#') if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
       </li>
     </ul>
   </nav>

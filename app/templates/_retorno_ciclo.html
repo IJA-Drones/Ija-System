@@ -28,7 +28,7 @@
               <div class="small text-muted">{{ node.endereco }}</div>
             </div>
             {% if node.detail_url %}
-              <a href="{{ node.detail_url }}" class="btn btn-sm btn-outline-primary">
+              <a href="{{ node.detail_url }}" class="btn btn-sm btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(node.detail_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-eye me-1"></i>Abrir OS
               </a>
             {% else %}
@@ -88,19 +88,19 @@
           {% if node.media.total %}
             <div class="return-cycle-media-grid">
               {% if node.media.principal_url %}
-                <a href="{{ node.media.principal_url }}" target="_blank" class="return-cycle-media">
+                <a href="{{ node.media.principal_url }}" target="_blank" class="return-cycle-media" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(node.media.principal_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <img src="{{ node.media.principal_url }}" alt="Foto principal da OS {{ node.id }}">
                   <span>Foto principal</span>
                 </a>
               {% endif %}
               {% for imagem in node.media.complementares %}
-                <a href="{{ imagem.url }}" target="_blank" class="return-cycle-media">
+                <a href="{{ imagem.url }}" target="_blank" class="return-cycle-media" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(imagem.url) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <img src="{{ imagem.url }}" alt="{{ imagem.label }} da OS {{ node.id }}">
                   <span>{{ imagem.label }}</span>
                 </a>
               {% endfor %}
               {% if node.media.video_url %}
-                <a href="{{ node.media.video_url }}" target="_blank" class="return-cycle-media">
+                <a href="{{ node.media.video_url }}" target="_blank" class="return-cycle-media" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(node.media.video_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <span><i class="bi bi-play-circle me-1"></i>{{ node.media.video_nome or 'Video' }}</span>
                 </a>
               {% endif %}

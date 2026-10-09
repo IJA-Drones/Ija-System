@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import active_configuration, capability
 import hashlib
 import json
 import os
@@ -31,15 +32,69 @@ from app.modules.dji_flight_logs.service import (
 from app.shared.uploads import get_upload_folder
 
 
+def _scope_agro_orders(query, user=None):
+    from flask import has_request_context
+    if user is None:
+        if not has_request_context():
+            return query
+        from flask_login import current_user
+        user = current_user
+    if active_configuration(user) is None:
+        return query
+    from app.shared.access import apply_prefeitura_scope
+    return apply_prefeitura_scope(query, user, OrdemServicoAgro.prefeitura_id)
+
+
+def _scope_agro_flights(query, model, user=None):
+    from flask import has_request_context
+    if user is None:
+        if not has_request_context():
+            return query
+        from flask_login import current_user
+        user = current_user
+    if active_configuration(user) is None:
+        return query
+    # Existing Agro administrators retain their company scope. A newly
+    # authorized pilot sees own imports and flights linked to accessible OS.
+    from app.shared.access import is_admin_global_user
+    if is_admin_global_user(user) or can_access_agro_panel.__wrapped__(user):
+        return query
+    orders = _scope_agro_orders(OrdemServicoAgro.query, user).with_entities(OrdemServicoAgro.agro_kml_route_id)
+    route_access = or_(AgroFlightKmlRoute.uploaded_by_id == user.id, AgroFlightKmlRoute.id.in_(orders))
+    if model is AgroFlightKmlRoute:
+        return query.filter(route_access)
+    record_access = or_(AgroFlightRecord.import_batch.has(uploaded_by_id=user.id), AgroFlightRecord.route_kml.has(route_access))
+    if model is AgroFlightRecord:
+        return query.filter(record_access)
+    return query.filter(or_(AgroFlightLogImport.uploaded_by_id == user.id, AgroFlightLogImport.records.any(record_access)))
+
+
+def _require_agro_route_links_scope(route_id):
+    from flask import has_request_context
+    if not has_request_context():
+        return
+    from flask_login import current_user
+    if active_configuration(current_user) is None:
+        return
+    query = OrdemServicoAgro.query.filter(OrdemServicoAgro.agro_kml_route_id == route_id)
+    visible = _scope_agro_orders(query).with_entities(OrdemServicoAgro.id)
+    if query.filter(~OrdemServicoAgro.id.in_(visible)).first():
+        raise ValueError("A rota possui vínculo com uma OS fora do seu acesso.")
+
+
+@capability(['agro.voos.consultar'])
 def can_access_agro_flight_logs(user) -> bool:
     return can_access_agro_panel(user)
 
 
+@capability(['agro.voos.importar'])
 def can_import_agro_flight_logs(user) -> bool:
     return can_edit_agro_panel(user)
 
 
 def can_access_agro_kml_route(user, route_id) -> bool:
+    if active_configuration(user) is not None:
+        return _scope_agro_flights(AgroFlightKmlRoute.query, AgroFlightKmlRoute, user).filter_by(id=route_id).first() is not None
     if can_access_agro_panel(user):
         return True
 
@@ -221,9 +276,9 @@ def build_agro_flight_logs_context(args):
     )
     kml_rotas = kml_paginacao.items
 
-    total_rotas_kml = AgroFlightKmlRoute.query.count()
+    total_rotas_kml = _scope_agro_flights(AgroFlightKmlRoute.query, AgroFlightKmlRoute).count()
     total_rotas_kml_vinculadas = (
-        db.session.query(func.count(func.distinct(OrdemServicoAgro.agro_kml_route_id)))
+        _scope_agro_orders(db.session.query(func.count(func.distinct(OrdemServicoAgro.agro_kml_route_id))))
         .filter(OrdemServicoAgro.agro_kml_route_id.isnot(None))
         .scalar()
         or 0
@@ -270,7 +325,7 @@ def build_agro_flight_logs_context(args):
         "kml_pilotos_disponiveis": _distinct_non_empty_values(AgroFlightKmlRoute.pilot_name),
         "kml_aeronaves_disponiveis": _distinct_non_empty_values(AgroFlightKmlRoute.aircraft_name),
         "importacoes_recentes": (
-            AgroFlightLogImport.query
+            _scope_agro_flights(AgroFlightLogImport.query, AgroFlightLogImport)
             .order_by(AgroFlightLogImport.uploaded_at.desc(), AgroFlightLogImport.id.desc())
             .limit(8)
             .all()
@@ -278,7 +333,7 @@ def build_agro_flight_logs_context(args):
         "kml_rotas": kml_rotas,
         "kml_paginacao": kml_paginacao,
         "kml_os_por_rota": build_agro_kml_os_map(kml_rotas),
-        "total_importacoes": AgroFlightLogImport.query.count(),
+        "total_importacoes": _scope_agro_flights(AgroFlightLogImport.query, AgroFlightLogImport).count(),
         "total_rotas_kml": total_rotas_kml,
         "total_rotas_kml_vinculadas": total_rotas_kml_vinculadas,
         "total_rotas_kml_sem_os": total_rotas_kml - total_rotas_kml_vinculadas,
@@ -439,7 +494,7 @@ def build_agro_logs_excel_export(args):
 
 
 def link_agro_kml_route_to_os(route_id, os_ref):
-    route = AgroFlightKmlRoute.query.get(route_id)
+    route = _scope_agro_flights(AgroFlightKmlRoute.query, AgroFlightKmlRoute).filter_by(id=route_id).first()
     if not route:
         raise ValueError("Rota KML Agro nao encontrada.")
 
@@ -447,7 +502,7 @@ def link_agro_kml_route_to_os(route_id, os_ref):
     if not os_ref:
         raise ValueError("Informe o ID ou identificador da OS Agro.")
 
-    query = OrdemServicoAgro.query
+    query = _scope_agro_orders(OrdemServicoAgro.query)
     if os_ref.isdigit():
         query = query.filter(or_(OrdemServicoAgro.id == int(os_ref), OrdemServicoAgro.identificador_os == os_ref))
     else:
@@ -459,6 +514,7 @@ def link_agro_kml_route_to_os(route_id, os_ref):
     if ordem.agro_kml_route_id and ordem.agro_kml_route_id != route.id:
         raise ValueError("Essa OS Agro ja possui outra rota KML vinculada.")
 
+    _require_agro_route_links_scope(route.id)
     current_linked = (
         OrdemServicoAgro.query
         .filter(OrdemServicoAgro.agro_kml_route_id == route.id, OrdemServicoAgro.id != ordem.id)
@@ -473,6 +529,8 @@ def link_agro_kml_route_to_os(route_id, os_ref):
 
 
 def unlink_agro_kml_route_from_os(route_id):
+    _scope_agro_flights(AgroFlightKmlRoute.query, AgroFlightKmlRoute).filter_by(id=route_id).first_or_404()
+    _require_agro_route_links_scope(route_id)
     linked_count = (
         OrdemServicoAgro.query
         .filter(OrdemServicoAgro.agro_kml_route_id == route_id)
@@ -483,7 +541,7 @@ def unlink_agro_kml_route_from_os(route_id):
 
 
 def get_agro_route_payload(route_id):
-    route = AgroFlightKmlRoute.query.get_or_404(route_id)
+    route = _scope_agro_flights(AgroFlightKmlRoute.query, AgroFlightKmlRoute).filter_by(id=route_id).first_or_404()
     linked_os = _get_linked_agro_os_for_kml_route(route.id)
     points = _route_points(route)
     start_point = points[0] if points else None
@@ -520,7 +578,7 @@ def build_agro_kml_os_map(routes):
         return {}
 
     ordens = (
-        OrdemServicoAgro.query
+        _scope_agro_orders(OrdemServicoAgro.query)
         .options(joinedload(OrdemServicoAgro.contrato), joinedload(OrdemServicoAgro.equipe))
         .filter(OrdemServicoAgro.agro_kml_route_id.in_(route_ids))
         .order_by(OrdemServicoAgro.data_aplicacao.desc().nullslast(), OrdemServicoAgro.id.desc())
@@ -533,7 +591,7 @@ def build_agro_kml_os_map(routes):
 
 
 def _build_filtered_agro_record_query(*, data_inicio="", data_fim="", piloto="", aeronave="", equipe="", q="", endereco="", voo_id="", status_rota=""):
-    query = AgroFlightRecord.query.options(joinedload(AgroFlightRecord.route_kml))
+    query = _scope_agro_flights(AgroFlightRecord.query.options(joinedload(AgroFlightRecord.route_kml)), AgroFlightRecord)
 
     if voo_id:
         try:
@@ -584,7 +642,7 @@ def _build_filtered_agro_record_query(*, data_inicio="", data_fim="", piloto="",
 
 
 def _build_agro_kml_query(*, q="", data_inicio="", data_fim="", piloto="", aeronave="", status_os="", status_voo="", voo_id=""):
-    query = AgroFlightKmlRoute.query.options(joinedload(AgroFlightKmlRoute.flight_record))
+    query = _scope_agro_flights(AgroFlightKmlRoute.query.options(joinedload(AgroFlightKmlRoute.flight_record)), AgroFlightKmlRoute)
     if voo_id:
         try:
             query = query.filter(AgroFlightKmlRoute.flight_record_id == int(voo_id))
@@ -655,7 +713,7 @@ def _find_best_agro_os_match_for_kml_route(route, points):
 
 def _candidate_agro_ordens_for_kml_route(route):
     query = (
-        OrdemServicoAgro.query
+        _scope_agro_orders(OrdemServicoAgro.query)
         .options(
             joinedload(OrdemServicoAgro.equipe),
             joinedload(OrdemServicoAgro.piloto),
@@ -737,7 +795,7 @@ def _score_agro_service_match(ordem, route):
 
 def _get_linked_agro_os_for_kml_route(route_id):
     return (
-        OrdemServicoAgro.query
+        _scope_agro_orders(OrdemServicoAgro.query)
         .options(joinedload(OrdemServicoAgro.contrato), joinedload(OrdemServicoAgro.equipe))
         .filter(OrdemServicoAgro.agro_kml_route_id == route_id)
         .order_by(OrdemServicoAgro.data_aplicacao.desc().nullslast(), OrdemServicoAgro.id.desc())
@@ -764,7 +822,7 @@ def _build_linked_agro_os_payload(ordem):
 def _distinct_non_empty_values(column):
     return [
         value
-        for (value,) in db.session.query(column)
+        for (value,) in _scope_agro_flights(db.session.query(column), column.class_)
         .filter(func.length(func.trim(func.coalesce(column, ""))) > 0)
         .distinct()
         .order_by(column.asc())

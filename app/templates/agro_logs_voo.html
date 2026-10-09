@@ -19,10 +19,10 @@
       </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_logs_voo_exportar', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota) }}" class="btn btn-success d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_logs_voo_exportar', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota) }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo_exportar', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
     </div>
@@ -35,7 +35,7 @@
           <div class="col-lg-6">
             <h5 class="fw-bold mb-1">Importar Excel DJI</h5>
             <p class="text-muted small mb-3">O sistema ignora linhas repetidas e mantem o vinculo pelo serial/codigo do voo.</p>
-            <form method="POST" action="{{ url_for('main.agro_logs_voo_importar_excel') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+            <form method="POST" action="{{ url_for('main.agro_logs_voo_importar_excel') }}" enctype="multipart/form-data" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo_importar_excel'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="col-md-8">
                 <label class="form-label small text-muted">Arquivo .xlsx</label>
                 <input type="file" name="arquivo" class="form-control" accept=".xlsx" required>
@@ -50,7 +50,7 @@
           <div class="col-lg-6">
             <h5 class="fw-bold mb-1">Importar rotas KML</h5>
             <p class="text-muted small mb-3">Ao importar, o sistema tenta vincular cada rota a uma OS Agro pela data, drone, piloto e area.</p>
-            <form method="POST" action="{{ url_for('main.agro_logs_voo_importar_kml') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+            <form method="POST" action="{{ url_for('main.agro_logs_voo_importar_kml') }}" enctype="multipart/form-data" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo_importar_kml'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="col-md-8">
                 <label class="form-label small text-muted">Arquivos .kml</label>
                 <input type="file" name="arquivos" class="form-control" accept=".kml" multiple required>
@@ -106,7 +106,7 @@
           <p class="text-muted small mb-0">{{ filtros.total }} voo(s) no recorte atual.</p>
         </div>
       </div>
-      <form method="GET" action="{{ url_for('main.agro_logs_voo') }}" class="row g-2 align-items-end">
+      <form method="GET" action="{{ url_for('main.agro_logs_voo') }}" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <input type="hidden" name="kml_page" value="{{ kml_paginacao.page if kml_paginacao else 1 }}">
         <input type="hidden" name="kml_q" value="{{ kml_filtros.q }}">
         <input type="hidden" name="kml_data_inicio" value="{{ kml_filtros.data_inicio }}">
@@ -162,7 +162,7 @@
         </div>
       </div>
 
-      <form method="GET" action="{{ url_for('main.agro_logs_voo') }}" class="row g-2 align-items-end mb-3">
+      <form method="GET" action="{{ url_for('main.agro_logs_voo') }}" class="row g-2 align-items-end mb-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <input type="hidden" name="page" value="{{ paginacao.page if paginacao else 1 }}">
         <input type="hidden" name="data_inicio" value="{{ filtros.data_inicio }}">
         <input type="hidden" name="data_fim" value="{{ filtros.data_fim }}">
@@ -236,7 +236,7 @@
                 </td>
                 <td>
                   {% if linked_os %}
-                    <a href="{{ url_for('main.agro_os_editar', os_id=linked_os.id) }}" class="text-success fw-semibold text-decoration-none">
+                    <a href="{{ url_for('main.agro_os_editar', os_id=linked_os.id) }}" class="text-success fw-semibold text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_editar', os_id=linked_os.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       {{ linked_os.identificador_os }}
                     </a>
                     <div class="text-muted small">{{ linked_os.cliente_nome }} | {{ linked_os.propriedade_nome }}</div>
@@ -250,17 +250,17 @@
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirRotaAgro({{ item.id }})">
                       <i class="bi bi-map"></i>
                     </button>
-                    <a href="{{ url_for('main.agro_logs_voo_baixar_kml', route_id=item.id) }}" class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ url_for('main.agro_logs_voo_baixar_kml', route_id=item.id) }}" class="btn btn-sm btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo_baixar_kml', route_id=item.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-download"></i>
                     </a>
                   </div>
                   {% if can_import %}
-                    <form method="POST" action="{{ url_for('main.agro_logs_voo_vincular_os', route_id=item.id) }}" class="d-flex gap-1 justify-content-end mt-2">
+                    <form method="POST" action="{{ url_for('main.agro_logs_voo_vincular_os', route_id=item.id) }}" class="d-flex gap-1 justify-content-end mt-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo_vincular_os', route_id=item.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                       <input type="text" name="os_ref" class="form-control form-control-sm agro-os-reference-input" placeholder="OS Agro">
                       <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-link-45deg"></i></button>
                     </form>
                     {% if linked_os %}
-                      <form method="POST" action="{{ url_for('main.agro_logs_voo_desvincular_os', route_id=item.id) }}" class="mt-1">
+                      <form method="POST" action="{{ url_for('main.agro_logs_voo_desvincular_os', route_id=item.id) }}" class="mt-1" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo_desvincular_os', route_id=item.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                         <button class="btn btn-sm btn-outline-danger" type="submit">Desvincular</button>
                       </form>
                     {% endif %}
@@ -315,7 +315,7 @@
                     </button>
                     {% if linked_os %}
                       <div class="mt-1">
-                        <a href="{{ url_for('main.agro_os_editar', os_id=linked_os.id) }}" class="small text-success fw-semibold text-decoration-none">
+                        <a href="{{ url_for('main.agro_os_editar', os_id=linked_os.id) }}" class="small text-success fw-semibold text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_editar', os_id=linked_os.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                           {{ linked_os.identificador_os }}
                         </a>
                       </div>

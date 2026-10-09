@@ -17,7 +17,7 @@
         method="post"
         action="{{ url_for('main.cadastrar_clientes') }}"
         novalidate
-      >
+       data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_clientes'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
@@ -271,7 +271,7 @@
           <a
             href="{{ url_for('main.listar_clientes') }}"
             class="btn btn-outline-danger btn-sm"
-          >
+           data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_clientes')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-primary btn-sm">

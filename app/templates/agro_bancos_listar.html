@@ -17,14 +17,14 @@
       <p class="text-muted small mb-0">Cadastre os bancos e caixas usados nos lancamentos financeiros da empresa.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug='ija')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_conciliacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-bank2"></i> Conciliacao bancaria
       </a>
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_banco_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_banco_novo') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_banco_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-circle-fill"></i> Novo banco
         </a>
       {% endif %}
@@ -33,7 +33,7 @@
 
   <div class="card shadow-sm rounded-4 border-0 mb-4">
     <div class="card-body">
-      <form method="get" action="{{ url_for('main.agro_bancos_listar') }}">
+      <form method="get" action="{{ url_for('main.agro_bancos_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-2 align-items-end">
           <div class="col-md-6">
             <label class="small text-muted mb-1">Busca</label>
@@ -49,7 +49,7 @@
           </div>
           <div class="col-md-4 d-flex flex-wrap gap-2">
             <button type="submit" class="btn btn-success">Filtrar</button>
-            <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary">Limpar</a>
+            <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">Limpar</a>
           </div>
         </div>
       </form>
@@ -92,11 +92,11 @@
             {% endif %}
 
             <div class="d-flex flex-wrap gap-2">
-              <a href="{{ url_for('main.agro_bancos_conciliacao', banco_agro_id=banco.id) }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2">
+              <a href="{{ url_for('main.agro_bancos_conciliacao', banco_agro_id=banco.id) }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_conciliacao', banco_agro_id=banco.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-bank2"></i> Conciliar
               </a>
               {% if is_editable %}
-                <a href="{{ url_for('main.agro_banco_editar', banco_id=banco.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+                <a href="{{ url_for('main.agro_banco_editar', banco_id=banco.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_banco_editar', banco_id=banco.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-pencil-square"></i> Editar
                 </a>
               {% endif %}

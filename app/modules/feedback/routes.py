@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import case, func
@@ -68,21 +69,21 @@ def _require_feedback_access():
     if not FEEDBACK_FEATURE_ENABLED:
         flash("Suporte está em desenvolvimento e ainda não foi liberado para uso.", "warning")
         return False
-    if not can_access_feedback(current_user):
+    if not route_access(current_user, can_access_feedback(current_user)):
         flash("Suporte ainda não foi liberado para seu perfil.", "warning")
         return False
     return True
 
 
 def _require_dev_bug_access():
-    if not is_dev_user(current_user):
+    if not route_access(current_user, is_dev_user(current_user)):
         flash("A área de tratamento de bugs é exclusiva para devs.", "warning")
         return False
     return True
 
 
 def _require_bug_report_access():
-    if not (is_regional_user(current_user) or is_covisa_user(current_user)):
+    if not route_access(current_user, is_regional_user(current_user) or is_covisa_user(current_user)):
         flash("O envio de bugs é exclusivo para a coordenadoria e COVISA.", "warning")
         return False
     return True
@@ -211,7 +212,7 @@ def register_routes(bp):
     def feedback_notificacoes_status():
         if not FEEDBACK_NOTIFICATIONS_ENABLED:
             return jsonify({"success": True, "count": 0, "latest_id": 0, "enabled": False})
-        if not can_access_feedback(current_user):
+        if not route_access(current_user, can_access_feedback(current_user)):
             return jsonify({"success": False, "count": 0, "latest_id": 0}), 403
         snapshot = build_support_notification_snapshot(current_user)
         return jsonify({"success": True, **snapshot})
@@ -549,7 +550,7 @@ def register_routes(bp):
     @bp.route("/feedback/<int:topico_id>/status", methods=["GET"], endpoint="feedback_status")
     @login_required
     def feedback_status(topico_id):
-        if not is_dev_user(current_user):
+        if not route_access(current_user, is_dev_user(current_user)):
             return jsonify({"success": False}), 403
 
         topico = get_feedback_or_404(current_user, topico_id)

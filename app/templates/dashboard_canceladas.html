@@ -15,7 +15,7 @@
       <i class="bi bi-x-circle me-2 text-danger"></i> Solicitações Canceladas
     </h2>
 
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary shadow-sm">
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -68,7 +68,7 @@
               <td colspan="4" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                 <p>Nenhuma solicitação cancelada.</p>
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-primary">Voltar</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">Voltar</a>
               </td>
             </tr>
             {% endfor %}

@@ -14,10 +14,10 @@
       <p class="text-muted small mb-0">{{ manutencao.drone.renomacao }} - {{ manutencao.drone.modelo }}</p>
     </div>
     <div class="page-toolbar-actions">
-      <a href="{{ url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
+      <a href="{{ url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id) }}" class="btn btn-outline-primary btn-sm" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
       </a>
-      <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-secondary btn-sm">
+      <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
     </div>

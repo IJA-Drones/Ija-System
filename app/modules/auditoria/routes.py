@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, render_template, request
 from flask_login import current_user, login_required
 
@@ -6,7 +7,7 @@ from app.shared.access import is_dev_user
 
 
 def _dev_only():
-    if not is_dev_user(current_user):
+    if not route_access(current_user, is_dev_user(current_user)):
         abort(403)
 
 

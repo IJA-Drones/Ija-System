@@ -19,7 +19,7 @@
       href="{{ url_for('main.adicionar_membro_equipe_uvis', nome_equipe=nome_equipe) }}"
       class="btn btn-outline-primary btn-sm {% if total >= maximo %}disabled{% endif %}"
       {% if total >= maximo %}aria-disabled="true"{% endif %}
-    >
+     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.adicionar_membro_equipe_uvis', nome_equipe=nome_equipe)) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-person-plus me-1"></i> Adicionar pessoa
     </a>
   </div>
@@ -93,7 +93,7 @@
                       href="{{ url_for('main.editar_membro_equipe_uvis', membro_id=m.id) }}"
                       class="btn btn-outline-primary btn-sm"
                       title="Editar"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_membro_equipe_uvis', membro_id=m.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                       <i class="bi bi-pencil-square"></i>
                     </a>
 
@@ -103,7 +103,7 @@
                       method="post"
                       action="{{ url_for('main.deletar_membro_equipe_uvis', membro_id=m.id) }}"
                       class="form-deletar d-inline ms-1"
-                    >
+                     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_membro_equipe_uvis', membro_id=m.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                       <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
                         <i class="bi bi-trash"></i>
                       </button>
@@ -125,7 +125,7 @@
 
       {# BOTÕES #}
       <div class="d-flex justify-content-end gap-2 mt-5">
-        <a href="{{ url_for('main.listar_equipes_uvis') }}" class="btn btn-outline-danger btn-sm">
+        <a href="{{ url_for('main.listar_equipes_uvis') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipes_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-arrow-left me-1"></i> Voltar para equipes
         </a>
       </div>

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 import os
 from math import isfinite
 
@@ -106,7 +107,7 @@ def build_heatmap_points(user, *, uvis_id=None, mes=None, ano=None, larva_visual
 
 
 def build_uvis_disponiveis(user):
-    if not is_admin_global_user(user) and getattr(user, "tipo_usuario", None) not in {"regional", "prefeitura_admin"}:
+    if not route_access(user, is_admin_global_user(user) or getattr(user, 'tipo_usuario', None) in {'regional', 'prefeitura_admin'}):
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")

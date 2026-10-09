@@ -21,7 +21,7 @@
       {{ render_result_summary(paginacao.total, 'registros operacionais') }}
     </div>
     <div>
-      <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary shadow-sm">
+      <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard_equipe_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar para Ordens Ativas
       </a>
     </div>
@@ -103,7 +103,7 @@
 
               <td class="text-center pe-4" data-label="Acao">
                 <div class="historico-os-cell-value">
-                  <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id, voltar='historico') }}" class="btn btn-sm btn-outline-success">
+                  <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id, voltar='historico') }}" class="btn btn-sm btn-outline-success" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipe_uvis_os_formulario_view', os_id=p.id, voltar='historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-clipboard2-check me-1"></i> Ver OS
                   </a>
                 </div>
@@ -125,13 +125,13 @@
       <nav class="mt-4 pb-3">
         <ul class="pagination pagination-sm justify-content-center">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link shadow-sm" href="{{ url_for('main.equipe_uvis_os_historico', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
+            <a class="page-link shadow-sm" href="{{ url_for('main.equipe_uvis_os_historico', page=paginacao.prev_num, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipe_uvis_os_historico', page=paginacao.prev_num, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
           </li>
           <li class="page-item active">
             <span class="page-link shadow-sm">{{ paginacao.page }} / {{ paginacao.pages }}</span>
           </li>
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link shadow-sm" href="{{ url_for('main.equipe_uvis_os_historico', page=paginacao.next_num, **pagination_args) }}">Proxima</a>
+            <a class="page-link shadow-sm" href="{{ url_for('main.equipe_uvis_os_historico', page=paginacao.next_num, **pagination_args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipe_uvis_os_historico', page=paginacao.next_num, **pagination_args)) if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
           </li>
         </ul>
       </nav>

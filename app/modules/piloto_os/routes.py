@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import active_configuration, can_manage_os_media
 import json
 import mimetypes
 import os
@@ -75,11 +77,7 @@ VIDEO_BACKGROUND_UPLOAD_EXECUTOR = ThreadPoolExecutor(
 
 
 def _require_piloto():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
-        "piloto",
-        "equipe_oceano",
-        *VEICULOS_SUPERVISOR_USER_TYPES,
-    }:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'piloto', 'equipe_oceano', *VEICULOS_SUPERVISOR_USER_TYPES}):
         abort(403)
 
 
@@ -94,22 +92,26 @@ def _safe_local_redirect(default_endpoint):
 
 
 def _require_admin_os_view():
-    if getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
+    if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) in ADMIN_PANEL_VIEW_TYPES):
         abort(403)
 
 
 def _require_admin_os_export():
-    if getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
+    if not route_access(current_user, getattr(current_user, 'tipo_usuario', None) in ADMIN_PANEL_VIEW_TYPES):
         abort(403)
 
 
 def _ensure_os_region_access(os_id):
+    query = Solicitacao.query
+    if active_configuration(current_user) is not None:
+        from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
+        query = apply_solicitacao_regiao_scope(apply_solicitacao_prefeitura_scope(query, current_user), current_user)
     solicitacao = (
-        Solicitacao.query
+        query
         .options(
             db.selectinload(Solicitacao.usuario),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id).first_or_404()
     )
     pedido_regiao = getattr(getattr(solicitacao, "usuario", None), "regiao", None)
     if not can_access_regiao(current_user, pedido_regiao):
@@ -439,13 +441,13 @@ def _build_webdav_range_response_from_full_upstream(upstream, remote_path, range
 
 
 def _build_upload_context(os_id):
-    if getattr(current_user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+    if getattr(current_user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES or (active_configuration(current_user) is not None and getattr(current_user, "tipo_usuario", None) not in {"piloto", "equipe_oceano", *VEICULOS_SUPERVISOR_USER_TYPES}):
         context = build_admin_os_form_context(current_user, os_id)
     else:
         _require_piloto()
         context = build_piloto_os_form_context(current_user, os_id)
 
-    if context.get("modo_visualizacao"):
+    if not can_manage_os_media(current_user, context):
         abort(403)
     return context
 

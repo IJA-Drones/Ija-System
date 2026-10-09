@@ -21,14 +21,14 @@
         </div>
 
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-primary btn-sm">
+            <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-clock-history me-1"></i> Histórico
             </a>
-            <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico') }}" class="btn btn-secondary btn-sm">
+            <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico') }}" class="btn btn-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_pecas_historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-box-seam me-1"></i> Peças
             </a>
             <a href="{{ url_for('main.listar_equipamentos') }}"
-               class="btn btn-outline-secondary btn-sm">
+               class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipamentos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
         </div>
@@ -97,19 +97,19 @@
                                     {% if eq.tipo_equipamento == 'drones' %}
                                       <div class="manutencao-actions">
                                         <a href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=eq.id) }}"
-                                           class="btn btn-sm btn-primary">
+                                           class="btn btn-sm btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_pecas', drone_id=eq.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <i class="bi bi-clipboard-plus me-1"></i>
                                             Peças usadas
                                         </a>
                                         <a href="{{ url_for('main.equipamento_manutencao_pdf', drone_id=eq.id) }}"
                                            class="btn btn-sm btn-outline-danger"
-                                           target="_blank">
+                                           target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_pdf', drone_id=eq.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <i class="bi bi-file-earmark-pdf me-1"></i>
                                             PDF
                                         </a>
                                         <form method="post"
                                               action="{{ url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id) }}"
-                                              onsubmit="return confirm('Encerrar a manutenção deste drone?')">
+                                              onsubmit="return confirm('Encerrar a manutenção deste drone?')" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <button type="submit" class="btn btn-sm btn-success">
                                                 <i class="bi bi-check2-circle me-1"></i>
                                                 Encerrar

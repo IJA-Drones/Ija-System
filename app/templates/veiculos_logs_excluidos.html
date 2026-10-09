@@ -18,7 +18,7 @@
         </div>
 
         <div class="header-actions">
-            <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary d-flex align-items-center">
+            <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-arrow-left"></i> Voltar para logs
             </a>
         </div>
@@ -26,7 +26,7 @@
 
     <div class="card shadow-sm rounded-4 mb-4 border-0">
         <div class="card-body">
-            <form method="GET" class="row g-2 align-items-end">
+            <form method="GET" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                 <div class="col-lg-5">
                     <label class="form-label small fw-bold text-muted">Buscar</label>
                     <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Placa, modelo, log, usuario, equipe ou piloto">
@@ -44,7 +44,7 @@
                         <i class="bi bi-search"></i> Filtrar
                     </button>
                     {% if filters.q or filters.data_inicio or filters.data_fim %}
-                        <a href="{{ url_for('main.veiculos_logs_excluidos') }}" class="btn btn-outline-secondary" title="Limpar filtros">
+                        <a href="{{ url_for('main.veiculos_logs_excluidos') }}" class="btn btn-outline-secondary" title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs_excluidos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     {% endif %}
@@ -160,19 +160,19 @@
     <nav class="mt-4">
         <ul class="pagination justify-content-center flex-wrap">
             <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Anterior</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs_excluidos', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim)) if central_ti_url_allowed is defined else true) else 'false' }}">Anterior</a>
             </li>
             {% for p in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
                 {% if p %}
                     <li class="page-item {{ 'active' if p == paginacao.page else '' }}">
-                        <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs_excluidos', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ p }}</a>
                     </li>
                 {% else %}
                     <li class="page-item disabled"><span class="page-link">...</span></li>
                 {% endif %}
             {% endfor %}
             <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Proxima</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs_excluidos', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim)) if central_ti_url_allowed is defined else true) else 'false' }}">Proxima</a>
             </li>
         </ul>
     </nav>

@@ -26,10 +26,10 @@
     {% if denuncia.solicitacao_id %}
     <div class="alert alert-success mb-0">
       <i class="bi bi-check-circle me-2" aria-hidden="true"></i>Esta denúncia já gerou a solicitação #{{ denuncia.solicitacao_id }}.
-      <a class="alert-link" href="{{ url_for('main.editar_solicitacao', id=denuncia.solicitacao_id) }}">Abrir solicitação</a>
+      <a class="alert-link" href="{{ url_for('main.editar_solicitacao', id=denuncia.solicitacao_id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=denuncia.solicitacao_id)) if central_ti_url_allowed is defined else true) else 'false' }}">Abrir solicitação</a>
     </div>
     {% else %}
-    <form method="post" id="formDenunciaSolicitacao" class="form-no-loading">
+    <form method="post" id="formDenunciaSolicitacao" class="form-no-loading" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
       <input type="hidden" name="risco_aereo" value="0">
       {% for name in ['logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'latitude', 'longitude', 'place_id'] %}
       <input type="hidden" name="{{ name }}" value="{{ form[name] }}">
@@ -141,7 +141,7 @@
         </div>
       </fieldset>
       <div class="denuncia-form-actions mt-4">
-        <a href="{{ back_url }}" class="btn btn-outline-secondary">Cancelar</a>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(back_url) if central_ti_url_allowed is defined else true) else 'false' }}">Cancelar</a>
         <button type="submit" class="btn btn-success"><i class="bi bi-send" aria-hidden="true"></i>Criar solicitação</button>
       </div>
     </form>

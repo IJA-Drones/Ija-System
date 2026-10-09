@@ -19,12 +19,12 @@
         {{ 'Conte o que aconteceu para o suporte técnico analisar.' if is_bug_report else 'Escolha o tipo de atendimento para direcionar a conversa automaticamente.' }}
       </p>
     </div>
-    <a href="{{ url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
-  <form method="POST" action="{{ url_for('main.bug_report_novo') if is_bug_report else url_for('main.feedback_novo') }}" class="feedback-form-shell" enctype="multipart/form-data" novalidate>
+  <form method="POST" action="{{ url_for('main.bug_report_novo') if is_bug_report else url_for('main.feedback_novo') }}" class="feedback-form-shell" enctype="multipart/form-data" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bug_report_novo') if is_bug_report else url_for('main.feedback_novo'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
     <div class="feedback-form-main">
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
@@ -41,7 +41,7 @@
               </div>
               <div class="feedback-blocking-list mt-3">
                 {% for bug in active_bugs %}
-                <a href="{{ url_for('main.bug_acompanhamento', topico_id=bug.id) }}">
+                <a href="{{ url_for('main.bug_acompanhamento', topico_id=bug.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bug_acompanhamento', topico_id=bug.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <strong>#{{ bug.id }} {{ bug.titulo }}</strong>
                   <span>{{ bug.atualizado_em.strftime("%d/%m/%Y %H:%M") if bug.atualizado_em else "-" }}</span>
                 </a>
@@ -148,7 +148,7 @@
           </div>
         </div>
         <div class="card-footer bg-transparent border-0 p-4 pt-0 d-flex justify-content-end gap-2 flex-wrap">
-          <a href="{{ url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar') }}" class="btn btn-outline-danger">
+          <a href="{{ url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar') }}" class="btn btn-outline-danger" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar') if is_bug_report else url_for('main.feedback_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-success text-white" {% if is_bug_report and active_bug_count >= max_active_bug_count %}disabled{% endif %}>

@@ -23,7 +23,7 @@
     </div>
 
     <div class="d-flex gap-2">
-      <a href="{{ url_for('main.admin_listar_equipes_uvis') }}" class="btn btn-outline-secondary d-flex align-items-center">
+      <a href="{{ url_for('main.admin_listar_equipes_uvis') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_listar_equipes_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
     </div>

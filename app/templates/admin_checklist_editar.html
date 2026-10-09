@@ -13,10 +13,10 @@
       <div class="text-muted">{{ registro.titulo }} · {{ registro.subtitulo }}</div>
       <div class="small text-muted">{{ actor_nome }} · {{ checklist.data_registro.strftime('%d/%m/%Y %H:%M') }}</div>
     </div>
-    <a href="{{ voltar_url }}" class="btn btn-outline-secondary">Voltar</a>
+    <a href="{{ voltar_url }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(voltar_url) if central_ti_url_allowed is defined else true) else 'false' }}">Voltar</a>
   </div>
   <p class="text-muted">Corrija os dados da inspeção. O responsável, a data e a assinatura originais serão mantidos.</p>
-  <form method="post">
+  <form method="post" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
     {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body">
@@ -72,7 +72,7 @@
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2 justify-content-end">
-      <a href="{{ voltar_url }}" class="btn btn-outline-secondary">Cancelar</a>
+      <a href="{{ voltar_url }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(voltar_url) if central_ti_url_allowed is defined else true) else 'false' }}">Cancelar</a>
       <button type="submit" class="btn btn-primary">Salvar correção</button>
     </div>
   </form>

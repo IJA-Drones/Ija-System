@@ -89,6 +89,13 @@ def can_assign_ti_manager_role(actor) -> bool:
 
 
 def can_manage_admin_user(actor, usuario) -> bool:
+    from app.modules.gestao_ti.permissions import active_configuration, can_delegate_profile, profile_code
+    if (active_configuration(actor) is not None and not is_admin_global_user(actor)
+            and profile_code(usuario) in {"dev", "diretor", "admin", "gestor_ti"}):
+        return False
+    if (active_configuration(actor) is not None and not is_admin_global_user(actor)
+            and not can_delegate_profile(actor, profile_code(usuario))):
+        return False
     target_type = getattr(usuario, "tipo_usuario", None)
     if target_type in {DEV_USER_TYPE, DIRECTOR_USER_TYPE, TI_MANAGER_USER_TYPE}:
         return is_dev_user(actor)

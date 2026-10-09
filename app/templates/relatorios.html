@@ -42,14 +42,14 @@
 
         <div class="rel-actions d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
             <div class="d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
-                <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Abrir relatórios de OS">
+                <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Abrir relatórios de OS" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-clipboard-data-fill"></i>
                     <span>Relatório OS</span>
                 </a>
             </div>
 
             <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" 
-                class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
+                class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.exportar_relatorio_pdf'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                 {% for nome, valor in filtros_exportacao.items() %}
                     <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
                 {% endfor %}
@@ -60,7 +60,7 @@
             </form>
 
             <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" 
-                class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
+                class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.exportar_relatorio_excel'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                 {% for nome, valor in filtros_exportacao.items() %}
                     <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
                 {% endfor %}
@@ -101,7 +101,7 @@
 
 
         <div class="card-body pt-0">
-            <form method="GET">
+            <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                 <div class="row g-2 filter-chip-row">
 
                     <div class="col-md-3">
@@ -171,7 +171,7 @@
 
                         {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or regiao_selecionada or equipe_id_selecionado or foco_values_selecionados %}
                             <a href="{{ url_for(request.endpoint) }}"
-                               class="btn btn-outline-secondary btn-sm w-100">
+                               class="btn btn-outline-secondary btn-sm w-100" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(request.endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                 <i class="bi bi-x-lg"></i> Limpar
                             </a>
                         {% endif %}

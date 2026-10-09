@@ -14,7 +14,7 @@
     <div class="portal-cidadao-nav-links">
       <a href="{{ url_for('main.portal_cidadao') }}#boletim-saude">Boletim de saúde</a>
       <a href="{{ url_for('main.portal_cidadao') }}#portal-relato">Enviar relato</a>
-      <a class="portal-cidadao-nav-report" href="{{ url_for('main.portal_cidadao') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Portal</a>
+      <a class="portal-cidadao-nav-report" href="{{ url_for('main.portal_cidadao') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Portal</a>
     </div>
   </nav>
 
@@ -24,7 +24,7 @@
       <h1>Boletim de arboviroses</h1>
       <p>Dados semanais do InfoDengue para acompanhar o cenário da cidade e apoiar a prevenção.</p>
     </div>
-    <form class="portal-cidadao-report-filter" method="get" action="{{ url_for('main.portal_cidadao_boletim_dengue') }}">
+    <form class="portal-cidadao-report-filter" method="get" action="{{ url_for('main.portal_cidadao_boletim_dengue') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao_boletim_dengue'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
       <label>
         <span>Doença</span>
         <select class="form-select" name="doenca">
@@ -76,7 +76,7 @@
           <span class="portal-cidadao-eyebrow">Série semanal</span>
           <h2>Casos estimados por semana</h2>
         </div>
-        <a class="portal-cidadao-text-link" href="{{ report.source_url }}" target="_blank" rel="noopener noreferrer">
+        <a class="portal-cidadao-text-link" href="{{ report.source_url }}" target="_blank" rel="noopener noreferrer" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(report.source_url) if central_ti_url_allowed is defined else true) else 'false' }}">
           Fonte InfoDengue <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
         </a>
       </div>
@@ -160,7 +160,7 @@
 
   <footer class="portal-cidadao-footer">
     <span><i class="bi bi-patch-check" aria-hidden="true"></i> Dados públicos do InfoDengue</span>
-    <a href="{{ url_for('main.portal_cidadao') }}">Voltar ao Portal do Cidadão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+    <a href="{{ url_for('main.portal_cidadao') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao')) if central_ti_url_allowed is defined else true) else 'false' }}">Voltar ao Portal do Cidadão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
   </footer>
 </main>
 {% endblock auth_content %}

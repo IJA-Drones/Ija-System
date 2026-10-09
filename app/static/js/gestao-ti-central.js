@@ -231,7 +231,10 @@
       const heading = create("span", "ti-module-label", module.label);
       summary.append(glyph, heading, create("span", "ti-module-count"), icon("bi-chevron-down"));
       const fieldset = create("fieldset");
-      fieldset.disabled = !enabled;
+      fieldset.disabled = !enabled || module.id === "sistema.perfis";
+      if (module.id === "sistema.perfis") {
+        fieldset.title = "Acesso reservado aos perfis Dev e Gestor de TI, preservado para administrar permissões.";
+      }
       fieldset.append(create("legend", "visually-hidden", `Ações permitidas em ${module.label}`));
       const tools = create("div", "ti-module-tools");
       [["Marcar todas", true], ["Limpar", false]].forEach(([label, checked]) => {
@@ -239,7 +242,11 @@
         button.type = "button";
         button.setAttribute("aria-label", `${label} em ${module.label}`);
         button.addEventListener("click", () => {
-          module.actions.forEach((action) => draft().permissions[checked ? "add" : "delete"](`${module.id}.${action}`));
+          module.actions.forEach((action) => {
+            const code = `${module.id}.${action}`;
+            if (checked && editorData?.unavailable_permissions?.includes(code)) return;
+            draft().permissions[checked ? "add" : "delete"](code);
+          });
           syncModule(details);
           markChanged();
         });
@@ -252,6 +259,10 @@
         input.type = "checkbox";
         input.dataset.permissionId = `${module.id}.${action}`;
         input.checked = draft().permissions.has(input.dataset.permissionId);
+        if (editorData?.unavailable_permissions?.includes(input.dataset.permissionId)) {
+          input.disabled = true;
+          label.title = "Ação ainda não disponível neste módulo.";
+        }
         input.addEventListener("change", () => {
           draft().permissions[input.checked ? "add" : "delete"](input.dataset.permissionId);
           if (action === "consultar" && !input.checked) module.actions.forEach((item) => draft().permissions.delete(`${module.id}.${item}`));
@@ -276,7 +287,11 @@
 
   function syncModule(element) {
     const inputs = Array.from(element.querySelectorAll("[data-permission-id]"));
-    inputs.forEach((input) => { input.checked = draft().permissions.has(input.dataset.permissionId); });
+    inputs.forEach((input) => {
+      input.checked = input.dataset.permissionId.startsWith("sistema.perfis.")
+        ? ["dev", "gestor_ti"].includes(selectedProfile.id)
+        : draft().permissions.has(input.dataset.permissionId);
+    });
     const count = inputs.filter((input) => input.checked).length;
     const indicator = element.querySelector(".ti-module-count");
     indicator.textContent = `${count}/${inputs.length}`;
@@ -286,7 +301,7 @@
     const diff = changes();
     get("ti-profile-status").textContent = !editorData ? "" : diff.added.length + diff.removed.length
       ? "Alterações não salvas" : stored.get(selectedProfile.id).source === "current_rules"
-        ? "Permissões atuais" : "Configuração em validação";
+        ? "Permissões atuais" : editorData?.active ? "Permissões aplicadas" : "Configuração em validação";
   }
   function refreshSave() {
     get("ti-save").disabled = saving || pendingProfiles().length === 0;
@@ -342,7 +357,7 @@
           confirmButton: "btn btn-primary",
           cancelButton: "btn btn-outline-secondary",
         },
-        footer: editorData ? "Configurações em validação. Os acessos atuais permanecem iguais." : "Prévia visual: nenhuma permissão real será alterada.",
+        footer: editorData?.active ? "Ao confirmar, menus, telas e ações serão atualizados para todos os usuários desses perfis na próxima requisição." : editorData ? "Configurações em validação. Os acessos atuais permanecem iguais." : "Prévia visual: nenhuma permissão real será alterada.",
       });
       if (result.isConfirmed) {
         if (editorData) {
@@ -360,12 +375,16 @@
           if (!response.headers.get("Content-Type")?.includes("application/json")) throw new Error("Não foi possível salvar. Recarregue a central e tente novamente.");
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || "Não foi possível salvar a configuração.");
-          result.profiles.forEach((state) => stored.set(state.id, state));
+          result.profiles.forEach((state) => {
+            stored.set(state.id, state);
+            if (result.active_rules_changed) currentRules.set(state.id, { permissions: new Set(state.permissions), notes: currentRules.get(state.id)?.notes || {} });
+          });
         }
         pending.forEach((profile) => baseline.set(profile.id, copySelection(drafts.get(profile.id))));
         renderProfiles();
         refreshStatus();
-        feedback.textContent = editorData ? "Configuração salva para validação. Os acessos atuais permanecem iguais." : "Simulação salva. Nenhuma permissão real foi alterada.";
+        renderModules();
+        feedback.textContent = editorData?.active ? "Permissões aplicadas. Menus, telas e ações serão atualizados no próximo acesso ou ao recarregar." : editorData ? "Configuração salva para validação. Os acessos atuais permanecem iguais." : "Simulação salva. Nenhuma permissão real foi alterada.";
         feedback.hidden = false;
       }
     } catch (error) {

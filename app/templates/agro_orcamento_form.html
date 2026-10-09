@@ -16,14 +16,14 @@
       <p class="text-muted small mb-0">Monte a proposta comercial com serviço, dados da fazenda e valores separados para apresentação.</p>
     </div>
 
-    <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+    <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Informações principais</h5>
@@ -595,7 +595,7 @@
             {% if orcamento and orcamento.anexo_path %}
               <div class="form-text mt-2">
                 Arquivo atual:
-                <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank">{{ orcamento.anexo_nome }}</a>
+                <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ orcamento.anexo_nome }}</a>
               </div>
             {% endif %}
 
@@ -614,7 +614,7 @@
         </small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-danger btn-sm">
+          <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
 

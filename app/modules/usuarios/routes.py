@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import active_configuration, can_delegate_profile, require_permission
 import re
 import unicodedata
 
@@ -40,7 +42,7 @@ from app.shared.access import (
 
 
 def _admin_only():
-    if not is_admin_global_user(current_user):
+    if not route_access(current_user, is_admin_global_user(current_user)):
         flash("Acesso restrito.", "danger")
         return False
     return True
@@ -300,7 +302,7 @@ def register_routes(bp):
     @bp.route("/admin/usuarios/novo", methods=["GET", "POST"], endpoint="admin_usuario_novo")
     @login_required
     def admin_usuario_novo():
-        if not is_admin_global_user(current_user):
+        if not route_access(current_user, is_admin_global_user(current_user)):
             flash("Voce nao tem permissao para acessar esta pagina.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -313,6 +315,8 @@ def register_routes(bp):
             login = (request.form.get("login") or "").strip()
             tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
             tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
+            if not can_delegate_profile(current_user, tipo_usuario_form):
+                abort(403)
             regiao = normalize_admin_user_regiao(
                 tipo_usuario_form,
                 (request.form.get("regiao") or "").strip() or None,
@@ -458,7 +462,7 @@ def register_routes(bp):
     @bp.route("/admin/usuarios/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_usuario_editar")
     @login_required
     def admin_usuario_editar(id):
-        if not is_admin_global_user(current_user):
+        if not route_access(current_user, is_admin_global_user(current_user)):
             abort(403)
 
         usuario = Usuario.query.get_or_404(id)
@@ -496,6 +500,10 @@ def register_routes(bp):
                 tipo_usuario_form = get_admin_user_type_form_value(usuario)
             else:
                 tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
+                if normalize_admin_user_type(tipo_usuario_form) != usuario.tipo_usuario:
+                    require_permission(current_user, "sistema.usuarios.gerenciar")
+                    if not can_delegate_profile(current_user, tipo_usuario_form):
+                        abort(403)
                 if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
                     abort(403)
                 if tipo_usuario_form == DIRECTOR_USER_TYPE and not can_assign_director_role(current_user):

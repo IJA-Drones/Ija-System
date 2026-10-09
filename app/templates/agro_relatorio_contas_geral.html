@@ -22,13 +22,13 @@
     </div>
 
     <div class="listing-actions relatorio-contas-actions">
-      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_contas')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_relatorio_contas_geral_pdf', **request.args) }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_relatorio_contas_geral_pdf', **request.args) }}" class="btn btn-outline-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_relatorio_contas_geral_pdf', **request.args)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF
       </a>
-      <a href="{{ url_for('main.agro_relatorio_contas_geral_excel', **request.args) }}" class="btn btn-success d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_relatorio_contas_geral_excel', **request.args) }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_relatorio_contas_geral_excel', **request.args)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
     </div>
@@ -96,7 +96,7 @@
 
     <div class="collapse {% if filters.q or filters.movimento or filters.situacao or filters.origem or filters.tipo_saida or filters.mes or filters.ano or filters.data_inicio_raw or filters.data_fim_raw %}show{% endif %}" id="collapseFiltrosRelatorioContas">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_relatorio_contas_geral') }}">
+        <form method="GET" action="{{ url_for('main.agro_relatorio_contas_geral') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_relatorio_contas_geral'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="relatorio-contas-filter-grid">
             <div class="relatorio-contas-filter-field">
               <label>Busca geral</label>
@@ -158,7 +158,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if filters.q or filters.movimento or filters.situacao or filters.origem or filters.tipo_saida or filters.mes or filters.ano or filters.data_inicio_raw or filters.data_fim_raw %}
-                <a href="{{ url_for('main.agro_relatorio_contas_geral') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_relatorio_contas_geral') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_relatorio_contas_geral')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -276,7 +276,7 @@
                       {% if is_editable %}
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                          <a href="{{ item.edit_url }}" class="dropdown-item py-2">
+                          <a href="{{ item.edit_url }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(item.edit_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar
                           </a>
                         </li>
@@ -413,7 +413,7 @@
           </div>
           {% if is_editable %}
             <div class="modal-footer">
-              <a href="{{ item.edit_url }}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+              <a href="{{ item.edit_url }}" class="btn btn-primary d-inline-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(item.edit_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-pencil-square"></i> Editar lançamento
               </a>
             </div>

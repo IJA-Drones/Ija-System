@@ -1,3 +1,5 @@
+from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import active_configuration
 import re
 import unicodedata
 from datetime import date, datetime
@@ -581,13 +583,18 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
 
 
 def deletar_solicitacao_admin(user, solicitacao_id):
-    if not is_admin_global_user(user):
+    if not route_access(user, is_admin_global_user(user)):
         raise SolicitacaoAccessError(
             "Permiss\u00e3o negada. Apenas administradores podem deletar registros.",
             redirect_endpoint="main.admin_dashboard",
         )
 
-    pedido = Solicitacao.query.get_or_404(solicitacao_id)
+    if active_configuration(user) is not None:
+        from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
+        query = apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
+        pedido = apply_solicitacao_regiao_scope(query, user).filter(Solicitacao.id == solicitacao_id).first_or_404()
+    else:
+        pedido = Solicitacao.query.get_or_404(solicitacao_id)
     pedido_id = pedido.id
     autor_nome = pedido.usuario.nome_uvis if pedido.usuario else "UVIS"
 

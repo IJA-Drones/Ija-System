@@ -20,10 +20,10 @@
       <p class="text-muted small mb-0">Peças vinculadas a drones e disponibilidade para manutenção.</p>
     </div>
     <div class="page-toolbar-actions">
-      <a href="{{ url_for('main.estoque_export_excel') }}" class="btn btn-secondary fw-bold">
+      <a href="{{ url_for('main.estoque_export_excel') }}" class="btn btn-secondary fw-bold" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_export_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
       </a>
-      <a href="{{ url_for('main.estoque_novo') }}" class="btn btn-primary fw-bold">
+      <a href="{{ url_for('main.estoque_novo') }}" class="btn btn-primary fw-bold" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-plus-lg me-1"></i> Nova peça
       </a>
     </div>
@@ -73,10 +73,10 @@
               </td>
               <td class="text-end pe-3">
                 <div class="estoque-listar-actions">
-                  <a href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar peça" title="Editar peça">
+                  <a href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar peça" title="Editar peça" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_editar', peca_id=peca.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-pencil"></i>
                   </a>
-                  <form method="post" action="{{ url_for('main.estoque_deletar', peca_id=peca.id) }}" onsubmit="return confirm('Remover esta peça do estoque?')">
+                  <form method="post" action="{{ url_for('main.estoque_deletar', peca_id=peca.id) }}" onsubmit="return confirm('Remover esta peça do estoque?')" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_deletar', peca_id=peca.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                     <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Excluir peça" title="Excluir peça"><i class="bi bi-trash"></i></button>
                   </form>
                 </div>

@@ -47,7 +47,7 @@
       <h2 class="text-dark m-0"><i class="bi bi-ui-checks-grid text-primary me-2"></i>Checklist Semanal Unificado</h2>
       <p class="text-muted small m-0">Inspecao obrigatoria de frota e equipamentos</p>
     </div>
-    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
   </div>
@@ -57,7 +57,7 @@
     <div class="checklist-intro-text">Revise primeiro o veiculo, depois o drone e finalize com os dados do responsavel. O ultimo checklist salvo continua sendo usado como base para reduzir retrabalho.</div>
   </div>
 
-  <form method="post" id="formChecklist">
+  <form method="post" id="formChecklist" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
     <div class="summary-row mb-4">
       <div class="summary-card">
         <div class="label">Veiculo</div>

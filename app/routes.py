@@ -1,4 +1,5 @@
 from flask import Blueprint
+from app.modules.gestao_ti.permissions import register_permission_security
 from app.core.errors import register_error_handlers
 from app.core.routes import register_core_routes
 from app.core.templating import register_template_helpers
@@ -43,6 +44,7 @@ from app.modules.vigilancia import register_routes as register_vigilancia_routes
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
 bp = Blueprint("main", __name__)
+register_permission_security(bp)
 register_core_routes(bp)
 register_error_handlers(bp)
 register_template_helpers(bp)
@@ -82,3 +84,10 @@ register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)
 register_veiculos_routes(bp)
 register_vigilancia_routes(bp)
+
+
+@bp.record_once
+def validate_central_ti_routes(state):
+    if state.app.config.get("CENTRAL_TI_ENABLED") and state.app.config.get("CENTRAL_TI_ENFORCE_PERMISSIONS"):
+        from app.modules.gestao_ti.permissions import validate_route_policy
+        validate_route_policy(state.app)

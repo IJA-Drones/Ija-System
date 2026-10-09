@@ -22,14 +22,14 @@
     </div>
 
     <div class="listing-actions contas-receber-actions">
-      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_contas')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-circle-fill"></i> Novo recebível
         </a>
-        <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_entrada_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-circle-fill"></i> Nova entrada
         </a>
       {% endif %}
@@ -37,7 +37,7 @@
   </div>
 
   <div class="contas-receber-shortcuts">
-    <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="contas-receber-shortcut {% if not filters.origem %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="contas-receber-shortcut {% if not filters.origem %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-receber-shortcut-head">
         <span class="contas-receber-shortcut-icon">
           <i class="bi bi-grid"></i>
@@ -46,7 +46,7 @@
       </div>
       <p class="contas-receber-shortcut-copy">Visao completa com recebiveis de contrato e entradas manuais no mesmo lugar.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}" class="contas-receber-shortcut {% if filters.origem == 'recebivel' %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}" class="contas-receber-shortcut {% if filters.origem == 'recebivel' %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar', origem='recebivel')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-receber-shortcut-head">
         <span class="contas-receber-shortcut-icon">
           <i class="bi bi-receipt-cutoff"></i>
@@ -55,7 +55,7 @@
       </div>
       <p class="contas-receber-shortcut-copy">Mostra apenas os lancamentos vinculados aos contratos e ao fluxo comercial.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="contas-receber-shortcut {% if filters.origem == 'entrada' %}is-active{% endif %}">
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="contas-receber-shortcut {% if filters.origem == 'entrada' %}is-active{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar', origem='entrada')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <div class="contas-receber-shortcut-head">
         <span class="contas-receber-shortcut-icon">
           <i class="bi bi-box-arrow-in-down-right"></i>
@@ -127,7 +127,7 @@
 
     <div class="collapse {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}show{% endif %}" id="collapseFiltrosContasReceber">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_contas_receber_listar') }}">
+        <form method="GET" action="{{ url_for('main.agro_contas_receber_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-4">
               <label class="small text-muted mb-1">Busca geral</label>
@@ -164,7 +164,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}
-                <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -235,14 +235,14 @@
                   <td>
                     <div class="d-flex flex-wrap gap-2">
                       {% if item.can_quick_receive %}
-                        <form method="POST" action="{{ item.quick_receive_url }}" class="m-0">
+                        <form method="POST" action="{{ item.quick_receive_url }}" class="m-0" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(item.quick_receive_url, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                           <button type="submit" class="btn btn-sm btn-outline-success shadow-sm d-inline-flex align-items-center gap-1" onclick="return confirm('Confirmar o recebimento desta OS concluida com o valor integral do contrato?');">
                             <i class="bi bi-cash-coin"></i>
                             <span>Receber</span>
                           </button>
                         </form>
                       {% endif %}
-                      <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1">
+                      <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(item.edit_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-pencil-square"></i>
                         <span>Editar</span>
                       </a>

@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, jsonify, render_template, request
 from flask_login import current_user, login_required
 from werkzeug.exceptions import HTTPException
@@ -10,7 +11,7 @@ IMPORT_ALLOWED_ROLES = {"dev", "diretor", "admin", "operario", "operador", "pref
 
 
 def _require_import_permission():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in IMPORT_ALLOWED_ROLES:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in IMPORT_ALLOWED_ROLES):
         abort(403)
 
 

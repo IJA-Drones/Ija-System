@@ -20,7 +20,7 @@
       </p>
     </div>
     <div class="page-toolbar-actions">
-      <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm">
+      <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencao')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
     </div>
@@ -28,7 +28,7 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0 mb-4 registro-pecas-card">
     <div class="card-body p-4">
-      <form method="post" novalidate>
+      <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
           <div>
             <h5 class="text-primary fw-bold mb-1">Selecionar peças</h5>
@@ -94,7 +94,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-5 registro-pecas-actions">
-          <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-danger btn-sm">Cancelar</a>
+          <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencao')) if central_ti_url_allowed is defined else true) else 'false' }}">Cancelar</a>
           <button type="submit" class="btn btn-primary px-4 fw-bold" {% if not pecas %}disabled{% endif %}>
             <i class="bi bi-check-lg me-1"></i> Registrar peças usadas
           </button>

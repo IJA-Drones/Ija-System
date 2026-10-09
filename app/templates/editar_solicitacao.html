@@ -39,7 +39,7 @@
         <div class="card-body p-4">
             
             {# Rota genérica atualizada #}
-            <form action="{{ url_for('main.editar_solicitacao', id=pedido.id) }}" method="POST">
+            <form action="{{ url_for('main.editar_solicitacao', id=pedido.id) }}" method="POST" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=pedido.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                 <input type="hidden" name="latitude" value="{{ pedido.latitude if pedido.latitude is not none else '' }}">
                 <input type="hidden" name="longitude" value="{{ pedido.longitude if pedido.longitude is not none else '' }}">
                 <input type="hidden" name="risco_aereo" value="{{ '1' if pedido.area_restrita else '0' }}">
@@ -252,7 +252,7 @@
 
                 {# BOTÕES #}
                 <div class="d-flex justify-content-end gap-2 mt-5">
-                    <a href="{{ url_for('main.admin_dashboard' if is_admin else 'main.dashboard') }}" class="btn btn-outline-danger px-4">
+                    <a href="{{ url_for('main.admin_dashboard' if is_admin else 'main.dashboard') }}" class="btn btn-outline-danger px-4" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard' if is_admin else 'main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-x-lg me-1"></i> Cancelar
                     </a>
                     <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold">

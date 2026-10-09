@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -13,7 +14,7 @@ from app.shared.access import VEICULOS_SUPERVISOR_USER_TYPES, is_admin_global_us
 
 
 def _admin_only():
-    if not is_admin_global_user(current_user) and normalize_role(getattr(current_user, "tipo_usuario", None)) not in VEICULOS_SUPERVISOR_USER_TYPES:
+    if not route_access(current_user, is_admin_global_user(current_user) or normalize_role(getattr(current_user, 'tipo_usuario', None)) in VEICULOS_SUPERVISOR_USER_TYPES):
         abort(403)
 
 

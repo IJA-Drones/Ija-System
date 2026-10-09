@@ -1,0 +1,5 @@
+/* Visibility follows server-rendered capability metadata. */
+[data-ti-allowed="false"]:not(form) { display: none !important; }
+form[data-ti-allowed="false"] button[type="submit"],
+form[data-ti-allowed="false"] button:not([type]),
+form[data-ti-allowed="false"] input[type="submit"] { display: none !important; }

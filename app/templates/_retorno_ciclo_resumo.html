@@ -36,7 +36,7 @@
           {% endif %}
           {% set node_classes = 'retorno-ciclo-node-pill text-' ~ node.color %}
           {% if node.detail_url %}
-            <a href="{{ node.detail_url }}" class="{{ node_classes }} text-decoration-none" title="{{ node.status }}">
+            <a href="{{ node.detail_url }}" class="{{ node_classes }} text-decoration-none" title="{{ node.status }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(node.detail_url) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi {{ node.icon }} me-1"></i>{{ node.label }}{% if node.is_current %} atual{% endif %}
             </a>
           {% else %}

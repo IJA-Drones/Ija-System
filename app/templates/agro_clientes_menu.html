@@ -20,7 +20,7 @@
 
   <div class="row g-3">
     <div class="col-md-6">
-      <a href="{{ financeiro_consulta_url('main.agro_clientes_listar') }}" class="text-decoration-none">
+      <a href="{{ financeiro_consulta_url('main.agro_clientes_listar') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_clientes_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 agro-clientes-menu-card">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -38,15 +38,15 @@
         </div>
       </a>
 
-      {% if can_edit_clientes %}
-        <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success btn-sm mt-3 d-inline-flex align-items-center gap-2">
+      {% if (central_ti_ui_guard(['main.agro_cliente_novo'], (can_edit_clientes)) if central_ti_ui_guard is defined else (can_edit_clientes)) %}
+        <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success btn-sm mt-3 d-inline-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_cliente_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-lg"></i> Novo Cliente
         </a>
       {% endif %}
     </div>
 
     <div class="col-md-6">
-      <a href="{{ financeiro_consulta_url('main.agro_fornecedores_listar') }}" class="text-decoration-none">
+      <a href="{{ financeiro_consulta_url('main.agro_fornecedores_listar') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(financeiro_consulta_url('main.agro_fornecedores_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 agro-clientes-menu-card">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -64,8 +64,8 @@
         </div>
       </a>
 
-      {% if can_edit_fornecedores %}
-        <a href="{{ url_for('main.agro_fornecedor_novo') }}" class="btn btn-primary btn-sm mt-3 d-inline-flex align-items-center gap-2">
+      {% if (central_ti_ui_guard(['main.agro_fornecedor_novo'], (can_edit_fornecedores)) if central_ti_ui_guard is defined else (can_edit_fornecedores)) %}
+        <a href="{{ url_for('main.agro_fornecedor_novo') }}" class="btn btn-primary btn-sm mt-3 d-inline-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_fornecedor_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-plus-lg"></i> Novo Fornecedor
         </a>
       {% endif %}

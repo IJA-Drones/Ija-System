@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import capability
 from datetime import datetime
 import os
 import uuid
@@ -94,10 +95,12 @@ def can_attend_support(user) -> bool:
     return bool(get_user_support_sectors(user))
 
 
+@capability(['sistema.suporte.criar'])
 def can_open_support_ticket(user) -> bool:
     return is_regional_user(user) or is_covisa_user(user)
 
 
+@capability(['sistema.suporte.consultar'])
 def can_access_feedback(user) -> bool:
     return is_admin_global_user(user) or can_attend_support(user) or can_open_support_ticket(user)
 

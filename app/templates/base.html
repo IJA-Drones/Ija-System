@@ -72,6 +72,10 @@
     {% if is_financeiro_context %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/financeiro-central.css', v='20261007d') }}">
     {% endif %}
+    {% if central_ti_profile_active|default(false) %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/permission-controls.css', v='20261009a') }}">
+    <script src="{{ url_for('static', filename='js/permission-controls.js', v='20261009a') }}" defer></script>
+    {% endif %}
     {% block extra_styles %}{% endblock %}
 
     <script>
@@ -106,6 +110,9 @@
         {% set navbar_home_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
       {% endif %}
     {% endif %}
+    {% if central_ti_profile_active|default(false) and not central_ti_url_allowed(url_for(navbar_home_endpoint)) %}
+      {% set navbar_home_endpoint = 'main.acessos_dashboard' %}
+    {% endif %}
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
@@ -124,7 +131,7 @@
         <a
           class="navbar-brand {% if is_financeiro_context %}finance-navbar-brand {% endif %}d-flex align-items-center gap-2 me-3"
           href="{{ url_for(navbar_home_endpoint) }}"
-        >
+         data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(navbar_home_endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
           {% if is_financeiro_context %}
           <i class="bi bi-bank finance-navbar-icon" aria-hidden="true"></i>
           <span class="finance-navbar-title">Central Financeiro</span>
@@ -174,18 +181,18 @@
               >
             </li>
             {% endif %}
-            {% if can_access_financeiro_context or (is_global_admin and can_access_agro_context) %}
+            {% if can_access_financeiro_context or (is_global_admin and can_access_agro_context) or central_ti_profile_active|default(false) %}
             <li class="px-2 pb-2 mb-2 border-bottom">
               <div class="admin-context-switch admin-context-switch-dropdown admin-context-switch-extended {% if is_agro_context %}is-agro{% elif is_financeiro_context %}is-financeiro{% else %}is-uvis{% endif %}" role="group" aria-label="Selecionar central">
                 <span class="admin-context-switch-thumb" aria-hidden="true"></span>
-                {% if is_global_admin %}
+                {% if is_global_admin or (central_ti_profile_active|default(false) and central_ti_permission('area:prefeitura')) %}
                 <button
                   type="button"
                   class="admin-context-btn {% if not is_agro_context and not is_financeiro_context %}is-active{% endif %}"
                   data-admin-context="uvis_prefeitura"
                   data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
                   aria-pressed="{{ 'true' if not is_agro_context and not is_financeiro_context else 'false' }}"
-                >
+                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
                   <span>UVIS e Prefeitura</span>
                 </button>
@@ -197,7 +204,7 @@
                   data-admin-context="agro"
                   data-admin-context-url="{{ url_for('main.admin_agro') }}"
                   aria-pressed="{{ 'true' if is_agro_context else 'false' }}"
-                >
+                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
                   <span>Agro</span>
                 </button>
@@ -209,7 +216,7 @@
                   data-admin-context="financeiro"
                   data-admin-context-url="{{ url_for('main.financeiro_central') }}"
                   aria-pressed="{{ 'true' if is_financeiro_context else 'false' }}"
-                >
+                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <span class="admin-context-btn-icon"><i class="bi bi-bank"></i></span>
                   <span>Financeiro</span>
                 </button>
@@ -232,7 +239,7 @@
               <a
                 class="dropdown-item rounded-pill text-danger d-flex align-items-center justify-content-between"
                 href="{{ url_for('auth.logout') }}"
-              >
+               data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('auth.logout')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <span>Sair</span>
                 <i class="bi bi-box-arrow-right"></i>
               </a>
@@ -268,9 +275,13 @@
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
+          {% if central_ti_profile_active|default(false) %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.acessos_dashboard' %}active{% endif %}" href="{{ url_for('main.acessos_dashboard') }}"><i class="bi bi-grid-fill me-2"></i><span>Seus acessos</span></a></li>
+          {% include '_central_ti_menu.html' %}
+          {% else %}
           {% if current_user.tipo_usuario == 'dev' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint == 'main.central_ti' %}active{% endif %}" href="{{ url_for('main.central_ti') }}">
+            <a class="nav-link {% if request.endpoint == 'main.central_ti' %}active{% endif %}" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-shield-check me-2"></i><span>Central de TI</span>
             </a>
           </li>
@@ -279,7 +290,7 @@
             <a
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
               href="{{ url_for(sidebar_dashboard_endpoint) }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(sidebar_dashboard_endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill') }} me-2"></i><span>{{ 'Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Empresas' if is_financeiro_context else 'Dashboard') }}</span>
             </a>
           </li>
@@ -287,7 +298,7 @@
           {% if is_financeiro_context %}
             {% if empresa_financeiro %}
             <li class="nav-item">
-              <a class="nav-link {% if request.endpoint == 'main.financeiro_empresa' %}active{% endif %}" href="{{ url_for('main.financeiro_empresa', empresa_slug=empresa_financeiro.slug) }}" {% if request.endpoint == 'main.financeiro_empresa' %}aria-current="page"{% endif %}>
+              <a class="nav-link {% if request.endpoint == 'main.financeiro_empresa' %}active{% endif %}" href="{{ url_for('main.financeiro_empresa', empresa_slug=empresa_financeiro.slug) }}" {% if request.endpoint == 'main.financeiro_empresa' %}aria-current="page"{% endif %} data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug=empresa_financeiro.slug)) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-grid-fill me-2"></i><span>Visão geral</span>
               </a>
             </li>
@@ -300,7 +311,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.bug_report_novo', 'main.bug_acompanhamento'] or (request.endpoint == 'main.feedback_novo' and request.args.get('tipo') == 'bug') %}active{% endif %}"
               href="{{ url_for('main.bug_report_novo') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bug_report_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-bug-fill me-2"></i><span>Reportar bug</span>
             </a>
           </li>
@@ -308,7 +319,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.bugs_listar', 'main.bug_acompanhamento', 'main.bugs_ajuda'] %}active{% endif %}"
               href="{{ url_for('main.bugs_listar') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.bugs_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-inbox-fill me-2"></i><span>Caixa de bugs</span>
             </a>
           </li>
@@ -318,7 +329,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_detalhe'] %}active{% endif %}"
               href="{{ url_for('main.feedback_listar') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.feedback_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-tools me-2"></i><span>Bugs reportados</span>
               {% if support_nav_count and support_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ support_nav_count }}</span>
@@ -348,7 +359,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
               href="{{ url_for('main.admin_historico_os') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
@@ -357,7 +368,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_dosagem' %}active{% endif %}"
               href="{{ url_for('main.piloto_dosagem') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_dosagem')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
             </a>
           </li>
@@ -365,7 +376,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_checklist_semanal' %}active{% endif %}"
               href="{{ url_for('main.piloto_checklist_semanal') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_checklist_semanal')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-ui-checks-grid me-2"></i><span>Checklist Semanal</span>
             </a>
           </li>
@@ -383,7 +394,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' or (request.endpoint == 'main.equipe_uvis_os_formulario_view' and request.args.get('voltar') == 'historico') %}active{% endif %}"
               href="{{ url_for('main.equipe_uvis_os_historico') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipe_uvis_os_historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-clock-history me-2"></i><span>Histórico Operacional</span>
             </a>
           </li>
@@ -392,7 +403,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_os_historico' %}active{% endif %}"
               href="{{ url_for('main.piloto_os_historico') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_os_historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
@@ -401,7 +412,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_caixa_entrada' %}active{% endif %}"
               href="{{ url_for('main.piloto_caixa_entrada') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_caixa_entrada')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-inbox-fill me-2"></i><span>Caixa de Entrada</span>
               {% if limpeza_alertas_operacionais_count and limpeza_alertas_operacionais_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">
@@ -415,7 +426,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
               href="{{ url_for('main.agenda') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agenda')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
           </li>
@@ -423,7 +434,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_dosagem' %}active{% endif %}"
               href="{{ url_for('main.piloto_dosagem') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_dosagem')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
             </a>
           </li>
@@ -431,7 +442,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_checklist_semanal' %}active{% endif %}"
               href="{{ url_for('main.piloto_checklist_semanal') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_checklist_semanal')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-ui-checks-grid me-2"></i><span>Checklist Semanal</span>
             </a>
           </li>
@@ -447,7 +458,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_veiculos' and request.args.get('acao') != 'abrir_turno' %}active{% endif %}"
               href="{{ url_for('main.piloto_veiculos') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-truck-front-fill me-2"></i><span>Veículos da Equipe</span>
             </a>
           </li>
@@ -456,7 +467,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.agro_piloto_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"
               href="{{ url_for('main.agro_piloto_os_listar') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-clipboard2-data-fill me-2"></i><span>Minhas OS</span>
             </a>
           </li>
@@ -465,7 +476,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.uvis_historico_os', 'main.uvis_os_formulario_view'] %}active{% endif %}"
               href="{{ url_for('main.uvis_historico_os') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.uvis_historico_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
@@ -490,7 +501,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
               href="{{ url_for('main.notificacoes') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.notificacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-bell-fill me-2"></i><span>Notificações</span>
               {% if notif_count and notif_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px"
@@ -563,7 +574,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint == 'main.agro_clientes_menu' %}active{% endif %}"
                     href="{{ url_for('main.agro_clientes_menu') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_clientes_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-grid-1x2-fill me-2"></i><span>Visão Geral</span>
                   </a>
                 </li>
@@ -571,7 +582,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_clientes_listar', 'main.agro_cliente_novo', 'main.agro_cliente_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_clientes_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_clientes_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-people-fill me-2"></i><span>Clientes</span>
                   </a>
                 </li>
@@ -579,7 +590,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_fornecedores_listar', 'main.agro_fornecedor_novo', 'main.agro_fornecedor_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_fornecedores_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_fornecedores_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-buildings-fill me-2"></i><span>Fornecedores</span>
                   </a>
                 </li>
@@ -608,7 +619,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_orcamentos_listar', 'main.agro_orcamento_novo', 'main.agro_orcamento_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_orcamentos_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-file-earmark-text-fill me-2"></i><span>Orçamentos</span>
                   </a>
                 </li>
@@ -616,7 +627,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_orcamentos_template_mapeamento', 'main.agro_rd_mapeamento_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_orcamentos_template_mapeamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-map-fill me-2"></i><span>Mapeamentos</span>
                   </a>
                 </li>
@@ -624,7 +635,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_contratos_listar', 'main.agro_contrato_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_contratos_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-file-earmark-text-fill me-2"></i><span>Contratos</span>
                   </a>
                 </li>
@@ -653,7 +664,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint == 'main.agro_contratos_template' %}active{% endif %}"
                     href="{{ url_for('main.agro_contratos_template') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_template')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-diagram-3-fill me-2"></i><span>Contratos Aprovados</span>
                   </a>
                 </li>
@@ -662,7 +673,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_os_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-clipboard2-data-fill me-2"></i><span>Ordens de Servico</span>
                   </a>
                 </li>
@@ -670,7 +681,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_logs_voo', 'main.agro_logs_voo_exportar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_logs_voo') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_logs_voo')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-airplane-engines-fill me-2"></i><span>Logs de Voo</span>
                   </a>
                 </li>
@@ -678,7 +689,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_equipes_listar', 'main.agro_equipe_nova', 'main.agro_equipe_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_equipes_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_equipes_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-diagram-3-fill me-2"></i><span>Equipes</span>
                   </a>
                 </li>
@@ -686,16 +697,16 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_pilotos_listar', 'main.agro_piloto_novo', 'main.agro_piloto_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_pilotos_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_pilotos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-person-badge-fill me-2"></i><span>Pilotos</span>
                   </a>
                 </li>
-                {% if is_admin_panel_user %}
+                {% if is_admin_panel_user or (central_ti_profile_active|default(false) and central_ti_permission('area:prefeitura')) %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_talentos_listar', 'main.agro_talento_novo', 'main.agro_talento_detalhe', 'main.agro_talento_pdf'] %}active{% endif %}"
                     href="{{ url_for('main.agro_talentos_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-person-vcard-fill me-2"></i><span>Banco de Talentos</span>
                   </a>
                 </li>
@@ -704,7 +715,7 @@
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar', 'main.agro_importar_planilha_drones'] %}active{% endif %}"
                     href="{{ url_for('main.agro_equipamentos_listar') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_equipamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-cpu-fill me-2"></i><span>Equipamentos</span>
                   </a>
                 </li>
@@ -719,7 +730,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.relatorios_coleta_imagens' %}active{% endif %}"
               href="{{ url_for('main.relatorios_coleta_imagens') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_coleta_imagens')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-images me-2"></i><span>Coleta de Imagens</span>
             </a>
           </li>
@@ -730,7 +741,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os', 'main.relatorios_coleta_imagens'] %}active{% endif %}"
               href="{{ url_for('main.relatorios') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-bar-chart-fill me-2"></i><span>Relatórios</span>
             </a>
           </li>
@@ -738,7 +749,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
               href="{{ url_for('main.agenda') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agenda')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
           </li>
@@ -748,7 +759,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.painel_operacional' %}active{% endif %}"
               href="{{ url_for('main.painel_operacional') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.painel_operacional')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-command me-2"></i><span>Painel Operacional</span>
             </a>
           </li>
@@ -756,7 +767,7 @@
             <a
               class="nav-link {% if request.endpoint in ['main.estoque_listar', 'main.estoque_novo', 'main.estoque_editar'] %}active{% endif %}"
               href="{{ url_for('main.estoque_listar') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-box-seam-fill me-2"></i><span>Estoque</span>
             </a>
           </li>
@@ -772,17 +783,17 @@
     <div class="collapse" id="menuUsuarios">
       <ul class="nav flex-column sub-nav">
         <li class="nav-item">
-          <a class="nav-link sub-link" href="{{ url_for('main.admin_prefeituras') }}">
+          <a class="nav-link sub-link" href="{{ url_for('main.admin_prefeituras') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_prefeituras')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-buildings me-2"></i><span>Prefeituras</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link sub-link" href="{{ url_for('main.admin_usuarios_listar') }}">
+          <a class="nav-link sub-link" href="{{ url_for('main.admin_usuarios_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuarios_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-list-ul me-2"></i><span>Listar</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link sub-link" href="{{ url_for('main.admin_usuario_novo') }}">
+          <a class="nav-link sub-link" href="{{ url_for('main.admin_usuario_novo') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_usuario_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
           </a>
         </li>
@@ -797,7 +808,7 @@
     <a
       class="nav-link {% if request.endpoint in ['main.clientes_menu', 'main.listar_clientes', 'main.cadastrar_clientes', 'main.editar_cliente', 'main.admin_uvis_listar', 'main.admin_uvis_novo', 'main.admin_uvis_editar'] %}active{% endif %}"
       href="{{ url_for('main.clientes_menu') }}"
-    >
+     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.clientes_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-people-fill me-2"></i><span>Clientes</span>
     </a>
   </li>
@@ -808,7 +819,7 @@
     <a
       class="nav-link {% if request.endpoint == 'main.admin_logs_usuarios' %}active{% endif %}"
       href="{{ url_for('main.admin_logs_usuarios') }}"
-    >
+     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-clipboard-data-fill me-2"></i><span>Logs de Usuário</span>
     </a>
   </li>
@@ -818,7 +829,7 @@
     <a
       class="nav-link {% if request.endpoint == 'main.dev_dashboard' %}active{% endif %}"
       href="{{ url_for('main.dev_dashboard') }}"
-    >
+     data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dev_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-terminal-fill me-2"></i><span>Painel Dev</span>
     </a>
   </li>
@@ -846,7 +857,7 @@
                   <a
                     class="nav-link sub-link"
                     href="{{ url_for('main.listar_pilotos') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_pilotos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
@@ -855,7 +866,7 @@
                   <a
                     class="nav-link sub-link"
                     href="{{ url_for('main.cadastrar_pilotos') }}"
-                  >
+                   data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_pilotos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-person-plus-fill me-2"></i
                     ><span>Cadastrar</span>
                   </a>
@@ -870,7 +881,7 @@
           {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.listar_equipamentos', 'main.importar_planilha_drones'] %}active{% endif %}"
-              href="{{ url_for('main.listar_equipamentos') }}">
+              href="{{ url_for('main.listar_equipamentos') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipamentos')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
             </a> 
           </li>
@@ -878,7 +889,7 @@
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_rastreamento', 'main.veiculos_logs', 'main.veiculos_limpezas', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
-               href="{{ url_for('main.veiculos_menu') }}">
+               href="{{ url_for('main.veiculos_menu') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <span>
                 <i class="bi bi-truck-front-fill me-2"></i>
                 <span>Veículos</span>
@@ -893,7 +904,7 @@
           {% if current_user.trabalha_oceano_azul %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.veiculos_alertas_limpeza' %}active{% endif %}"
-               href="{{ url_for('main.veiculos_alertas_limpeza') }}">
+               href="{{ url_for('main.veiculos_alertas_limpeza') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_alertas_limpeza')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-droplet-half me-2"></i><span>Alertas Limpeza</span>
               {% if limpeza_alertas_admin_count and limpeza_alertas_admin_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">
@@ -919,7 +930,7 @@
             <div class="collapse" id="menuEquipes">
               <ul class="nav flex-column sub-nav">
                 <li class="nav-item">
-                  <a class="nav-link sub-link" href="{{ url_for('main.listar_equipes') }}">
+                  <a class="nav-link sub-link" href="{{ url_for('main.listar_equipes') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipes')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
@@ -927,7 +938,7 @@
                 {# ✅ Somente ADMIN pode cadastrar equipes da Oceano Azul #}
                 {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
                 <li class="nav-item">
-                  <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_equipes') }}">
+                  <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_equipes') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_equipes')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
                   </a>
                 </li>
@@ -955,7 +966,7 @@
                 {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
                 <li class="nav-item">
                   <a class="nav-link sub-link {% if request.endpoint in ['main.admin_listar_equipes_uvis','main.admin_listar_membros_equipe_uvis'] %}active{% endif %}"
-                    href="{{ url_for('main.admin_listar_equipes_uvis') }}">
+                    href="{{ url_for('main.admin_listar_equipes_uvis') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_listar_equipes_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-key-fill me-2"></i><span>Acessos</span>
                   </a>
                 </li>
@@ -965,14 +976,14 @@
                 {% if current_user.tipo_usuario == 'uvis' %}
                 <li class="nav-item">
                   <a class="nav-link sub-link {% if request.endpoint in ['main.listar_equipes_uvis','main.listar_membros_equipe_uvis'] %}active{% endif %}"
-                    href="{{ url_for('main.listar_equipes_uvis') }}">
+                    href="{{ url_for('main.listar_equipes_uvis') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipes_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
 
                 <li class="nav-item">
                   <a class="nav-link sub-link {% if request.endpoint == 'main.criar_equipe_uvis' %}active{% endif %}"
-                    href="{{ url_for('main.criar_equipe_uvis') }}">
+                    href="{{ url_for('main.criar_equipe_uvis') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.criar_equipe_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
                   </a>
                 </li>
@@ -989,7 +1000,7 @@
             <a
               class="nav-link {% if request.endpoint == 'main.uvis_acesso_operacional' %}active{% endif %}"
               href="{{ url_for('main.uvis_acesso_operacional') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.uvis_acesso_operacional')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-person-workspace me-2"></i><span>Acesso Operacional</span>
             </a>
           </li>
@@ -998,14 +1009,14 @@
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
               href="{{ url_for('main.agenda') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agenda')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
           </li>
           {% endif %}
           <li class="nav-item">
             <a href="{{ url_for('main.mapa_relatorio') }}" 
-              class="nav-link {{ 'active' if request.endpoint == 'main.mapa_relatorio' }}">
+              class="nav-link {{ 'active' if request.endpoint == 'main.mapa_relatorio' }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.mapa_relatorio')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-geo-fill me-2"></i>
               <span>Mapas</span>
               <span class="badge rounded-pill bg-danger ms-auto small animate-pulse" style="font-size: 0.6rem;">LIVE</span>
@@ -1015,20 +1026,21 @@
             <a
               class="nav-link {% if request.endpoint == 'main.consultar_endereco_geolocalizacao' %}active{% endif %}"
               href="{{ url_for('main.consultar_endereco_geolocalizacao') }}"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.consultar_endereco_geolocalizacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-search me-2"></i><span>Geolocalização</span>
             </a>
           </li>
           {% if is_dev_user(current_user) %}
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint in ['main.backups_list_page','main.backup_page'] %}active{% endif %}"
-                href="{{ url_for('main.backups_list_page') }}">
+                href="{{ url_for('main.backups_list_page') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.backups_list_page')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-database-down me-2"></i><span>Backups</span>
               </a>
             </li>
           {% endif %}
           {% endif %}
 
+          {% endif %}
           {% endif %}
           {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">

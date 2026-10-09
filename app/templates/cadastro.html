@@ -24,7 +24,7 @@
   {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="POST" id="formNovoPedido" class="form-no-loading">
+      <form method="POST" id="formNovoPedido" class="form-no-loading" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% set form = form_values or {} %}
         <input type="hidden" name="risco_aereo" id="risco_aereo" value="0" />
         {# SEÇÃO 1: AGENDAMENTO #}
@@ -465,7 +465,7 @@
           <a
             href="{{ url_for('main.dashboard') }}"
             class="btn btn-outline-danger px-4"
-          >
+           data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
           <button type="submit" id="btnEnviarPedido" class="btn btn-primary px-5 shadow-sm fw-bold">

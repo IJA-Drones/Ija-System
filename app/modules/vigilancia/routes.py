@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 """Prévia CSV autenticada, sem carga no banco nem chamadas externas."""
 
 import secrets
@@ -49,7 +50,7 @@ def _preview_access_required(view):
             if _is_api():
                 return jsonify(error="Autenticação necessária."), 401
             return current_app.login_manager.unauthorized()
-        if not (is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)):
+        if not route_access(current_user, is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)):
             return _access_failure("Acesso restrito à administração responsável.", 403)
         return view(*args, **kwargs)
 

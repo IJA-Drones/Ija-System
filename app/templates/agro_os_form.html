@@ -21,11 +21,11 @@
     </div>
 
     <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('main.agro_piloto_os_listar' if pilot_form_mode else 'main.agro_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_piloto_os_listar' if pilot_form_mode else 'main.agro_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_os_listar' if pilot_form_mode else 'main.agro_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       {% if not pilot_form_mode %}
-        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-file-earmark-text"></i> Contrato
         </a>
       {% endif %}
@@ -34,7 +34,7 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-3 mb-4">
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Identificador da OS *</label>
@@ -327,7 +327,7 @@
         </small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.agro_piloto_os_listar' if pilot_form_mode else 'main.agro_os_listar') }}" class="btn btn-outline-danger btn-sm">
+          <a href="{{ url_for('main.agro_piloto_os_listar' if pilot_form_mode else 'main.agro_os_listar') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_os_listar' if pilot_form_mode else 'main.agro_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
 

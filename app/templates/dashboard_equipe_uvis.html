@@ -24,7 +24,7 @@
     {{ render_result_summary(paginacao.total, 'Solicitações filtradas') }}
   </div>
   <div class="header-actions">
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark shadow-sm">
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -49,7 +49,7 @@
       </div>
 
       <div class="px-3 pt-3 pb-2 border-top">
-          <form method="GET" class="row g-2 align-items-end">
+          <form method="GET" class="row g-2 align-items-end" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
               <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
               <input type="hidden" name="tipo_visita" value="{{ request.args.get('tipo_visita', '') }}">
               <input type="hidden" name="tipo_imovel" value="{{ request.args.get('tipo_imovel', '') }}">
@@ -84,7 +84,7 @@
       <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
          or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
-              <form method="GET">
+              <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                   <div class="row g-2 align-items-end">
 
                       <div class="col-md-3">
@@ -179,7 +179,7 @@
 
                           {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
                              or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
-                              <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary btn-sm w-100">
+                              <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary btn-sm w-100" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard_equipe_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
                                   <i class="bi bi-x-lg"></i> Limpar
                               </a>
                           {% endif %}
@@ -288,7 +288,7 @@
                     <i class="bi bi-eye me-1"></i> Detalhes
                   </button>
 
-                  <a class="btn btn-sm btn-primary" href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}">
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipe_uvis_os_formulario_view', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-clipboard2-check me-1"></i>
                     {% if ordem_uvis %}Editar complemento{% else %}Preencher complemento{% endif %}
                   </a>
@@ -405,7 +405,7 @@
 
             <a href="{{ url_for('main.baixar_anexo', id=p.id) }}"
                target="_blank"
-               class="btn btn-sm btn-outline-primary">
+               class="btn btn-sm btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.baixar_anexo', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-download"></i> Abrir / Baixar
             </a>
           </div>
@@ -476,7 +476,7 @@
         </div>
 
         <div class="modal-footer">
-          <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-primary justify-content-center">
+          <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-primary justify-content-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipe_uvis_os_formulario_view', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-clipboard2-check me-1"></i>{% if p.ordem_servico_equipe_uvis %}Editar complemento UVIS{% else %}Preencher complemento UVIS{% endif %}
           </a>
           <button type="button" class="btn btn-secondary justify-content-center" data-bs-dismiss="modal">Fechar</button>

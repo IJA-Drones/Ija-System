@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import active_configuration, capability
 import hashlib
 import json
 import math
@@ -23,6 +24,54 @@ from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord, E
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.place_id import clean_place_id, resolve_google_place_id_for_address
 from app.shared.uploads import get_upload_folder
+
+
+def _scoped_dji_actor(user=None):
+    if user is None:
+        from flask import has_request_context
+        if not has_request_context():
+            return None
+        from flask_login import current_user
+        user = current_user
+    from app.shared.access import is_admin_global_user
+    return user if active_configuration(user) is not None and not is_admin_global_user(user) else None
+
+
+def _scope_dji_ordens(query, user=None):
+    actor = _scoped_dji_actor(user)
+    if actor is None:
+        return query
+    from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
+    accessible = apply_solicitacao_prefeitura_scope(Solicitacao.query, actor)
+    accessible = apply_solicitacao_regiao_scope(accessible, actor).with_entities(Solicitacao.id)
+    return query.filter(OrdemServico.solicitacao_id.in_(accessible))
+
+
+def _scope_dji_query(query, model, user=None):
+    """A newly authorized viewer sees own imports and routes of accessible OS."""
+    actor = _scoped_dji_actor(user)
+    if actor is None:
+        return query
+    route_ids = _scope_dji_ordens(OrdemServico.query, actor).with_entities(OrdemServico.dji_kml_route_id)
+    route_access = or_(DjiFlightKmlRoute.uploaded_by_id == actor.id, DjiFlightKmlRoute.id.in_(route_ids))
+    if model is DjiFlightKmlRoute:
+        return query.filter(route_access)
+    record_access = or_(DjiFlightRecord.import_batch.has(uploaded_by_id=actor.id),
+                        DjiFlightRecord.route_kml.has(route_access))
+    if model is DjiFlightRecord:
+        return query.filter(record_access)
+    return query.filter(or_(DjiFlightLogImport.uploaded_by_id == actor.id,
+                           DjiFlightLogImport.records.any(record_access)))
+
+
+def _require_access_to_linked_ordens(route_id):
+    actor = _scoped_dji_actor()
+    if actor is None:
+        return
+    query = OrdemServico.query.filter(OrdemServico.dji_kml_route_id == route_id)
+    visible = _scope_dji_ordens(query, actor).with_entities(OrdemServico.id)
+    if query.filter(~OrdemServico.id.in_(visible)).first():
+        raise ValueError("A rota possui vínculo com uma OS fora do seu acesso.")
 
 
 DJI_LOG_ALLOWED_VIEW_TYPES = {"dev", "diretor", "admin"}
@@ -52,15 +101,19 @@ _HEADER_ALIASES = {
 }
 
 
+@capability(['prefeitura.voos.consultar'])
 def can_access_dji_logs(user) -> bool:
     return getattr(user, "tipo_usuario", None) in DJI_LOG_ALLOWED_VIEW_TYPES
 
 
+@capability(['prefeitura.voos.importar'])
 def can_import_dji_logs(user) -> bool:
     return getattr(user, "tipo_usuario", None) in DJI_LOG_ALLOWED_IMPORT_TYPES
 
 
 def can_access_dji_kml_route(user, route_id) -> bool:
+    if _scoped_dji_actor(user) is not None:
+        return _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute, user).filter_by(id=route_id).first() is not None
     if can_access_dji_logs(user):
         return True
 
@@ -280,14 +333,14 @@ def build_dji_logs_context(args):
     comparativo_mensal = _build_monthly_comparison(resumo_mensal)
 
     importacoes_recentes = (
-        DjiFlightLogImport.query
+        _scope_dji_query(DjiFlightLogImport.query, DjiFlightLogImport)
         .order_by(DjiFlightLogImport.uploaded_at.desc(), DjiFlightLogImport.id.desc())
         .limit(10)
         .all()
     )
-    total_rotas_kml = DjiFlightKmlRoute.query.count()
+    total_rotas_kml = _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute).count()
     total_rotas_kml_vinculadas = (
-        db.session.query(func.count(func.distinct(OrdemServico.dji_kml_route_id)))
+        _scope_dji_ordens(db.session.query(func.count(func.distinct(OrdemServico.dji_kml_route_id))))
         .filter(OrdemServico.dji_kml_route_id.isnot(None))
         .scalar()
         or 0
@@ -347,7 +400,7 @@ def build_dji_logs_context(args):
         "kml_rotas_recentes": kml_rotas_recentes,
         "kml_paginacao": kml_paginacao,
         "kml_os_por_rota": kml_os_por_rota,
-        "total_importacoes": DjiFlightLogImport.query.count(),
+        "total_importacoes": _scope_dji_query(DjiFlightLogImport.query, DjiFlightLogImport).count(),
         "total_rotas_kml": total_rotas_kml,
         "total_rotas_kml_vinculadas": total_rotas_kml_vinculadas,
         "total_rotas_kml_sem_os": total_rotas_kml - total_rotas_kml_vinculadas,
@@ -398,7 +451,7 @@ def import_dji_kml_files(files, user):
 
         stored_filename, stored_path = _save_uploaded_kml(original_filename, file_bytes)
         matched_record = (
-            DjiFlightRecord.query
+            _scope_dji_query(DjiFlightRecord.query, DjiFlightRecord, user)
             .filter(DjiFlightRecord.serial_number == parsed["route_code"])
             .order_by(DjiFlightRecord.flight_start.desc(), DjiFlightRecord.id.desc())
             .first()
@@ -487,12 +540,12 @@ def _fill_solicitacao_place_id_from_route(ordem, route):
 
 
 def link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id):
-    route = DjiFlightKmlRoute.query.get(route_id)
+    route = _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute).filter_by(id=route_id).first()
     if not route:
         raise ValueError("Rota KML nao encontrada.")
 
     ordem = (
-        OrdemServico.query
+        _scope_dji_ordens(OrdemServico.query)
         .options(joinedload(OrdemServico.solicitacao))
         .filter(OrdemServico.solicitacao_id == solicitacao_id)
         .first()
@@ -503,6 +556,7 @@ def link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id):
     if ordem.dji_kml_route_id and ordem.dji_kml_route_id != route.id:
         raise ValueError("Essa OS ja possui outra rota KML vinculada.")
 
+    _require_access_to_linked_ordens(route.id)
     current_linked = (
         OrdemServico.query
         .filter(
@@ -521,10 +575,11 @@ def link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id):
 
 
 def delete_kml_route(route_id):
-    route = DjiFlightKmlRoute.query.get(route_id)
+    route = _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute).filter_by(id=route_id).first()
     if not route:
         raise ValueError("Rota KML nao encontrada.")
 
+    _require_access_to_linked_ordens(route.id)
     stored_path = route.stored_path
     original_filename = route.original_filename
     linked_count = (
@@ -672,7 +727,7 @@ def _find_best_os_match_for_kml_route(route, points):
 
 def _candidate_ordens_for_kml_route(route):
     query = (
-        OrdemServico.query
+        _scope_dji_ordens(OrdemServico.query)
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .options(joinedload(OrdemServico.solicitacao))
         .filter(OrdemServico.dji_kml_route_id.is_(None))
@@ -1069,7 +1124,7 @@ def _score_kml_os_geo_match(distance_meters):
 
 
 def get_dji_route_payload(route_id):
-    route = DjiFlightKmlRoute.query.get_or_404(route_id)
+    route = _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute).filter_by(id=route_id).first_or_404()
     linked_os = _get_linked_os_for_kml_route(route.id)
     points = json.loads(route.points_json or "[]")
     center_point = points[0] if points else None
@@ -1112,7 +1167,7 @@ def _build_kml_os_map(routes):
         return {}
 
     ordens = (
-        OrdemServico.query
+        _scope_dji_ordens(OrdemServico.query)
         .options(joinedload(OrdemServico.solicitacao))
         .filter(OrdemServico.dji_kml_route_id.in_(route_ids))
         .order_by(OrdemServico.respondido_em.desc(), OrdemServico.id.desc())
@@ -1126,7 +1181,7 @@ def _build_kml_os_map(routes):
 
 def _get_linked_os_for_kml_route(route_id):
     return (
-        OrdemServico.query
+        _scope_dji_ordens(OrdemServico.query)
         .options(joinedload(OrdemServico.solicitacao))
         .filter(OrdemServico.dji_kml_route_id == route_id)
         .order_by(OrdemServico.respondido_em.desc(), OrdemServico.id.desc())
@@ -1686,7 +1741,7 @@ def _build_filtered_query(
     status_rota="",
 ):
     return _apply_dji_filters(
-        DjiFlightRecord.query.options(joinedload(DjiFlightRecord.route_kml)),
+        _scope_dji_query(DjiFlightRecord.query.options(joinedload(DjiFlightRecord.route_kml)), DjiFlightRecord),
         data_inicio=data_inicio,
         data_fim=data_fim,
         piloto=piloto,
@@ -1711,7 +1766,7 @@ def _build_filtered_kml_query(
     status_voo="",
     voo_id="",
 ):
-    query = DjiFlightKmlRoute.query.options(joinedload(DjiFlightKmlRoute.flight_record))
+    query = _scope_dji_query(DjiFlightKmlRoute.query.options(joinedload(DjiFlightKmlRoute.flight_record)), DjiFlightKmlRoute)
 
     if voo_id:
         try:
@@ -1850,7 +1905,7 @@ def _apply_dji_filters(
 def _distinct_non_empty_values(column):
     return [
         value
-        for (value,) in db.session.query(column)
+        for (value,) in _scope_dji_query(db.session.query(column), column.class_)
         .filter(func.length(func.trim(func.coalesce(column, ""))) > 0)
         .distinct()
         .order_by(column.asc())

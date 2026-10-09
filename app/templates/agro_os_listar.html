@@ -22,10 +22,10 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_agro')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contratos_template')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-diagram-3-fill"></i> Operacional
       </a>
     </div>
@@ -48,7 +48,7 @@
 
     <div class="collapse {% if filters.q or filters.status or filters.equipe_id %}show{% endif %}" id="collapseFiltrosOsAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_os_listar') }}">
+        <form method="GET" action="{{ url_for('main.agro_os_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_listar'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-5">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -80,7 +80,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
               {% if filters.q or filters.status or filters.equipe_id %}
-                <a href="{{ url_for('main.agro_os_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_os_listar') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -166,20 +166,20 @@
                       <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                         {% if os_agro.status == 'CONCLUIDA' %}
                           <li>
-                            <a href="{{ url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id) }}" class="dropdown-item py-2">
+                            <a href="{{ url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                               <i class="bi bi-file-earmark-pdf text-danger me-2"></i> Relatorio
                             </a>
                           </li>
                         {% endif %}
                         <li>
-                          <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="dropdown-item py-2">
+                          <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="dropdown-item py-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_editar', os_id=os_agro.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar
                           </a>
                         </li>
-                        {% if is_admin_agro %}
+                        {% if (central_ti_ui_guard(['main.agro_os_deletar'], (is_admin_agro)) if central_ti_ui_guard is defined else (is_admin_agro)) %}
                           <li><hr class="dropdown-divider"></li>
                           <li>
-                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_os_deletar', os_id=os_agro.id) }}">
+                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_os_deletar', os_id=os_agro.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_os_deletar', os_id=os_agro.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                               <button type="submit" class="dropdown-item py-2 text-danger">
                                 <i class="bi bi-trash me-2"></i> Excluir
                               </button>

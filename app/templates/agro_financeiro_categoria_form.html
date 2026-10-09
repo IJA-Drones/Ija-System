@@ -16,14 +16,14 @@
       </h2>
       <p class="text-muted small mb-0">A subcategoria fica sempre vinculada a uma categoria e a um tipo de movimento.</p>
     </div>
-    <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+    <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_categorias_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" novalidate>
+      <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">Tipo *</label>
@@ -77,7 +77,7 @@
         </small>
 
         <div class="d-flex justify-content-end flex-wrap gap-2 mt-5">
-          <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_categorias_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-lg"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-2">

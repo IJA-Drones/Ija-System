@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
@@ -18,7 +19,7 @@ from app.shared.access import normalize_role
 
 
 def _require_estoque_access():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor"}:
+    if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'dev', 'diretor'}):
         abort(403)
 
 

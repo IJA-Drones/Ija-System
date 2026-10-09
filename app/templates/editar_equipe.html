@@ -24,7 +24,7 @@
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
 
-      <form method="post" novalidate>
+      <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
 
         {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
@@ -196,7 +196,7 @@
           </button>
 
           <div class="d-flex gap-2">
-            <a href="{{ url_for('main.listar_equipes') }}" class="btn btn-outline-secondary px-4">
+            <a href="{{ url_for('main.listar_equipes') }}" class="btn btn-outline-secondary px-4" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipes')) if central_ti_url_allowed is defined else true) else 'false' }}">
               Cancelar
             </a>
 
@@ -227,7 +227,7 @@
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-        <form action="{{ url_for('main.deletar_equipe', equipe_id=equipe.id) }}" method="post" class="m-0">
+        <form action="{{ url_for('main.deletar_equipe', equipe_id=equipe.id) }}" method="post" class="m-0" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_equipe', equipe_id=equipe.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
           <button type="submit" class="btn btn-danger px-4">Confirmar Exclusão</button>
         </form>
       </div>

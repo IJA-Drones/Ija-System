@@ -17,14 +17,14 @@
       </h2>
       <p class="text-muted small mb-0">Esse banco sera usado nos lancamentos de contrato, entrada e saida da empresa.</p>
     </div>
-    <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+    <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
   <div class="card shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" novalidate>
+      <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">Nome interno *</label>
@@ -123,7 +123,7 @@
               <i class="bi bi-trash"></i> Excluir
             </button>
           {% endif %}
-          <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_bancos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-x-circle"></i> Cancelar
           </a>
         </div>

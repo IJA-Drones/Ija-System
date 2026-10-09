@@ -33,10 +33,10 @@
     </div>
 
     <div class="retornos-toolbar-actions page-toolbar-actions">
-      <a href="{{ url_for('main.admin_historico_os', retorno_automatico='RETORNO') }}" class="btn btn-outline-primary">
+      <a href="{{ url_for('main.admin_historico_os', retorno_automatico='RETORNO') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_historico_os', retorno_automatico='RETORNO')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-clock-history me-1"></i> Historico OS
       </a>
-      <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
+      <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
     </div>
@@ -62,7 +62,7 @@
 
     <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosRetornos">
       <div class="card-body pt-0 pb-4">
-        <form method="GET">
+        <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="row g-2 filter-chip-row">
             <div class="col-md-3">
               <label class="small text-muted">Status:</label>
@@ -182,7 +182,7 @@
                 <i class="bi bi-search"></i> Filtrar
               </button>
               {% if filtros_ativos %}
-                <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+                <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_retornos_automaticos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-x-lg"></i>
                 </a>
               {% endif %}
@@ -259,7 +259,7 @@
             {% else %}
               {% set detalhe_url = url_for('main.relatorios_retornos_automaticos_sem_equipe', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) %}
             {% endif %}
-            <a href="{{ detalhe_url }}" class="card retornos-team-card rounded-4 h-100 {% if not equipe.id %}sem-equipe{% endif %}">
+            <a href="{{ detalhe_url }}" class="card retornos-team-card rounded-4 h-100 {% if not equipe.id %}sem-equipe{% endif %}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(detalhe_url) if central_ti_url_allowed is defined else true) else 'false' }}">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                   <div>

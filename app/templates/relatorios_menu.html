@@ -19,7 +19,7 @@
 
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.relatorios_solicitacoes') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.relatorios_solicitacoes') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_solicitacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow relatorios-menu-card relatorios-menu-card--solicitacoes" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -39,7 +39,7 @@
     </div>
 
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.relatorios_os') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.relatorios_os') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_os')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 hover-shadow relatorios-menu-card relatorios-menu-card--os" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -59,7 +59,7 @@
     </div>
 
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_coleta_imagens')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow relatorios-menu-card relatorios-menu-card--midias" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -79,7 +79,7 @@
     </div>
 
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_retornos_automaticos')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 hover-shadow relatorios-menu-card relatorios-menu-card--retornos" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -98,9 +98,9 @@
       </a>
     </div>
 
-    {% if is_admin_global_user(current_user) %}
+    {% if (central_ti_ui_guard(['main.relatorios_dji_logs'], (is_admin_global_user(current_user))) if central_ti_ui_guard is defined else (is_admin_global_user(current_user))) %}
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.relatorios_dji_logs') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.relatorios_dji_logs') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 hover-shadow relatorios-menu-card relatorios-menu-card--dji" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -121,7 +121,7 @@
     {% endif %}
     {% if config.get('VIGILANCIA_PREVIEW_ENABLED') and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin') %}
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.vigilancia_validacao') }}" class="text-decoration-none">
+      <a href="{{ url_for('main.vigilancia_validacao') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_validacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 relatorios-menu-card">
           <div class="d-flex justify-content-between align-items-center">
             <div>

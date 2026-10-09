@@ -21,8 +21,8 @@
           </p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          {% if current_user.tipo_usuario in ['admin', 'diretor', 'dev'] %}
-            <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-light">
+          {% if (central_ti_ui_guard(['main.relatorios_dji_logs'], (current_user.tipo_usuario in ['admin', 'diretor', 'dev'])) if central_ti_ui_guard is defined else (current_user.tipo_usuario in ['admin', 'diretor', 'dev'])) %}
+            <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-light" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_dji_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-arrow-left me-1"></i> Voltar aos logs
             </a>
           {% endif %}
@@ -30,14 +30,14 @@
             <a
               href="{{ url_for(linked_os_form_endpoint, os_id=route.linked_os.solicitacao_id) }}"
               class="btn btn-light"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(linked_os_form_endpoint, os_id=route.linked_os.solicitacao_id)) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-clipboard-check me-1"></i> Voltar para o formulario
             </a>
           {% endif %}
           <a
             href="{{ url_for('main.baixar_dji_kml_route', route_id=route.id) }}"
             class="btn btn-outline-light"
-          >
+           data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.baixar_dji_kml_route', route_id=route.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-download me-1"></i> Baixar KML
           </a>
         </div>
@@ -108,7 +108,7 @@
             <a
               href="{{ url_for(linked_os_form_endpoint, os_id=route.linked_os.solicitacao_id) }}"
               class="btn btn-sm btn-outline-success mt-2"
-            >
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(linked_os_form_endpoint, os_id=route.linked_os.solicitacao_id)) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-box-arrow-up-right me-1"></i> Abrir OS
             </a>
           {% else %}

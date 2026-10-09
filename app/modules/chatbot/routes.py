@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 from flask import jsonify, request
 from flask_login import current_user, login_required
 
@@ -23,7 +24,7 @@ def register_routes(bp):
     @bp.route("/api/admin/chatbot", methods=["POST"], endpoint="admin_chatbot")
     @login_required
     def admin_chatbot():
-        if not can_access_admin_chatbot(current_user):
+        if not route_access(current_user, can_access_admin_chatbot(current_user)):
             return jsonify({"answer": "Acesso negado para este chatbot."}), 403
 
         payload = request.get_json(silent=True) or {}
@@ -33,7 +34,7 @@ def register_routes(bp):
     @bp.route("/api/agro/admin/chatbot", methods=["POST"], endpoint="agro_admin_chatbot")
     @login_required
     def agro_admin_chatbot():
-        if not can_access_agro_admin_chatbot(current_user):
+        if not route_access(current_user, can_access_agro_admin_chatbot(current_user)):
             return jsonify({"answer": "Acesso negado para este chatbot do Agro."}), 403
 
         payload = request.get_json(silent=True) or {}
@@ -43,7 +44,7 @@ def register_routes(bp):
     @bp.route("/api/agro/piloto/chatbot", methods=["POST"], endpoint="agro_piloto_chatbot")
     @login_required
     def agro_piloto_chatbot():
-        if not can_access_agro_piloto_chatbot(current_user):
+        if not route_access(current_user, can_access_agro_piloto_chatbot(current_user)):
             return jsonify({"answer": "Acesso negado para este chatbot do piloto Agro."}), 403
 
         payload = request.get_json(silent=True) or {}

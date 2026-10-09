@@ -1,3 +1,4 @@
+from app.modules.gestao_ti.permissions import route_access
 """Fleet view backed by RedGPS position tables (or the Neon fixture)."""
 
 from datetime import datetime, time, timedelta, timezone
@@ -21,7 +22,7 @@ from app.shared.access import apply_prefeitura_scope, normalize_role
 
 def build_rastreamento_payload(user):
     role = normalize_role(getattr(user, "tipo_usuario", None))
-    if role not in VEICULOS_ALLOWED_TYPES:
+    if not route_access(user, role in VEICULOS_ALLOWED_TYPES):
         raise PermissionError
 
     query = Veiculos.query.options(joinedload(Veiculos.equipe)).filter(
