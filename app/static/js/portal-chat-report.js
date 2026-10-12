@@ -32,7 +32,7 @@
   placeholder.className = 'portal-cidadao-feedback';
   placeholder.hidden = true;
   const note = document.createElement('p');
-  note.textContent = 'Seu relato está aberto no assistente. Você pode continuar aqui sem perder os dados.';
+  note.textContent = 'Seu relato está aberto na conversa com a Azul. Você pode continuar aqui sem perder os dados.';
   const restore = document.createElement('button');
   restore.type = 'button';
   restore.className = 'btn btn-outline-primary';

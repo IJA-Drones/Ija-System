@@ -10,33 +10,40 @@
   const sendLabel = send.textContent;
   const clear = root.querySelector('[data-clear]');
   const status = root.querySelector('[data-status]');
+  const about = root.querySelector('[data-about-oceano]');
   let history = [];
   let busy = false;
   function appendPortalText(entry, text) {
     const routes = {
       '/portal-cidadao#portal-relato': 'Registrar relato',
       '/portal-cidadao/boletim-dengue': 'Consultar boletim',
-      '/portal-cidadao#como-funciona': 'Como funciona o atendimento'
+      '/portal-cidadao#como-funciona': 'Como funciona o atendimento',
+      'https://www.oceanoazuldrones.com.br/oceano': 'Site institucional da Oceano Azul'
     };
-    const pattern = /\/portal-cidadao(?:#portal-relato|\/boletim-dengue|#como-funciona)(?![\w/#?=-])/g;
+    const pattern = /https:\/\/www\.oceanoazuldrones\.com\.br\/oceano(?![\w/#?=-])|\/portal-cidadao(?:#portal-relato|\/boletim-dengue|#como-funciona)(?![\w/#?=-])/g;
     let cursor = 0;
     for (const match of text.matchAll(pattern)) {
       entry.append(document.createTextNode(text.slice(cursor, match.index)));
       const link = document.createElement('a');
       link.href = match[0];
       link.textContent = routes[match[0]];
-      link.addEventListener('click', () => show(false));
+      if (match[0].startsWith('https:')) {
+        link.target = '_blank'; link.rel = 'noopener noreferrer';
+      } else {
+        link.addEventListener('click', () => show(false));
+      }
       entry.append(link);
       cursor = match.index + match[0].length;
     }
     entry.append(document.createTextNode(text.slice(cursor)));
   }
-  function append(text, role, parts = []) {
+  function append(text, role, parts = [], showName = true) {
     const entry = document.createElement('p');
     entry.className = `portal-chat-message portal-chat-${role}`;
-    entry.textContent = `${role === 'user' ? 'Você' : 'Assistente'}: ${text}`;
+    entry.textContent = role === 'user' ? `Você: ${text}` : `Azul: ${text}`;
+    entry.setAttribute('aria-label', role === 'user' ? 'Sua mensagem' : 'Resposta da Azul');
     if (role === 'assistant') {
-      entry.textContent = 'Assistente: ';
+      entry.textContent = showName ? 'Azul: ' : '';
       for (const part of (parts.length ? parts : [{text}])) {
         let url;
         try { url = new URL(part.url); } catch (_) { url = null; }
@@ -56,7 +63,40 @@
     log.append(entry);
     log.scrollTop = log.scrollHeight;
   }
-  function welcome() { append('Olá! Posso orientar sobre o portal e consultar fontes oficiais sobre vigilância e prevenção. Para registrar uma ocorrência, use o botão Registrar relato aqui no chat.', 'assistant'); }
+  const quickAnswers = [
+    {question: 'Como registrar um foco?', answer: 'Clique em Registrar relato aqui no chat. O formulário guia você por cinco etapas: ocorrência, endereço, identificação, detalhes e revisão. Depois de conferir os dados e o consentimento, clique em Confirmar e enviar. Guarde o protocolo exibido após a confirmação.'},
+    {question: 'Posso enviar fotos?', answer: 'Sim! Na etapa Detalhes do relato, você pode anexar até cinco fotos ou vídeos. Os anexos são opcionais e ajudam a equipe a entender o problema. Envie os arquivos pelo formulário de relato, não pela conversa.'},
+    {question: 'Quais dados preciso informar?', answer: 'Informe o tipo de ocorrência, o foco, logradouro, número, bairro e cidade, além de nome completo, CPF e telefone com DDD. Para Aedes, selecione também o tipo de local. RG e CEP são opcionais. Preencha seus dados pessoais somente nos campos do formulário e confirme o consentimento antes de enviar.'},
+    {question: 'O que acontece depois do envio?', answer: 'Após a confirmação, seu relato recebe um protocolo. A COVISA analisa as informações, encaminha à coordenadoria e esta define a UVIS responsável. A unidade avalia o atendimento. O envio não garante visita imediata nem prazo de execução. Ainda não há consulta pública do andamento pelo chatbot.'}
+  ];
+  function answerQuick(item) {
+    if (busy) return;
+    append(item.question, 'user');
+    append(item.answer, 'assistant');
+    history = [...history, {role: 'user', content: item.question},
+      {role: 'assistant', content: item.answer}].slice(-6);
+    input.focus();
+  }
+  function welcome() {
+    append('Olá! Sou a Azul, a assistente virtual do portal. Como posso ajudar? Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false);
+    const suggestions = document.createElement('section');
+    suggestions.className = 'portal-chat-suggestions';
+    suggestions.setAttribute('aria-label', 'Perguntas rápidas');
+    const heading = document.createElement('strong');
+    heading.textContent = 'Dúvidas frequentes';
+    const hint = document.createElement('span');
+    hint.textContent = 'Toque em uma pergunta para ver a orientação.';
+    suggestions.append(heading); suggestions.append(hint);
+    for (const item of quickAnswers) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = item.question;
+      button.addEventListener('click', () => answerQuick(item));
+      suggestions.append(button);
+    }
+    log.append(suggestions);
+    log.scrollTop = 0;
+  }
   function show(open) {
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
@@ -67,6 +107,17 @@
   root.querySelector('[data-close]').addEventListener('click', () => show(false));
   root.addEventListener('keydown', event => { if (event.key === 'Escape') show(false); });
   clear.addEventListener('click', () => { if (busy) return; history = []; log.replaceChildren(); welcome(); input.focus(); });
+  about?.addEventListener('click', () => {
+    if (busy || !about.dataset.summary) return;
+    const question = 'Quem é a Oceano Azul?';
+    const answer = about.dataset.summary;
+    append(question, 'user');
+    append(answer, 'assistant', [{text: answer + '\n\n'},
+      {text: 'Conheça o site institucional da Oceano Azul', url: about.dataset.source, title: 'Site institucional da empresa'}]);
+    history = [...history, {role: 'user', content: question},
+      {role: 'assistant', content: answer + '\nFonte: ' + about.dataset.source}].slice(-6);
+    input.focus();
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const message = input.value.trim();
@@ -76,7 +127,10 @@
       root.dispatchEvent(new CustomEvent('portal:start-report'));
       return;
     }
-    busy = true; send.disabled = true; clear.disabled = true;
+    const normalized = message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[?!.]+$/g, '').trim();
+    const quick = quickAnswers.find(item => item.question.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[?!.]+$/g, '').trim() === normalized);
+    if (quick) { input.value = ''; answerQuick(quick); return; }
+    busy = true; send.disabled = true; clear.disabled = true; if (about) about.disabled = true;
     send.textContent = 'Aguarde…';
     form.setAttribute('aria-busy', 'true');
     append(message, 'user');
@@ -101,6 +155,7 @@
     } finally {
       clearTimeout(timeout); busy = false; send.disabled = false; clear.disabled = false; status.textContent = '';
       send.textContent = sendLabel;
+      if (about) about.disabled = false;
       form.setAttribute('aria-busy', 'false');
       if (!panel.hidden) input.focus();
     }
