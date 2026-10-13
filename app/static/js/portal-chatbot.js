@@ -37,7 +37,7 @@
     }
     entry.append(document.createTextNode(text.slice(cursor)));
   }
-  function append(text, role, parts = [], showName = true) {
+  function append(text, role, parts = [], showName = true, highlightInstitutional = false) {
     const entry = document.createElement('p');
     entry.className = `portal-chat-message portal-chat-${role}`;
     entry.textContent = role === 'user' ? `Você: ${text}` : `Azul: ${text}`;
@@ -56,7 +56,21 @@
           link.rel = 'noopener noreferrer';
           entry.append(link);
         } else {
-          appendPortalText(entry, part.text || '');
+          if (highlightInstitutional) {
+            const content = part.text || '';
+            const keywords = /\b(drones?|mapeamento|combate à dengue|identificação de focos|registrar um relato)\b/gi;
+            let cursor = 0;
+            for (const match of content.matchAll(keywords)) {
+              entry.append(document.createTextNode(content.slice(cursor, match.index)));
+              const emphasis = document.createElement('strong');
+              emphasis.textContent = match[0];
+              entry.append(emphasis);
+              cursor = match.index + match[0].length;
+            }
+            entry.append(document.createTextNode(content.slice(cursor)));
+          } else {
+            appendPortalText(entry, part.text || '');
+          }
         }
       }
     }
@@ -79,10 +93,11 @@
   }
   function welcome() {
     append('Olá! Sou a Azul, a assistente virtual do portal. Como posso ajudar? Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false);
-    const suggestions = document.createElement('section');
+    const suggestions = document.createElement('details');
+    suggestions.open = true;
     suggestions.className = 'portal-chat-suggestions';
     suggestions.setAttribute('aria-label', 'Perguntas rápidas');
-    const heading = document.createElement('strong');
+    const heading = document.createElement('summary');
     heading.textContent = 'Dúvidas frequentes';
     const hint = document.createElement('span');
     hint.textContent = 'Toque em uma pergunta para ver a orientação.';
@@ -113,7 +128,7 @@
     const answer = about.dataset.summary;
     append(question, 'user');
     append(answer, 'assistant', [{text: answer + '\n\n'},
-      {text: 'Conheça o site institucional da Oceano Azul', url: about.dataset.source, title: 'Site institucional da empresa'}]);
+      {text: 'Conheça o site institucional da Oceano Azul', url: about.dataset.source, title: 'Site institucional da empresa'}], true, true);
     history = [...history, {role: 'user', content: question},
       {role: 'assistant', content: answer + '\nFonte: ' + about.dataset.source}].slice(-6);
     input.focus();

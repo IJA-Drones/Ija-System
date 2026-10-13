@@ -62,7 +62,7 @@ body.dark-mode .portal-chat-message a { color: #7adce9; }
 .portal-chat-report [data-report-feedback]:not(:empty) { background: var(--chat-soft); padding: 12px; border-radius: 8px; font-size: 13px; }
 .portal-chat-report dl { font-size: 13px; background: var(--chat-soft); padding: 12px; border-radius: 10px; }
 .portal-chat-report dd { overflow-wrap: anywhere; white-space: pre-wrap; margin-bottom: 10px; }
-.portal-chat-links :is([data-start-report], [data-about-oceano]) { margin-left: 0; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; font-size: 12px; color: var(--chat-ink); }
+.portal-chat-links :is([data-start-report], [data-about-oceano]) { margin-left: 0; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; font-size: 12px; }
 
 @media (max-width: 600px) {
   html:has(.portal-chat-panel:not([hidden])), body:has(.portal-chat-panel:not([hidden])) { overflow: hidden !important; }
@@ -89,8 +89,8 @@ body.dark-mode .portal-chat-message a { color: #7adce9; }
 
 
 /* Suggestions live inside the scrolling conversation, leaving the composer available. */
-.portal-chat-suggestions { display: grid; gap: 8px; margin: 18px 0 8px; }
-.portal-chat-suggestions strong { color: var(--chat-ink); font-size: 14px; }
+.portal-chat-suggestions { display: block; margin: 18px 0 8px; }
+.portal-chat-suggestions summary { color: var(--chat-ink); font-size: 14px; }
 .portal-chat-suggestions > span { color: var(--chat-muted); font-size: 12px; margin-bottom: 4px; }
 .portal-chat-suggestions button { min-height: 44px; width: 100%; padding: 11px 14px; border: 1px solid var(--chat-line); border-radius: 12px; text-align: left; background: var(--chat-bg); color: var(--chat-ink); font: inherit; font-size: 13px; line-height: 1.4; cursor: pointer; }
 .portal-chat-suggestions button:hover { background: var(--chat-soft); border-color: #08768e; }
@@ -106,3 +106,55 @@ body.dark-mode .portal-chat-message a { color: #7adce9; }
 .portal-chat-panel > form textarea { min-height: 58px; }
 .portal-chat-panel > form button { white-space: nowrap; }
 .portal-chat-messages { scrollbar-width: thin; scrollbar-color: var(--chat-line) transparent; }
+
+/* Color distinguishes the persistent shortcuts from conversation suggestions. */
+.portal-chat-links > :is(a, button) {
+  border-radius: 12px;
+  font-weight: 600;
+  border-color: var(--shortcut-border);
+  background: linear-gradient(135deg, var(--shortcut-start), var(--shortcut-end));
+  color: var(--shortcut-text);
+  box-shadow: 0 2px 5px var(--shortcut-shadow);
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.portal-chat-links > [data-start-report] {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #083348;
+  --shortcut-shadow: #08768e26;
+}
+.portal-chat-links > a {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #083348;
+  --shortcut-shadow: #065f4612;
+}
+.portal-chat-links > [data-about-oceano] {
+  --shortcut-start: #2563eb; --shortcut-end: #1e40af;
+  --shortcut-text: #fff; --shortcut-border: #2563eb;
+  --shortcut-shadow: #2563eb26;
+}
+.portal-chat-links > :is(a, button):not(:disabled):hover {
+  border-color: var(--shortcut-text);
+  box-shadow: 0 4px 10px var(--shortcut-shadow);
+}
+body.dark-mode .portal-chat-links > [data-start-report] {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-border: #38b7c9; --shortcut-shadow: #0003;
+}
+body.dark-mode .portal-chat-links > a {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #345367;
+  --shortcut-shadow: #0003;
+}
+body.dark-mode .portal-chat-links > [data-about-oceano] {
+  --shortcut-start: #1d4ed8; --shortcut-end: #1e40af;
+  --shortcut-border: #6398ff; --shortcut-shadow: #0003;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-chat-links > :is(a, button) { transition: none; }
+}
+
+.portal-chat-suggestions summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 600; }
+.portal-chat-suggestions summary::after { content: "Expandir"; float: right; font-size: 11px; font-weight: 400; color: var(--chat-muted); }
+.portal-chat-suggestions[open] summary::after { content: "Recolher"; }
+.portal-chat-suggestions > span { display: block; margin: 4px 0 12px; }
+.portal-chat-suggestions > button { margin-bottom: 8px; }
