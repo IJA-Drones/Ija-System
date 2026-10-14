@@ -14,6 +14,7 @@ from app.modules.canceladas import register_routes as register_canceladas_routes
 from app.modules.cep import register_routes as register_cep_routes
 from app.modules.chatbot import register_routes as register_chatbot_routes
 from app.modules.clientes import register_routes as register_clientes_routes
+from app.modules.configuracoes import register_routes as register_configuracoes_routes
 from app.modules.dashboard import register_routes as register_dashboard_routes
 from app.modules.dev_dashboard import register_routes as register_dev_dashboard_routes
 from app.modules.dji_flight_logs import register_routes as register_dji_flight_logs_routes
@@ -57,6 +58,7 @@ register_canceladas_routes(bp)
 register_cep_routes(bp)
 register_chatbot_routes(bp)
 register_clientes_routes(bp)
+register_configuracoes_routes(bp)
 register_dashboard_routes(bp)
 register_dev_dashboard_routes(bp)
 register_dji_flight_logs_routes(bp)

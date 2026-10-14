@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Configurações de documentos | IJA System{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/configuracoes-documentos.css') }}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 doc-settings">
+  <header class="mb-4">
+    <span class="text-primary small fw-semibold text-uppercase">Configurações</span>
+    <h1 class="h3 mt-1">Documentos da prefeitura</h1>
+    <p class="text-muted mb-0">Personalize a imagem e a identificação da marca d’água.</p>
+  </header>
+
+  {% if is_dev_user(current_user) %}
+  <section class="card shadow-sm mb-4"><div class="card-body">
+    <label for="prefeitura-selector" class="form-label fw-semibold">Prefeitura</label>
+    <select id="prefeitura-selector" class="form-select" aria-describedby="prefeitura-help">
+      <option value="">Selecione uma prefeitura</option>
+      {% for item in prefeituras %}
+      <option value="{{ url_for('main.configuracoes_documentos', prefeitura_id=item.id) }}" {% if prefeitura and prefeitura.id == item.id %}selected{% endif %}>{{ item.nome }}{% if not item.ativa %} (inativa){% endif %}</option>
+      {% endfor %}
+    </select>
+    <p class="form-text mb-0" id="prefeitura-help">Seu acesso de desenvolvedor permite administrar todas as prefeituras.</p>
+  </div></section>
+  {% elif prefeitura %}
+  <div class="alert alert-info"><i class="bi bi-building me-2" aria-hidden="true"></i><strong>{{ prefeitura.nome }}</strong> · Configuração compartilhada pelos usuários desta prefeitura.</div>
+  {% endif %}
+
+  {% if not prefeitura %}
+  <div class="card shadow-sm"><div class="card-body p-4">
+    {% if is_dev_user(current_user) %}
+    <h2 class="h5">{% if prefeituras %}Escolha uma prefeitura para começar{% else %}Nenhuma prefeitura cadastrada{% endif %}</h2>
+    <p class="text-muted mb-0">Cada prefeitura tem sua própria imagem e suas preferências de documentos.</p>
+    {% else %}
+    <h2 class="h5">Seu usuário ainda não está vinculado a uma prefeitura</h2>
+    <p class="text-muted mb-0">Solicite ao desenvolvedor que ajuste o vínculo do seu cadastro para acessar estas configurações.</p>
+    {% endif %}
+  </div></div>
+  {% else %}
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  <form id="document-settings-form" action="{{ url_for('main.configuracoes_documentos', prefeitura_id=prefeitura.id) }}" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ config_csrf_token }}">
+    <input type="hidden" name="versao" value="{{ config.versao if config else 0 }}">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <section class="card shadow-sm h-100"><div class="card-body p-4">
+          <h2 class="h5">Marca d’água</h2>
+          <p class="small text-muted">Imagem fornecida pela prefeitura para identificar seus documentos.</p>
+          <div class="form-check form-switch mb-4">
+            <input class="form-check-input" id="watermark-enabled" name="ativo" value="1" type="checkbox" {% if form.ativo %}checked{% endif %}>
+            <label class="form-check-label" for="watermark-enabled">Habilitar marca d’água</label>
+          </div>
+          <label for="watermark-image" class="form-label">Imagem da prefeitura</label>
+          <input class="form-control" id="watermark-image" type="file" name="imagem" accept="image/png,image/jpeg,image/webp" aria-describedby="watermark-image-help watermark-file-error">
+          <div class="form-text" id="watermark-image-help">PNG, JPG ou WebP, até 5 MB e 4096 pixels por lado. Prefira PNG com fundo transparente.</div>
+          <p class="text-danger small mt-2" id="watermark-file-error" role="alert" hidden></p>
+          {% if config and config.imagem_path %}
+          <div class="doc-current-image my-3">
+            <img src="{{ url_for('main.configuracoes_documentos_imagem', prefeitura_id=prefeitura.id) }}" alt="Imagem atual de {{ prefeitura.nome }}">
+            <div><span class="small text-muted">Imagem atual</span><div class="small text-break">{{ config.imagem_nome }}</div></div>
+          </div>
+          <div class="form-check mb-4">
+            <input class="form-check-input" id="watermark-remove" name="remover_imagem" value="1" type="checkbox">
+            <label class="form-check-label" for="watermark-remove">Remover a imagem atual ao salvar</label>
+          </div>
+          {% endif %}
+          <label class="form-label mt-3" for="watermark-opacity">Intensidade <output id="opacity-value">{{ form.opacidade }}%</output></label>
+          <input class="form-range" id="watermark-opacity" name="opacidade" type="range" min="5" max="30" value="{{ form.opacidade }}">
+          <div class="form-text mb-3">Quanto menor, mais discreta a marca d’água.</div>
+          <label class="form-label" for="watermark-width">Tamanho <output id="width-value">{{ form.largura_percentual }}%</output></label>
+          <input class="form-range" id="watermark-width" name="largura_percentual" type="range" min="25" max="80" value="{{ form.largura_percentual }}">
+          <div class="form-text mb-4">Largura em relação à página, mantendo a proporção da imagem.</div>
+          <div class="form-check">
+            <input class="form-check-input" id="watermark-user" name="identificar_usuario" value="1" type="checkbox" {% if form.identificar_usuario %}checked{% endif %}>
+            <label class="form-check-label" for="watermark-user">Incluir identificação do usuário emissor</label>
+            <div class="form-text">Nome do usuário, prefeitura e data de emissão.</div>
+          </div>
+          <button class="btn btn-primary mt-4" type="submit"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Salvar configurações</button>
+        </div></section>
+      </div>
+      <div class="col-lg-6">
+        <section class="card shadow-sm h-100"><div class="card-body p-4">
+          <h2 class="h5">Prévia ilustrativa</h2>
+          <p class="small text-muted">{{ prefeitura.nome }} · Exemplo de posicionamento no centro da página.</p>
+          <div class="doc-preview-paper" aria-label="Exemplo ilustrativo da marca d’água">
+            <div class="doc-preview-content" aria-hidden="true"><strong>RELATÓRIO DE ATIVIDADES</strong><small>{{ prefeitura.nome }}</small><hr><div class="doc-preview-lines"></div><div class="doc-preview-table"></div><div class="doc-preview-lines"></div></div>
+            <div class="doc-watermark" id="watermark-preview" style="opacity: {{ form.opacidade / 100 }}; width: {{ form.largura_percentual }}%" {% if not form.ativo %}hidden{% endif %}>
+              <img id="watermark-preview-image" {% if config and config.imagem_path %}src="{{ url_for('main.configuracoes_documentos_imagem', prefeitura_id=prefeitura.id) }}"{% else %}hidden{% endif %} alt="Marca d’água da prefeitura">
+              <div id="watermark-preview-user" {% if not form.identificar_usuario %}hidden{% endif %}>Emitido por {{ current_user.nome_uvis }}<br>{{ prefeitura.nome }}<br>Data e hora de emissão</div>
+            </div>
+          </div>
+          <p class="small text-muted mt-3 mb-0" id="watermark-preview-status" aria-live="polite">{% if form.ativo %}Prévia das preferências selecionadas.{% else %}Marca d’água desabilitada.{% endif %}</p>
+        </div></section>
+      </div>
+    </div>
+  </form>
+
+  <section class="card shadow-sm mt-4"><div class="card-body p-4">
+    <h2 class="h5">Últimas alterações</h2>
+    {% if historico %}
+    <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Quando</th><th>Responsável</th><th>Preferências salvas</th></tr></thead>
+      <tbody>{% for evento in historico %}<tr>
+        <td class="text-nowrap">{{ evento.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ evento.usuario_nome }}</td>
+        <td>{{ 'Habilitada' if evento.depois.ativo else 'Desabilitada' }} · intensidade {{ evento.depois.opacidade }}% · tamanho {{ evento.depois.largura_percentual }}% · identificação {{ 'sim' if evento.depois.identificar_usuario else 'não' }}{% if evento.depois.imagem_alterada %} · {{ 'imagem atualizada' if evento.depois.imagem_nome else 'imagem removida' }}{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="text-muted mb-0">Nenhuma alteração registrada para esta prefeitura.</p>{% endif %}
+  </div></section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/configuracoes-documentos.js') }}"></script>
+{% endblock %}

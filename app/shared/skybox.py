@@ -185,6 +185,21 @@ def delete_skybox_file(value):
     raise SkyboxError(f"Falha ao remover arquivo do Skybox ({response.status_code}).")
 
 
+def download_skybox_bytes(value, *, max_bytes):
+    """Read a bounded private asset, also usable outside a request in PDF jobs."""
+    if not skybox_enabled():
+        raise SkyboxError("Skybox nao esta configurado.")
+    with _request("GET", remote_path_from_marker(value), stream=True) as upstream:
+        if upstream.status_code != 200:
+            raise SkyboxError(f"Falha ao baixar arquivo do Skybox ({upstream.status_code}).")
+        output = bytearray()
+        for chunk in upstream.iter_content(chunk_size=64 * 1024):
+            if len(output) + len(chunk) > max_bytes:
+                raise SkyboxError("Arquivo excede o limite de leitura.")
+            output.extend(chunk)
+        return bytes(output)
+
+
 def stream_skybox_file(value, range_header=None, *, as_attachment=False, conditional_headers=None):
     if not skybox_enabled():
         raise SkyboxError("Skybox nao esta configurado.")

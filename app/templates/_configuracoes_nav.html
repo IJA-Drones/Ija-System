@@ -1,0 +1,8 @@
+{% if current_user.is_authenticated and (is_covisa_user(current_user) or is_dev_user(current_user)) %}
+<li class="nav-item">
+  <a class="nav-link {% if request.endpoint in ['main.configuracoes', 'main.configuracoes_documentos'] %}active{% endif %}"
+     href="{{ url_for('main.configuracoes') }}">
+    <i class="bi bi-gear-fill me-2"></i><span>Configurações</span>
+  </a>
+</li>
+{% endif %}

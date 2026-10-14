@@ -14,6 +14,8 @@ from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from PIL import Image, ImageOps
+from app.shared.pdf_watermark import municipal_canvas, solicitacao_prefeitura_id
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -649,7 +651,7 @@ def _header_footer_factory_pretty(title):
     return _hf
 
 
-def build_admin_os_pdf_v2_export(os_id, args):
+def build_admin_os_pdf_v2_export(os_id, args, *, user=None):
     orient = args.get("orient", "portrait")
     pagesize = landscape(A4) if orient == "landscape" else A4
 
@@ -961,6 +963,7 @@ def build_admin_os_pdf_v2_export(os_id, args):
             story,
             onFirstPage=_header_footer_factory_pretty(header_title),
             onLaterPages=_header_footer_factory_pretty(header_title),
+            canvasmaker=municipal_canvas(solicitacao_prefeitura_id(solicitacao), user=user),
         )
         return caminho_pdf, f"os_{solicitacao.id}_formulario.pdf"
     except Exception:
