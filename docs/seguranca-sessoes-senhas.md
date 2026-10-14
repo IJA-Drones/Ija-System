@@ -43,8 +43,13 @@ obrigatória quando qualquer uma delas estiver ativa.
   `SESSION_IDLE_TIMEOUT_SECONDS=30` com `SECURITY_CONTROLS_ENABLED=1` e DEBUG.
   Reinicie o processo e entre novamente para testar.
   Esse parâmetro é rejeitado fora de DEBUG/TESTING; o processo de produção
-  continua usando `SESSION_IDLE_TIMEOUT_MINUTES`. Não é necessário executar
+  continua usando a política de inatividade abaixo. Não é necessário executar
   migrações nem alterar banco algum.
+- Contas com perfil `equipe_oceano` ou `piloto` e vínculo
+  `trabalha_oceano_azul` ativo têm 120 minutos de inatividade, no servidor e
+  no navegador. Os demais usuários seguem `SESSION_IDLE_TIMEOUT_MINUTES`.
+  O override de segundos para DEBUG/TESTING tem precedência sobre essa regra.
+  O limite total opcional de sessão continua sendo respeitado para todos.
 - Duração máxima opcional: `0` desativa o limite total; de 1 a 168 horas o ativa.
   O padrão é `0`, para encerrar a sessão somente por inatividade.
 - As quatro regras de composição são independentes; `0` desativa cada exigência.
