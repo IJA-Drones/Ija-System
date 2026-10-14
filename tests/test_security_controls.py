@@ -58,6 +58,8 @@ class SessionSecurityTests(unittest.TestCase):
         self.app.add_url_rule("/agro-home", "main.agro_piloto_dashboard", lambda: "agro")
         self.app.add_url_rule("/healthz", "health", lambda: "ok")
         self.stack.enter_context(patch("app.modules.auth.routes.authenticate_user", return_value=self.user))
+        self.stack.enter_context(patch("app.modules.auth.routes.get_authenticated_redirect_endpoint",
+                                       return_value="main.admin_dashboard"))
         self.stack.enter_context(patch("app.modules.auth.routes.authenticate_uvis_operacional", return_value=self.user))
         self.stack.enter_context(patch("app.modules.auth.routes.authenticate_piloto_agro", return_value=(self.user, None)))
         self.presence = self.stack.enter_context(patch("app.modules.auth.routes.record_user_presence"))
@@ -92,6 +94,58 @@ class SessionSecurityTests(unittest.TestCase):
         self.assertEqual(self.mutations, 0)
         with self.client.session_transaction() as stored:
             self.assertNotIn("_user_id", stored)
+
+    def test_oceano_teams_and_pilots_expire_only_after_two_idle_hours(self):
+        for role in ("equipe_oceano", "piloto"):
+            with self.subTest(role=role):
+                self.user.tipo_usuario = role
+                self.user.trabalha_oceano_azul = True
+                self.sign_in()
+                self.now += 7199
+                response = self.client.get("/auth/session-status")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json["expires_in"], 1)
+                self.now += 1
+                self.assertEqual(self.client.post("/protected").status_code, 303)
+                self.assertEqual(self.mutations, 0)
+
+    def test_other_users_keep_configured_idle_timeout(self):
+        for role, oceano in (("piloto", False), ("equipe_oceano", False),
+                             ("admin", True), ("equipe_uvis", True),
+                             ("piloto_agro", True), ("sup_veiculos", True)):
+            with self.subTest(role=role, oceano=oceano):
+                self.user.tipo_usuario = role
+                self.user.trabalha_oceano_azul = oceano
+                self.sign_in()
+                self.now += 60
+                self.assertEqual(self.client.get("/auth/session-status").status_code, 401)
+
+    def test_oceano_activity_and_browser_config_use_two_hours(self):
+        from app.shared.session_security import _template_security
+
+        self.user.tipo_usuario = "piloto"
+        self.user.trabalha_oceano_azul = True
+        self.now += 3600
+        self.assertEqual(self.activity().json["expires_in"], 7200)
+        with self.client:
+            self.client.get("/auth/session-status")
+            self.assertEqual(_template_security()["ija_security"]["idle_timeout_seconds"], 7200)
+        self.now += 7199
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 200)
+        self.now += 1
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 401)
+
+    def test_oceano_preserves_test_override_and_absolute_limit(self):
+        self.user.tipo_usuario = "piloto"
+        self.user.trabalha_oceano_azul = True
+        self.app.config["SESSION_IDLE_TIMEOUT_SECONDS"] = 30
+        self.now += 30
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 401)
+        self.app.config.pop("SESSION_IDLE_TIMEOUT_SECONDS")
+        self.app.config["SESSION_MAX_LIFETIME_HOURS"] = 1
+        self.sign_in()
+        self.now += 3600
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 401)
 
     def test_thirty_second_test_timeout_expires_at_boundary(self):
         self.app.config["SESSION_IDLE_TIMEOUT_SECONDS"] = 30

@@ -19,6 +19,12 @@ def idle_seconds():
     test_seconds = current_app.config.get("SESSION_IDLE_TIMEOUT_SECONDS")
     if test_seconds is not None:
         return int(test_seconds)
+    if (
+        current_user.is_authenticated
+        and getattr(current_user, "tipo_usuario", None) in {"equipe_oceano", "piloto"}
+        and getattr(current_user, "trabalha_oceano_azul", False)
+    ):
+        return 2 * 3600
     return int(current_app.config.get("SESSION_IDLE_TIMEOUT_MINUTES", 15)) * 60
 
 
