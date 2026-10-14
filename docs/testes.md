@@ -42,6 +42,7 @@ Esses resultados não medem cobertura de linhas, carga, integração real, insta
 | Arquivos, agro e KML | `test_skybox_upload.py`, `test_uvis_os_media_access.py`, `test_agro_payment_receipt_skybox.py`, `test_agro_talent_bank.py`, `test_dji_kml_auto_link.py`. |
 | Diagnóstico e apresentação | `test_dev_access.py`, `test_css_bundle.py`. |
 | Central Financeiro | `test_financeiro_central.py`, `financeiro_central_browser.test.cjs`; [escopo inicial](central-financeiro.md). |
+| Configurações municipais de documentos | `test_configuracoes_documentos.py`, `test_pdf_watermark.py`, `configuracoes_documentos_browser.test.cjs`; [acesso, armazenamento e implantação](configuracoes-documentos.md). |
 
 Todos os arquivos e suas contagens estão vinculados na [referência do código](referencia-codigo.md). Um teste pode validar apenas uma parte do fluxo; ter um arquivo com o nome da funcionalidade não comprova sua cobertura completa.
 

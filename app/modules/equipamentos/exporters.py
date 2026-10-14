@@ -7,6 +7,8 @@ from flask import current_app
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill, Side, Border
 from openpyxl.utils import get_column_letter
+from app.shared.pdf_watermark import municipal_canvas
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -264,7 +266,8 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
         _pecas_table(usos),
     ]
 
-    doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
+    doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer,
+              canvasmaker=municipal_canvas(getattr(manutencao, "prefeitura_id", None) or getattr(drone, "prefeitura_id", None)))
     return path
 
 

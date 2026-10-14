@@ -1619,6 +1619,7 @@ def _build_agro_conciliacao_item(item):
         fornecedor_nome = item.fornecedor.nome if item.fornecedor else (item.favorecido or "")
         return {
             "id": item.id,
+            "prefeitura_id": item.prefeitura_id,
             "origem": "Saida manual",
             "origem_slug": "saida",
             "movimento": "SAIDA",
@@ -1651,6 +1652,7 @@ def _build_agro_conciliacao_item(item):
         parcela_label = f" | Parcela {item.parcela_numero}/{item.parcela_total}" if (item.parcela_total or 1) > 1 else ""
         return {
             "id": item.id,
+            "prefeitura_id": item.prefeitura_id,
             "origem": "Entrada manual",
             "origem_slug": "entrada",
             "movimento": "ENTRADA",
@@ -1698,6 +1700,7 @@ def _build_agro_conciliacao_item(item):
     os_concluida = bool(ordem_servico and ordem_servico.status == OrdemServicoAgro.STATUS_CONCLUIDA)
     return {
         "id": item.id,
+        "prefeitura_id": item.prefeitura_id,
         "origem": "Recebivel",
         "origem_slug": "recebivel",
         "movimento": "ENTRADA",

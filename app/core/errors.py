@@ -2,6 +2,7 @@ import uuid
 
 from flask import current_app, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
+from app.shared.pdf_watermark import WatermarkError
 
 
 def _error_payload(code: int):
@@ -60,6 +61,11 @@ def _wants_json_response():
 
 
 def register_error_handlers(bp):
+    @bp.errorhandler(WatermarkError)
+    def watermark_unavailable(error):
+        current_app.logger.warning("PDF não gerado: marca d’água indisponível.")
+        return _render_error(503, "Não foi possível gerar o PDF", str(error))
+
     @bp.app_errorhandler(404)
     def pagina_nao_encontrada(e):
         return _render_error(

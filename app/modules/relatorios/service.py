@@ -6,6 +6,7 @@ from math import ceil
 from sqlalchemy import and_, extract, func, or_
 from sqlalchemy.orm import aliased, joinedload
 
+from app.shared.pdf_watermark import query_prefeitura_ids, solicitacao_prefeitura_expr, solicitacao_prefeitura_id
 from app.extensions import db
 from app.models import DjiFlightKmlRoute, Equipe, OrdemServico, Solicitacao, Usuario
 from app.shared.access import (
@@ -474,6 +475,7 @@ def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
 
     return {
         "solicitacao_id": solicitacao.id if solicitacao else None,
+        "prefeitura_id": solicitacao_prefeitura_id(solicitacao),
         "ordem_id": ordem.id if ordem else None,
         "uvis_nome": (usuario.nome_uvis if usuario else "") or "Nao informado",
         "regiao_nome": regiao_nome,
@@ -1579,6 +1581,8 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
         "dados_unidade": dados_unidade,
         "dados_mensais": dados_mensais,
         "ordens": ordens,
+        "prefeitura_ids": (query_prefeitura_ids(base_query, solicitacao_prefeitura_expr())
+                           + query_prefeitura_ids(mensal_query, solicitacao_prefeitura_expr())),
     }
 
 
