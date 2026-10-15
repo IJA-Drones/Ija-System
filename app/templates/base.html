@@ -228,14 +228,6 @@
               </div>
             </li>
             {% endif %}
-            {% if can_view_permission_audit is defined and can_view_permission_audit(current_user) %}
-            <li>
-              <a class="dropdown-item rounded-pill d-flex align-items-center justify-content-between mb-1" href="{{ url_for('main.auditoria_permissoes') }}">
-                <span>Auditoria de permissões</span>
-                <i class="bi bi-shield-check" aria-hidden="true"></i>
-              </a>
-            </li>
-            {% endif %}
             <li>
               <button
                 id="toggleDarkMode"

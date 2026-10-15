@@ -53,6 +53,46 @@ def _selection_labels(codes, labels):
     )
 
 
+def _changes(before, after):
+    """Compare saved selections, without inferring effective access rights."""
+    catalog = {}
+    area_labels = {}
+    for area in CATALOG["catalog"]:
+        area_labels[area["id"]] = area["label"]
+        catalog[("area", area["id"])] = {
+            "area": area["label"], "module": "Acesso à área", "action": "Acessar",
+        }
+        for module in area["modules"]:
+            for action in module[4].split():
+                code = f"{area['id']}.{module[0]}.{action}"
+                catalog[("permission", code)] = {
+                    "area": area["label"], "module": module[1],
+                    "action": CATALOG["labels"].get(action, action),
+                }
+
+    changes = []
+    for kind, code in before ^ after:
+        selection = catalog.get((kind, code))
+        if selection is None:
+            area_code = code.split(".", 1)[0]
+            selection = {
+                "area": area_labels.get(area_code, area_code),
+                "module": "Acesso à área" if kind == "area" else code,
+                "action": "Acessar" if kind == "area" else code,
+            }
+        changes.append({
+            "code": code,
+            "kind": kind,
+            **selection,
+            "before": (kind, code) in before,
+            "after": (kind, code) in after,
+        })
+    return sorted(changes, key=lambda change: (
+        change["area"].casefold(), change["module"].casefold(),
+        change["action"].casefold(), change["code"], change["kind"],
+    ))
+
+
 def _parse_date(value, label, errors):
     if not value:
         return None
@@ -122,6 +162,7 @@ def _entry(row, labels, profile_labels):
         "batch": row.lote,
         "added": _selection_labels(after - before, labels),
         "removed": _selection_labels(before - after, labels),
+        "changes": _changes(before, after),
         "first_configuration": row.versao_anterior == 0,
         "is_initialization": row.usuario_login == "inicializacao_neon" and row.usuario_id is None,
     }

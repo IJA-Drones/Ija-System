@@ -29,7 +29,7 @@
           </a>
           {% if can_view_permission_audit is defined and can_view_permission_audit(current_user) %}
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.auditoria_permissoes') }}">
-            <i class="bi bi-shield-check me-1" aria-hidden="true"></i> Permissões
+            <i class="bi bi-shield-check me-1" aria-hidden="true"></i> Auditoria de permissões
           </a>
           {% endif %}
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.financeiro_central') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">

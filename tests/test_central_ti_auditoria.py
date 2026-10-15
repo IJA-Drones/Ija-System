@@ -16,6 +16,7 @@ from werkzeug.routing import BuildError
 
 from app.extensions import db
 from app.models import CentralTiAuditoria, CentralTiPerfilConfiguracao, CentralTiSelecao
+from app.modules.auditoria import permissoes as permission_audit
 from app.modules.gestao_ti.catalog import AREA_CODES, PERMISSION_CODES
 from tests import test_central_ti as central_base
 
@@ -27,10 +28,35 @@ class _LinkParser(HTMLParser):
     def __init__(self):
         super().__init__()
         self.links = []
+        self.account_menu_links = []
+        self.link_labels = {}
+        self._account_menu_depth = 0
+        self._current_href = None
 
     def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag == "ul" and (
+            self._account_menu_depth
+            or "navbar-account-dropdown" in attributes.get("class", "").split()
+        ):
+            self._account_menu_depth += 1
         if tag == "a":
-            self.links.extend(value for key, value in attrs if key == "href")
+            self._current_href = attributes.get("href")
+            if self._current_href is not None:
+                self.links.append(self._current_href)
+                self.link_labels.setdefault(self._current_href, [])
+                if self._account_menu_depth:
+                    self.account_menu_links.append(self._current_href)
+
+    def handle_endtag(self, tag):
+        if tag == "ul" and self._account_menu_depth:
+            self._account_menu_depth -= 1
+        if tag == "a":
+            self._current_href = None
+
+    def handle_data(self, data):
+        if self._current_href is not None:
+            self.link_labels[self._current_href].append(data)
 
 
 class CentralTiAuditTests(unittest.TestCase):
@@ -194,6 +220,43 @@ class CentralTiAuditTests(unittest.TestCase):
         entry = context["entries"][0]
         self.assertCountEqual(entry["added"], ["Área: Financeiro", "Prefeitura · Relatórios · Exportar"])
         self.assertCountEqual(entry["removed"], ["Área: Agro", "Prefeitura · Relatórios · Editar"])
+        changes = {(change["kind"], change["code"]): change for change in entry["changes"]}
+        self.assertEqual(set(changes), {
+            ("area", "agro"), ("area", "financeiro"),
+            ("permission", "prefeitura.relatorios.editar"),
+            ("permission", "prefeitura.relatorios.exportar"),
+        })
+        self.assertEqual(
+            (changes[("permission", "prefeitura.relatorios.exportar")]["before"],
+             changes[("permission", "prefeitura.relatorios.exportar")]["after"]),
+            (False, True),
+        )
+        self.assertEqual(
+            (changes[("permission", "prefeitura.relatorios.editar")]["before"],
+             changes[("permission", "prefeitura.relatorios.editar")]["after"]),
+            (True, False),
+        )
+        self.assertIn("Antes", text)
+        self.assertIn("Depois", text)
+
+    def test_audit_template_tolerates_legacy_entries_before_server_restart(self):
+        self.seed_event(
+            antes={"areas": [], "permissions": ["prefeitura.relatorios.editar"]},
+            depois={"areas": [], "permissions": ["prefeitura.relatorios.exportar"]},
+        )
+        self.login("dev")
+        original_entry = permission_audit._entry
+
+        def legacy_entry(*args, **kwargs):
+            entry = original_entry(*args, **kwargs)
+            entry.pop("changes", None)
+            return entry
+
+        with patch.object(permission_audit, "_entry", side_effect=legacy_entry):
+            response, _ = self.page()
+        text = unescape(response.get_data(as_text=True))
+        for expected in ("Liberadas", "Bloqueadas", "Relatórios", "Editar", "Exportar"):
+            self.assertIn(expected, text)
 
     def test_unknown_historical_codes_are_visible_but_html_is_escaped(self):
         malicious_login = '<img src=x onerror="alert(1)">'
@@ -286,14 +349,29 @@ class CentralTiAuditTests(unittest.TestCase):
         self.assertTrue(response.cache_control.no_store)
         self.assertNotIn("test-only database failure", response.get_data(as_text=True))
 
-    def test_navigation_is_visible_to_dev_and_director_but_not_ti_manager(self):
+    def test_audit_is_in_dev_dashboard_and_absent_from_account_menus(self):
         for role in ("dev", "diretor"):
             with self.subTest(role=role):
                 self.login(role)
                 response, _ = self.page()
-                self.assertIn(AUDIT_URL, self.links(response))
+                parser = _LinkParser()
+                parser.feed(response.get_data(as_text=True))
+                self.assertNotIn(AUDIT_URL, parser.account_menu_links)
         # Reading the history must not give the director permission to edit roles.
         self.assertEqual(self.client.get("/central-ti").status_code, 403)
+
+        self.login("dev")
+        dashboard = self.client.get("/dev")
+        self.assertEqual(dashboard.status_code, 200)
+        dashboard_links = _LinkParser()
+        dashboard_links.feed(dashboard.get_data(as_text=True))
+        self.assertIn(AUDIT_URL, dashboard_links.links)
+        self.assertNotIn(AUDIT_URL, dashboard_links.account_menu_links)
+        self.assertEqual(
+            " ".join("".join(dashboard_links.link_labels[AUDIT_URL]).split()),
+            "Auditoria de permissões",
+        )
+
         self.login("gestor_ti")
         response = self.client.get("/central-ti")
         self.assertEqual(response.status_code, 200)
