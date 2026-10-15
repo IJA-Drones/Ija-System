@@ -98,5 +98,8 @@ class Config:
         "on",
     }
     AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "15000"))
+    AUDIT_SKYBOX_ENABLED = os.getenv("AUDIT_SKYBOX_ENABLED", "1").lower() in {"1", "true", "yes", "on"}
+    AUDIT_SKYBOX_NAMESPACE = os.getenv("AUDIT_SKYBOX_NAMESPACE", "")
+    AUDIT_SKYBOX_INTERVAL_SECONDS = int(os.getenv("AUDIT_SKYBOX_INTERVAL_SECONDS", "60"))
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False

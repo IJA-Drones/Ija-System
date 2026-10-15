@@ -67,6 +67,8 @@ def register_routes(bp):
                         motivo="Senha vencida renovada pelo próprio usuário.",
                     ))
                     db.session.commit()
+                    from app.modules.auditoria.recorder import mark_outcome
+                    mark_outcome('SENHA', 'RENOVADA', user)
                     session.clear()
                     session["_remember"] = "clear"
                     flash("Senha renovada com sucesso. Entre com sua nova senha.", "success")

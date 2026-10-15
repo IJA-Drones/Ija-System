@@ -22,7 +22,7 @@ def parse_date_filter(value):
         return None
 
 
-def build_auditoria_filters(q, metodo, tipo_evento, status, data_inicio, data_fim):
+def build_auditoria_filters(q, metodo, tipo_evento, status, data_inicio, data_fim, prefeitura_id='', resultado=''):
     return {
         "q": (q or "").strip(),
         "metodo": (metodo or "").strip().upper(),
@@ -30,10 +30,12 @@ def build_auditoria_filters(q, metodo, tipo_evento, status, data_inicio, data_fi
         "status": (status or "").strip(),
         "data_inicio": (data_inicio or "").strip(),
         "data_fim": (data_fim or "").strip(),
+        "prefeitura_id": (prefeitura_id or "").strip(),
+        "resultado": (resultado or "").strip(),
     }
 
 
-def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inicio="", data_fim=""):
+def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inicio="", data_fim="", prefeitura_id='', resultado=''):
     query = AuditoriaUsuario.query
 
     if q:
@@ -49,11 +51,24 @@ def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inici
                 func.lower(func.coalesce(AuditoriaUsuario.endpoint, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.path, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.ip, "")).like(term),
+                func.lower(func.coalesce(AuditoriaUsuario.objeto_tipo, "")).like(term),
+                func.lower(func.coalesce(AuditoriaUsuario.objeto_id, "")).like(term),
+                func.lower(func.coalesce(AuditoriaUsuario.evento_id, "")).like(term),
             )
         )
 
     if metodo:
         query = query.filter(AuditoriaUsuario.metodo == metodo)
+
+    if prefeitura_id == 'sistema':
+        query = query.filter(AuditoriaUsuario.prefeitura_id.is_(None))
+    elif prefeitura_id:
+        try:
+            query = query.filter(AuditoriaUsuario.prefeitura_id == int(prefeitura_id))
+        except ValueError:
+            query = query.filter(False)
+    if resultado:
+        query = query.filter(AuditoriaUsuario.resultado == resultado)
 
     if tipo_evento:
         query = query.filter(AuditoriaUsuario.tipo_evento == tipo_evento)
@@ -88,7 +103,7 @@ def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inici
 
 
 def trim_auditoria_usuarios(connection, max_records):
-    """Keep only the newest audit records in the same transaction as the insert."""
+    """Trim only verified remote copies; pending events survive any local limit."""
     try:
         max_records = int(max_records)
     except (TypeError, ValueError):
@@ -102,7 +117,8 @@ def trim_auditoria_usuarios(connection, max_records):
     ).offset(max_records).subquery()
     result = connection.execute(
         delete(AuditoriaUsuario.__table__).where(
-            AuditoriaUsuario.id.in_(select(old_ids.c.id))
+            AuditoriaUsuario.id.in_(select(old_ids.c.id)),
+            AuditoriaUsuario.arquivado_em.isnot(None),
         )
     )
     return result.rowcount or 0

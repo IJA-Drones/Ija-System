@@ -717,6 +717,9 @@
   "main.admin_logs_usuarios": {
     "GET": "sistema.auditoria.consultar"
   },
+  "main.admin_auditoria_arquivo": {
+    "GET": "sistema.auditoria.consultar"
+  },
   "main.denuncias_listar": {
     "GET": "prefeitura.denuncias.consultar"
   },

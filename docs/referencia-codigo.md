@@ -11,15 +11,15 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Item | Quantidade |
 | --- | ---: |
 | Módulos em `app/modules` | 38 |
-| Arquivos Python em `app` | 178 |
-| Declarações de rotas | 373 |
-| Modelos com tabela em `app/models.py` | 70 |
+| Arquivos Python em `app` | 180 |
+| Declarações de rotas | 374 |
+| Modelos com tabela em `app/models.py` | 72 |
 | Templates HTML | 176 |
 | Arquivos CSS, incluindo bundle | 183 |
 | Arquivos JavaScript em `app/static`, incluindo service worker | 15 |
-| Revisões Alembic | 133 |
-| Arquivos Python de teste | 43 |
-| Funções/métodos Python com prefixo `test_` | 585 |
+| Revisões Alembic | 134 |
+| Arquivos Python de teste | 44 |
+| Funções/métodos Python com prefixo `test_` | 599 |
 | Arquivos Node de teste | 7 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
@@ -34,7 +34,7 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [agenda_notificacoes](../app/modules/agenda_notificacoes/) | 7 | 3 |
 | [agro](../app/modules/agro/) | 101 | 9 |
 | [anexos](../app/modules/anexos/) | 3 | 3 |
-| [auditoria](../app/modules/auditoria/) | 1 | 3 |
+| [auditoria](../app/modules/auditoria/) | 2 | 5 |
 | [auth](../app/modules/auth/) | 8 | 5 |
 | [backup](../app/modules/backup/) | 3 | 3 |
 | [canceladas](../app/modules/canceladas/) | 2 | 3 |
@@ -86,7 +86,9 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | `FeedbackTopico` | `feedback_topicos` | `id`, `prefeitura_id`, `uvis_usuario_id`, `uvis_nome`, `regiao`, `criado_por_id`, `criado_por_nome`, `criado_por_tipo`, `titulo`, `descricao`, `categoria`, `setor_suporte`, `status`, `prioridade`, `responsavel_id`, `resolvido_em`, `criado_em`, `atualizado_em` | `prefeitura_id → prefeituras.id`; `uvis_usuario_id → usuarios.id`; `criado_por_id → usuarios.id`; `responsavel_id → usuarios.id` |
 | `FeedbackComentario` | `feedback_comentarios` | `id`, `topico_id`, `usuario_id`, `usuario_nome`, `usuario_tipo`, `mensagem`, `interno`, `criado_em` | `topico_id → feedback_topicos.id`; `usuario_id → usuarios.id` |
 | `FeedbackComentarioAnexo` | `feedback_comentario_anexos` | `id`, `comentario_id`, `arquivo_path`, `arquivo_nome`, `mime_type`, `tamanho_bytes`, `criado_em` | `comentario_id → feedback_comentarios.id` |
-| `AuditoriaUsuario` | `auditoria_usuarios` | `id`, `usuario_id`, `usuario_nome`, `usuario_login`, `tipo_usuario`, `metodo`, `tipo_evento`, `endpoint`, `path`, `query_string`, `status_code`, `ip`, `user_agent`, `referrer`, `criado_em` | — |
+| `AuditoriaUsuario` | `auditoria_usuarios` | `id`, `usuario_id`, `usuario_nome`, `usuario_login`, `tipo_usuario`, `metodo`, `tipo_evento`, `endpoint`, `path`, `query_string`, `status_code`, `ip`, `user_agent`, `referrer`, `criado_em`, `evento_id`, `requisicao_id`, `prefeitura_id`, `prefeitura_usuario_id`, `objeto_tipo`, `objeto_id`, `resultado`, `detalhes`, `arquivo_id`, `arquivado_em` | `arquivo_id → auditoria_arquivos.id` |
+| `AuditoriaArquivo` | `auditoria_arquivos` | `id`, `caminho`, `conteudo`, `sha256`, `quantidade`, `prefeitura_id`, `criado_em`, `enviado_em`, `tentativas`, `proxima_tentativa`, `lease_token`, `lease_ate`, `ultimo_erro` | — |
+| `AuditoriaInstalacao` | `auditoria_instalacao` | `id`, `identificador` | — |
 | `WatchdogDeployEvent` | `watchdog_deploy_events` | `id`, `event_id`, `status`, `source`, `health_url`, `failures`, `attempts`, `started_at`, `recovered_at`, `criado_em` | — |
 | `UsuarioPresenca` | `usuario_presencas` | `id`, `usuario_id`, `primeiro_acesso_em`, `ultimo_acesso_em`, `login_em`, `logout_em`, `ultimo_metodo`, `ultimo_endpoint`, `ultimo_path`, `ultimo_query_string`, `ip`, `user_agent`, `referrer` | `usuario_id → usuarios.id` |
 | `EquipeUvis` | `equipe_uvis` | `id`, `uvis_usuario_id`, `nome_equipe`, `ordem`, `nome`, `funcao`, `contato`, `criado_em` | `uvis_usuario_id → usuarios.id` |
@@ -146,7 +148,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 ## Migrações
 
-Heads: `d94f2a7610be`.
+Heads: `a6e3f8129c40`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -162,8 +164,8 @@ Fonte: [app/__init__.py](../app/__init__.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/healthz` | `healthz` | 186 |
-| GET | `/healthz/full` | `healthz_full` | 190 |
+| GET | `/healthz` | `healthz` | 79 |
+| GET | `/healthz/full` | `healthz_full` | 83 |
 
 ### app/core/routes.py
 
@@ -362,7 +364,8 @@ Fonte: [app/modules/auditoria/routes.py](../app/modules/auditoria/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/admin/logs-usuarios` | `admin_logs_usuarios` | 21 |
+| GET | `/admin/logs-usuarios` | `admin_logs_usuarios` | 24 |
+| GET | `/admin/logs-usuarios/arquivo/<string:arquivo_id>` | `admin_auditoria_arquivo` | 54 |
 
 ### app/modules/auth/password_routes.py
 
@@ -378,10 +381,10 @@ Fonte: [app/modules/auth/routes.py](../app/modules/auth/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/login` | `login` | 68 |
-| GET, POST | `/uvis-operacional/login` | `login_uvis_operacional` | 102 |
-| GET, POST | `/agro/login` | `login_piloto_agro` | 131 |
-| GET | `/logout` | `logout` | 160 |
+| GET, POST | `/login` | `login` | 70 |
+| GET, POST | `/uvis-operacional/login` | `login_uvis_operacional` | 104 |
+| GET, POST | `/agro/login` | `login_piloto_agro` | 133 |
+| GET | `/logout` | `logout` | 162 |
 
 ### app/modules/auth/security_routes.py
 
@@ -841,8 +844,8 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/auth/session-status` | `status` | 144 |
-| POST | `/auth/session-activity` | `activity` | 153 |
+| GET | `/auth/session-status` | `status` | 146 |
+| POST | `/auth/session-activity` | `activity` | 155 |
 
 ## Testes Python
 
@@ -850,6 +853,7 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | --- | ---: |
 | [test_agro_payment_receipt_skybox.py](../tests/test_agro_payment_receipt_skybox.py) | 1 |
 | [test_agro_talent_bank.py](../tests/test_agro_talent_bank.py) | 4 |
+| [test_audit_trail.py](../tests/test_audit_trail.py) | 14 |
 | [test_central_ti.py](../tests/test_central_ti.py) | 38 |
 | [test_central_ti_documentos_permissions.py](../tests/test_central_ti_documentos_permissions.py) | 7 |
 | [test_central_ti_migration_postgres.py](../tests/test_central_ti_migration_postgres.py) | 8 |

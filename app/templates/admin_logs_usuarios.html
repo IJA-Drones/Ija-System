@@ -24,7 +24,7 @@
     {% set ns.deletes = ns.deletes + 1 %}
   {% endif %}
 {% endfor %}
-{% if filters.q or filters.metodo or filters.tipo_evento or filters.status or filters.data_inicio or filters.data_fim %}
+{% if filters.q or filters.metodo or filters.tipo_evento or filters.status or filters.data_inicio or filters.data_fim or filters.prefeitura_id or filters.resultado %}
   {% set ns.filtered = 1 %}
 {% endif %}
 
@@ -44,12 +44,25 @@
     </div>
 
     <div class="listing-actions">
-      <span class="auditoria-retention"><i class="bi bi-database-check"></i> Retenção: <strong>15 mil</strong></span>
+      <span class="auditoria-retention"><i class="bi bi-database-check"></i> Histórico local: <strong>{{ retention if retention > 0 else 'sem limite' }}</strong></span>
       <a href="{{ url_for('main.admin_dashboard') }}"
          class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
     </div>
+  </div>
+
+  <div class="alert {{ 'alert-warning' if skybox.falhas or not skybox.configurado else 'alert-info' }}" role="status">
+    <strong>Arquivo de auditoria no Skybox</strong>
+    <p class="mb-1">{{ skybox.pendentes }} evento(s) aguardando arquivamento · {{ skybox.arquivos }} arquivo(s) verificado(s).</p>
+    {% if not skybox.configurado %}
+      <p class="mb-0">O envio está desativado ou o Skybox não está configurado. Os eventos permanecem no banco.</p>
+    {% elif skybox.falhas %}
+      <p class="mb-0">Há envios pendentes após uma falha. O sistema tentará novamente automaticamente.</p>
+    {% else %}
+      <p class="mb-0">Envio automático para a pasta <strong>auditoria_sistema</strong>. Eventos pendentes não são apagados pela limpeza local.</p>
+    {% endif %}
+    {% if skybox.ultimo_envio %}<small>Último envio verificado: {{ brazil_datetime(skybox.ultimo_envio).strftime('%d/%m/%Y às %H:%M:%S') }}.</small>{% endif %}
   </div>
 
   <div class="auditoria-stats mb-4">
@@ -130,6 +143,25 @@
         <form method="GET" action="{{ url_for('main.admin_logs_usuarios') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
           <div class="auditoria-filter-hint"><i class="bi bi-info-circle"></i> Combine filtros para localizar uma ação específica ou investigar falhas.</div>
           <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label for="auditPrefeitura" class="small text-muted fw-semibold">Prefeitura do registro</label>
+              <select id="auditPrefeitura" name="prefeitura_id" class="form-select">
+                <option value="">Todas</option>
+                <option value="sistema" {% if filters.prefeitura_id == 'sistema' %}selected{% endif %}>Sistema / sem vínculo informado</option>
+                {% for prefeitura in prefeituras %}
+                  <option value="{{ prefeitura.id }}" {% if filters.prefeitura_id == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="auditResultado" class="small text-muted fw-semibold">Resultado</label>
+              <select id="auditResultado" name="resultado" class="form-select">
+                <option value="">Todos</option>
+                {% for value, label in [('CONFIRMADO','Alteração confirmada'),('SUCESSO','Sucesso'),('FALHA','Falha'),('BLOQUEADO','Login bloqueado'),('NEGADO','Acesso negado'),('SENHA_VENCIDA','Senha vencida'),('RENOVADA','Senha renovada'),('ENCERRADA','Sessão encerrada'),('RESPONDIDA','Requisição respondida')] %}
+                  <option value="{{ value }}" {% if filters.resultado == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
             <div class="col-12">
               <label class="small text-muted fw-semibold" for="auditoriaBusca">Busca rápida</label>
               <input type="search"
@@ -155,6 +187,10 @@
               <select name="tipo_evento" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% set tipos_evento = [
+                  ('LOGIN', 'Login'), ('LOGOUT', 'Saída'), ('SESSAO_EXPIRADA', 'Sessão expirada'),
+                  ('SENHA', 'Senha renovada'), ('ACESSO_NEGADO', 'Acesso negado'),
+                  ('CONSULTA', 'Consulta'), ('EXPORTACAO', 'Exportação / download'),
+                  ('REQUISICAO', 'Requisição'), ('ALTERACAO_LOTE', 'Alteração em lote'),
                   ('ACAO', 'Ação'),
                   ('CANCELAMENTO', 'Cancelamento'),
                   ('FORMULARIO', 'Formulário'),
@@ -277,6 +313,8 @@
                   </td>
 
                   <td data-label="Evento">
+                    {% if log.resultado %}<div class="fw-semibold mb-1">{{ log.resultado.replace('_', ' ') }}</div>{% endif %}
+                    <div class="small text-muted mb-1">{{ 'Prefeitura #' ~ log.prefeitura_id if log.prefeitura_id else 'Sistema / sem vínculo informado' }}</div>
                     <div class="auditoria-badge-group">
                       <span class="badge {{ metodo_badge }}">{{ metodo }}</span>
                       <span class="badge bg-secondary">{{ tipo_evento }}</span>
@@ -284,10 +322,32 @@
                         {% if status_code %}
                           HTTP {{ status_code }}
                         {% else %}
-                          Sem status
+                          Transação
                         {% endif %}
                       </span>
                     </div>
+                    <details class="mt-2">
+                      <summary>Ver detalhes</summary>
+                      <div class="small mt-2">
+                        <p>{{ (log.objeto_tipo or 'Registro legado').replace('_', ' ') }}{% if log.objeto_id %} #{{ log.objeto_id }}{% endif %}</p>
+                        {% if log.detalhes and log.detalhes.get('campos') %}
+                          <div class="table-responsive"><table class="table table-sm">
+                            <thead><tr><th>Campo</th><th>Antes</th><th>Depois</th></tr></thead>
+                            <tbody>{% for field, change in log.detalhes['campos'].items() %}
+                              <tr><td>{{ field.replace('_',' ') }}</td><td>{{ change.antes if change.antes is not none else '—' }}</td><td>{{ change.depois if change.depois is not none else '—' }}</td></tr>
+                            {% endfor %}</tbody>
+                          </table></div>
+                        {% elif log.detalhes and log.detalhes.get('observacao') %}
+                          <p>{{ log.detalhes.observacao }}</p>
+                        {% else %}
+                          <p>Evento de acesso ou registro sem alterações detalhadas.</p>
+                        {% endif %}
+                        {% if log.evento_id %}<p>Identificador: {{ log.evento_id }}</p>{% endif %}
+                        {% if log.arquivado_em and log.arquivo_id %}
+                          <a href="{{ url_for('main.admin_auditoria_arquivo', arquivo_id=log.arquivo_id) }}">Baixar arquivo de auditoria do Skybox</a>
+                        {% else %}<span>Aguardando arquivamento no Skybox.</span>{% endif %}
+                      </div>
+                    </details>
                   </td>
 
                   <td data-label="Tela / Rota">

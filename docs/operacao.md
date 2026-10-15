@@ -93,6 +93,24 @@ Jobs de vídeo usam executor e metadados locais; jobs de PDF de coleta usam dici
 
 ## Scripts de manutenção
 
+### Auditoria e arquivo no Skybox
+
+Aplicar a migração `a6e3f8129c40` antes de reiniciar o código novo. Ela amplia `auditoria_usuarios`, cria a fila `auditoria_arquivos` e gera um identificador exclusivo em `auditoria_instalacao`. Os eventos legados são preservados, sem preencher artificialmente prefeitura ou diferenças antigas. O arquivador também os copia, omitindo query strings, URLs e referrers legados.
+
+O caminho remoto é `auditoria_sistema/<instalacao>/prefeitura-<id>|sistema/AAAA/MM/DD/<lote>.jsonl`. Cada linha é um evento JSON; datas são UTC. `AUDIT_SKYBOX_NAMESPACE` pode acrescentar um prefixo como `teste` ou `producao` (letras, números, hífen e sublinhado). Bancos clonados copiam o identificador da instalação: use namespaces diferentes antes de ativar ambos. Os arquivos são privados e usam as credenciais Skybox já configuradas.
+
+Por padrão, `AUDIT_SKYBOX_ENABLED=1`; o trabalhador começa após a primeira requisição e verifica a fila a cada `AUDIT_SKYBOX_INTERVAL_SECONDS=60`. Em testes automatizados ele não inicia. A fila sobrevive a reinícios e usa reserva de 15 minutos por lote; uma reserva expirada é recuperada. Reenvios usam exatamente o mesmo conteúdo e caminho. Após confirmação de conteúdo remoto, o payload duplicado da fila é liberado e ficam os metadados. A aplicação não remove os arquivos remotos automaticamente.
+
+Para processar a fila sem esperar o trabalhador (ou por um agendador externo):
+
+```bash
+flask --app run.py auditoria-enviar --max-lotes 5
+```
+
+O limite `AUDIT_RETENTION_MAX_RECORDS=15000` é aplicado somente a eventos antigos já arquivados e verificados; pendentes podem excedê-lo. Não há limpeza silenciosa de pendências se a conexão remota falhar. A tela **Logs de Usuários**, exclusiva de DEV, mostra pendências, falhas de envio e última verificação, além de filtros de prefeitura/resultado e diferenças por registro. Os links de download apontam para rotas autenticadas da aplicação, nunca para URLs públicas do Skybox.
+
+Homologação: alterar e desfazer uma OS, testar os três logins, negar um acesso entre municípios, exportar um documento e observar os eventos. Simular falha de upload e divergência de checksum; comprovar que nada fica como arquivado e que o reenvio posterior funciona. Testar dois trabalhadores simultâneos e reinício com reserva expirada. O Skybox fornece arquivo remoto; syslog orientado à conexão continua como integração separada. O hash permite verificação de conteúdo, mas não é assinatura digital nem bloqueio contra alteração por quem administra o armazenamento.
+
 Leia argumentos e destino antes de executar. Os scripts que usam `create_app()` herdam configuração e efeitos de inicialização.
 
 | Script | Efeito e precaução operacional |

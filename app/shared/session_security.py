@@ -68,6 +68,8 @@ def _json_request():
 
 
 def _expire_session(reason):
+    from app.modules.auditoria.recorder import mark_outcome
+    mark_outcome('SESSAO_EXPIRADA', 'ENCERRADA', current_user)
     login_url = _login_url()
     current_app.logger.info("Sessão encerrada: usuario_id=%s motivo=%s", current_user.id, reason)
     logout_user()

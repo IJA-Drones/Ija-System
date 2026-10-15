@@ -327,4 +327,6 @@ def test_migration_preserves_existing_passwords_and_reverses_cleanly():
             migration.downgrade()
             assert 'politica_senha' not in inspect(conn).get_table_names()
             assert 'senha_alterada_em' not in {c['name'] for c in inspect(conn).get_columns('usuarios')}
-    assert ScriptDirectory(str(ROOT/'migrations')).get_heads() == [migration.revision]
+    scripts = ScriptDirectory(str(ROOT/'migrations'))
+    assert len(scripts.get_heads()) == 1
+    assert migration.revision in {revision.revision for revision in scripts.walk_revisions()}

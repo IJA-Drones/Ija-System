@@ -25,6 +25,8 @@ def _password_renewal_redirect(user, channel):
         if verified_hash is not None and verified_hash != user.senha_hash:
             raise LoginProtectionUnavailable()
         if password_expired(user):
+            from app.modules.auditoria.recorder import mark_outcome
+            mark_outcome('LOGIN', 'SENHA_VENCIDA', user)
             start_renewal(user, channel)
             return redirect(url_for("auth.renew_password"), code=303)
     except SQLAlchemyError:
