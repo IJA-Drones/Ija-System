@@ -142,3 +142,7 @@ Leia argumentos e destino antes de executar. Os scripts que usam `create_app()` 
 | Boletim sem informação | Configuração municipal, erro do provedor e fallback; não tratar indisponibilidade como zero casos. |
 
 Para encaminhar um incidente, registre horário/fuso, versão, perfil, endpoint, status e passos para reproduzir. Remova senhas, tokens, documentos pessoais e conteúdo sensível das evidências.
+
+## Reserva de edição
+
+Aplicar `b7f2c9d41e60` antes de reiniciar todos os processos com o controle de edição. O padrão de reserva é de 300 segundos; `EDIT_LEASE_SECONDS` aceita 60 a 1800. Ver escopo, funcionamento, liberação pelo DEV e roteiro de homologação em [Controle de edição simultânea](controle-edicao.md).

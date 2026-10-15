@@ -40,6 +40,7 @@
             
             {# Rota genérica atualizada #}
             <form action="{{ url_for('main.editar_solicitacao', id=pedido.id) }}" method="POST" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=pedido.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+{% if edit_fields is defined %}{{ edit_fields(pedido, 'main.editar_solicitacao') }}{% endif %}
                 <input type="hidden" name="latitude" value="{{ pedido.latitude if pedido.latitude is not none else '' }}">
                 <input type="hidden" name="longitude" value="{{ pedido.longitude if pedido.longitude is not none else '' }}">
                 <input type="hidden" name="risco_aereo" value="{{ '1' if pedido.area_restrita else '0' }}">

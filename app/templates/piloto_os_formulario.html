@@ -42,6 +42,9 @@
 
       {% set current_os_tab = active_os_tab|default('dados') %}
       <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+        {% if edit_fields is defined and (not modo_visualizacao or can_edit_uvis_tab) %}
+          {{ edit_fields(solicitacao, request.endpoint) }}
+        {% endif %}
         <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link {% if current_os_tab == 'dados' %}active{% endif %}" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="{{ 'true' if current_os_tab == 'dados' else 'false' }}">

@@ -14,7 +14,7 @@ from app.models import AuditoriaUsuario
 
 INTERNAL_TABLES = {
     'auditoria_usuarios', 'auditoria_arquivos', 'auditoria_instalacao',
-    'login_bloqueios', 'login_eventos', 'usuario_presencas', 'watchdog_deploy_events',
+    'edicao_reservas', 'login_bloqueios', 'login_eventos', 'usuario_presencas', 'watchdog_deploy_events',
     'rastreamento_sincronizacao', 'rastreamento_posicoes', 'rastreamento_historicos',
 }
 # Field names are recorded for other columns, but their contents are not copied.
@@ -205,7 +205,7 @@ def register_audit(app):
         authenticated = actor.get('usuario_id') is not None
         denied = response.status_code in (401, 403, 429)
         # Polling/presence and static assets are not sensitive consultations.
-        if endpoint in QUIET_ENDPOINTS or endpoint.startswith('session_security.'):
+        if endpoint in QUIET_ENDPOINTS or endpoint.startswith(('session_security.', 'edit_control.')):
             if not getattr(g, 'audit_outcome', None):
                 return response
         elif not (authenticated or is_login or denied or request.method in {'POST', 'PUT', 'PATCH', 'DELETE'}):

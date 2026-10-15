@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5" style="max-width: 800px;">
+  <div class="alert alert-warning border shadow-sm p-4" role="alert">
+    <h1 class="h4">Não foi possível salvar esta edição</h1>
+    <p>{{ message }}</p>
+    <p class="mb-0">Se você tinha preenchido o formulário, use Voltar no navegador para recuperar e copiar o que precisar. Depois abra novamente o registro e revise os dados atuais antes de tentar salvar.</p>
+  </div>
+</div>
+{% endblock %}

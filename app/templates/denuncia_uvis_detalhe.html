@@ -33,6 +33,7 @@
     {% else %}
     <form method="post" id="formDenunciaSolicitacao" class="form-no-loading" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
       {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+      {% if edit_fields is defined %}{{ edit_fields(denuncia, 'main.uvis_denuncia_detalhe') }}{% endif %}
       <input type="hidden" name="risco_aereo" value="0">
       {% for name in ['logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'latitude', 'longitude', 'place_id'] %}
       <input type="hidden" name="{{ name }}" value="{{ form[name] }}">

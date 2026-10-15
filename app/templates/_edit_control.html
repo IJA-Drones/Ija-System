@@ -1,0 +1,22 @@
+<div class="edit-control alert alert-info border shadow-sm mb-3" role="region" aria-label="Proteção de edição"
+     data-edit-key="{{ edit_key }}" data-edit-api="{{ edit_api }}">
+  <strong class="d-block mb-1">Edição protegida</strong>
+  <p class="edit-message mb-2" role="status" aria-live="polite">Você está consultando este registro. Clique em Iniciar edição para reservar e alterar os dados.</p>
+  <div class="d-flex gap-2 flex-wrap">
+    <button type="button" class="btn btn-primary btn-sm edit-start">Iniciar edição</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm edit-cancel" hidden>Cancelar edição e liberar</button>
+    <button type="button" class="btn btn-outline-primary btn-sm edit-reload" hidden>Recarregar dados</button>
+  </div>
+  {% if edit_dev %}
+  <details class="edit-dev mt-2" hidden>
+    <summary>DEV: liberar a reserva de outro editor</summary>
+    <label class="d-block mt-2">Motivo da liberação
+      <input type="text" class="form-control edit-reason" minlength="10" maxlength="300" placeholder="Explique por que a reserva precisa ser liberada">
+    </label>
+    <button type="button" class="btn btn-outline-danger btn-sm mt-2 edit-force">Liberar e registrar na auditoria</button>
+  </details>
+  {% endif %}
+  <input type="hidden" name="_edit_ticket" value="{{ ticket }}">
+  <input type="hidden" name="_edit_token" value="">
+  <noscript><p class="mb-0 mt-2">Ative o JavaScript para iniciar uma edição protegida. A consulta continua disponível.</p></noscript>
+</div>
