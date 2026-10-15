@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from werkzeug.exceptions import Conflict, HTTPException
 
 from app.extensions import db
-from app.models import EdicaoReserva, Solicitacao, Denuncia, OrdemServico, OrdemServicoEquipeUvis
+from app.models import EdicaoReserva, Solicitacao, Denuncia, OrdemServico, OrdemServicoEquipeUvis, Usuario
 
 bp = Blueprint('edit_control', __name__)
 # Both the request and execution forms reserve the same logical OS.
@@ -31,6 +31,16 @@ PROTECTED = {
     'main.uvis_denuncia_detalhe': ('denuncia', 'denuncia_id'),
 }
 MODELS = (Solicitacao, Denuncia, OrdemServico, OrdemServicoEquipeUvis)
+DIRECT_EDIT_ROLES = frozenset({'piloto', 'equipe_oceano', 'equipe_uvis', 'piloto_agro'})
+
+
+def _direct_editor(user):
+    return bool(user and user.is_authenticated and user.tipo_usuario in DIRECT_EDIT_ROLES)
+
+
+def _direct_request():
+    # This exempts reservations only; each route still authorizes access and edits.
+    return has_request_context() and _direct_editor(current_user)
 
 
 class EditConflict(Conflict):
@@ -268,7 +278,7 @@ def lease(action):
 
 
 def _require_form():
-    if request.method != 'POST' or request.endpoint not in PROTECTED or not current_user.is_authenticated:
+    if request.method != 'POST' or request.endpoint not in PROTECTED or not current_user.is_authenticated or _direct_request():
         return
     kind, param = PROTECTED[request.endpoint]
     # Authorize before inspecting reservation metadata or accepting a form ticket.
@@ -299,7 +309,7 @@ def _key_from_request():
 
 
 def _before_flush(orm_session, *_):
-    if not enabled():
+    if not enabled() or _direct_request():
         return
     keys = set()
     background = orm_session.info.get('_edit_background_media') if not has_request_context() else None
@@ -316,6 +326,9 @@ def _before_flush(orm_session, *_):
         if key and key[1]:
             keys.add(key)
     for kind, oid in sorted(keys):
+        if (background and orm_session.info.get('_edit_background_direct')
+                and kind == 'solicitacao' and oid == background.get('os_id')):
+            continue
         row = _locked_state(kind, oid, orm_session.connection())
         token = (request.headers.get('X-Edit-Token') or request.form.get('_edit_token', '')) if has_request_context() else ''
         if _active(row):
@@ -329,7 +342,7 @@ def _before_flush(orm_session, *_):
 
 
 def check_available(kind, oid):
-    if not enabled():
+    if not enabled() or _direct_request():
         return
     row = _locked_state(kind, oid)
     token = request.headers.get('X-Edit-Token') or request.form.get('_edit_token', '')
@@ -340,7 +353,7 @@ def check_available(kind, oid):
 
 
 def media_job_credentials():
-    if not enabled() or not has_request_context():
+    if not enabled() or not has_request_context() or _direct_request():
         return {}
     token = request.headers.get('X-Edit-Token', '')
     if not token:
@@ -356,6 +369,14 @@ def media_job_credentials():
 
 def prepare_background_media(job):
     if not enabled():
+        return
+    db.session.info.pop('_edit_background_direct', None)
+    # Resolve the persisted account, including jobs queued before the exemption.
+    # Keep the worker restricted to this OS's video fields in _before_flush.
+    user = db.session.get(Usuario, job.get('user_id')) if job.get('user_id') else None
+    if _direct_editor(user):
+        db.session.info['_edit_background_media'] = job
+        db.session.info['_edit_background_direct'] = True
         return
     row = _locked_state('solicitacao', job['os_id'])
     if job.get('edit_generation') is not None and job['edit_generation'] != row['geracao']:
@@ -405,7 +426,7 @@ event.listen(Session, 'after_rollback', _after_rollback)
 
 
 def edit_fields(obj, endpoint):
-    if endpoint not in PROTECTED or not current_user.is_authenticated:
+    if endpoint not in PROTECTED or not current_user.is_authenticated or _direct_request():
         return ''
     return Markup(render_template('_edit_control.html', ticket=_ticket(obj, endpoint),
         edit_key=f'{_key(obj)[0]}:{obj.id}', edit_api=url_for('edit_control.lease', action='reservar').rsplit('/',1)[0],
@@ -440,7 +461,7 @@ def register_edit_control(app):
     def response_versions(response):
         response.headers['Cache-Control'] = 'no-store' if current_user.is_authenticated else response.headers.get('Cache-Control', 'no-cache')
         # Refresh only after this tab's own successful save/media mutation, not on arbitrary polls.
-        if response.status_code < 400 and request.blueprint != 'edit_control' and (request.method in {'POST', 'PUT', 'DELETE'} or getattr(g, 'edit_media_transition', None)):
+        if not _direct_request() and response.status_code < 400 and request.blueprint != 'edit_control' and (request.method in {'POST', 'PUT', 'DELETE'} or getattr(g, 'edit_media_transition', None)):
             ticket = request.headers.get('X-Edit-Ticket') or request.form.get('_edit_ticket')
             token = request.headers.get('X-Edit-Token') or request.form.get('_edit_token')
             if ticket and token:

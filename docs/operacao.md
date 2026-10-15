@@ -127,6 +127,18 @@ Leia argumentos e destino antes de executar. Os scripts que usam `create_app()` 
 
 ## Solução de problemas
 
+### Vídeos: sessão temporária ausente (404)
+
+O upload em partes mantém `session.json`, partes do vídeo e trabalhos de processamento em disco. Um deploy que substitua o disco temporário, a limpeza desses arquivos ou uma requisição encaminhada para outra instância sem esse armazenamento pode causar `video_upload_session_missing`. Esse erro é diferente de logout (401) e conflito de edição (409).
+
+O formulário recria a sessão e reenvia todas as partes uma única vez quando recebe esse código, inclusive na finalização. O arquivo selecionado permanece no navegador; não recarregue a página durante o envio. Uma segunda perda interrompe o envio com orientação para avisar o suporte. Falhas de login, permissão, outros 404 e falhas de rede com resultado incerto na finalização não disparam esse reenvio automático. O primeiro 404 continua visível na auditoria, mesmo se o reenvio concluir.
+
+Para preservar a recepção de vídeos entre deploys, configure `VIDEO_UPLOAD_TEMP_DIR` com o caminho absoluto de um volume **realmente persistente**, gravável pela aplicação, fora da pasta pública. A aplicação usa as subpastas `video_upload_sessions` e `video_upload_jobs`; sem configuração, mantém o diretório `instance` atual. Configurar apenas o nome da pasta não torna o disco persistente. Se houver múltiplas instâncias, elas precisam enxergar os mesmos arquivos nesse caminho ou o tráfego do envio deve permanecer na instância que possui os arquivos. Workers do mesmo servidor que compartilham disco não são, por si só, a causa desse 404.
+
+Essa opção não transforma o executor de conversão em uma fila durável: um processo interrompido durante a conversão/transferência para o Skybox ainda requer recuperação separada. A mudança do caminho não migra uploads antigos; faça a troca sem envios ativos ou preserve as duas subpastas no novo volume antes de reiniciar.
+
+Os logs do servidor registram a criação e a ausência da sessão com usuário, identificador da sessão e nome do servidor. Compare essas entradas e os eventos de deploy para identificar a causa. O tratamento não exige migração de banco; exige publicar o código e recarregar os formulários. A configuração do volume deve ser feita na hospedagem.
+
 | Sintoma | Conferir primeiro |
 | --- | --- |
 | SQLAlchemy não inicializa | `DATABASE_URL` definida, driver instalado e destino correto. |

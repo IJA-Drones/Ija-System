@@ -375,3 +375,87 @@ def test_real_factory_presence_commit_does_not_release_the_form_early(app):
         assert db.session.get(Solicitacao,1).protocolo=='new'
         assert db.session.get(EdicaoReserva,('solicitacao',1)).token_hash is None
         db.session.remove();db.engine.dispose()
+
+
+def add_direct_editor(app, role='equipe_oceano'):
+    from app.models import Pilotos, EquipePiloto
+    with app.app_context():
+        user=Usuario(id=20,nome_uvis='Equipe de campo',login='campo',senha_hash='test',
+                     tipo_usuario=role,prefeitura_id=1,codigo_setor='1',regiao='NORTE')
+        if role=='piloto':
+            pilot=Pilotos(nome_piloto='Piloto teste',prefeitura_id=1,regiao='NORTE')
+            db.session.add(pilot);db.session.flush()
+            user.piloto_id=pilot.id
+            db.session.add(EquipePiloto(equipe_id=1,piloto_id=pilot.id,papel='piloto'))
+        db.session.add(user)
+        db.session.add(OrdemServico(solicitacao_id=1,equipe_id=1))
+        db.session.commit()
+    return client(app,20)
+
+
+@pytest.mark.parametrize('role',['piloto','equipe_oceano'])
+def test_field_team_saves_real_form_without_ticket_despite_admin_reservation(app,role):
+    team=add_direct_editor(app,role)
+    admin=client(app);t=ticket(admin);reserve(admin,t)
+    page=team.get('/piloto/os/1/formulario')
+    assert page.status_code==200,page.data
+    assert b'name="_edit_ticket"' not in page.data
+    media=team.post('/api/os/1/upload-video-background/init',json={
+        'file_name':'invalid.txt','total_bytes':20,'total_chunks':1})
+    assert media.status_code==400,media.data  # File validation, not a reservation conflict.
+    # Accept even stale metadata from a page loaded before the deployment.
+    result=team.post('/piloto/os/1/formulario',data={
+        'identificador_os':'edicao-direta','_edit_ticket':'old-ticket','_edit_token':'old-token'})
+    assert result.status_code==302,result.data
+    with app.app_context():
+        assert OrdemServico.query.filter_by(solicitacao_id=1).one().identificador_os=='edicao-direta'
+        assert AuditoriaUsuario.query.filter_by(tipo_evento='EDICAO',usuario_id=20).count()>0
+    # Administrative stale forms remain protected against the team's changes.
+    assert save(admin,t,'').status_code==409
+
+
+@pytest.mark.parametrize('role',['piloto','equipe_oceano'])
+def test_direct_edit_does_not_grant_other_municipality_or_team_access(app,role):
+    team=add_direct_editor(app,role)
+    assert team.post('/piloto/os/2/formulario',data={'identificador_os':'forbidden'}).status_code==404
+    with app.app_context():
+        db.session.add(Equipe(id=3,nome_equipe='Outra equipe',prefeitura_id=1,regiao='NORTE',ativa=True))
+        db.session.get(Solicitacao,1).equipe_id=3
+        db.session.commit()
+    assert team.post('/piloto/os/1/formulario',data={'identificador_os':'forbidden'}).status_code==404
+    with app.app_context():
+        assert OrdemServico.query.filter_by(solicitacao_id=1).one().identificador_os!='forbidden'
+
+
+@pytest.mark.parametrize('role',['piloto','equipe_oceano'])
+def test_direct_editor_cannot_change_completed_os(app,role):
+    team=add_direct_editor(app,role)
+    with app.app_context():
+        db.session.get(Solicitacao,1).status='CONCLUÍDO';db.session.commit()
+    result=team.post('/piloto/os/1/formulario',data={'identificador_os':'forbidden'})
+    assert result.status_code==302,result.data
+    with app.app_context():
+        assert OrdemServico.query.filter_by(solicitacao_id=1).one().identificador_os!='forbidden'
+
+
+@pytest.mark.parametrize('role',['piloto','equipe_oceano','equipe_uvis','piloto_agro'])
+def test_direct_roles_bypass_media_lease_but_background_remains_video_only(app,role):
+    from flask_login import login_user
+    from app.shared.edit_control import check_available,media_job_credentials,prepare_background_media,edit_fields
+    add_direct_editor(app,role)
+    admin=client(app);reserve(admin,ticket(admin))
+    with app.test_request_context('/',headers={'X-Edit-Token':'obsolete','X-Edit-Ticket':'obsolete'}):
+        login_user(db.session.get(Usuario,20))
+        check_available('solicitacao',1)
+        assert media_job_credentials()=={}
+        assert edit_fields(db.session.get(Solicitacao,1),'main.piloto_os_formulario_view')==''
+    with app.app_context():
+        # Old jobs with obsolete reservation credentials must also complete.
+        job={'os_id':1,'user_id':20,'edit_generation':-1,'edit_token_hash':'obsolete'}
+        assert prepare_background_media(job) is None
+        order=OrdemServico.query.filter_by(solicitacao_id=1).one()
+        order.video='webdav://test/video.mp4';db.session.commit()
+        assert order.video=='webdav://test/video.mp4'
+        order.identificador_os='not-a-media-field'
+        with pytest.raises(EditConflict):db.session.commit()
+        db.session.rollback()

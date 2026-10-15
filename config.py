@@ -99,6 +99,8 @@ class Config:
     }
     AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "15000"))
     EDIT_LEASE_SECONDS = int(os.getenv("EDIT_LEASE_SECONDS", "300"))
+    # Mount persistent storage here to preserve pending uploads across deployments.
+    VIDEO_UPLOAD_TEMP_DIR = os.getenv("VIDEO_UPLOAD_TEMP_DIR", "")
 
     AUDIT_SKYBOX_ENABLED = os.getenv("AUDIT_SKYBOX_ENABLED", "1").lower() in {"1", "true", "yes", "on"}
     AUDIT_SKYBOX_NAMESPACE = os.getenv("AUDIT_SKYBOX_NAMESPACE", "")

@@ -1,10 +1,18 @@
 # Controle de edição simultânea
 
-Implementação do item 4.5.3 da auditoria CONDOMAR. A reserva fica no banco e é compartilhada entre processos do sistema. A autorização municipal, regional, por equipe e por perfil continua obrigatória; possuir uma reserva não concede acesso a um registro.
+Controle relacionado ao item 4.5.3 da auditoria CONDOMAR, com exceção operacional para pilotos e equipes. A reserva fica no banco e é compartilhada entre processos do sistema. A autorização municipal, regional, por equipe e por perfil continua obrigatória; possuir uma reserva não concede acesso a um registro.
+
+## Edição direta para pilotos e equipes
+
+Os perfis `piloto`, `equipe_oceano`, `equipe_uvis` e `piloto_agro` estão dispensados da reserva e da conferência do ticket da página. Os formulários abrem diretamente para edição, quando as permissões existentes permitem. Reservas antigas ou de outros usuários não bloqueiam suas gravações nem seus uploads. Fotos e vídeos seguem a mesma dispensa, incluindo o processamento de vídeo em segundo plano, que continua restrito aos campos de vídeo da OS.
+
+Essa dispensa não concede acesso a outra prefeitura, equipe ou OS encerrada, nem remove o histórico de alterações. Os demais perfis continuam sujeitos à reserva. O versionamento do banco permanece: uma gravação realmente simultânea com um objeto já carregado pode ser recusada, mas não há exigência de clicar em “Iniciar edição” para esses perfis operacionais. Uma alteração feita pela equipe pode tornar desatualizada uma tela administrativa protegida.
+
+A dispensa exige publicar o código e recarregar as páginas já abertas; não exige nova migração ou alteração de contas no banco. O guia PDF anterior descreve o fluxo original, anterior a essa exceção operacional. As regras de reserva e credenciais de mídia abaixo se aplicam aos demais perfis.
 
 ## Uso
 
-O formulário abre para consulta. **Iniciar edição** solicita uma reserva; o aviso permanece dentro do formulário. Quem consegue a reserva pode preencher e salvar. Outro usuário, inclusive o mesmo login em outra aba, recebe o nome do editor responsável e continua podendo consultar.
+Para os perfis que continuam protegidos, o formulário abre para consulta. **Iniciar edição** solicita uma reserva; o aviso permanece dentro do formulário. Quem consegue a reserva pode preencher e salvar. Outro usuário protegido, inclusive o mesmo login em outra aba, recebe o nome do editor responsável e continua podendo consultar.
 
 Salvar confirma os dados e libera a reserva na mesma transação. **Cancelar edição e liberar** pede confirmação antes de descartar o preenchimento. Fechar a aba não libera imediatamente: a expiração recupera a reserva sem depender de uma chamada de saída que poderia disputar com o salvamento.
 
@@ -15,11 +23,11 @@ Uma versão assinada identifica os dados exibidos ao abrir a tela. A conferênci
 ## Fluxos cobertos
 
 - Edição completa de solicitação e decisão rápida no painel administrativo, em desktop e celular.
-- Formulário de execução de OS, pelo piloto/equipe Oceano Azul e pela administração.
-- Retorno automático nas telas de OS da UVIS e equipe UVIS.
+- Formulário de execução de OS pela administração; pilotos e equipes usam edição direta.
+- Retorno automático nas telas de OS da UVIS; equipe UVIS usa edição direta.
 - Encaminhamento, designação, arquivamento e conversão de denúncias.
 
-A solicitação e suas OS compartilham uma reserva, pois representam o mesmo atendimento. Denúncias possuem reserva própria. As demais gravações ORM nesses objetos respeitam uma reserva ativa, incluindo exclusão. A remoção de vínculo KML usa alterações individuais para respeitar o controle e a auditoria.
+A solicitação e suas OS compartilham uma reserva, pois representam o mesmo atendimento. Denúncias possuem reserva própria. As demais gravações ORM nesses objetos respeitam uma reserva ativa, incluindo exclusão, exceto para os perfis de edição direta. A remoção de vínculo KML usa alterações individuais para respeitar o controle e a auditoria.
 
 Uploads diretos carregam a identificação da aba e atualizam sua versão após a própria operação. O processamento de vídeo em segundo plano só pode concluir durante uma reserva ativa se ela pertencer ao editor que iniciou o envio. Essa autorização é restrita aos campos de vídeo; não autoriza alterações no formulário. O retorno do processamento só atualiza a versão da aba se o estado anterior e o posterior coincidirem exatamente com a transição do vídeo. Uma liberação pelo DEV seguida de nova reserva impede um trabalho antigo de sobrescrever a mídia do novo editor.
 
