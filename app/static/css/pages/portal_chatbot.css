@@ -1,4 +1,5 @@
 .portal-chat { --chat-ink: #123448; --chat-muted: #536d7b; --chat-line: #dce8ed; --chat-bg: #fff; --chat-soft: #f1f7fa; position: fixed; bottom: 20px; right: 20px; z-index: 1050; font-size: 14px; color: var(--chat-ink); }
+.portal-chat, .portal-chat * { box-sizing: border-box; }
 .portal-chat button { cursor: pointer; }
 .portal-chat-toggle, .portal-chat form button { background: #08768e; color: #fff; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 600; }
 .portal-chat-toggle { box-shadow: 0 6px 24px #08334825; }
@@ -16,7 +17,7 @@
 .portal-chat-message { white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 4px 14px 14px; padding: 12px 14px; background: var(--chat-soft); line-height: 1.65; margin: 0 18px 14px 0; }
 .portal-chat-message a { color: #08768e; text-decoration: underline; text-underline-offset: 3px; }
 .portal-chat-user { background: #08768e; color: #fff; margin: 0 0 14px 32px; border-radius: 14px 4px 14px 14px; }
-.portal-chat-links { flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--chat-line); }
+.portal-chat-links { flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--chat-line); }
 .portal-chat-links a { color: var(--chat-ink); font-size: 12px; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; text-decoration: none; }
 .portal-chat-links button { margin-left: auto; border: 0; padding: 8px; background: transparent; color: var(--chat-muted); }
 .portal-chat form { flex-shrink: 0; display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 0 18px 14px; }
@@ -61,7 +62,7 @@ body.dark-mode .portal-chat-message a { color: #7adce9; }
 .portal-chat-report [data-report-feedback]:not(:empty) { background: var(--chat-soft); padding: 12px; border-radius: 8px; font-size: 13px; }
 .portal-chat-report dl { font-size: 13px; background: var(--chat-soft); padding: 12px; border-radius: 10px; }
 .portal-chat-report dd { overflow-wrap: anywhere; white-space: pre-wrap; margin-bottom: 10px; }
-.portal-chat-links [data-start-report] { margin-left: 0; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; font-size: 12px; color: var(--chat-ink); }
+.portal-chat-links :is([data-start-report], [data-about-oceano]) { margin-left: 0; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; font-size: 12px; }
 
 @media (max-width: 600px) {
   html:has(.portal-chat-panel:not([hidden])), body:has(.portal-chat-panel:not([hidden])) { overflow: hidden !important; }
@@ -85,3 +86,75 @@ body.dark-mode .portal-chat-message a { color: #7adce9; }
   .portal-chat-report :is(input:not([type=hidden]):not([type=checkbox]), select) { min-height: 46px; }
   .portal-chat-report .portal-cidadao-consent input { flex-shrink: 0; width: 22px; height: 22px; }
 }
+
+
+/* Suggestions live inside the scrolling conversation, leaving the composer available. */
+.portal-chat-suggestions { display: block; margin: 18px 0 8px; }
+.portal-chat-suggestions summary { color: var(--chat-ink); font-size: 14px; }
+.portal-chat-suggestions > span { color: var(--chat-muted); font-size: 12px; margin-bottom: 4px; }
+.portal-chat-suggestions button { min-height: 44px; width: 100%; padding: 11px 14px; border: 1px solid var(--chat-line); border-radius: 12px; text-align: left; background: var(--chat-bg); color: var(--chat-ink); font: inherit; font-size: 13px; line-height: 1.4; cursor: pointer; }
+.portal-chat-suggestions button:hover { background: var(--chat-soft); border-color: #08768e; }
+.portal-chat-suggestions button:focus-visible { outline: 3px solid #e7ae35; outline-offset: 2px; }
+
+/* Keep utility controls out of the quick actions and preserve conversation space. */
+.portal-chat-header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.portal-chat-panel header .portal-chat-header-actions button { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+.portal-chat-header-actions button:hover { background: #ffffff18; }
+.portal-chat-panel:has([data-report]:not([hidden])) [data-clear] { display: none; }
+.portal-chat-links > :is(a, button) { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px; margin: 0; padding: 7px 6px; text-align: center; line-height: 1.35; font-family: inherit; }
+.portal-chat-panel > form { grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
+.portal-chat-panel > form textarea { min-height: 58px; }
+.portal-chat-panel > form button { white-space: nowrap; }
+.portal-chat-messages { scrollbar-width: thin; scrollbar-color: var(--chat-line) transparent; }
+
+/* Color distinguishes the persistent shortcuts from conversation suggestions. */
+.portal-chat-links > :is(a, button) {
+  border-radius: 12px;
+  font-weight: 600;
+  border-color: var(--shortcut-border);
+  background: linear-gradient(135deg, var(--shortcut-start), var(--shortcut-end));
+  color: var(--shortcut-text);
+  box-shadow: 0 2px 5px var(--shortcut-shadow);
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.portal-chat-links > [data-start-report] {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #083348;
+  --shortcut-shadow: #08768e26;
+}
+.portal-chat-links > a {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #083348;
+  --shortcut-shadow: #065f4612;
+}
+.portal-chat-links > [data-about-oceano] {
+  --shortcut-start: #2563eb; --shortcut-end: #1e40af;
+  --shortcut-text: #fff; --shortcut-border: #2563eb;
+  --shortcut-shadow: #2563eb26;
+}
+.portal-chat-links > :is(a, button):not(:disabled):hover {
+  border-color: var(--shortcut-text);
+  box-shadow: 0 4px 10px var(--shortcut-shadow);
+}
+body.dark-mode .portal-chat-links > [data-start-report] {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-border: #38b7c9; --shortcut-shadow: #0003;
+}
+body.dark-mode .portal-chat-links > a {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #345367;
+  --shortcut-shadow: #0003;
+}
+body.dark-mode .portal-chat-links > [data-about-oceano] {
+  --shortcut-start: #1d4ed8; --shortcut-end: #1e40af;
+  --shortcut-border: #6398ff; --shortcut-shadow: #0003;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-chat-links > :is(a, button) { transition: none; }
+}
+
+.portal-chat-suggestions summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 600; }
+.portal-chat-suggestions summary::after { content: "Expandir"; float: right; font-size: 11px; font-weight: 400; color: var(--chat-muted); }
+.portal-chat-suggestions[open] summary::after { content: "Recolher"; }
+.portal-chat-suggestions > span { display: block; margin: 4px 0 12px; }
+.portal-chat-suggestions > button { margin-bottom: 8px; }

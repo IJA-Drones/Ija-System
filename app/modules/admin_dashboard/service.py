@@ -1009,7 +1009,7 @@ def build_admin_historico_os_individual_pdf_zip(
         for pedido in pedidos:
             pdf_path = None
             try:
-                pdf_path, pdf_name = build_admin_os_pdf_v2_export(pedido.id, {})
+                pdf_path, pdf_name = build_admin_os_pdf_v2_export(pedido.id, {}, user=user)
                 safe_name = secure_filename(pdf_name) or f"os_{pedido.id}_formulario.pdf"
                 if safe_name in used_names:
                     base, ext = os.path.splitext(safe_name)

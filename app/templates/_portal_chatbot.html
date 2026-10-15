@@ -1,11 +1,11 @@
 <div class="portal-chat" data-portal-chat data-url="{{ url_for('main.portal_cidadao_chatbot') }}" data-token="{{ portal_chat_token }}">
-  <button type="button" class="portal-chat-toggle" aria-expanded="false" aria-controls="portalChatPanel"><i class="bi bi-chat-dots" aria-hidden="true"></i> Ajuda com IA</button>
-  <section id="portalChatPanel" class="portal-chat-panel" aria-label="Assistente do cidadão" hidden>
-    <header><div><strong>Assistente do cidadão <span class="portal-chat-badge">IA</span></strong><small>Orientações e fontes oficiais</small></div><button type="button" data-close aria-label="Fechar assistente">×</button></header>
-    <details class="portal-chat-notice"><summary>Sobre a assistente de IA</summary><p>A IA é uma assistente virtual para ajudar com suas dúvidas. As respostas podem conter erros e não substituem as orientações da equipe responsável. Confirme informações importantes nos canais oficiais.</p></details>
+  <button type="button" class="portal-chat-toggle" aria-expanded="false" aria-controls="portalChatPanel"><i class="bi bi-chat-dots" aria-hidden="true"></i> Fale com a Azul</button>
+  <section id="portalChatPanel" class="portal-chat-panel" aria-label="Azul, IA do Portal do Cidadão" hidden>
+    <header><div><strong>Azul <span class="portal-chat-badge">IA</span></strong><small>IA do Portal do Cidadão</small></div><div class="portal-chat-header-actions"><button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button><button type="button" data-close aria-label="Fechar conversa com a Azul">×</button></div></header>
+    <details class="portal-chat-notice"><summary>Sobre a Azul</summary><p>A Azul é a inteligência artificial da Oceano Azul no Portal do Cidadão. Ela ajuda a esclarecer dúvidas sobre o portal, orienta o registro de relatos e consulta fontes oficiais para apoiar suas respostas.</p></details>
     <div class="portal-chat-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
-    <div class="portal-chat-links"><button type="button" data-start-report>Registrar relato</button><a href="{{ url_for('main.portal_cidadao_boletim_dengue') }}">Boletim de saúde</a><button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><i class="bi bi-trash3" aria-hidden="true"></i></button></div>
-    <section class="portal-chat-report" data-report hidden aria-label="Registrar relato pelo assistente">
+    <div class="portal-chat-links"><button type="button" data-start-report>Registrar relato</button><a href="{{ url_for('main.portal_cidadao_boletim_dengue') }}">Boletim de saúde</a><button type="button" data-about-oceano data-summary="{{ oceano_azul_summary }}" data-source="{{ oceano_azul_url }}">Oceano Azul</button></div>
+    <section class="portal-chat-report" data-report hidden aria-label="Registrar relato com a Azul">
       <div class="portal-chat-report-heading"><button type="button" data-report-exit>← Voltar à conversa</button><span data-report-progress></span></div>
       <h3 data-report-title tabindex="-1"></h3>
       <p data-report-help></p>
@@ -17,7 +17,7 @@
     <form class="form-no-loading">
       <label for="portalChatInput">Como posso ajudar?</label>
       <textarea id="portalChatInput" maxlength="1500" rows="2" required placeholder="Escreva sua dúvida…"></textarea>
-      <button type="submit">Enviar mensagem</button>
+      <button type="submit" aria-label="Enviar mensagem">Enviar</button>
       <span data-status role="status"></span>
     </form>
   </section>

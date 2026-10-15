@@ -16,8 +16,9 @@ class Element {
   replaceChildren() { this.children = []; }
 }
 function setup(data, fetchResult) {
-  const selectors = ['.portal-chat-toggle', '.portal-chat-panel', '[role="log"]', 'form', 'textarea', '[data-clear]', '[data-status]', '[data-close]'];
+  const selectors = ['.portal-chat-toggle', '.portal-chat-panel', '[role="log"]', 'form', 'textarea', '[data-clear]', '[data-status]', '[data-close]', '[data-about-oceano]'];
   const elements = Object.fromEntries(selectors.map(key => [key, new Element()]));
+  elements['[data-about-oceano]'].dataset = {summary: 'Resumo institucional de teste.', source: 'https://www.oceanoazuldrones.com.br/oceano'};
   const root = new Element();
   root.dataset = {url: '/portal-cidadao/chatbot', token: 'token'};
   root.querySelector = key => elements[key];
@@ -102,4 +103,39 @@ test('a direct request to register starts the local form without calling AI', as
   await elements.form.listeners.submit({preventDefault() {}});
   assert.deepEqual(events, ['portal:start-report']);
   assert.equal(requests.length, 0);
+});
+
+
+test('institutional shortcut is local, links the source and preserves follow-up context', async () => {
+  const {elements, requests} = setup({answer: 'Orientação'});
+  elements['[data-about-oceano]'].listeners.click();
+  assert.equal(requests.length, 0);
+  const message = elements['[role="log"]'].children.at(-1);
+  assert.equal(message.children[1].href, 'https://www.oceanoazuldrones.com.br/oceano');
+  assert.equal(message.children[1].rel, 'noopener noreferrer');
+  elements.textarea.value = 'E como ela apoia a saúde pública?';
+  await elements.form.listeners.submit({preventDefault() {}});
+  assert.equal(requests[0].history[0].content, 'Quem é a Oceano Azul?');
+  assert.match(requests[0].history[1].content, /Resumo institucional/);
+  elements['[data-clear]'].listeners.click();
+  elements.textarea.value = 'Outra pergunta';
+  await elements.form.listeners.submit({preventDefault() {}});
+  assert.equal(requests[1].history.length, 0);
+});
+
+test('quick answers avoid API calls and remain available after clearing', async () => {
+  const {elements, requests} = setup({answer:'unused'});
+  let suggestions = elements['[role="log"]'].children.at(-1);
+  assert.equal(suggestions.className, 'portal-chat-suggestions');
+  assert.equal(suggestions.children.length, 6);
+  suggestions.children[3].listeners.click();
+  assert.equal(requests.length, 0);
+  assert.match(elements['[role="log"]'].children.at(-1).children[0].text, /cinco fotos ou vídeos/);
+  elements['[data-clear]'].listeners.click();
+  suggestions = elements['[role="log"]'].children.at(-1);
+  assert.equal(suggestions.className, 'portal-chat-suggestions');
+  elements.textarea.value = 'quais dados preciso informar';
+  await elements.form.listeners.submit({preventDefault(){}});
+  assert.equal(requests.length, 0);
+  assert.match(elements['[role="log"]'].children.at(-1).children[0].text, /RG e CEP são opcionais/);
 });

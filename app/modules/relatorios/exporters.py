@@ -22,6 +22,7 @@ from reportlab.platypus import Image as RLImage
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from werkzeug.datastructures import MultiDict
 
+from app.shared.pdf_watermark import municipal_canvas, query_prefeitura_ids, report_prefeitura_id, solicitacao_prefeitura_expr
 from app.extensions import db
 from app.models import Solicitacao, Usuario
 from app.modules.piloto_os.exporters import (
@@ -319,6 +320,10 @@ def _build_pdf_export_data(user, args):
         "regiao": regiao,
         "equipe_id": equipe_id,
         "query_results": query_results,
+        "prefeitura_ids": query_prefeitura_ids(
+            _apply_relatorio_solicitacoes_filters(db.session.query(Solicitacao), user, filtros, include_month=False),
+            solicitacao_prefeitura_expr(),
+        ),
         "query_results_total": query_results_total,
         "query_results_limit": RELATORIO_PDF_DETALHE_MAX_ROWS,
         "query_results_limited": query_results_total > RELATORIO_PDF_DETALHE_MAX_ROWS,
@@ -705,7 +710,8 @@ def build_relatorio_pdf_export(user, args):
         canvas.drawRightString(doc_.leftMargin + doc_.width, 9 * mm, f"Página {canvas.getPageNumber()}")
         canvas.restoreState()
 
-    doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
+    doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer,
+              canvasmaker=municipal_canvas(report_prefeitura_id(data.get("prefeitura_ids", []), user), user=user))
 
     nome_arquivo = f"relatorio_OceanoAzul_{data['ano']}_{data['mes']:02d}"
     if data["uvis_ids"]:
@@ -1828,6 +1834,7 @@ def build_relatorio_os_pdf_export(user, args):
         story,
         onFirstPage=_os_pdf_header_footer_factory(header_title, args),
         onLaterPages=_os_pdf_header_footer_factory(header_title, args),
+        canvasmaker=municipal_canvas(report_prefeitura_id(data.get("prefeitura_ids", []), user), user=user),
     )
 
     nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
@@ -2106,12 +2113,12 @@ def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False, prefetched_ima
     _draw_coleta_pdf_footer(c, page_width)
 
 
-def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
+def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args, *, user=None):
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     path = tmp_pdf.name
     tmp_pdf.close()
 
-    c = pdf_canvas.Canvas(path, pagesize=A4)
+    c = municipal_canvas(report_prefeitura_id([], user), user=user)(path, pagesize=A4)
     if not data["levantamentos"]:
         item = {
             "uvis_nome": data["uvis_nome_selecionado"],
@@ -2167,6 +2174,7 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
                     prefetched_image_result = COLETA_IMAGENS_PDF_PREFETCH_MISS
 
             schedule_prefetch(index + prefetch_workers)
+            c.set_watermark_prefeitura(item.get("prefeitura_id"))
             _draw_coleta_pdf_page(
                 c,
                 item,
@@ -2198,7 +2206,7 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
         args,
         max_items=_coleta_imagens_max_export_items(),
     )
-    return _build_relatorio_coleta_imagens_pdf_export_streamed(data, args)
+    return _build_relatorio_coleta_imagens_pdf_export_streamed(data, args, user=user)
 
 
 def _coleta_imagens_zip_name(data):
@@ -2242,7 +2250,7 @@ def build_relatorio_coleta_imagens_pdf_zip_export(user, args, *, progress_callba
                     progress = 30 + int((index - 1) / max(total_uvis, 1) * 60)
                     progress_callback(progress, f"Gerando PDF de {uvis_nome}.")
 
-                pdf_path, pdf_name = _build_relatorio_coleta_imagens_pdf_export_streamed(item_data, item_args)
+                pdf_path, pdf_name = _build_relatorio_coleta_imagens_pdf_export_streamed(item_data, item_args, user=user)
                 arcname = os.path.basename(pdf_name)
                 if arcname in used_names:
                     base, ext = os.path.splitext(arcname)

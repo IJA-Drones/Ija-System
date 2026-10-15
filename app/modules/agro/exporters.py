@@ -7,6 +7,8 @@ import os
 from xml.sax.saxutils import escape
 
 from flask import current_app
+from app.shared.pdf_watermark import municipal_canvas, report_prefeitura_id
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -878,7 +880,8 @@ def build_orcamento_agro_pdf(orcamento):
         assinatura_footer,
     ]
 
-    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
+    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame,
+              canvasmaker=municipal_canvas(getattr(orcamento, "prefeitura_id", None)))
     buffer.seek(0)
     return buffer
 
@@ -1313,7 +1316,8 @@ def build_ordem_servico_agro_pdf(ordem_servico):
             ]
         )
 
-    doc.build(story, onFirstPage=_build_os_report_page_frame, onLaterPages=_build_os_report_page_frame)
+    doc.build(story, onFirstPage=_build_os_report_page_frame, onLaterPages=_build_os_report_page_frame,
+              canvasmaker=municipal_canvas(getattr(ordem_servico, "prefeitura_id", None)))
     buffer.seek(0)
     return buffer
 
@@ -1936,7 +1940,8 @@ def build_contrato_agro_pdf(contrato):
         ]
     )
 
-    doc.build(story, onFirstPage=_build_contract_page_frame, onLaterPages=_build_contract_page_frame)
+    doc.build(story, onFirstPage=_build_contract_page_frame, onLaterPages=_build_contract_page_frame,
+              canvasmaker=municipal_canvas(getattr(contrato, "prefeitura_id", None) or getattr(orcamento, "prefeitura_id", None)))
     buffer.seek(0)
     return buffer
 
@@ -2346,6 +2351,7 @@ def build_agro_relatorio_contas_pdf_export(lancamentos: list[dict], resumo: dict
     else:
         story.append(Paragraph("Nenhum lancamento encontrado para os filtros informados.", styles["subtitle"]))
 
-    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
+    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame,
+              canvasmaker=municipal_canvas(report_prefeitura_id(item.get("prefeitura_id") for item in lancamentos)))
     buffer.seek(0)
     return buffer, f"agro_relatorio_geral_contas_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"

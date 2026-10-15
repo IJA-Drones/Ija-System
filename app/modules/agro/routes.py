@@ -1247,7 +1247,7 @@ def _validate_cliente_agro_form(form, *, cliente_atual=None):
 
     for field, label in (
         ("logradouro", "logradouro"),
-        ("numero", "numero"),
+        ("numero", "número"),
         ("bairro", "bairro"),
         ("cidade", "cidade"),
         ("uf", "UF"),
@@ -1275,6 +1275,9 @@ def _validate_fornecedor_agro_form(form, *, fornecedor_atual=None):
     if not form["nome"]:
         errors["nome"] = "Informe o nome do fornecedor."
 
+    if not form["documento"]:
+        errors["documento"] = "Informe o documento do fornecedor."
+
     doc_ok = False
     doc_digits = ""
     doc_fmt = ""
@@ -1285,7 +1288,7 @@ def _validate_fornecedor_agro_form(form, *, fornecedor_atual=None):
 
     cep_digits = only_digits(form["cep"])
     if form["cep"] and len(cep_digits) != 8:
-        errors["cep"] = "Informe um CEP valido com 8 digitos."
+        errors["cep"] = "Informe um CEP válido com 8 dígitos."
 
     if form["uf"] and len(form["uf"]) != 2:
         errors["uf"] = "UF deve ter 2 letras."
@@ -1296,7 +1299,7 @@ def _validate_fornecedor_agro_form(form, *, fornecedor_atual=None):
             query = query.filter(FornecedorAgro.id != fornecedor_atual.id)
         query = apply_prefeitura_scope(query, current_user, FornecedorAgro.prefeitura_id)
         if query.first():
-            errors["documento"] = "Ja existe um fornecedor agro com esse documento."
+            errors["documento"] = "Já existe um fornecedor agro com esse documento."
 
     return errors, doc_digits, doc_fmt, cep_digits
 
@@ -1617,6 +1620,7 @@ def _build_agro_conciliacao_item(item):
         fornecedor_nome = item.fornecedor.nome if item.fornecedor else (item.favorecido or "")
         return {
             "id": item.id,
+            "prefeitura_id": item.prefeitura_id,
             "origem": "Saida manual",
             "origem_slug": "saida",
             "movimento": "SAIDA",
@@ -1649,6 +1653,7 @@ def _build_agro_conciliacao_item(item):
         parcela_label = f" | Parcela {item.parcela_numero}/{item.parcela_total}" if (item.parcela_total or 1) > 1 else ""
         return {
             "id": item.id,
+            "prefeitura_id": item.prefeitura_id,
             "origem": "Entrada manual",
             "origem_slug": "entrada",
             "movimento": "ENTRADA",
@@ -1696,6 +1701,7 @@ def _build_agro_conciliacao_item(item):
     os_concluida = bool(ordem_servico and ordem_servico.status == OrdemServicoAgro.STATUS_CONCLUIDA)
     return {
         "id": item.id,
+        "prefeitura_id": item.prefeitura_id,
         "origem": "Recebivel",
         "origem_slug": "recebivel",
         "movimento": "ENTRADA",

@@ -16,6 +16,7 @@ SCREENS = {
  'prefeitura.mapas': [('mapa_relatorio','Mapas'),('agenda','Agenda'),('consultar_endereco_geolocalizacao','Geolocalização')],
  'prefeitura.denuncias': [('denuncias_listar','Denúncias')],
  'prefeitura.prefeituras': [('admin_prefeituras','Prefeituras'),('admin_prefeitura_nova','Cadastrar prefeitura')],
+ 'prefeitura.documentos': [('configuracoes','Documentos da prefeitura')],
  'prefeitura.voos': [('relatorios_dji_logs','Logs de voo DJI')],
  'prefeitura.vigilancia': [('vigilancia_validacao','Vigilância')],
  'agro.clientes': [('agro_clientes_menu','Visão geral'),('agro_clientes_listar','Clientes'),('agro_fornecedores_listar','Fornecedores'),('agro_cliente_novo','Cadastrar cliente'),('agro_fornecedor_novo','Cadastrar fornecedor')],

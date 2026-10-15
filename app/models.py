@@ -43,6 +43,40 @@ class Prefeitura(db.Model):
     rastreamento_alertas = db.relationship("RastreamentoAlerta", back_populates="prefeitura", lazy="select")
     denuncias = db.relationship("Denuncia", back_populates="prefeitura", lazy="select")
 
+
+class PrefeituraDocumentoConfig(db.Model):
+    """Preferências municipais aplicadas às exportações PDF."""
+    __tablename__ = "prefeitura_documento_config"
+
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), primary_key=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=False)
+    imagem_path = db.Column(db.String(500))
+    imagem_nome = db.Column(db.String(180))
+    opacidade = db.Column(db.Integer, nullable=False, default=12)
+    largura_percentual = db.Column(db.Integer, nullable=False, default=55)
+    identificar_usuario = db.Column(db.Boolean, nullable=False, default=False)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": versao}
+    __table_args__ = (
+        db.CheckConstraint("opacidade BETWEEN 5 AND 30", name="ck_doc_config_opacidade"),
+        db.CheckConstraint("largura_percentual BETWEEN 25 AND 80", name="ck_doc_config_largura"),
+    )
+
+
+class PrefeituraDocumentoHistorico(db.Model):
+    __tablename__ = "prefeitura_documento_historico"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    usuario_nome = db.Column(db.String(100), nullable=False)
+    antes = db.Column(db.JSON, nullable=False)
+    depois = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now)
+
+
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
 # - UVIS também é um Usuario (tipo_usuario="uvis")

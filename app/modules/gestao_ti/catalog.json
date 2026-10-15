@@ -105,6 +105,13 @@
           "consultar criar editar excluir"
         ],
         [
+          "documentos",
+          "Documentos da prefeitura",
+          "Marca d'água e identificação nos documentos municipais.",
+          "bi-gear",
+          "consultar configurar"
+        ],
+        [
           "logs_veiculos",
           "Histórico de veículos",
           "Registros de KM, limpeza e abastecimento.",

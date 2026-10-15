@@ -1,4 +1,14 @@
 {
+  "main.configuracoes": {
+    "GET": "prefeitura.documentos.consultar"
+  },
+  "main.configuracoes_documentos": {
+    "GET": "prefeitura.documentos.consultar",
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.configuracoes_documentos_imagem": {
+    "GET": "prefeitura.documentos.consultar"
+  },
   "main.forcar_erro": {
     "GET": "sistema.tecnico.operar"
   },

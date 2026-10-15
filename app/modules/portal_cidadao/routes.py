@@ -14,6 +14,7 @@ from app.modules.portal_cidadao.health_news import (
 from app.modules.portal_cidadao.service import DenunciaValidationError, criar_denuncia
 from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.portal_cidadao.chatbot import chat_token, reply
+from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
 
 
 def register_routes(bp):
@@ -28,6 +29,8 @@ def register_routes(bp):
         response = current_app.make_response(render_template(
             "portal_cidadao.html",
             portal_chat_token=chat_token(),
+            oceano_azul_summary=OCEANO_AZUL_SUMMARY,
+            oceano_azul_url=OCEANO_AZUL_URL,
             focus_catalog=build_public_focus_catalog(),
             health_news=get_portal_health_news(logger=current_app.logger),
             infodengue_alert=get_infodengue_alert(config=current_app.config, logger=current_app.logger),

@@ -21,7 +21,7 @@ from app.modules.relatorios.service import can_access_relatorios_menu, can_acces
 from app.shared.access import (
     GLOBAL_ADMIN_USER_TYPES, VEICULOS_SUPERVISOR_USER_TYPES,
     can_access_financeiro_panel, can_manage_financeiro_settings,
-    is_admin_global_user, is_covisa_user, is_prefeitura_admin_user,
+    is_admin_global_user, is_covisa_user, is_dev_user, is_prefeitura_admin_user,
 )
 
 
@@ -71,6 +71,8 @@ def current_rules(profile_code):
             allow("prefeitura.solicitacoes", "exportar")
         if is_admin_global_user(user):
             allow("prefeitura.prefeituras", "consultar criar editar excluir")
+        if is_dev_user(user) or is_covisa_user(user):
+            allow("prefeitura.documentos", "consultar configurar")
 
         if administrative or operational or role in {"uvis", "equipe_uvis"}:
             allow("prefeitura.os", "consultar")

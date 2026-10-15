@@ -193,3 +193,56 @@ def test_public_catalog_excludes_internal_quadra_without_changing_shared_catalog
     assert catalog['tipo_visita_opcoes'] == ['Aedes', 'Culex', 'Outro']
     assert catalog['outro']
     assert 'Quadra' in build_focus_catalog()['tipo_visita_opcoes']
+
+
+def test_institutional_context_and_response_budget(app):
+    from app.modules.portal_cidadao.chatbot import public_instructions, safe_source_url, OFFICIAL_DOMAINS
+    with app.app_context():
+        instructions = public_instructions()
+    assert '450 palavras' in instructions
+    assert 'Oceano Azul' in instructions
+    assert 'https://www.oceanoazuldrones.com.br/oceano' in instructions
+    assert safe_source_url('https://www.oceanoazuldrones.com.br/oceano')
+    assert not safe_source_url('https://www.oceanoazuldrones.com.br.evil.com/oceano')
+    assert not safe_source_url('https://www.oceanoazuldrones.com.br/unknown')
+    assert 'oceanoazuldrones.com.br' not in OFFICIAL_DOMAINS
+
+
+@pytest.mark.parametrize('url', [
+    'https://info.dengue.mat.br/report/',
+    'https://www.paho.org/pt/topicos/dengue',
+    'https://www.saude.mg.gov.br/dengue',
+    'https://saude.ce.gov.br/boletim',
+])
+def test_national_dengue_sources_are_available_for_citations(url):
+    from app.modules.portal_cidadao.chatbot import safe_source_url
+    assert safe_source_url(url)
+
+
+@pytest.mark.parametrize('url', [
+    'https://info.dengue.mat.br.evil.com/report',
+    'https://evilpaho.org/pt',
+    'https://paho.org@evil.com',
+    'https://unrelated.mat.br/',
+])
+def test_expanded_sources_do_not_allow_lookalikes(url):
+    from app.modules.portal_cidadao.chatbot import safe_source_url
+    assert not safe_source_url(url)
+
+
+def test_dengue_request_receives_source_directory_and_search_filter(client):
+    from app.modules.portal_cidadao.chatbot import DENGUE_SOURCES, safe_source_url
+    with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
+        create = sdk.return_value.__enter__.return_value.responses.create
+        create.return_value = SimpleNamespace(output_text='Consulte o período do boletim.')
+        assert post(client, {'message': 'Como está a dengue no Brasil?'}).status_code == 200
+        args = create.call_args.kwargs
+        domains = args['tools'][0]['filters']['allowed_domains']
+        assert 'info.dengue.mat.br' in domains
+        assert 'paho.org' in domains
+        for source in DENGUE_SOURCES:
+            assert source['url'] in args['instructions']
+            assert safe_source_url(source['url'])
+        assert 'CONSULTA SOBRE DENGUE NO BRASIL' in args['instructions']
+        assert 'mesmo intervalo de semanas epidemiológicas' in args['instructions']
+        assert args['max_tool_calls'] == 2

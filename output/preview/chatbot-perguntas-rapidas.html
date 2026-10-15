@@ -1,0 +1,367 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Prévia • Azul, IA do Portal do Cidadão</title><style>body{margin:0;background:#edf4f6;color:#133b4c;font-family:system-ui,sans-serif}main{max-width:420px;padding:80px 6vw}h1{font-size:42px;line-height:1.12}main p{line-height:1.7}main small{color:#536f7a}.preview-label{color:#08768e;font-weight:700;letter-spacing:.1em;font-size:12px}button{font-family:inherit}@media(max-width:900px){main{display:none}}</style><style>.portal-chat { --chat-ink: #123448; --chat-muted: #536d7b; --chat-line: #dce8ed; --chat-bg: #fff; --chat-soft: #f1f7fa; position: fixed; bottom: 20px; right: 20px; z-index: 1050; font-size: 14px; color: var(--chat-ink); }
+.portal-chat, .portal-chat * { box-sizing: border-box; }
+.portal-chat button { cursor: pointer; }
+.portal-chat-toggle, .portal-chat form button { background: #08768e; color: #fff; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 600; }
+.portal-chat-toggle { box-shadow: 0 6px 24px #08334825; }
+.portal-chat-panel { position: absolute; bottom: 60px; right: 0; width: min(420px, calc(100vw - 32px)); height: min(660px, calc(100dvh - 110px)); display: flex; flex-direction: column; overflow: hidden; background: var(--chat-bg); border: 1px solid var(--chat-line); border-radius: 20px; box-shadow: 0 16px 56px #08334830; }
+.portal-chat-panel[hidden] { display: none; }
+.portal-chat-panel header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; background: #083348; color: #fff; flex-shrink: 0; }
+.portal-chat-panel header strong { font-size: 15px; }
+.portal-chat-panel header small { display: block; font-size: 12px; color: #b8dce6; margin-top: 4px; }
+.portal-chat-badge { display: inline-block; font-size: 10px; padding: 3px 6px; margin-left: 4px; border: 1px solid #79cbd4; border-radius: 5px; color: #b4f1f5; vertical-align: middle; }
+.portal-chat-panel header button { border: 0; background: transparent; font-size: 26px; color: #fff; width: 40px; height: 40px; }
+.portal-chat-notice { flex-shrink: 0; font-size: 12px; padding: 10px 18px; margin: 0; color: var(--chat-muted); border-bottom: 1px solid var(--chat-line); max-height: 25%; overflow-y: auto; }
+.portal-chat-notice summary { cursor: pointer; }
+.portal-chat-notice p { margin: 8px 0 0; line-height: 1.5; }
+.portal-chat-messages { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px; }
+.portal-chat-message { white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 4px 14px 14px; padding: 12px 14px; background: var(--chat-soft); line-height: 1.65; margin: 0 18px 14px 0; }
+.portal-chat-message a { color: #08768e; text-decoration: underline; text-underline-offset: 3px; }
+.portal-chat-user { background: #08768e; color: #fff; margin: 0 0 14px 32px; border-radius: 14px 4px 14px 14px; }
+.portal-chat-links { flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--chat-line); }
+.portal-chat-links a { color: var(--chat-ink); font-size: 12px; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; text-decoration: none; }
+.portal-chat-links button { margin-left: auto; border: 0; padding: 8px; background: transparent; color: var(--chat-muted); }
+.portal-chat form { flex-shrink: 0; display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 0 18px 14px; }
+.portal-chat form label { grid-column: 1 / -1; font-size: 12px; color: var(--chat-muted); }
+.portal-chat textarea { width: 100%; min-width: 0; resize: none; border: 1px solid var(--chat-line); border-radius: 10px; padding: 10px; background: var(--chat-bg); color: var(--chat-ink); font-size: 14px; }
+.portal-chat form button { padding: 10px 12px; font-size: 12px; max-width: 100px; }
+.portal-chat [data-status] { grid-column: 1 / -1; font-size: 12px; color: var(--chat-muted); }
+.portal-chat [data-status]:empty { display: none; }
+.portal-chat button:disabled { opacity: .6; cursor: wait; }
+.portal-chat :focus-visible { outline: 3px solid #e4ac34; outline-offset: 2px; }
+body.dark-mode .portal-chat { --chat-ink: #e0edf5; --chat-muted: #aac3d1; --chat-line: #345367; --chat-bg: #102b3c; --chat-soft: #19394c; }
+body.dark-mode .portal-chat-message a { color: #7adce9; }
+@media (max-width: 600px) {
+  .portal-chat { bottom: max(12px, env(safe-area-inset-bottom)); right: 12px; }
+  .portal-chat-panel { position: fixed; inset: 12px 12px auto; width: auto; height: calc(100dvh - 84px - env(safe-area-inset-bottom)); border-radius: 16px; }
+  .portal-chat textarea { font-size: 16px; }
+}
+/* Guided report uses the original portal form, moved here without cloning data. */
+.portal-chat [hidden] { display: none !important; }
+.portal-chat-report { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px; }
+.portal-chat-report-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 11px; color: var(--chat-muted); }
+.portal-chat-report-heading button { background: transparent; border: 0; padding: 6px 0; color: var(--chat-ink); }
+.portal-chat-report h3 { font-size: 20px; color: var(--chat-ink); margin-bottom: 8px; }
+.portal-chat-report [data-report-help] { font-size: 13px; line-height: 1.6; color: var(--chat-muted); }
+.portal-chat-report form { display: block; padding: 0; }
+.portal-chat-report fieldset { border: 0; padding: 0; margin: 0 0 16px; }
+.portal-chat-report legend { font-size: 14px; font-weight: 600; color: var(--chat-ink); }
+.portal-chat-report .portal-cidadao-type-grid, .portal-chat-report .portal-cidadao-form-grid, .portal-chat-report .portal-cidadao-dependent-fields { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.portal-chat-report .portal-cidadao-type-option { max-width: none; width: 100%; background: var(--chat-soft); color: var(--chat-ink); border: 1px solid var(--chat-line); text-align: left; }
+.portal-chat-report .portal-cidadao-type-option.is-selected { border-color: #08768e; box-shadow: 0 0 0 2px #08768e; }
+.portal-chat-report .portal-cidadao-field { display: grid; gap: 5px; }
+.portal-chat-report .portal-cidadao-field-wide { grid-column: auto; }
+.portal-chat-report input:not([type=checkbox]):not([type=file]), .portal-chat-report select, .portal-chat-report textarea { width: 100%; background: var(--chat-bg); color: var(--chat-ink); border: 1px solid var(--chat-line); border-radius: 8px; padding: 10px; font-size: 16px; }
+.portal-chat-report small, .portal-chat-report .portal-cidadao-identity-note { font-size: 12px; color: var(--chat-muted); }
+.portal-chat-report form button { max-width: none; }
+.portal-chat-report .portal-cidadao-consent { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; margin-top: 18px; }
+.portal-chat-report .portal-cidadao-upload-box { flex-wrap: wrap; padding: 12px; }
+.portal-chat-report .portal-cidadao-upload-label { margin: 8px 0 0; }
+.portal-chat-report-actions { display: flex; gap: 10px; margin-top: 16px; }
+.portal-chat-report-actions button { flex: 1; border: 1px solid var(--chat-line); border-radius: 10px; background: var(--chat-soft); color: var(--chat-ink); padding: 12px; }
+.portal-chat-report-actions [data-report-next] { background: #08768e; color: #fff; }
+.portal-chat-report [data-report-feedback]:not(:empty) { background: var(--chat-soft); padding: 12px; border-radius: 8px; font-size: 13px; }
+.portal-chat-report dl { font-size: 13px; background: var(--chat-soft); padding: 12px; border-radius: 10px; }
+.portal-chat-report dd { overflow-wrap: anywhere; white-space: pre-wrap; margin-bottom: 10px; }
+.portal-chat-links :is([data-start-report], [data-about-oceano]) { margin-left: 0; border: 1px solid var(--chat-line); border-radius: 8px; padding: 7px 10px; font-size: 12px; }
+
+@media (max-width: 600px) {
+  html:has(.portal-chat-panel:not([hidden])), body:has(.portal-chat-panel:not([hidden])) { overflow: hidden !important; }
+  .portal-chat-panel { inset: var(--chat-viewport-top, 0px) 0 auto; width: 100%; height: var(--chat-viewport-height, 100dvh); max-height: none; border-radius: 0; border: 0; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  .portal-chat:has(.portal-chat-panel:not([hidden])) .portal-chat-toggle { visibility: hidden; }
+  .portal-chat-panel header { padding: 10px 14px; }
+  .portal-chat-panel header button { width: 44px; height: 44px; }
+  .portal-chat-notice { padding: 8px 14px; }
+  .portal-chat-notice summary { min-height: 28px; display: list-item; }
+  .portal-chat-messages { padding: 14px; }
+  .portal-chat-message { margin-right: 8px; }
+  .portal-chat-user { margin-left: 24px; margin-right: 0; }
+  .portal-chat-links { padding: 8px 12px; gap: 6px; flex-wrap: wrap; }
+  .portal-chat-links :is(a, button) { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .portal-chat > .portal-chat-panel > form { padding: 0 12px 10px; }
+  .portal-chat-report { padding: 12px 14px; scroll-padding-bottom: 76px; }
+  .portal-chat-report-heading button { min-height: 44px; }
+  .portal-chat-report-actions { position: sticky; bottom: -12px; background: var(--chat-bg); padding: 12px 0; border-top: 1px solid var(--chat-line); }
+  .portal-chat-report .portal-cidadao-form-grid,
+  .portal-chat-report .portal-cidadao-identity-fieldset .portal-cidadao-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .portal-chat-report :is(input:not([type=hidden]):not([type=checkbox]), select) { min-height: 46px; }
+  .portal-chat-report .portal-cidadao-consent input { flex-shrink: 0; width: 22px; height: 22px; }
+}
+
+
+/* Suggestions live inside the scrolling conversation, leaving the composer available. */
+.portal-chat-suggestions { display: block; margin: 18px 0 8px; }
+.portal-chat-suggestions summary { color: var(--chat-ink); font-size: 14px; }
+.portal-chat-suggestions > span { color: var(--chat-muted); font-size: 12px; margin-bottom: 4px; }
+.portal-chat-suggestions button { min-height: 44px; width: 100%; padding: 11px 14px; border: 1px solid var(--chat-line); border-radius: 12px; text-align: left; background: var(--chat-bg); color: var(--chat-ink); font: inherit; font-size: 13px; line-height: 1.4; cursor: pointer; }
+.portal-chat-suggestions button:hover { background: var(--chat-soft); border-color: #08768e; }
+.portal-chat-suggestions button:focus-visible { outline: 3px solid #e7ae35; outline-offset: 2px; }
+
+/* Keep utility controls out of the quick actions and preserve conversation space. */
+.portal-chat-header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.portal-chat-panel header .portal-chat-header-actions button { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+.portal-chat-header-actions button:hover { background: #ffffff18; }
+.portal-chat-panel:has([data-report]:not([hidden])) [data-clear] { display: none; }
+.portal-chat-links > :is(a, button) { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px; margin: 0; padding: 7px 6px; text-align: center; line-height: 1.35; font-family: inherit; }
+.portal-chat-panel > form { grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
+.portal-chat-panel > form textarea { min-height: 58px; }
+.portal-chat-panel > form button { white-space: nowrap; }
+.portal-chat-messages { scrollbar-width: thin; scrollbar-color: var(--chat-line) transparent; }
+
+/* Color distinguishes the persistent shortcuts from conversation suggestions. */
+.portal-chat-links > :is(a, button) {
+  border-radius: 12px;
+  font-weight: 600;
+  border-color: var(--shortcut-border);
+  background: linear-gradient(135deg, var(--shortcut-start), var(--shortcut-end));
+  color: var(--shortcut-text);
+  box-shadow: 0 2px 5px var(--shortcut-shadow);
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.portal-chat-links > [data-start-report] {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #083348;
+  --shortcut-shadow: #08768e26;
+}
+.portal-chat-links > a {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #083348;
+  --shortcut-shadow: #065f4612;
+}
+.portal-chat-links > [data-about-oceano] {
+  --shortcut-start: #2563eb; --shortcut-end: #1e40af;
+  --shortcut-text: #fff; --shortcut-border: #2563eb;
+  --shortcut-shadow: #2563eb26;
+}
+.portal-chat-links > :is(a, button):not(:disabled):hover {
+  border-color: var(--shortcut-text);
+  box-shadow: 0 4px 10px var(--shortcut-shadow);
+}
+body.dark-mode .portal-chat-links > [data-start-report] {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-border: #38b7c9; --shortcut-shadow: #0003;
+}
+body.dark-mode .portal-chat-links > a {
+  --shortcut-start: #083348; --shortcut-end: #083348;
+  --shortcut-text: #fff; --shortcut-border: #345367;
+  --shortcut-shadow: #0003;
+}
+body.dark-mode .portal-chat-links > [data-about-oceano] {
+  --shortcut-start: #1d4ed8; --shortcut-end: #1e40af;
+  --shortcut-border: #6398ff; --shortcut-shadow: #0003;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-chat-links > :is(a, button) { transition: none; }
+}
+
+.portal-chat-suggestions summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 600; }
+.portal-chat-suggestions summary::after { content: "Expandir"; float: right; font-size: 11px; font-weight: 400; color: var(--chat-muted); }
+.portal-chat-suggestions[open] summary::after { content: "Recolher"; }
+.portal-chat-suggestions > span { display: block; margin: 4px 0 12px; }
+.portal-chat-suggestions > button { margin-bottom: 8px; }
+</style><main><div class="preview-label">PRÉVIA INTERATIVA</div><h1>Conheça a Azul.</h1><p>Clique nas perguntas rápidas para testar as respostas. O botão Oceano Azul também está disponível.</p><small>Nesta prévia, o envio de relatos e a consulta à IA estão desativados. No portal, esses recursos continuam com seu fluxo normal.</small><p id="preview-note" role="status"></p></main><div class="portal-chat" data-portal-chat data-url="#preview" data-token="preview">
+  <button type="button" class="portal-chat-toggle" aria-expanded="false" aria-controls="portalChatPanel"><i class="bi bi-chat-dots" aria-hidden="true"></i> Fale com a Azul</button>
+  <section id="portalChatPanel" class="portal-chat-panel" aria-label="Azul, IA do Portal do Cidadão" hidden>
+    <header><div><strong>Azul <span class="portal-chat-badge">IA</span></strong><small>IA do Portal do Cidadão</small></div><div class="portal-chat-header-actions"><button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button><button type="button" data-close aria-label="Fechar conversa com a Azul">×</button></div></header>
+    <details class="portal-chat-notice"><summary>Sobre a Azul</summary><p>A Azul é a inteligência artificial da Oceano Azul no Portal do Cidadão. Ela ajuda a esclarecer dúvidas sobre o portal, orienta o registro de relatos e consulta fontes oficiais para apoiar suas respostas.</p></details>
+    <div class="portal-chat-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+    <div class="portal-chat-links"><button type="button" data-start-report>Registrar relato</button><a href="#preview">Boletim de saúde</a><button type="button" data-about-oceano data-summary="A Oceano Azul é uma empresa de serviços com drones voltados à agricultura, às cidades, à saúde pública, à energia e à infraestrutura. Segundo seu site institucional, realiza mapeamento, pulverização, monitoramento e inspeções, com planejamento e suporte técnico em campo.
+
+Na saúde pública, atua no apoio ao combate à dengue, incluindo a identificação de focos e operações em locais de difícil acesso, em integração com equipes municipais.
+
+Aqui no portal, você pode registrar um relato para análise das equipes responsáveis. O envio não garante visita imediata nem uma operação com drones." data-source="https://www.oceanoazuldrones.com.br/oceano">Oceano Azul</button></div>
+    <section class="portal-chat-report" data-report hidden aria-label="Registrar relato com a Azul">
+      <div class="portal-chat-report-heading"><button type="button" data-report-exit>← Voltar à conversa</button><span data-report-progress></span></div>
+      <h3 data-report-title tabindex="-1"></h3>
+      <p data-report-help></p>
+      <div data-report-form></div>
+      <div data-report-review hidden></div>
+      <p data-report-feedback role="status"></p>
+      <div class="portal-chat-report-actions"><button type="button" data-report-back>Voltar</button><button type="button" data-report-next>Continuar</button></div>
+    </section>
+    <form class="form-no-loading">
+      <label for="portalChatInput">Como posso ajudar?</label>
+      <textarea id="portalChatInput" maxlength="1500" rows="2" required placeholder="Escreva sua dúvida…"></textarea>
+      <button type="submit" aria-label="Enviar mensagem">Enviar</button>
+      <span data-status role="status"></span>
+    </form>
+  </section>
+</div><script>window.fetch=async()=>({ok:false,json:async()=>({error:'Esta é uma prévia visual. A consulta à IA está disponível no portal.'})});</script><script>(() => {
+  const root = document.querySelector('[data-portal-chat]');
+  if (!root) return;
+  const toggle = root.querySelector('.portal-chat-toggle');
+  const panel = root.querySelector('.portal-chat-panel');
+  const log = root.querySelector('[role="log"]');
+  const form = root.querySelector('form');
+  const input = root.querySelector('textarea');
+  const send = form.querySelector('button');
+  const sendLabel = send.textContent;
+  const clear = root.querySelector('[data-clear]');
+  const status = root.querySelector('[data-status]');
+  const about = root.querySelector('[data-about-oceano]');
+  let history = [];
+  let busy = false;
+  function appendPortalText(entry, text) {
+    const routes = {
+      '/portal-cidadao#portal-relato': 'Registrar relato',
+      '/portal-cidadao/boletim-dengue': 'Consultar boletim',
+      '/portal-cidadao#como-funciona': 'Como funciona o atendimento',
+      'https://www.oceanoazuldrones.com.br/oceano': 'Site institucional da Oceano Azul'
+    };
+    const pattern = /https:\/\/www\.oceanoazuldrones\.com\.br\/oceano(?![\w/#?=-])|\/portal-cidadao(?:#portal-relato|\/boletim-dengue|#como-funciona)(?![\w/#?=-])/g;
+    let cursor = 0;
+    for (const match of text.matchAll(pattern)) {
+      entry.append(document.createTextNode(text.slice(cursor, match.index)));
+      const link = document.createElement('a');
+      link.href = match[0];
+      link.textContent = routes[match[0]];
+      if (match[0].startsWith('https:')) {
+        link.target = '_blank'; link.rel = 'noopener noreferrer';
+      } else {
+        link.addEventListener('click', () => show(false));
+      }
+      entry.append(link);
+      cursor = match.index + match[0].length;
+    }
+    entry.append(document.createTextNode(text.slice(cursor)));
+  }
+  function append(text, role, parts = [], showName = true, highlightInstitutional = false) {
+    const entry = document.createElement('p');
+    entry.className = `portal-chat-message portal-chat-${role}`;
+    entry.textContent = role === 'user' ? `Você: ${text}` : `Azul: ${text}`;
+    entry.setAttribute('aria-label', role === 'user' ? 'Sua mensagem' : 'Resposta da Azul');
+    if (role === 'assistant') {
+      entry.textContent = showName ? 'Azul: ' : '';
+      for (const part of (parts.length ? parts : [{text}])) {
+        let url;
+        try { url = new URL(part.url); } catch (_) { url = null; }
+        if (url?.protocol === 'https:' && !url.username && !url.password) {
+          const link = document.createElement('a');
+          link.href = url.href;
+          link.textContent = part.text || '[Fonte]';
+          link.title = part.title || 'Fonte oficial';
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          entry.append(link);
+        } else {
+          if (highlightInstitutional) {
+            const content = part.text || '';
+            const keywords = /\b(drones?|mapeamento|combate à dengue|identificação de focos|registrar um relato)\b/gi;
+            let cursor = 0;
+            for (const match of content.matchAll(keywords)) {
+              entry.append(document.createTextNode(content.slice(cursor, match.index)));
+              const emphasis = document.createElement('strong');
+              emphasis.textContent = match[0];
+              entry.append(emphasis);
+              cursor = match.index + match[0].length;
+            }
+            entry.append(document.createTextNode(content.slice(cursor)));
+          } else {
+            appendPortalText(entry, part.text || '');
+          }
+        }
+      }
+    }
+    log.append(entry);
+    log.scrollTop = log.scrollHeight;
+  }
+  const quickAnswers = [
+    {question: 'Como registrar um foco?', answer: 'Clique em Registrar relato aqui no chat. O formulário guia você por cinco etapas: ocorrência, endereço, identificação, detalhes e revisão. Depois de conferir os dados e o consentimento, clique em Confirmar e enviar. Guarde o protocolo exibido após a confirmação.'},
+    {question: 'Posso enviar fotos?', answer: 'Sim! Na etapa Detalhes do relato, você pode anexar até cinco fotos ou vídeos. Os anexos são opcionais e ajudam a equipe a entender o problema. Envie os arquivos pelo formulário de relato, não pela conversa.'},
+    {question: 'Quais dados preciso informar?', answer: 'Informe o tipo de ocorrência, o foco, logradouro, número, bairro e cidade, além de nome completo, CPF e telefone com DDD. Para Aedes, selecione também o tipo de local. RG e CEP são opcionais. Preencha seus dados pessoais somente nos campos do formulário e confirme o consentimento antes de enviar.'},
+    {question: 'O que acontece depois do envio?', answer: 'Após a confirmação, seu relato recebe um protocolo. A COVISA analisa as informações, encaminha à coordenadoria e esta define a UVIS responsável. A unidade avalia o atendimento. O envio não garante visita imediata nem prazo de execução. Ainda não há consulta pública do andamento pelo chatbot.'}
+  ];
+  function answerQuick(item) {
+    if (busy) return;
+    append(item.question, 'user');
+    append(item.answer, 'assistant');
+    history = [...history, {role: 'user', content: item.question},
+      {role: 'assistant', content: item.answer}].slice(-6);
+    input.focus();
+  }
+  function welcome() {
+    append('Olá! Sou a Azul, a assistente virtual do portal. Como posso ajudar? Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false);
+    const suggestions = document.createElement('details');
+    suggestions.open = true;
+    suggestions.className = 'portal-chat-suggestions';
+    suggestions.setAttribute('aria-label', 'Perguntas rápidas');
+    const heading = document.createElement('summary');
+    heading.textContent = 'Dúvidas frequentes';
+    const hint = document.createElement('span');
+    hint.textContent = 'Toque em uma pergunta para ver a orientação.';
+    suggestions.append(heading); suggestions.append(hint);
+    for (const item of quickAnswers) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = item.question;
+      button.addEventListener('click', () => answerQuick(item));
+      suggestions.append(button);
+    }
+    log.append(suggestions);
+    log.scrollTop = 0;
+  }
+  function show(open) {
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches;
+    (open ? (mobile ? root.querySelector('[data-close]') : input) : toggle).focus();
+  }
+  toggle.addEventListener('click', () => show(panel.hidden));
+  root.querySelector('[data-close]').addEventListener('click', () => show(false));
+  root.addEventListener('keydown', event => { if (event.key === 'Escape') show(false); });
+  clear.addEventListener('click', () => { if (busy) return; history = []; log.replaceChildren(); welcome(); input.focus(); });
+  about?.addEventListener('click', () => {
+    if (busy || !about.dataset.summary) return;
+    const question = 'Quem é a Oceano Azul?';
+    const answer = about.dataset.summary;
+    append(question, 'user');
+    append(answer, 'assistant', [{text: answer + '\n\n'},
+      {text: 'Conheça o site institucional da Oceano Azul', url: about.dataset.source, title: 'Site institucional da empresa'}], true, true);
+    history = [...history, {role: 'user', content: question},
+      {role: 'assistant', content: answer + '\nFonte: ' + about.dataset.source}].slice(-6);
+    input.focus();
+  });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const message = input.value.trim();
+    if (busy || !message) return;
+    if (/^(?:quero|gostaria de|preciso|desejo|vamos)?\s*(?:fazer|criar|registrar|enviar|abrir)\s+(?:um[a]?\s+)?(?:relato|den[uú]ncia|ocorr[eê]ncia)[.!?]*$/i.test(message)) {
+      input.value = '';
+      root.dispatchEvent(new CustomEvent('portal:start-report'));
+      return;
+    }
+    const normalized = message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[?!.]+$/g, '').trim();
+    const quick = quickAnswers.find(item => item.question.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[?!.]+$/g, '').trim() === normalized);
+    if (quick) { input.value = ''; answerQuick(quick); return; }
+    busy = true; send.disabled = true; clear.disabled = true; if (about) about.disabled = true;
+    send.textContent = 'Aguarde…';
+    form.setAttribute('aria-busy', 'true');
+    append(message, 'user');
+    input.value = '';
+    status.textContent = 'Preparando resposta…';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    try {
+      const response = await fetch(root.dataset.url, {
+        method: 'POST', signal: controller.signal, credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-Portal-Chat-Token': root.dataset.token,
+          'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''},
+        body: JSON.stringify({message, history})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.answer) throw new Error(data.error || 'Não foi possível responder agora.');
+      append(data.answer, 'assistant', data.parts || []);
+      history = [...history, {role: 'user', content: message}, {role: 'assistant', content: data.answer}].slice(-6);
+    } catch (error) {
+      append(error.name === 'AbortError' ? 'A resposta demorou. Tente novamente.' : (error.message === 'Failed to fetch' ? 'Falha de conexão. Tente novamente.' : error.message), 'assistant');
+      input.value = message;
+    } finally {
+      clearTimeout(timeout); busy = false; send.disabled = false; clear.disabled = false; status.textContent = '';
+      send.textContent = sendLabel;
+      if (about) about.disabled = false;
+      form.setAttribute('aria-busy', 'false');
+      if (!panel.hidden) input.focus();
+    }
+  });
+  welcome();
+})();
+</script><script>document.querySelector('.portal-chat-toggle').click(); document.querySelector('[data-start-report]').addEventListener('click',()=>alert('No portal, este botão abre o formulário de relato em cinco etapas. Esta prévia não envia cadastros.'));document.querySelector('.portal-chat-links a').addEventListener('click',e=>{e.preventDefault();alert('No portal, este atalho abre o boletim de saúde.');});</script></html>

@@ -26,7 +26,7 @@
       <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Identificacao do fornecedor</h5>
+          <h5 class="m-0 text-primary fw-bold">Identificação do fornecedor</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -48,7 +48,7 @@
 
           <div class="col-md-5">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-file-earmark-person-fill me-1 text-primary"></i> Documento
+              <i class="bi bi-file-earmark-person-fill me-1 text-primary"></i> Documento *
             </label>
             <input
               type="text"
@@ -57,6 +57,7 @@
               value="{{ form.get('documento', '') }}"
               class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
               placeholder="CPF ou CNPJ"
+              required
             >
             {% if errors.get('documento') %}
               <div class="invalid-feedback">{{ errors.get('documento') }}</div>
@@ -68,7 +69,7 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Endereco</h5>
+          <h5 class="m-0 text-primary fw-bold">Endereço</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -101,7 +102,7 @@
 
           <div class="col-md-2">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-hash me-1 text-primary"></i> Numero
+              <i class="bi bi-hash me-1 text-primary"></i> Número
             </label>
             <input type="text" id="numero" name="numero" value="{{ form.get('numero', '') }}" class="form-control">
           </div>
@@ -146,7 +147,7 @@
         </div>
 
         <small class="text-muted d-block mt-4">
-          Campos com <span class="text-danger">*</span> sao obrigatorios.
+          Campos com <span class="text-danger">*</span> são obrigatórios.
         </small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">
@@ -201,7 +202,7 @@
     const cepDigits = onlyDigits(cepInput.value);
 
     if (cepDigits.length !== 8) {
-      cepStatus.textContent = "Informe um CEP com 8 digitos.";
+      cepStatus.textContent = "Informe um CEP com 8 dígitos.";
       return;
     }
 
@@ -213,7 +214,7 @@
       const data = await response.json();
 
       if (!response.ok || data.erro) {
-        cepStatus.textContent = data.erro || "CEP nao encontrado.";
+        cepStatus.textContent = data.erro || "CEP não encontrado.";
         return;
       }
 
@@ -221,9 +222,9 @@
       document.getElementById("bairro").value = data.bairro || "";
       document.getElementById("cidade").value = data.cidade || "";
       document.getElementById("uf").value = data.uf || "";
-      cepStatus.textContent = "Endereco preenchido.";
+      cepStatus.textContent = "Endereço preenchido.";
     } catch (error) {
-      cepStatus.textContent = "Nao foi possivel buscar o CEP agora.";
+      cepStatus.textContent = "Não foi possível buscar o CEP agora.";
     }
   }
 

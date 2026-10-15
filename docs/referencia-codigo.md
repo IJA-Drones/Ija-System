@@ -10,17 +10,17 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 
 | Item | Quantidade |
 | --- | ---: |
-| Módulos em `app/modules` | 36 |
-| Arquivos Python em `app` | 156 |
-| Declarações de rotas | 358 |
-| Modelos com tabela em `app/models.py` | 60 |
-| Templates HTML | 168 |
-| Arquivos CSS, incluindo bundle | 177 |
-| Arquivos JavaScript em `app/static`, incluindo service worker | 8 |
-| Revisões Alembic | 125 |
-| Arquivos Python de teste | 28 |
-| Funções/métodos Python com prefixo `test_` | 330 |
-| Arquivos Node de teste | 3 |
+| Módulos em `app/modules` | 38 |
+| Arquivos Python em `app` | 173 |
+| Declarações de rotas | 369 |
+| Modelos com tabela em `app/models.py` | 67 |
+| Templates HTML | 173 |
+| Arquivos CSS, incluindo bundle | 182 |
+| Arquivos JavaScript em `app/static`, incluindo service worker | 14 |
+| Revisões Alembic | 130 |
+| Arquivos Python de teste | 39 |
+| Funções/métodos Python com prefixo `test_` | 511 |
+| Arquivos Node de teste | 7 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
 
@@ -41,6 +41,7 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [cep](../app/modules/cep/) | 2 | 3 |
 | [chatbot](../app/modules/chatbot/) | 4 | 3 |
 | [clientes](../app/modules/clientes/) | 5 | 3 |
+| [configuracoes](../app/modules/configuracoes/) | 3 | 3 |
 | [dashboard](../app/modules/dashboard/) | 4 | 3 |
 | [denuncias](../app/modules/denuncias/) | 10 | 3 |
 | [dev_dashboard](../app/modules/dev_dashboard/) | 5 | 3 |
@@ -51,18 +52,19 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [equipes](../app/modules/equipes/) | 5 | 3 |
 | [estoque](../app/modules/estoque/) | 5 | 4 |
 | [feedback](../app/modules/feedback/) | 16 | 3 |
-| [financeiro](../app/modules/financeiro/) | 6 | 3 |
+| [financeiro](../app/modules/financeiro/) | 9 | 4 |
+| [gestao_ti](../app/modules/gestao_ti/) | 4 | 7 |
 | [mapas](../app/modules/mapas/) | 4 | 3 |
 | [painel_operacional](../app/modules/painel_operacional/) | 2 | 3 |
 | [piloto_checklists](../app/modules/piloto_checklists/) | 1 | 3 |
 | [piloto_os](../app/modules/piloto_os/) | 25 | 5 |
 | [pilotos](../app/modules/pilotos/) | 4 | 3 |
-| [portal_cidadao](../app/modules/portal_cidadao/) | 5 | 5 |
+| [portal_cidadao](../app/modules/portal_cidadao/) | 6 | 8 |
 | [relatorios](../app/modules/relatorios/) | 16 | 4 |
 | [solicitacoes](../app/modules/solicitacoes/) | 4 | 3 |
 | [usuarios](../app/modules/usuarios/) | 9 | 3 |
 | [uvis_equipes](../app/modules/uvis_equipes/) | 12 | 3 |
-| [veiculos](../app/modules/veiculos/) | 25 | 4 |
+| [veiculos](../app/modules/veiculos/) | 25 | 5 |
 | [vigilancia](../app/modules/vigilancia/) | 3 | 5 |
 
 ## Modelos e vínculos
@@ -72,7 +74,12 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | Modelo | Tabela | Campos declarados | Chaves estrangeiras declaradas |
 | --- | --- | --- | --- |
 | `Prefeitura` | `prefeituras` | `id`, `nome`, `slug`, `ativa`, `criada_em` | — |
+| `PrefeituraDocumentoConfig` | `prefeitura_documento_config` | `prefeitura_id`, `ativo`, `imagem_path`, `imagem_nome`, `opacidade`, `largura_percentual`, `identificar_usuario`, `atualizado_em`, `versao` | `prefeitura_id → prefeituras.id` |
+| `PrefeituraDocumentoHistorico` | `prefeitura_documento_historico` | `id`, `prefeitura_id`, `usuario_id`, `usuario_nome`, `antes`, `depois`, `criado_em` | `prefeitura_id → prefeituras.id`; `usuario_id → usuarios.id` |
 | `Usuario` | `usuarios` | `id`, `prefeitura_id`, `nome_uvis`, `regiao`, `codigo_setor`, `login`, `senha_hash`, `tipo_usuario`, `trabalha_oceano_azul`, `trabalha_agro`, `suporte_operacional`, `suporte_tecnico`, `piloto_id`, `piloto_agro_id`, `equipe_uvis_uvis_usuario_id`, `equipe_uvis_nome` | `prefeitura_id → prefeituras.id`; `piloto_id → pilotos.id`; `piloto_agro_id → pilotos_agro.id`; `equipe_uvis_uvis_usuario_id → usuarios.id` |
+| `CentralTiPerfilConfiguracao` | `central_ti_perfis_configuracoes` | `perfil_codigo`, `versao`, `atualizado_em`, `atualizado_por_id` | `atualizado_por_id → usuarios.id` |
+| `CentralTiSelecao` | `central_ti_selecoes` | `perfil_codigo`, `codigo` | `perfil_codigo → central_ti_perfis_configuracoes.perfil_codigo` |
+| `CentralTiAuditoria` | `central_ti_auditoria` | `id`, `lote`, `perfil_codigo`, `usuario_id`, `usuario_login`, `versao_anterior`, `versao_nova`, `antes`, `depois`, `criado_em` | `usuario_id → usuarios.id` |
 | `FeedbackTopico` | `feedback_topicos` | `id`, `prefeitura_id`, `uvis_usuario_id`, `uvis_nome`, `regiao`, `criado_por_id`, `criado_por_nome`, `criado_por_tipo`, `titulo`, `descricao`, `categoria`, `setor_suporte`, `status`, `prioridade`, `responsavel_id`, `resolvido_em`, `criado_em`, `atualizado_em` | `prefeitura_id → prefeituras.id`; `uvis_usuario_id → usuarios.id`; `criado_por_id → usuarios.id`; `responsavel_id → usuarios.id` |
 | `FeedbackComentario` | `feedback_comentarios` | `id`, `topico_id`, `usuario_id`, `usuario_nome`, `usuario_tipo`, `mensagem`, `interno`, `criado_em` | `topico_id → feedback_topicos.id`; `usuario_id → usuarios.id` |
 | `FeedbackComentarioAnexo` | `feedback_comentario_anexos` | `id`, `comentario_id`, `arquivo_path`, `arquivo_nome`, `mime_type`, `tamanho_bytes`, `criado_em` | `comentario_id → feedback_comentarios.id` |
@@ -116,6 +123,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | `ManutencaoEquipamento` | `manutencoes_equipamentos` | `id`, `prefeitura_id`, `drone_id`, `aberta_por_id`, `encerrada_por_id`, `status`, `aberta_em`, `encerrada_em`, `observacoes` | `prefeitura_id → prefeituras.id`; `drone_id → drones.id`; `aberta_por_id → usuarios.id`; `encerrada_por_id → usuarios.id` |
 | `Baterias` | `baterias` | `id`, `ciclo`, `drone_id` | `id → equipamentos.id`; `drone_id → drones.id` |
 | `Veiculos` | `veiculos` | `id`, `frota`, `operacao`, `placa`, `responsavel`, `km_atual`, `km_prox_revisao`, `revisao_marcada_em`, `revisao_obs` | `id → equipamentos.id` |
+| `RastreamentoSincronizacao` | `rastreamento_sincronizacao` | `id`, `tentado_em`, `sincronizado_em`, `erro` | — |
 | `RastreamentoPosicao` | `rastreamento_posicoes` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `endereco`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
 | `RastreamentoHistorico` | `rastreamento_historicos` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
 | `RastreamentoAlerta` | `rastreamento_alertas` | `id`, `veiculo_id`, `prefeitura_id`, `tipo`, `severidade`, `mensagem`, `reportado_em`, `resolvido`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
@@ -131,10 +139,11 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | `AgroFlightLogImport` | `agro_flight_log_imports` | `id`, `uploaded_by_id`, `original_filename`, `stored_filename`, `stored_path`, `file_sha256`, `total_rows`, `imported_rows`, `skipped_rows`, `period_start`, `period_end`, `uploaded_at` | `uploaded_by_id → usuarios.id` |
 | `AgroFlightRecord` | `agro_flight_records` | `id`, `import_id`, `source_row_number`, `fingerprint`, `flight_window`, `flight_start`, `flight_end`, `location`, `aircraft_name`, `task_type`, `sprayed_area_ha`, `total_amount_l_kg`, `flight_duration_seconds`, `flight_duration_label`, `crop`, `pilot_name`, `team_name`, `field_name`, `serial_number`, `starting_battery_level`, `ending_battery_level`, `battery_consumed_level`, `battery_sn`, `raw_payload`, `imported_at` | `import_id → agro_flight_log_imports.id` |
 | `AgroFlightKmlRoute` | `agro_flight_kml_routes` | `id`, `flight_record_id`, `uploaded_by_id`, `route_code`, `original_filename`, `stored_filename`, `stored_path`, `file_sha256`, `aircraft_name`, `pilot_name`, `flight_controller_id`, `route_timestamp`, `mode_selection`, `flight_time_raw`, `task_area`, `spray_amount`, `route_color`, `route_width`, `point_count`, `points_json`, `imported_at` | `flight_record_id → agro_flight_records.id`; `uploaded_by_id → usuarios.id` |
+| `FinanceiroEmpresaPerfil` | `financeiro_empresa_perfis` | `empresa_slug`, `nome`, `razao_social`, `cnpj`, `logo_path`, `tem_logo` | — |
 
 ## Migrações
 
-Heads: `e15caed9908f`.
+Heads: `a71d9c4e203b`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -169,10 +178,10 @@ Fonte: [app/modules/admin_checklists/routes.py](../app/modules/admin_checklists/
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/admin/checklists/semanais` | `admin_checklists_semanais` | 21 |
-| GET | `/admin/checklists/semanais/<int:piloto_id>/<string:semana_inicio>` | `admin_checklist_semanal_detalhe` | 49 |
-| GET | `/admin/checklists/semanais/<string:actor_type>/<int:actor_id>/<string:semana_inicio>` | `admin_checklist_semanal_detalhe_actor` | 58 |
-| GET, POST | `/admin/checklists/<string:tipo>/<int:checklist_id>/editar` | `editar_checklist_semanal` | 67 |
+| GET | `/admin/checklists/semanais` | `admin_checklists_semanais` | 22 |
+| GET | `/admin/checklists/semanais/<int:piloto_id>/<string:semana_inicio>` | `admin_checklist_semanal_detalhe` | 50 |
+| GET | `/admin/checklists/semanais/<string:actor_type>/<int:actor_id>/<string:semana_inicio>` | `admin_checklist_semanal_detalhe_actor` | 59 |
+| GET, POST | `/admin/checklists/<string:tipo>/<int:checklist_id>/editar` | `editar_checklist_semanal` | 68 |
 
 ### app/modules/admin_dashboard/routes.py
 
@@ -180,18 +189,18 @@ Fonte: [app/modules/admin_dashboard/routes.py](../app/modules/admin_dashboard/ro
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/admin` | `admin_dashboard` | 260 |
-| GET | `/admin/exportar_excel` | `exportar_excel` | 345 |
-| POST | `/admin/atualizar/<int:id>` | `atualizar` | 398 |
-| POST | `/admin/solicitacao/<int:id>/cancelar` | `cancelar_solicitacao_admin` | 443 |
-| GET | `/admin/canceladas` | `admin_canceladas` | 461 |
-| GET | `/admin/historico-os` | `admin_historico_os` | 512 |
-| GET | `/admin/historico-os/exportar-excel` | `admin_historico_os_exportar_excel` | 560 |
-| GET | `/admin/historico-os/exportar-excel-individuais` | `admin_historico_os_exportar_excel_individuais` | 594 |
-| GET | `/admin/historico-os/exportar-pdf-individuais` | `admin_historico_os_exportar_pdf_individuais` | 624 |
-| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>` | `admin_historico_os_pdf_job_status` | 640 |
-| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>/download` | `admin_historico_os_pdf_job_download` | 656 |
-| GET | `/admin/os/<int:os_id>/equipe-uvis-formulario` | `admin_equipe_uvis_os_formulario_view` | 683 |
+| GET | `/admin` | `admin_dashboard` | 261 |
+| GET | `/admin/exportar_excel` | `exportar_excel` | 346 |
+| POST | `/admin/atualizar/<int:id>` | `atualizar` | 399 |
+| POST | `/admin/solicitacao/<int:id>/cancelar` | `cancelar_solicitacao_admin` | 444 |
+| GET | `/admin/canceladas` | `admin_canceladas` | 462 |
+| GET | `/admin/historico-os` | `admin_historico_os` | 513 |
+| GET | `/admin/historico-os/exportar-excel` | `admin_historico_os_exportar_excel` | 561 |
+| GET | `/admin/historico-os/exportar-excel-individuais` | `admin_historico_os_exportar_excel_individuais` | 595 |
+| GET | `/admin/historico-os/exportar-pdf-individuais` | `admin_historico_os_exportar_pdf_individuais` | 625 |
+| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>` | `admin_historico_os_pdf_job_status` | 641 |
+| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>/download` | `admin_historico_os_pdf_job_download` | 657 |
+| GET | `/admin/os/<int:os_id>/equipe-uvis-formulario` | `admin_equipe_uvis_os_formulario_view` | 684 |
 
 ### app/modules/admin_uvis/routes.py
 
@@ -199,11 +208,11 @@ Fonte: [app/modules/admin_uvis/routes.py](../app/modules/admin_uvis/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/admin/uvis/novo` | `admin_uvis_novo` | 39 |
-| GET | `/admin/uvis` | `admin_uvis_listar` | 107 |
-| GET, POST | `/admin/uvis/<int:id>/editar` | `admin_uvis_editar` | 151 |
-| POST | `/admin/uvis/<int:id>/excluir` | `admin_uvis_excluir` | 239 |
-| GET | `/admin/uvis/exportar` | `admin_uvis_exportar` | 272 |
+| GET, POST | `/admin/uvis/novo` | `admin_uvis_novo` | 40 |
+| GET | `/admin/uvis` | `admin_uvis_listar` | 108 |
+| GET, POST | `/admin/uvis/<int:id>/editar` | `admin_uvis_editar` | 152 |
+| POST | `/admin/uvis/<int:id>/excluir` | `admin_uvis_excluir` | 240 |
+| GET | `/admin/uvis/exportar` | `admin_uvis_exportar` | 273 |
 
 ### app/modules/agenda_notificacoes/routes.py
 
@@ -211,13 +220,13 @@ Fonte: [app/modules/agenda_notificacoes/routes.py](../app/modules/agenda_notific
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/agenda` | `agenda` | 18 |
-| GET | `/agenda/rotas-dia` | `agenda_rotas_dia` | 32 |
-| GET | `/agenda/exportar_excel` | `agenda_exportar_excel` | 43 |
-| GET | `/notificacoes/<int:notif_id>/ler` | `ler_notificacao` | 57 |
-| GET | `/notificacoes` | `notificacoes` | 64 |
-| POST | `/notificacoes/<int:notif_id>/excluir` | `excluir_notificacao` | 69 |
-| POST | `/notificacoes/limpar` | `limpar_notificacoes` | 76 |
+| GET | `/agenda` | `agenda` | 19 |
+| GET | `/agenda/rotas-dia` | `agenda_rotas_dia` | 33 |
+| GET | `/agenda/exportar_excel` | `agenda_exportar_excel` | 44 |
+| GET | `/notificacoes/<int:notif_id>/ler` | `ler_notificacao` | 58 |
+| GET | `/notificacoes` | `notificacoes` | 65 |
+| POST | `/notificacoes/<int:notif_id>/excluir` | `excluir_notificacao` | 70 |
+| POST | `/notificacoes/limpar` | `limpar_notificacoes` | 77 |
 
 ### app/modules/agro/routes.py
 
@@ -225,101 +234,101 @@ Fonte: [app/modules/agro/routes.py](../app/modules/agro/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/agro` | `agro_root` | 3705 |
-| GET | `/agro/piloto` | `agro_piloto_dashboard` | 3714 |
-| GET | `/agro/piloto/os` | `agro_piloto_os_listar` | 3778 |
-| GET | `/agro/piloto/mapeamentos` | `agro_piloto_mapeamentos_listar` | 3816 |
-| GET | `/agro/admin` | `admin_agro` | 3863 |
-| GET | `/agro/financeiro` | `agro_financeiro_dashboard` | 3872 |
-| GET | `/agro/financeiro/categorias` | `agro_financeiro_categorias_listar` | 3879 |
-| GET, POST | `/agro/financeiro/categorias/cadastrar` | `agro_financeiro_categoria_nova` | 3933 |
-| GET, POST | `/agro/financeiro/categorias/<int:subcategoria_id>/editar` | `agro_financeiro_categoria_editar` | 3971 |
-| POST | `/agro/financeiro/categorias/<int:subcategoria_id>/alternar` | `agro_financeiro_categoria_alternar` | 4037 |
-| GET | `/agro/bancos` | `agro_bancos_listar` | 4057 |
-| GET | `/agro/bancos/conciliacao` | `agro_bancos_conciliacao` | 4075 |
-| GET, POST | `/agro/bancos/cadastrar` | `agro_banco_novo` | 4188 |
-| GET, POST | `/agro/bancos/<int:banco_id>/editar` | `agro_banco_editar` | 4235 |
-| POST | `/agro/bancos/<int:banco_id>/deletar` | `agro_banco_deletar` | 4276 |
-| GET | `/agro/relatorios/fluxo-caixa/excel` | `agro_fluxo_caixa_exportar_excel` | 4291 |
-| GET | `/agro/relatorios/dre-gerencial/excel` | `agro_dre_gerencial_exportar_excel` | 4304 |
-| GET | `/agro/clientes` | `agro_clientes_listar` | 4317 |
-| GET | `/agro/clientes-fornecedores` | `agro_clientes_menu` | 4342 |
-| GET, POST | `/agro/clientes/cadastrar` | `agro_cliente_novo` | 4358 |
-| GET, POST | `/agro/clientes/<int:cliente_id>/editar` | `agro_cliente_editar` | 4392 |
-| POST | `/agro/clientes/<int:cliente_id>/deletar` | `agro_cliente_deletar` | 4439 |
-| GET | `/agro/fornecedores` | `agro_fornecedores_listar` | 4454 |
-| GET, POST | `/agro/fornecedores/cadastrar` | `agro_fornecedor_novo` | 4479 |
-| GET, POST | `/agro/fornecedores/<int:fornecedor_id>/editar` | `agro_fornecedor_editar` | 4514 |
-| POST | `/agro/fornecedores/<int:fornecedor_id>/deletar` | `agro_fornecedor_deletar` | 4565 |
-| GET | `/agro/orcamentos` | `agro_orcamentos_listar` | 4580 |
-| GET, POST | `/agro/orcamentos/cadastrar` | `agro_orcamento_novo` | 4616 |
-| GET, POST | `/agro/orcamentos/<int:orcamento_id>/editar` | `agro_orcamento_editar` | 4736 |
-| GET, POST | `/agro/orcamentos/<int:orcamento_id>/rd-mapeamento` | `agro_rd_mapeamento_editar` | 4888 |
-| GET | `/agro/orcamentos/template-mapeamento` | `agro_orcamentos_template_mapeamento` | 4950 |
-| POST | `/agro/orcamentos/<int:orcamento_id>/template-mapeamento` | `agro_orcamento_template_mapeamento_salvar` | 4977 |
-| GET, POST | `/agro/piloto/rd-mapeamento/<int:rd_id>` | `agro_piloto_rd_mapeamento` | 5023 |
-| GET, POST | `/agro/orcamentos/<int:orcamento_id>/contrato` | `agro_contrato_editar` | 5099 |
-| GET | `/agro/contratos` | `agro_contratos_listar` | 5220 |
-| GET | `/agro/contratos/comprovantes` | `agro_contratos_comprovantes` | 5262 |
-| GET | `/agro/financeiro/contas` | `agro_financeiro_contas` | 5293 |
-| GET | `/agro/financeiro/relatorio-geral` | `agro_relatorio_contas_geral` | 5311 |
-| GET | `/agro/financeiro/relatorio-geral/excel` | `agro_relatorio_contas_geral_excel` | 5335 |
-| GET | `/agro/financeiro/relatorio-geral/pdf` | `agro_relatorio_contas_geral_pdf` | 5354 |
-| GET | `/agro/financeiro/contas-receber` | `agro_contas_receber_listar` | 5373 |
-| GET | `/agro/financeiro/contas-pagar` | `agro_contas_pagar_listar` | 5419 |
-| GET | `/agro/financeiro` | `agro_financeiro_listar` | 5463 |
-| GET | `/agro/financeiro/configuracoes` | `agro_financeiro_configuracoes` | 5506 |
-| POST | `/agro/financeiro/configuracoes` | `agro_financeiro_configuracoes_salvar` | 5520 |
-| GET, POST | `/agro/financeiro/cadastrar` | `agro_financeiro_novo` | 5553 |
-| GET, POST | `/agro/financeiro/<int:lancamento_id>/editar` | `agro_financeiro_editar` | 5671 |
-| POST | `/agro/financeiro/<int:lancamento_id>/receber` | `agro_financeiro_receber_os_concluida` | 5789 |
-| POST | `/agro/financeiro/<int:lancamento_id>/deletar` | `agro_financeiro_deletar` | 5848 |
-| GET | `/agro/financeiro/entradas` | `agro_financeiro_entrada_listar` | 5873 |
-| GET, POST | `/agro/financeiro/entradas/cadastrar` | `agro_financeiro_entrada_novo` | 5900 |
-| GET, POST | `/agro/financeiro/entradas/<int:lancamento_id>/editar` | `agro_financeiro_entrada_editar` | 6027 |
-| POST | `/agro/financeiro/entradas/<int:lancamento_id>/deletar` | `agro_financeiro_entrada_deletar` | 6133 |
-| GET | `/agro/financeiro/saidas` | `agro_financeiro_saida_listar` | 6161 |
-| GET, POST | `/agro/financeiro/saidas/cadastrar` | `agro_financeiro_saida_novo` | 6191 |
-| GET, POST | `/agro/financeiro/saidas/<int:lancamento_id>/editar` | `agro_financeiro_saida_editar` | 6329 |
-| POST | `/agro/financeiro/saidas/<int:lancamento_id>/deletar` | `agro_financeiro_saida_deletar` | 6447 |
-| GET | `/agro/caixa` | `agro_caixa_diario` | 6475 |
-| POST | `/agro/caixa/abrir` | `agro_caixa_abrir` | 6490 |
-| POST | `/agro/caixa/fechar` | `agro_caixa_fechar` | 6540 |
-| GET | `/agro/contratos/template` | `agro_contratos_template` | 6570 |
-| POST | `/agro/contratos/<int:contrato_id>/template` | `agro_contrato_template_salvar` | 6589 |
-| POST | `/agro/contratos/<int:contrato_id>/deletar` | `agro_contrato_deletar` | 6611 |
-| POST | `/agro/contratos/<int:contrato_id>/comprovante-pagamento` | `agro_contrato_comprovante_pagamento_upload` | 6626 |
-| GET | `/agro/contratos/<int:contrato_id>/comprovante-pagamento` | `agro_contrato_comprovante_pagamento` | 6647 |
-| POST | `/agro/contratos/<int:contrato_id>/comprovante-pagamento/remover` | `agro_contrato_comprovante_pagamento_remover` | 6664 |
-| GET | `/agro/orcamentos/<int:orcamento_id>/anexo` | `agro_orcamento_anexo` | 6677 |
-| GET | `/agro/orcamentos/<int:orcamento_id>/pdf` | `agro_orcamento_pdf` | 6688 |
-| GET | `/agro/orcamentos/<int:orcamento_id>/contrato/pdf` | `agro_contrato_pdf` | 6704 |
-| GET | `/agro/os/<int:os_id>/relatorio/pdf` | `agro_os_relatorio_pdf` | 6714 |
-| POST | `/agro/os/<int:os_id>/deletar` | `agro_os_deletar` | 6728 |
-| GET | `/agro/os` | `agro_os_listar` | 6739 |
-| GET | `/agro/logs-voo` | `agro_logs_voo` | 6765 |
-| GET | `/agro/logs-voo/exportar` | `agro_logs_voo_exportar` | 6793 |
-| POST | `/agro/logs-voo/importar-excel` | `agro_logs_voo_importar_excel` | 6807 |
-| POST | `/agro/logs-voo/importar-kml` | `agro_logs_voo_importar_kml` | 6833 |
-| POST | `/agro/logs-voo/rota/<int:route_id>/vincular-os` | `agro_logs_voo_vincular_os` | 6862 |
-| POST | `/agro/logs-voo/rota/<int:route_id>/desvincular-os` | `agro_logs_voo_desvincular_os` | 6881 |
-| GET | `/api/agro/kml-route/<int:route_id>` | `api_agro_kml_route` | 6891 |
-| GET | `/agro/logs-voo/rota/<int:route_id>/kml` | `agro_logs_voo_baixar_kml` | 6898 |
-| GET, POST | `/agro/contratos/<int:contrato_id>/os/cadastrar` | `agro_os_nova` | 6920 |
-| GET, POST | `/agro/os/<int:os_id>/editar` | `agro_os_editar` | 7094 |
-| POST | `/agro/orcamentos/<int:orcamento_id>/deletar` | `agro_orcamento_deletar` | 7243 |
-| GET | `/agro/equipes` | `agro_equipes_listar` | 7260 |
-| GET, POST | `/agro/equipes/cadastrar` | `agro_equipe_nova` | 7282 |
-| GET, POST | `/agro/equipes/<int:equipe_id>/editar` | `agro_equipe_editar` | 7307 |
-| POST | `/agro/equipes/<int:equipe_id>/deletar` | `agro_equipe_deletar` | 7334 |
-| GET | `/agro/pilotos` | `agro_pilotos_listar` | 7347 |
-| GET, POST | `/agro/pilotos/cadastrar` | `agro_piloto_novo` | 7371 |
-| GET, POST | `/agro/pilotos/<int:piloto_id>/editar` | `agro_piloto_editar` | 7409 |
-| POST | `/agro/pilotos/<int:piloto_id>/deletar` | `agro_piloto_deletar` | 7460 |
-| GET | `/agro/equipamentos` | `agro_equipamentos_listar` | 7472 |
-| GET, POST | `/agro/equipamentos/cadastrar` | `agro_equipamento_novo` | 7500 |
-| GET, POST | `/agro/equipamentos/<int:equipamento_id>/editar` | `agro_equipamento_editar` | 7536 |
-| POST | `/agro/equipamentos/<int:equipamento_id>/deletar` | `agro_equipamento_deletar` | 7598 |
+| GET | `/agro` | `agro_root` | 3712 |
+| GET | `/agro/piloto` | `agro_piloto_dashboard` | 3721 |
+| GET | `/agro/piloto/os` | `agro_piloto_os_listar` | 3791 |
+| GET | `/agro/piloto/mapeamentos` | `agro_piloto_mapeamentos_listar` | 3829 |
+| GET | `/agro/admin` | `admin_agro` | 3876 |
+| GET | `/agro/financeiro` | `agro_financeiro_dashboard` | 3891 |
+| GET | `/agro/financeiro/categorias` | `agro_financeiro_categorias_listar` | 3898 |
+| GET, POST | `/agro/financeiro/categorias/cadastrar` | `agro_financeiro_categoria_nova` | 3952 |
+| GET, POST | `/agro/financeiro/categorias/<int:subcategoria_id>/editar` | `agro_financeiro_categoria_editar` | 3990 |
+| POST | `/agro/financeiro/categorias/<int:subcategoria_id>/alternar` | `agro_financeiro_categoria_alternar` | 4056 |
+| GET | `/agro/bancos` | `agro_bancos_listar` | 4076 |
+| GET | `/agro/bancos/conciliacao` | `agro_bancos_conciliacao` | 4094 |
+| GET, POST | `/agro/bancos/cadastrar` | `agro_banco_novo` | 4207 |
+| GET, POST | `/agro/bancos/<int:banco_id>/editar` | `agro_banco_editar` | 4254 |
+| POST | `/agro/bancos/<int:banco_id>/deletar` | `agro_banco_deletar` | 4295 |
+| GET | `/agro/relatorios/fluxo-caixa/excel` | `agro_fluxo_caixa_exportar_excel` | 4310 |
+| GET | `/agro/relatorios/dre-gerencial/excel` | `agro_dre_gerencial_exportar_excel` | 4323 |
+| GET | `/agro/clientes` | `agro_clientes_listar` | 4336 |
+| GET | `/agro/clientes-fornecedores` | `agro_clientes_menu` | 4361 |
+| GET, POST | `/agro/clientes/cadastrar` | `agro_cliente_novo` | 4377 |
+| GET, POST | `/agro/clientes/<int:cliente_id>/editar` | `agro_cliente_editar` | 4411 |
+| POST | `/agro/clientes/<int:cliente_id>/deletar` | `agro_cliente_deletar` | 4458 |
+| GET | `/agro/fornecedores` | `agro_fornecedores_listar` | 4473 |
+| GET, POST | `/agro/fornecedores/cadastrar` | `agro_fornecedor_novo` | 4498 |
+| GET, POST | `/agro/fornecedores/<int:fornecedor_id>/editar` | `agro_fornecedor_editar` | 4533 |
+| POST | `/agro/fornecedores/<int:fornecedor_id>/deletar` | `agro_fornecedor_deletar` | 4584 |
+| GET | `/agro/orcamentos` | `agro_orcamentos_listar` | 4599 |
+| GET, POST | `/agro/orcamentos/cadastrar` | `agro_orcamento_novo` | 4635 |
+| GET, POST | `/agro/orcamentos/<int:orcamento_id>/editar` | `agro_orcamento_editar` | 4755 |
+| GET, POST | `/agro/orcamentos/<int:orcamento_id>/rd-mapeamento` | `agro_rd_mapeamento_editar` | 4907 |
+| GET | `/agro/orcamentos/template-mapeamento` | `agro_orcamentos_template_mapeamento` | 4969 |
+| POST | `/agro/orcamentos/<int:orcamento_id>/template-mapeamento` | `agro_orcamento_template_mapeamento_salvar` | 4996 |
+| GET, POST | `/agro/piloto/rd-mapeamento/<int:rd_id>` | `agro_piloto_rd_mapeamento` | 5042 |
+| GET, POST | `/agro/orcamentos/<int:orcamento_id>/contrato` | `agro_contrato_editar` | 5118 |
+| GET | `/agro/contratos` | `agro_contratos_listar` | 5239 |
+| GET | `/agro/contratos/comprovantes` | `agro_contratos_comprovantes` | 5281 |
+| GET | `/agro/financeiro/contas` | `agro_financeiro_contas` | 5312 |
+| GET | `/agro/financeiro/relatorio-geral` | `agro_relatorio_contas_geral` | 5330 |
+| GET | `/agro/financeiro/relatorio-geral/excel` | `agro_relatorio_contas_geral_excel` | 5354 |
+| GET | `/agro/financeiro/relatorio-geral/pdf` | `agro_relatorio_contas_geral_pdf` | 5373 |
+| GET | `/agro/financeiro/contas-receber` | `agro_contas_receber_listar` | 5392 |
+| GET | `/agro/financeiro/contas-pagar` | `agro_contas_pagar_listar` | 5438 |
+| GET | `/agro/financeiro` | `agro_financeiro_listar` | 5482 |
+| GET | `/agro/financeiro/configuracoes` | `agro_financeiro_configuracoes` | 5525 |
+| POST | `/agro/financeiro/configuracoes` | `agro_financeiro_configuracoes_salvar` | 5543 |
+| GET, POST | `/agro/financeiro/cadastrar` | `agro_financeiro_novo` | 5576 |
+| GET, POST | `/agro/financeiro/<int:lancamento_id>/editar` | `agro_financeiro_editar` | 5694 |
+| POST | `/agro/financeiro/<int:lancamento_id>/receber` | `agro_financeiro_receber_os_concluida` | 5812 |
+| POST | `/agro/financeiro/<int:lancamento_id>/deletar` | `agro_financeiro_deletar` | 5871 |
+| GET | `/agro/financeiro/entradas` | `agro_financeiro_entrada_listar` | 5896 |
+| GET, POST | `/agro/financeiro/entradas/cadastrar` | `agro_financeiro_entrada_novo` | 5923 |
+| GET, POST | `/agro/financeiro/entradas/<int:lancamento_id>/editar` | `agro_financeiro_entrada_editar` | 6050 |
+| POST | `/agro/financeiro/entradas/<int:lancamento_id>/deletar` | `agro_financeiro_entrada_deletar` | 6156 |
+| GET | `/agro/financeiro/saidas` | `agro_financeiro_saida_listar` | 6184 |
+| GET, POST | `/agro/financeiro/saidas/cadastrar` | `agro_financeiro_saida_novo` | 6214 |
+| GET, POST | `/agro/financeiro/saidas/<int:lancamento_id>/editar` | `agro_financeiro_saida_editar` | 6352 |
+| POST | `/agro/financeiro/saidas/<int:lancamento_id>/deletar` | `agro_financeiro_saida_deletar` | 6470 |
+| GET | `/agro/caixa` | `agro_caixa_diario` | 6498 |
+| POST | `/agro/caixa/abrir` | `agro_caixa_abrir` | 6513 |
+| POST | `/agro/caixa/fechar` | `agro_caixa_fechar` | 6563 |
+| GET | `/agro/contratos/template` | `agro_contratos_template` | 6593 |
+| POST | `/agro/contratos/<int:contrato_id>/template` | `agro_contrato_template_salvar` | 6612 |
+| POST | `/agro/contratos/<int:contrato_id>/deletar` | `agro_contrato_deletar` | 6634 |
+| POST | `/agro/contratos/<int:contrato_id>/comprovante-pagamento` | `agro_contrato_comprovante_pagamento_upload` | 6649 |
+| GET | `/agro/contratos/<int:contrato_id>/comprovante-pagamento` | `agro_contrato_comprovante_pagamento` | 6670 |
+| POST | `/agro/contratos/<int:contrato_id>/comprovante-pagamento/remover` | `agro_contrato_comprovante_pagamento_remover` | 6687 |
+| GET | `/agro/orcamentos/<int:orcamento_id>/anexo` | `agro_orcamento_anexo` | 6700 |
+| GET | `/agro/orcamentos/<int:orcamento_id>/pdf` | `agro_orcamento_pdf` | 6711 |
+| GET | `/agro/orcamentos/<int:orcamento_id>/contrato/pdf` | `agro_contrato_pdf` | 6727 |
+| GET | `/agro/os/<int:os_id>/relatorio/pdf` | `agro_os_relatorio_pdf` | 6737 |
+| POST | `/agro/os/<int:os_id>/deletar` | `agro_os_deletar` | 6751 |
+| GET | `/agro/os` | `agro_os_listar` | 6762 |
+| GET | `/agro/logs-voo` | `agro_logs_voo` | 6788 |
+| GET | `/agro/logs-voo/exportar` | `agro_logs_voo_exportar` | 6816 |
+| POST | `/agro/logs-voo/importar-excel` | `agro_logs_voo_importar_excel` | 6830 |
+| POST | `/agro/logs-voo/importar-kml` | `agro_logs_voo_importar_kml` | 6856 |
+| POST | `/agro/logs-voo/rota/<int:route_id>/vincular-os` | `agro_logs_voo_vincular_os` | 6885 |
+| POST | `/agro/logs-voo/rota/<int:route_id>/desvincular-os` | `agro_logs_voo_desvincular_os` | 6904 |
+| GET | `/api/agro/kml-route/<int:route_id>` | `api_agro_kml_route` | 6914 |
+| GET | `/agro/logs-voo/rota/<int:route_id>/kml` | `agro_logs_voo_baixar_kml` | 6921 |
+| GET, POST | `/agro/contratos/<int:contrato_id>/os/cadastrar` | `agro_os_nova` | 6943 |
+| GET, POST | `/agro/os/<int:os_id>/editar` | `agro_os_editar` | 7117 |
+| POST | `/agro/orcamentos/<int:orcamento_id>/deletar` | `agro_orcamento_deletar` | 7268 |
+| GET | `/agro/equipes` | `agro_equipes_listar` | 7285 |
+| GET, POST | `/agro/equipes/cadastrar` | `agro_equipe_nova` | 7307 |
+| GET, POST | `/agro/equipes/<int:equipe_id>/editar` | `agro_equipe_editar` | 7332 |
+| POST | `/agro/equipes/<int:equipe_id>/deletar` | `agro_equipe_deletar` | 7359 |
+| GET | `/agro/pilotos` | `agro_pilotos_listar` | 7372 |
+| GET, POST | `/agro/pilotos/cadastrar` | `agro_piloto_novo` | 7396 |
+| GET, POST | `/agro/pilotos/<int:piloto_id>/editar` | `agro_piloto_editar` | 7434 |
+| POST | `/agro/pilotos/<int:piloto_id>/deletar` | `agro_piloto_deletar` | 7485 |
+| GET | `/agro/equipamentos` | `agro_equipamentos_listar` | 7497 |
+| GET, POST | `/agro/equipamentos/cadastrar` | `agro_equipamento_novo` | 7525 |
+| GET, POST | `/agro/equipamentos/<int:equipamento_id>/editar` | `agro_equipamento_editar` | 7561 |
+| POST | `/agro/equipamentos/<int:equipamento_id>/deletar` | `agro_equipamento_deletar` | 7623 |
 
 ### app/modules/agro/talent_bank_routes.py
 
@@ -327,12 +336,12 @@ Fonte: [app/modules/agro/talent_bank_routes.py](../app/modules/agro/talent_bank_
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/agro/banco-de-talentos` | `agro_talentos_listar` | 84 |
-| GET, POST | `/agro/banco-de-talentos/novo` | `agro_talento_novo` | 136 |
-| GET, POST | `/agro/banco-de-talentos/<int:curriculo_id>` | `agro_talento_detalhe` | 198 |
-| GET | `/agro/banco-de-talentos/<int:curriculo_id>/pdf` | `agro_talento_pdf` | 226 |
-| POST | `/agro/banco-de-talentos/<int:curriculo_id>/reprocessar` | `agro_talento_reprocessar` | 247 |
-| POST | `/agro/banco-de-talentos/<int:curriculo_id>/deletar` | `agro_talento_deletar` | 276 |
+| GET | `/agro/banco-de-talentos` | `agro_talentos_listar` | 85 |
+| GET, POST | `/agro/banco-de-talentos/novo` | `agro_talento_novo` | 137 |
+| GET, POST | `/agro/banco-de-talentos/<int:curriculo_id>` | `agro_talento_detalhe` | 199 |
+| GET | `/agro/banco-de-talentos/<int:curriculo_id>/pdf` | `agro_talento_pdf` | 227 |
+| POST | `/agro/banco-de-talentos/<int:curriculo_id>/reprocessar` | `agro_talento_reprocessar` | 248 |
+| POST | `/agro/banco-de-talentos/<int:curriculo_id>/deletar` | `agro_talento_deletar` | 277 |
 
 ### app/modules/anexos/routes.py
 
@@ -350,7 +359,7 @@ Fonte: [app/modules/auditoria/routes.py](../app/modules/auditoria/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/admin/logs-usuarios` | `admin_logs_usuarios` | 20 |
+| GET | `/admin/logs-usuarios` | `admin_logs_usuarios` | 21 |
 
 ### app/modules/auth/routes.py
 
@@ -369,9 +378,9 @@ Fonte: [app/modules/backup/routes.py](../app/modules/backup/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/backup` | `backup_page` | 18 |
-| GET | `/backup/status` | `backup_status` | 43 |
-| GET | `/backups` | `backups_list_page` | 51 |
+| GET | `/backup` | `backup_page` | 19 |
+| GET | `/backup/status` | `backup_status` | 44 |
+| GET | `/backups` | `backups_list_page` | 52 |
 
 ### app/modules/canceladas/routes.py
 
@@ -397,10 +406,10 @@ Fonte: [app/modules/chatbot/routes.py](../app/modules/chatbot/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| POST | `/api/uvis/chatbot` | `uvis_chatbot` | 16 |
-| POST | `/api/admin/chatbot` | `admin_chatbot` | 23 |
-| POST | `/api/agro/admin/chatbot` | `agro_admin_chatbot` | 33 |
-| POST | `/api/agro/piloto/chatbot` | `agro_piloto_chatbot` | 43 |
+| POST | `/api/uvis/chatbot` | `uvis_chatbot` | 17 |
+| POST | `/api/admin/chatbot` | `admin_chatbot` | 24 |
+| POST | `/api/agro/admin/chatbot` | `agro_admin_chatbot` | 34 |
+| POST | `/api/agro/piloto/chatbot` | `agro_piloto_chatbot` | 44 |
 
 ### app/modules/clientes/routes.py
 
@@ -408,11 +417,21 @@ Fonte: [app/modules/clientes/routes.py](../app/modules/clientes/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/clientes` | `clientes_menu` | 39 |
-| GET, POST | `/clientes/cadastrar` | `cadastrar_clientes` | 54 |
-| GET | `/clientes/listar` | `listar_clientes` | 150 |
-| GET, POST | `/clientes/<int:cliente_id>/editar` | `editar_cliente` | 212 |
-| POST | `/clientes/<int:cliente_id>/deletar` | `deletar_cliente` | 292 |
+| GET | `/clientes` | `clientes_menu` | 40 |
+| GET, POST | `/clientes/cadastrar` | `cadastrar_clientes` | 55 |
+| GET | `/clientes/listar` | `listar_clientes` | 151 |
+| GET, POST | `/clientes/<int:cliente_id>/editar` | `editar_cliente` | 213 |
+| POST | `/clientes/<int:cliente_id>/deletar` | `deletar_cliente` | 293 |
+
+### app/modules/configuracoes/routes.py
+
+Fonte: [app/modules/configuracoes/routes.py](../app/modules/configuracoes/routes.py).
+
+| Método | Caminho | Endpoint local | Linha |
+| --- | --- | --- | ---: |
+| GET | `/configuracoes` | `configuracoes` | 53 |
+| GET, POST | `/configuracoes/documentos/<int:prefeitura_id>` | `configuracoes_documentos` | 63 |
+| GET | `/configuracoes/documentos/<int:prefeitura_id>/imagem` | `configuracoes_documentos_imagem` | 106 |
 
 ### app/modules/dashboard/routes.py
 
@@ -431,16 +450,16 @@ Fonte: [app/modules/denuncias/routes.py](../app/modules/denuncias/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/denuncias` | `denuncias_listar` | 37 |
-| GET | `/denuncias/<int:denuncia_id>` | `denuncia_detalhe` | 69 |
-| GET | `/coordenadoria/denuncias` | `coordenadoria_denuncias_listar` | 85 |
-| GET | `/coordenadoria/denuncias/<int:denuncia_id>` | `coordenadoria_denuncia_detalhe` | 113 |
-| POST | `/denuncias/<int:denuncia_id>/encaminhar-coordenadoria` | `denuncia_encaminhar_coordenadoria` | 129 |
-| POST | `/coordenadoria/denuncias/<int:denuncia_id>/designar-uvis` | `coordenadoria_denuncia_designar_uvis` | 148 |
-| GET | `/uvis/denuncias` | `uvis_denuncias_listar` | 163 |
-| GET, POST | `/uvis/denuncias/<int:denuncia_id>` | `uvis_denuncia_detalhe` | 191 |
-| POST | `/denuncias/<int:denuncia_id>/arquivar` | `denuncia_arquivar` | 229 |
-| GET | `/denuncias/anexos/<int:anexo_id>` | `denuncia_anexo` | 244 |
+| GET | `/denuncias` | `denuncias_listar` | 40 |
+| GET | `/denuncias/<int:denuncia_id>` | `denuncia_detalhe` | 72 |
+| GET | `/coordenadoria/denuncias` | `coordenadoria_denuncias_listar` | 92 |
+| GET | `/coordenadoria/denuncias/<int:denuncia_id>` | `coordenadoria_denuncia_detalhe` | 120 |
+| POST | `/denuncias/<int:denuncia_id>/encaminhar-coordenadoria` | `denuncia_encaminhar_coordenadoria` | 136 |
+| POST | `/coordenadoria/denuncias/<int:denuncia_id>/designar-uvis` | `coordenadoria_denuncia_designar_uvis` | 155 |
+| GET | `/uvis/denuncias` | `uvis_denuncias_listar` | 170 |
+| GET, POST | `/uvis/denuncias/<int:denuncia_id>` | `uvis_denuncia_detalhe` | 198 |
+| POST | `/denuncias/<int:denuncia_id>/arquivar` | `denuncia_arquivar` | 241 |
+| GET | `/denuncias/anexos/<int:anexo_id>` | `denuncia_anexo` | 256 |
 
 ### app/modules/dev_dashboard/routes.py
 
@@ -448,11 +467,11 @@ Fonte: [app/modules/dev_dashboard/routes.py](../app/modules/dev_dashboard/routes
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| POST | `/api/watchdog/deploy-events` | `watchdog_deploy_event` | 33 |
-| GET | `/dev` | `dev_dashboard` | 49 |
-| GET | `/dev/data` | `dev_dashboard_data` | 55 |
-| GET | `/dev/errors/<int:log_id>` | `dev_dashboard_error_detail` | 61 |
-| POST | `/dev/checks/<slug>` | `dev_dashboard_manual_check` | 70 |
+| POST | `/api/watchdog/deploy-events` | `watchdog_deploy_event` | 34 |
+| GET | `/dev` | `dev_dashboard` | 50 |
+| GET | `/dev/data` | `dev_dashboard_data` | 56 |
+| GET | `/dev/errors/<int:log_id>` | `dev_dashboard_error_detail` | 62 |
+| POST | `/dev/checks/<slug>` | `dev_dashboard_manual_check` | 71 |
 
 ### app/modules/dji_flight_logs/routes.py
 
@@ -460,15 +479,15 @@ Fonte: [app/modules/dji_flight_logs/routes.py](../app/modules/dji_flight_logs/ro
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/relatorios/dji-logs` | `relatorios_dji_logs` | 24 |
-| GET | `/relatorios/dji-logs/exportar` | `exportar_dji_logs_excel` | 53 |
-| POST | `/relatorios/dji-logs/importar` | `importar_dji_logs` | 68 |
-| POST | `/relatorios/dji-logs/importar-kml` | `importar_dji_kml` | 96 |
-| GET | `/api/dji-kml-route/<int:route_id>` | `api_dji_kml_route` | 126 |
-| POST | `/relatorios/dji-logs/rota/<int:route_id>/vincular-os` | `vincular_dji_kml_route_os` | 134 |
-| POST | `/relatorios/dji-logs/rota/<int:route_id>/excluir` | `excluir_dji_kml_route` | 162 |
-| GET | `/relatorios/dji-logs/rota/<int:route_id>` | `visualizar_dji_kml_route` | 185 |
-| GET | `/relatorios/dji-logs/rota/<int:route_id>/kml` | `baixar_dji_kml_route` | 203 |
+| GET | `/relatorios/dji-logs` | `relatorios_dji_logs` | 25 |
+| GET | `/relatorios/dji-logs/exportar` | `exportar_dji_logs_excel` | 54 |
+| POST | `/relatorios/dji-logs/importar` | `importar_dji_logs` | 69 |
+| POST | `/relatorios/dji-logs/importar-kml` | `importar_dji_kml` | 97 |
+| GET | `/api/dji-kml-route/<int:route_id>` | `api_dji_kml_route` | 127 |
+| POST | `/relatorios/dji-logs/rota/<int:route_id>/vincular-os` | `vincular_dji_kml_route_os` | 135 |
+| POST | `/relatorios/dji-logs/rota/<int:route_id>/excluir` | `excluir_dji_kml_route` | 163 |
+| GET | `/relatorios/dji-logs/rota/<int:route_id>` | `visualizar_dji_kml_route` | 186 |
+| GET | `/relatorios/dji-logs/rota/<int:route_id>/kml` | `baixar_dji_kml_route` | 204 |
 
 ### app/modules/drones_import/routes.py
 
@@ -476,9 +495,9 @@ Fonte: [app/modules/drones_import/routes.py](../app/modules/drones_import/routes
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/drones/importar-planilha` | `importar_planilha_drones` | 49 |
-| GET | `/agro/equipamentos/importar-planilha` | `agro_importar_planilha_drones` | 54 |
-| POST | `/api/drones/importar-planilha` | `importar_planilha_drones_api` | 59 |
+| GET | `/drones/importar-planilha` | `importar_planilha_drones` | 50 |
+| GET | `/agro/equipamentos/importar-planilha` | `agro_importar_planilha_drones` | 55 |
+| POST | `/api/drones/importar-planilha` | `importar_planilha_drones_api` | 60 |
 
 ### app/modules/equipamentos/routes.py
 
@@ -486,27 +505,27 @@ Fonte: [app/modules/equipamentos/routes.py](../app/modules/equipamentos/routes.p
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/equipamentos` | `listar_equipamentos` | 54 |
-| GET | `/equipamentos/drones` | `listar_drones` | 59 |
-| GET | `/equipamentos/baterias` | `listar_baterias` | 70 |
-| GET, POST | `/drones/cadastrar` | `cadastrar_drone` | 81 |
-| GET, POST | `/drones/<int:drone_id>/editar` | `editar_drone` | 109 |
-| POST | `/drones/<int:drone_id>/deletar` | `deletar_drone` | 155 |
-| GET, POST | `/baterias/cadastrar` | `cadastrar_bateria` | 171 |
-| GET, POST | `/baterias/<int:bateria_id>/editar` | `editar_bateria` | 203 |
-| POST | `/baterias/<int:bateria_id>/deletar` | `deletar_bateria` | 249 |
-| GET | `/equipamentos/em-manutencao` | `equipamentos_manutencao` | 265 |
-| GET | `/equipamentos/manutencoes/historico` | `equipamentos_manutencoes_historico` | 275 |
-| GET | `/equipamentos/manutencoes/historico/excel` | `equipamentos_manutencoes_historico_excel` | 284 |
-| GET | `/equipamentos/manutencoes/pecas/historico` | `equipamentos_manutencoes_pecas_historico` | 291 |
-| GET | `/equipamentos/manutencoes/pecas/historico/excel` | `equipamentos_manutencoes_pecas_historico_excel` | 300 |
-| GET | `/equipamentos/manutencoes/<int:manutencao_id>` | `equipamento_manutencao_detalhe` | 307 |
-| GET, POST | `/equipamentos/<int:drone_id>/manutencao/pecas` | `equipamento_manutencao_pecas` | 318 |
-| GET | `/equipamentos/<int:drone_id>/manutencao/pdf` | `equipamento_manutencao_pdf` | 350 |
-| GET | `/equipamentos/manutencoes/<int:manutencao_id>/pdf` | `equipamento_manutencao_historico_pdf` | 365 |
-| POST | `/equipamentos/<int:drone_id>/manutencao/encerrar` | `equipamento_manutencao_encerrar` | 379 |
-| POST | `/equipamentos/baterias/update_ciclos/<int:id>` | `update_ciclos` | 395 |
-| POST | `/drones/<int:drone_id>/manutencao` | `enviar_manutencao_drone` | 402 |
+| GET | `/equipamentos` | `listar_equipamentos` | 55 |
+| GET | `/equipamentos/drones` | `listar_drones` | 60 |
+| GET | `/equipamentos/baterias` | `listar_baterias` | 71 |
+| GET, POST | `/drones/cadastrar` | `cadastrar_drone` | 82 |
+| GET, POST | `/drones/<int:drone_id>/editar` | `editar_drone` | 110 |
+| POST | `/drones/<int:drone_id>/deletar` | `deletar_drone` | 156 |
+| GET, POST | `/baterias/cadastrar` | `cadastrar_bateria` | 172 |
+| GET, POST | `/baterias/<int:bateria_id>/editar` | `editar_bateria` | 204 |
+| POST | `/baterias/<int:bateria_id>/deletar` | `deletar_bateria` | 250 |
+| GET | `/equipamentos/em-manutencao` | `equipamentos_manutencao` | 266 |
+| GET | `/equipamentos/manutencoes/historico` | `equipamentos_manutencoes_historico` | 276 |
+| GET | `/equipamentos/manutencoes/historico/excel` | `equipamentos_manutencoes_historico_excel` | 285 |
+| GET | `/equipamentos/manutencoes/pecas/historico` | `equipamentos_manutencoes_pecas_historico` | 292 |
+| GET | `/equipamentos/manutencoes/pecas/historico/excel` | `equipamentos_manutencoes_pecas_historico_excel` | 301 |
+| GET | `/equipamentos/manutencoes/<int:manutencao_id>` | `equipamento_manutencao_detalhe` | 308 |
+| GET, POST | `/equipamentos/<int:drone_id>/manutencao/pecas` | `equipamento_manutencao_pecas` | 319 |
+| GET | `/equipamentos/<int:drone_id>/manutencao/pdf` | `equipamento_manutencao_pdf` | 351 |
+| GET | `/equipamentos/manutencoes/<int:manutencao_id>/pdf` | `equipamento_manutencao_historico_pdf` | 366 |
+| POST | `/equipamentos/<int:drone_id>/manutencao/encerrar` | `equipamento_manutencao_encerrar` | 380 |
+| POST | `/equipamentos/baterias/update_ciclos/<int:id>` | `update_ciclos` | 396 |
+| POST | `/drones/<int:drone_id>/manutencao` | `enviar_manutencao_drone` | 403 |
 
 ### app/modules/equipe_uvis_dashboard/routes.py
 
@@ -525,11 +544,11 @@ Fonte: [app/modules/equipes/routes.py](../app/modules/equipes/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/equipes/cadastrar` | `cadastrar_equipes` | 31 |
-| GET | `/equipes` | `listar_equipes` | 169 |
-| POST | `/equipes/<int:equipe_id>/credenciais` | `atualizar_credenciais_equipe` | 246 |
-| GET, POST | `/equipes/<int:equipe_id>/editar` | `editar_equipe` | 273 |
-| POST | `/equipes/<int:equipe_id>/deletar` | `deletar_equipe` | 437 |
+| GET, POST | `/equipes/cadastrar` | `cadastrar_equipes` | 32 |
+| GET | `/equipes` | `listar_equipes` | 170 |
+| POST | `/equipes/<int:equipe_id>/credenciais` | `atualizar_credenciais_equipe` | 247 |
+| GET, POST | `/equipes/<int:equipe_id>/editar` | `editar_equipe` | 274 |
+| POST | `/equipes/<int:equipe_id>/deletar` | `deletar_equipe` | 438 |
 
 ### app/modules/estoque/routes.py
 
@@ -537,11 +556,11 @@ Fonte: [app/modules/estoque/routes.py](../app/modules/estoque/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/estoque` | `estoque_listar` | 26 |
-| GET | `/estoque/export/excel` | `estoque_export_excel` | 33 |
-| GET, POST | `/estoque/novo` | `estoque_novo` | 40 |
-| GET, POST | `/estoque/<int:peca_id>/editar` | `estoque_editar` | 64 |
-| POST | `/estoque/<int:peca_id>/deletar` | `estoque_deletar` | 88 |
+| GET | `/estoque` | `estoque_listar` | 27 |
+| GET | `/estoque/export/excel` | `estoque_export_excel` | 34 |
+| GET, POST | `/estoque/novo` | `estoque_novo` | 41 |
+| GET, POST | `/estoque/<int:peca_id>/editar` | `estoque_editar` | 65 |
+| POST | `/estoque/<int:peca_id>/deletar` | `estoque_deletar` | 89 |
 
 ### app/modules/feedback/routes.py
 
@@ -549,22 +568,22 @@ Fonte: [app/modules/feedback/routes.py](../app/modules/feedback/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/feedback/notificacoes/status` | `feedback_notificacoes_status` | 209 |
-| GET | `/feedback` | `feedback_listar` | 219 |
-| GET | `/bugs` | `bugs_listar` | 297 |
-| GET | `/bugs/ajuda` | `bugs_ajuda` | 352 |
-| GET, POST | `/feedback/novo` | `feedback_novo` | 363 |
-| GET, POST | `/bugs/novo` | `bug_report_novo` | 364 |
-| GET | `/feedback/<int:topico_id>` | `feedback_detalhe` | 503 |
-| GET | `/bugs/<int:topico_id>/acompanhar` | `bug_acompanhamento` | 531 |
-| GET | `/feedback/<int:topico_id>/status` | `feedback_status` | 549 |
-| POST | `/feedback/<int:topico_id>/comentar` | `feedback_comentar` | 568 |
-| GET | `/feedback/anexos/<int:anexo_id>` | `feedback_anexo` | 595 |
-| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/editar` | `feedback_comentario_editar` | 641 |
-| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/apagar` | `feedback_comentario_apagar` | 662 |
-| POST | `/feedback/<int:topico_id>/atualizar` | `feedback_atualizar` | 678 |
-| POST | `/feedback/<int:topico_id>/assumir` | `feedback_assumir` | 719 |
-| POST | `/feedback/<int:topico_id>/corrigir` | `feedback_corrigir` | 739 |
+| GET | `/feedback/notificacoes/status` | `feedback_notificacoes_status` | 210 |
+| GET | `/feedback` | `feedback_listar` | 220 |
+| GET | `/bugs` | `bugs_listar` | 298 |
+| GET | `/bugs/ajuda` | `bugs_ajuda` | 353 |
+| GET, POST | `/feedback/novo` | `feedback_novo` | 364 |
+| GET, POST | `/bugs/novo` | `bug_report_novo` | 365 |
+| GET | `/feedback/<int:topico_id>` | `feedback_detalhe` | 504 |
+| GET | `/bugs/<int:topico_id>/acompanhar` | `bug_acompanhamento` | 532 |
+| GET | `/feedback/<int:topico_id>/status` | `feedback_status` | 550 |
+| POST | `/feedback/<int:topico_id>/comentar` | `feedback_comentar` | 569 |
+| GET | `/feedback/anexos/<int:anexo_id>` | `feedback_anexo` | 596 |
+| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/editar` | `feedback_comentario_editar` | 642 |
+| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/apagar` | `feedback_comentario_apagar` | 663 |
+| POST | `/feedback/<int:topico_id>/atualizar` | `feedback_atualizar` | 679 |
+| POST | `/feedback/<int:topico_id>/assumir` | `feedback_assumir` | 720 |
+| POST | `/feedback/<int:topico_id>/corrigir` | `feedback_corrigir` | 740 |
 
 ### app/modules/financeiro/routes.py
 
@@ -572,12 +591,33 @@ Fonte: [app/modules/financeiro/routes.py](../app/modules/financeiro/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/financeiro` | `financeiro_central` | 107 |
-| GET | `/financeiro/empresas/<empresa_slug>` | `financeiro_empresa` | 118 |
-| GET | `/financeiro/empresas/<empresa_slug>/clientes` | `financeiro_empresa_clientes` | 132 |
-| GET | `/financeiro/empresas/<empresa_slug>/relacionamentos` | `financeiro_empresa_relacionamentos` | 137 |
-| GET | `/financeiro/empresas/<empresa_slug>/fornecedores` | `financeiro_empresa_fornecedores` | 142 |
-| GET | `/financeiro/empresas/<empresa_slug>/comercial` | `financeiro_empresa_comercial` | 147 |
+| GET | `/financeiro` | `financeiro_central` | 123 |
+| GET | `/financeiro/empresas/<empresa_slug>` | `financeiro_empresa` | 134 |
+| GET | `/financeiro/empresas/<empresa_slug>/logo` | `financeiro_empresa_logo` | 142 |
+| GET | `/financeiro/empresas/<empresa_slug>/configuracoes` | `financeiro_empresa_configuracoes` | 157 |
+| POST | `/financeiro/empresas/<empresa_slug>/configuracoes` | `financeiro_empresa_configuracoes_salvar` | 170 |
+| GET | `/financeiro/empresas/<empresa_slug>/clientes` | `financeiro_empresa_clientes` | 248 |
+| GET | `/financeiro/empresas/<empresa_slug>/relacionamentos` | `financeiro_empresa_relacionamentos` | 253 |
+| GET | `/financeiro/empresas/<empresa_slug>/fornecedores` | `financeiro_empresa_fornecedores` | 258 |
+| GET | `/financeiro/empresas/<empresa_slug>/comercial` | `financeiro_empresa_comercial` | 263 |
+
+### app/modules/gestao_ti/permissions.py
+
+Fonte: [app/modules/gestao_ti/permissions.py](../app/modules/gestao_ti/permissions.py).
+
+| Método | Caminho | Endpoint local | Linha |
+| --- | --- | --- | ---: |
+| GET | `/acessos` | `acessos_dashboard` | 264 |
+| GET | `/inicio` | `inicio` | 269 |
+
+### app/modules/gestao_ti/routes.py
+
+Fonte: [app/modules/gestao_ti/routes.py](../app/modules/gestao_ti/routes.py).
+
+| Método | Caminho | Endpoint local | Linha |
+| --- | --- | --- | ---: |
+| GET | `/central-ti` | `central_ti` | 70 |
+| POST | `/central-ti/configuracoes` | `central_ti_salvar` | 83 |
 
 ### app/modules/mapas/routes.py
 
@@ -585,10 +625,10 @@ Fonte: [app/modules/mapas/routes.py](../app/modules/mapas/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| POST | `/api/geocode` | `api_geocode` | 14 |
-| GET | `/api/heatmap-data` | `heatmap_data` | 47 |
-| GET | `/mapa-relatorio` | `mapa_relatorio` | 58 |
-| GET | `/consultar_endereco_geolocalizacao` | `consultar_endereco_geolocalizacao` | 73 |
+| POST | `/api/geocode` | `api_geocode` | 32 |
+| GET | `/api/heatmap-data` | `heatmap_data` | 65 |
+| GET | `/mapa-relatorio` | `mapa_relatorio` | 83 |
+| GET | `/consultar_endereco_geolocalizacao` | `consultar_endereco_geolocalizacao` | 101 |
 
 ### app/modules/painel_operacional/routes.py
 
@@ -596,8 +636,8 @@ Fonte: [app/modules/painel_operacional/routes.py](../app/modules/painel_operacio
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/diretor/painel-operacional` | `painel_operacional` | 12 |
-| POST | `/api/painel-operacional/contexto-local` | `api_painel_operacional_contexto` | 28 |
+| GET | `/diretor/painel-operacional` | `painel_operacional` | 13 |
+| POST | `/api/painel-operacional/contexto-local` | `api_painel_operacional_contexto` | 29 |
 
 ### app/modules/piloto_checklists/routes.py
 
@@ -605,7 +645,7 @@ Fonte: [app/modules/piloto_checklists/routes.py](../app/modules/piloto_checklist
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/piloto/checklists/semanais` | `piloto_checklist_semanal` | 24 |
+| GET, POST | `/piloto/checklists/semanais` | `piloto_checklist_semanal` | 21 |
 
 ### app/modules/piloto_os/routes.py
 
@@ -613,31 +653,31 @@ Fonte: [app/modules/piloto_os/routes.py](../app/modules/piloto_os/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/piloto/os` | `piloto_os` | 1243 |
-| GET | `/piloto/dosagem` | `piloto_dosagem` | 1281 |
-| GET, POST | `/piloto/os/<int:os_id>/dosagem` | `piloto_os_dosagem` | 1287 |
-| GET | `/piloto/os/historico` | `piloto_os_historico` | 1316 |
-| POST | `/piloto/os/<int:os_id>/concluir` | `piloto_concluir_os` | 1332 |
-| GET | `/piloto/os/formulario` | `piloto_os_formulario_redirect` | 1345 |
-| GET, POST | `/piloto/os/<int:os_id>/formulario` | `piloto_os_formulario_view` | 1357 |
-| GET | `/os/<int:os_id>/video` | `os_video` | 1412 |
-| GET | `/os/<int:os_id>/imagem-principal` | `os_imagem_principal` | 1422 |
-| GET | `/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_imagem_complementar` | 1432 |
-| GET | `/piloto/api/drone/<int:drone_id>` | `piloto_api_drone` | 1442 |
-| PUT | `/api/os/<int:os_id>/upload-stream` | `os_upload_stream` | 1452 |
-| PUT | `/api/os/<int:os_id>/upload-video-stream` | `os_upload_video_stream` | 1497 |
-| PUT | `/api/os/<int:os_id>/upload-video-background` | `os_upload_video_background` | 1542 |
-| POST | `/api/os/<int:os_id>/upload-video-background/init` | `os_upload_video_background_init` | 1621 |
-| PUT | `/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>` | `video_upload_session_chunk` | 1688 |
-| POST | `/api/video-upload-sessions/<session_id>/complete` | `video_upload_session_complete` | 1747 |
-| GET | `/api/video-upload-jobs/<job_id>` | `video_upload_job_status` | 1812 |
-| PUT | `/api/os/<int:os_id>/upload-complementary-stream` | `os_upload_complementary_stream` | 1846 |
-| DELETE | `/api/os/<int:os_id>/imagem-principal` | `os_delete_principal_image` | 1900 |
-| DELETE | `/api/os/<int:os_id>/video` | `os_delete_video` | 1936 |
-| DELETE | `/api/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_delete_complementary_image` | 1970 |
-| GET, POST | `/admin/os/<int:os_id>/formulario` | `admin_os_formulario_view` | 2010 |
-| GET | `/admin/os/<int:os_id>/export/pdf/v2` | `admin_export_os_pdf_v2` | 2051 |
-| GET | `/admin/os/<int:os_id>/export/excel/v2` | `admin_export_os_excel_v2` | 2065 |
+| GET | `/piloto/os` | `piloto_os` | 1245 |
+| GET | `/piloto/dosagem` | `piloto_dosagem` | 1283 |
+| GET, POST | `/piloto/os/<int:os_id>/dosagem` | `piloto_os_dosagem` | 1289 |
+| GET | `/piloto/os/historico` | `piloto_os_historico` | 1318 |
+| POST | `/piloto/os/<int:os_id>/concluir` | `piloto_concluir_os` | 1334 |
+| GET | `/piloto/os/formulario` | `piloto_os_formulario_redirect` | 1347 |
+| GET, POST | `/piloto/os/<int:os_id>/formulario` | `piloto_os_formulario_view` | 1359 |
+| GET | `/os/<int:os_id>/video` | `os_video` | 1414 |
+| GET | `/os/<int:os_id>/imagem-principal` | `os_imagem_principal` | 1424 |
+| GET | `/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_imagem_complementar` | 1434 |
+| GET | `/piloto/api/drone/<int:drone_id>` | `piloto_api_drone` | 1444 |
+| PUT | `/api/os/<int:os_id>/upload-stream` | `os_upload_stream` | 1454 |
+| PUT | `/api/os/<int:os_id>/upload-video-stream` | `os_upload_video_stream` | 1499 |
+| PUT | `/api/os/<int:os_id>/upload-video-background` | `os_upload_video_background` | 1544 |
+| POST | `/api/os/<int:os_id>/upload-video-background/init` | `os_upload_video_background_init` | 1623 |
+| PUT | `/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>` | `video_upload_session_chunk` | 1690 |
+| POST | `/api/video-upload-sessions/<session_id>/complete` | `video_upload_session_complete` | 1749 |
+| GET | `/api/video-upload-jobs/<job_id>` | `video_upload_job_status` | 1814 |
+| PUT | `/api/os/<int:os_id>/upload-complementary-stream` | `os_upload_complementary_stream` | 1848 |
+| DELETE | `/api/os/<int:os_id>/imagem-principal` | `os_delete_principal_image` | 1902 |
+| DELETE | `/api/os/<int:os_id>/video` | `os_delete_video` | 1938 |
+| DELETE | `/api/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_delete_complementary_image` | 1972 |
+| GET, POST | `/admin/os/<int:os_id>/formulario` | `admin_os_formulario_view` | 2012 |
+| GET | `/admin/os/<int:os_id>/export/pdf/v2` | `admin_export_os_pdf_v2` | 2053 |
+| GET | `/admin/os/<int:os_id>/export/excel/v2` | `admin_export_os_excel_v2` | 2067 |
 
 ### app/modules/pilotos/routes.py
 
@@ -645,10 +685,10 @@ Fonte: [app/modules/pilotos/routes.py](../app/modules/pilotos/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/pilotos/cadastrar` | `cadastrar_pilotos` | 41 |
-| GET | `/pilotos` | `listar_pilotos` | 128 |
-| GET, POST | `/pilotos/<int:piloto_id>/editar` | `editar_piloto` | 189 |
-| POST | `/pilotos/<int:piloto_id>/deletar` | `deletar_piloto` | 302 |
+| GET, POST | `/pilotos/cadastrar` | `cadastrar_pilotos` | 42 |
+| GET | `/pilotos` | `listar_pilotos` | 129 |
+| GET, POST | `/pilotos/<int:piloto_id>/editar` | `editar_piloto` | 190 |
+| POST | `/pilotos/<int:piloto_id>/deletar` | `deletar_piloto` | 303 |
 
 ### app/modules/portal_cidadao/routes.py
 
@@ -656,11 +696,12 @@ Fonte: [app/modules/portal_cidadao/routes.py](../app/modules/portal_cidadao/rout
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/portal-cidadao` | `portal_cidadao` | 19 |
-| GET | `/portal-cidadao/boletim-dengue` | `portal_cidadao_boletim_dengue` | 29 |
-| POST | `/portal-cidadao/denuncias` | `portal_cidadao_denuncias_criar` | 56 |
-| GET | `/portal-cidadao/cep/<cep>` | `portal_cidadao_cep` | 78 |
-| POST | `/portal-cidadao/reverse-geocode` | `portal_cidadao_reverse_geocode` | 101 |
+| POST | `/portal-cidadao/chatbot` | `portal_cidadao_chatbot` | 21 |
+| GET | `/portal-cidadao` | `portal_cidadao` | 27 |
+| GET | `/portal-cidadao/boletim-dengue` | `portal_cidadao_boletim_dengue` | 42 |
+| POST | `/portal-cidadao/denuncias` | `portal_cidadao_denuncias_criar` | 69 |
+| GET | `/portal-cidadao/cep/<cep>` | `portal_cidadao_cep` | 91 |
+| POST | `/portal-cidadao/reverse-geocode` | `portal_cidadao_reverse_geocode` | 114 |
 
 ### app/modules/relatorios/routes.py
 
@@ -668,22 +709,22 @@ Fonte: [app/modules/relatorios/routes.py](../app/modules/relatorios/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/relatorios/solicitacoes` | `relatorios_solicitacoes` | 297 |
-| GET | `/relatorios` | `relatorios` | 317 |
-| GET | `/relatorios-os` | `relatorios_os` | 325 |
-| GET | `/relatorios/retornos-automaticos` | `relatorios_retornos_automaticos` | 345 |
-| GET | `/relatorios/retornos-automaticos/equipe/<int:equipe_id>` | `relatorios_retornos_automaticos_equipe` | 365 |
-| GET | `/relatorios/retornos-automaticos/sem-equipe` | `relatorios_retornos_automaticos_sem_equipe` | 397 |
-| GET | `/relatorios-coleta-imagens` | `relatorios_coleta_imagens` | 421 |
-| POST | `/relatorios-coleta-imagens/os/<int:os_id>/ok-uvis` | `relatorios_coleta_imagens_ok_uvis` | 441 |
-| GET | `/admin/exportar_relatorio_pdf` | `exportar_relatorio_pdf` | 463 |
-| GET | `/admin/exportar_relatorio_excel` | `exportar_relatorio_excel` | 482 |
-| GET | `/relatorios-os/export/excel` | `relatorios_os_export_excel` | 497 |
-| GET | `/relatorios-os/export/pdf` | `relatorios_os_export_pdf` | 512 |
-| GET | `/relatorios-coleta-imagens/export/pdf` | `relatorios_coleta_imagens_export_pdf` | 531 |
-| GET | `/relatorios-coleta-imagens/export/pdf-zip` | `relatorios_coleta_imagens_export_pdf_zip` | 547 |
-| GET | `/relatorios-coleta-imagens/export/pdf/jobs/<job_id>` | `relatorios_coleta_imagens_pdf_job_status` | 567 |
-| GET | `/relatorios-coleta-imagens/export/pdf/jobs/<job_id>/download` | `relatorios_coleta_imagens_pdf_job_download` | 583 |
+| GET | `/relatorios/solicitacoes` | `relatorios_solicitacoes` | 298 |
+| GET | `/relatorios` | `relatorios` | 318 |
+| GET | `/relatorios-os` | `relatorios_os` | 326 |
+| GET | `/relatorios/retornos-automaticos` | `relatorios_retornos_automaticos` | 346 |
+| GET | `/relatorios/retornos-automaticos/equipe/<int:equipe_id>` | `relatorios_retornos_automaticos_equipe` | 366 |
+| GET | `/relatorios/retornos-automaticos/sem-equipe` | `relatorios_retornos_automaticos_sem_equipe` | 398 |
+| GET | `/relatorios-coleta-imagens` | `relatorios_coleta_imagens` | 422 |
+| POST | `/relatorios-coleta-imagens/os/<int:os_id>/ok-uvis` | `relatorios_coleta_imagens_ok_uvis` | 442 |
+| GET | `/admin/exportar_relatorio_pdf` | `exportar_relatorio_pdf` | 464 |
+| GET | `/admin/exportar_relatorio_excel` | `exportar_relatorio_excel` | 483 |
+| GET | `/relatorios-os/export/excel` | `relatorios_os_export_excel` | 498 |
+| GET | `/relatorios-os/export/pdf` | `relatorios_os_export_pdf` | 513 |
+| GET | `/relatorios-coleta-imagens/export/pdf` | `relatorios_coleta_imagens_export_pdf` | 532 |
+| GET | `/relatorios-coleta-imagens/export/pdf-zip` | `relatorios_coleta_imagens_export_pdf_zip` | 548 |
+| GET | `/relatorios-coleta-imagens/export/pdf/jobs/<job_id>` | `relatorios_coleta_imagens_pdf_job_status` | 568 |
+| GET | `/relatorios-coleta-imagens/export/pdf/jobs/<job_id>/download` | `relatorios_coleta_imagens_pdf_job_download` | 584 |
 
 ### app/modules/solicitacoes/routes.py
 
@@ -691,10 +732,10 @@ Fonte: [app/modules/solicitacoes/routes.py](../app/modules/solicitacoes/routes.p
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/api/solicitacao/checar-bloqueio` | `api_solicitacao_checar_bloqueio` | 21 |
-| GET, POST | `/novo_cadastro` | `novo` | 45 |
-| GET, POST | `/solicitacao/editar/<int:id>` | `editar_solicitacao` | 71 |
-| POST | `/admin/deletar/<int:id>` | `deletar_registro` | 97 |
+| GET | `/api/solicitacao/checar-bloqueio` | `api_solicitacao_checar_bloqueio` | 22 |
+| GET, POST | `/novo_cadastro` | `novo` | 46 |
+| GET, POST | `/solicitacao/editar/<int:id>` | `editar_solicitacao` | 72 |
+| POST | `/admin/deletar/<int:id>` | `deletar_registro` | 98 |
 
 ### app/modules/usuarios/routes.py
 
@@ -702,15 +743,15 @@ Fonte: [app/modules/usuarios/routes.py](../app/modules/usuarios/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/admin/prefeituras/nova` | `admin_prefeitura_nova` | 105 |
-| GET | `/admin/prefeituras` | `admin_prefeituras` | 164 |
-| GET, POST | `/admin/prefeituras/<int:id>/editar` | `admin_prefeitura_editar` | 198 |
-| POST | `/admin/prefeituras/<int:id>/excluir` | `admin_prefeitura_excluir` | 259 |
-| GET, POST | `/admin/usuarios/novo` | `admin_usuario_novo` | 294 |
-| GET | `/admin/usuarios` | `admin_usuarios_listar` | 429 |
-| GET, POST | `/admin/usuarios/<int:id>/editar` | `admin_usuario_editar` | 450 |
-| POST | `/admin/usuarios/<int:id>/reset_senha` | `admin_usuario_reset_senha` | 607 |
-| POST | `/admin/usuarios/<int:id>/excluir` | `admin_usuario_excluir` | 642 |
+| GET, POST | `/admin/prefeituras/nova` | `admin_prefeitura_nova` | 113 |
+| GET | `/admin/prefeituras` | `admin_prefeituras` | 172 |
+| GET, POST | `/admin/prefeituras/<int:id>/editar` | `admin_prefeitura_editar` | 206 |
+| POST | `/admin/prefeituras/<int:id>/excluir` | `admin_prefeitura_excluir` | 267 |
+| GET, POST | `/admin/usuarios/novo` | `admin_usuario_novo` | 302 |
+| GET | `/admin/usuarios` | `admin_usuarios_listar` | 441 |
+| GET, POST | `/admin/usuarios/<int:id>/editar` | `admin_usuario_editar` | 462 |
+| POST | `/admin/usuarios/<int:id>/reset_senha` | `admin_usuario_reset_senha` | 625 |
+| POST | `/admin/usuarios/<int:id>/excluir` | `admin_usuario_excluir` | 660 |
 
 ### app/modules/uvis_equipes/routes.py
 
@@ -718,18 +759,18 @@ Fonte: [app/modules/uvis_equipes/routes.py](../app/modules/uvis_equipes/routes.p
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/uvis/acesso-operacional` | `uvis_acesso_operacional` | 44 |
-| GET | `/uvis/equipes` | `listar_equipes_uvis` | 100 |
-| POST | `/uvis/equipes/<string:nome_equipe>/credenciais` | `atualizar_credenciais_equipe_uvis` | 107 |
-| GET | `/uvis/equipes/<string:nome_equipe>` | `listar_membros_equipe_uvis` | 144 |
-| GET, POST | `/uvis/equipes/<string:nome_equipe>/adicionar` | `adicionar_membro_equipe_uvis` | 162 |
-| GET, POST | `/uvis/equipes/nova` | `criar_equipe_uvis` | 217 |
-| GET, POST | `/uvis/equipe-membro/<int:membro_id>/editar` | `editar_membro_equipe_uvis` | 269 |
-| POST | `/uvis/equipe-membro/<int:membro_id>/deletar` | `deletar_membro_equipe_uvis` | 309 |
-| POST | `/solicitacao/<int:id>/atribuir-equipe-uvis` | `atribuir_equipe_uvis_solicitacao` | 334 |
-| GET | `/admin/uvis/equipes` | `admin_listar_equipes_uvis` | 360 |
-| POST | `/admin/uvis/<int:uvis_id>/acesso-operacional` | `admin_atualizar_acesso_operacional_uvis` | 372 |
-| GET | `/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>` | `admin_listar_membros_equipe_uvis` | 417 |
+| GET, POST | `/uvis/acesso-operacional` | `uvis_acesso_operacional` | 45 |
+| GET | `/uvis/equipes` | `listar_equipes_uvis` | 101 |
+| POST | `/uvis/equipes/<string:nome_equipe>/credenciais` | `atualizar_credenciais_equipe_uvis` | 108 |
+| GET | `/uvis/equipes/<string:nome_equipe>` | `listar_membros_equipe_uvis` | 145 |
+| GET, POST | `/uvis/equipes/<string:nome_equipe>/adicionar` | `adicionar_membro_equipe_uvis` | 163 |
+| GET, POST | `/uvis/equipes/nova` | `criar_equipe_uvis` | 218 |
+| GET, POST | `/uvis/equipe-membro/<int:membro_id>/editar` | `editar_membro_equipe_uvis` | 270 |
+| POST | `/uvis/equipe-membro/<int:membro_id>/deletar` | `deletar_membro_equipe_uvis` | 310 |
+| POST | `/solicitacao/<int:id>/atribuir-equipe-uvis` | `atribuir_equipe_uvis_solicitacao` | 335 |
+| GET | `/admin/uvis/equipes` | `admin_listar_equipes_uvis` | 361 |
+| POST | `/admin/uvis/<int:uvis_id>/acesso-operacional` | `admin_atualizar_acesso_operacional_uvis` | 373 |
+| GET | `/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>` | `admin_listar_membros_equipe_uvis` | 418 |
 
 ### app/modules/veiculos/routes.py
 
@@ -737,31 +778,31 @@ Fonte: [app/modules/veiculos/routes.py](../app/modules/veiculos/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/veiculos/rastreamento` | `veiculos_rastreamento` | 126 |
-| GET | `/veiculos/rastreamento/dados` | `veiculos_rastreamento_dados` | 137 |
-| GET | `/veiculos/menu` | `veiculos_menu` | 147 |
-| GET | `/veiculos` | `listar_veiculos` | 161 |
-| POST | `/veiculos/equipes` | `atualizar_equipes_veiculos` | 174 |
-| GET | `/veiculos/logs` | `veiculos_logs` | 198 |
-| GET | `/veiculos/limpezas` | `veiculos_limpezas` | 207 |
-| GET | `/veiculos/limpeza/alertas` | `veiculos_alertas_limpeza` | 216 |
-| GET | `/veiculos/logs/veiculo/<int:veiculo_id>` | `veiculo_logs_detalhe` | 227 |
-| GET | `/veiculos/logs/exportar` | `exportar_logs_veiculos_xlsx` | 239 |
-| GET | `/admin/veiculos/logs-excluidos` | `veiculos_logs_excluidos` | 248 |
-| POST | `/veiculos/logs/<int:log_id>/corrigir-km` | `corrigir_log_veiculo` | 263 |
-| POST | `/veiculos/logs/<int:log_id>/deletar` | `deletar_log_veiculo` | 309 |
-| GET | `/veiculos/logs/<int:log_id>/midia/<tipo>` | `veiculo_log_midia_skybox` | 356 |
-| GET | `/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>` | `veiculo_abastecimento_midia_skybox` | 377 |
-| GET, POST | `/veiculos/cadastrar` | `cadastrar_veiculo` | 403 |
-| GET, POST | `/veiculos/<int:veiculo_id>/editar` | `editar_veiculo` | 454 |
-| POST | `/veiculos/<int:veiculo_id>/deletar` | `deletar_veiculo` | 509 |
-| GET | `/piloto/veiculos` | `piloto_veiculos` | 524 |
-| GET | `/piloto/caixa-entrada` | `piloto_caixa_entrada` | 543 |
-| POST | `/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar` | `piloto_confirmar_alerta_limpeza` | 556 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/km` | `piloto_atualizar_km_veiculo` | 579 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/abastecimento` | `piloto_registrar_abastecimento_turno` | 606 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/limpeza` | `piloto_registrar_limpeza_turno` | 637 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/encerrar` | `piloto_encerrar_turno` | 666 |
+| GET | `/veiculos/rastreamento` | `veiculos_rastreamento` | 119 |
+| GET | `/veiculos/rastreamento/dados` | `veiculos_rastreamento_dados` | 130 |
+| GET | `/veiculos/menu` | `veiculos_menu` | 140 |
+| GET | `/veiculos` | `listar_veiculos` | 154 |
+| POST | `/veiculos/equipes` | `atualizar_equipes_veiculos` | 167 |
+| GET | `/veiculos/logs` | `veiculos_logs` | 191 |
+| GET | `/veiculos/limpezas` | `veiculos_limpezas` | 200 |
+| GET | `/veiculos/limpeza/alertas` | `veiculos_alertas_limpeza` | 209 |
+| GET | `/veiculos/logs/veiculo/<int:veiculo_id>` | `veiculo_logs_detalhe` | 220 |
+| GET | `/veiculos/logs/exportar` | `exportar_logs_veiculos_xlsx` | 232 |
+| GET | `/admin/veiculos/logs-excluidos` | `veiculos_logs_excluidos` | 241 |
+| POST | `/veiculos/logs/<int:log_id>/corrigir-km` | `corrigir_log_veiculo` | 256 |
+| POST | `/veiculos/logs/<int:log_id>/deletar` | `deletar_log_veiculo` | 302 |
+| GET | `/veiculos/logs/<int:log_id>/midia/<tipo>` | `veiculo_log_midia_skybox` | 349 |
+| GET | `/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>` | `veiculo_abastecimento_midia_skybox` | 370 |
+| GET, POST | `/veiculos/cadastrar` | `cadastrar_veiculo` | 396 |
+| GET, POST | `/veiculos/<int:veiculo_id>/editar` | `editar_veiculo` | 447 |
+| POST | `/veiculos/<int:veiculo_id>/deletar` | `deletar_veiculo` | 502 |
+| GET | `/piloto/veiculos` | `piloto_veiculos` | 517 |
+| GET | `/piloto/caixa-entrada` | `piloto_caixa_entrada` | 536 |
+| POST | `/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar` | `piloto_confirmar_alerta_limpeza` | 549 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/km` | `piloto_atualizar_km_veiculo` | 572 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/abastecimento` | `piloto_registrar_abastecimento_turno` | 599 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/limpeza` | `piloto_registrar_limpeza_turno` | 630 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/encerrar` | `piloto_encerrar_turno` | 659 |
 
 ### app/modules/vigilancia/routes.py
 
@@ -769,9 +810,9 @@ Fonte: [app/modules/vigilancia/routes.py](../app/modules/vigilancia/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/vigilancia/validacao` | `vigilancia_validacao` | 148 |
-| POST | `/api/vigilancia/validacao` | `vigilancia_validacao_api` | 169 |
-| GET | `/vigilancia/modelo.csv` | `vigilancia_modelo_csv` | 182 |
+| GET, POST | `/vigilancia/validacao` | `vigilancia_validacao` | 149 |
+| POST | `/api/vigilancia/validacao` | `vigilancia_validacao_api` | 170 |
+| GET | `/vigilancia/modelo.csv` | `vigilancia_modelo_csv` | 183 |
 
 ### app/shared/session_security.py
 
@@ -779,8 +820,8 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/auth/session-status` | `status` | 138 |
-| POST | `/auth/session-activity` | `activity` | 147 |
+| GET | `/auth/session-status` | `status` | 144 |
+| POST | `/auth/session-activity` | `activity` | 153 |
 
 ## Testes Python
 
@@ -788,29 +829,40 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | --- | ---: |
 | [test_agro_payment_receipt_skybox.py](../tests/test_agro_payment_receipt_skybox.py) | 1 |
 | [test_agro_talent_bank.py](../tests/test_agro_talent_bank.py) | 4 |
+| [test_central_ti.py](../tests/test_central_ti.py) | 33 |
+| [test_central_ti_documentos_permissions.py](../tests/test_central_ti_documentos_permissions.py) | 7 |
+| [test_central_ti_permissions.py](../tests/test_central_ti_permissions.py) | 34 |
+| [test_central_ti_preparation.py](../tests/test_central_ti_preparation.py) | 2 |
 | [test_checklist_embreagem_freios.py](../tests/test_checklist_embreagem_freios.py) | 4 |
+| [test_company_logo_migration.py](../tests/test_company_logo_migration.py) | 1 |
+| [test_configuracoes_documentos.py](../tests/test_configuracoes_documentos.py) | 15 |
 | [test_csrf_security.py](../tests/test_csrf_security.py) | 8 |
 | [test_css_bundle.py](../tests/test_css_bundle.py) | 3 |
 | [test_denuncias_triagem.py](../tests/test_denuncias_triagem.py) | 8 |
+| [test_denuncias_workflow.py](../tests/test_denuncias_workflow.py) | 7 |
 | [test_dev_access.py](../tests/test_dev_access.py) | 12 |
 | [test_dji_kml_auto_link.py](../tests/test_dji_kml_auto_link.py) | 10 |
-| [test_financeiro_central.py](../tests/test_financeiro_central.py) | 34 |
+| [test_financeiro_central.py](../tests/test_financeiro_central.py) | 42 |
 | [test_historico_os_templates.py](../tests/test_historico_os_templates.py) | 1 |
+| [test_mapas_filters.py](../tests/test_mapas_filters.py) | 16 |
 | [test_operational_schedule_filters.py](../tests/test_operational_schedule_filters.py) | 13 |
 | [test_painel_operacional_weather.py](../tests/test_painel_operacional_weather.py) | 3 |
-| [test_portal_cidadao_denuncias.py](../tests/test_portal_cidadao_denuncias.py) | 12 |
+| [test_pdf_watermark.py](../tests/test_pdf_watermark.py) | 15 |
+| [test_portal_cidadao_chatbot.py](../tests/test_portal_cidadao_chatbot.py) | 22 |
+| [test_portal_cidadao_denuncias.py](../tests/test_portal_cidadao_denuncias.py) | 13 |
 | [test_portal_cidadao_health_data.py](../tests/test_portal_cidadao_health_data.py) | 9 |
+| [test_redgps_sync.py](../tests/test_redgps_sync.py) | 13 |
 | [test_redirects.py](../tests/test_redirects.py) | 4 |
 | [test_relatorios_region_team_filters.py](../tests/test_relatorios_region_team_filters.py) | 5 |
 | [test_relatorios_retornos_automaticos.py](../tests/test_relatorios_retornos_automaticos.py) | 11 |
 | [test_retorno_ciclo.py](../tests/test_retorno_ciclo.py) | 1 |
 | [test_retorno_ciclo_prefeitura_scope.py](../tests/test_retorno_ciclo_prefeitura_scope.py) | 2 |
-| [test_security_controls.py](../tests/test_security_controls.py) | 34 |
+| [test_security_controls.py](../tests/test_security_controls.py) | 38 |
 | [test_skybox_upload.py](../tests/test_skybox_upload.py) | 3 |
 | [test_solicitacao_place_id_block.py](../tests/test_solicitacao_place_id_block.py) | 14 |
 | [test_supervisor_veiculos.py](../tests/test_supervisor_veiculos.py) | 23 |
 | [test_uvis_os_media_access.py](../tests/test_uvis_os_media_access.py) | 8 |
-| [test_veiculos_operational_scope.py](../tests/test_veiculos_operational_scope.py) | 39 |
-| [test_veiculos_rastreamento.py](../tests/test_veiculos_rastreamento.py) | 9 |
+| [test_veiculos_operational_scope.py](../tests/test_veiculos_operational_scope.py) | 40 |
+| [test_veiculos_rastreamento.py](../tests/test_veiculos_rastreamento.py) | 11 |
 | [test_vigilancia_preview.py](../tests/test_vigilancia_preview.py) | 32 |
 | [test_vigilancia_routes.py](../tests/test_vigilancia_routes.py) | 23 |

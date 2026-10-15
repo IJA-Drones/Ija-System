@@ -298,6 +298,7 @@
             </a>
           </li>
           {% if sidebar_dashboard_endpoint != 'main.central_ti' %}
+          {% include '_configuracoes_nav.html' %}
           {% if is_financeiro_context %}
             {% if empresa_financeiro %}
             <li class="nav-item">
