@@ -769,6 +769,13 @@
           </li>
           {% endif %}
 
+          {% if current_user.tipo_usuario in ['dev', 'diretor'] %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.ortomosaicos' %}active{% endif %}" href="{{ url_for('main.ortomosaicos') }}">
+              <i class="bi bi-layers me-2"></i><span>Ortomosaicos</span>
+            </a>
+          </li>
+          {% endif %}
           {% if (central_ti_ui_guard(['main.painel_operacional', 'main.estoque_listar'], current_user.tipo_usuario in ['dev', 'diretor']) if central_ti_ui_guard is defined else (current_user.tipo_usuario in ['dev', 'diretor'])) %}
           <li class="nav-item">
             <a

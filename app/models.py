@@ -69,6 +69,28 @@ class Prefeitura(db.Model):
     denuncias = db.relationship("Denuncia", back_populates="prefeitura", lazy="select")
 
 
+class Ortomosaico(db.Model):
+    __tablename__ = 'ortomosaicos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'))
+    nome = db.Column(db.String(120), nullable=False)
+    arquivo_nome = db.Column(db.String(255), nullable=False)
+    original_path = db.Column(db.String(512), nullable=False)
+    cog_path = db.Column(db.String(512))
+    sha256 = db.Column(db.String(64), nullable=False)
+    tamanho_bytes = db.Column(db.BigInteger, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pendente', index=True)
+    metadados = db.Column(db.JSON)
+    erro = db.Column(db.String(500))
+    processamento_token = db.Column(db.String(36))
+    processamento_ate = db.Column(db.DateTime)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    prefeitura = db.relationship('Prefeitura')
+
+
 class PrefeituraDocumentoConfig(db.Model):
     """Preferências municipais aplicadas às exportações PDF."""
     __tablename__ = "prefeitura_documento_config"

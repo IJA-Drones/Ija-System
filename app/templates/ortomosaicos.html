@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Ortomosaicos | IJA System{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/openlayers/ol.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css') }}">
+{% endblock %}
+{% block content %}
+<section id="ortho-app" class="ortho" data-list-url="{{ url_for('main.ortomosaicos_listar') }}" data-upload-url="{{ url_for('main.ortomosaico_upload') }}" data-max-mb="{{ limite_mb }}">
+  <header class="ortho-header">
+    <div><span class="ortho-eyebrow">INTELIGÊNCIA TERRITORIAL</span><h1>Ortomosaicos</h1><p>Seu levantamento, na posição certa.</p></div>
+    <button id="ortho-new" class="ortho-primary" type="button"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Enviar ortomosaico</button>
+  </header>
+  <div class="ortho-workspace">
+    <aside class="ortho-library" aria-label="Biblioteca de ortomosaicos">
+      <div class="ortho-library-head"><h2><i class="bi bi-folder2-open" aria-hidden="true"></i> Biblioteca</h2><span id="ortho-count">0</span></div>
+      <label for="ortho-filter">Prefeitura</label>
+      <select id="ortho-filter"><option value="">Todas as prefeituras</option>{% for p in prefeituras %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
+      <div id="ortho-list" class="ortho-list"><p class="ortho-muted">Carregando levantamentos…</p></div>
+      <p class="ortho-access"><i class="bi bi-shield-lock" aria-hidden="true"></i> Acesso exclusivo: DIRETOR e DEV</p>
+    </aside>
+    <div id="ortho-stage" class="ortho-stage">
+      <div id="ortho-map" aria-label="Mapa do ortomosaico"></div>
+      <div class="ortho-map-title"><span class="ortho-dot"></span><span id="ortho-active-title">Selecione um levantamento</span></div>
+      <div id="ortho-empty" class="ortho-empty"><i class="bi bi-map" aria-hidden="true"></i><h2>Explore seu território</h2><p>Selecione um ortomosaico na biblioteca ou envie um GeoTIFF para começar.</p></div>
+      <div class="ortho-map-tools">
+        <button id="ortho-fit" type="button" title="Enquadrar ortomosaico" aria-label="Enquadrar ortomosaico"><i class="bi bi-bounding-box" aria-hidden="true"></i></button>
+        <button id="ortho-fullscreen" type="button" title="Tela cheia" aria-label="Tela cheia"><i class="bi bi-arrows-fullscreen" aria-hidden="true"></i></button>
+        <button id="ortho-layers-toggle" type="button" title="Mostrar ou ocultar camadas" aria-label="Mostrar ou ocultar camadas" aria-expanded="true" aria-controls="ortho-layers-panel"><i class="bi bi-layers" aria-hidden="true"></i></button>
+      </div>
+      <section id="ortho-layers-panel" class="ortho-layers" aria-label="Camadas do mapa">
+        <h2><i class="bi bi-layers" aria-hidden="true"></i> Camadas</h2>
+        <label for="ortho-basemap">Mapa de fundo</label>
+        <select id="ortho-basemap"><option value="satellite">Google Satélite</option><option value="streets">Mapa de ruas</option><option value="none">Sem fundo</option></select>
+        <label><span>Ortomosaico RGB</span><input id="ortho-visible" type="checkbox" checked></label>
+        <label for="ortho-opacity">Opacidade <output id="ortho-opacity-label">100%</output></label>
+        <input id="ortho-opacity" type="range" min="0" max="100" value="100">
+        <hr><h3 id="ortho-detail-name">Detalhes do levantamento</h3>
+        <dl id="ortho-details"><dt>Formato</dt><dd>GeoTIFF RGB</dd></dl>
+        <p class="ortho-muted">O mapa carrega os trechos necessários conforme você navega.</p>
+      </section>
+      <div id="ortho-coordinates" class="ortho-coordinates">Coordenadas · WGS 84</div>
+      <div id="ortho-google-credit" class="ortho-google-credit" hidden><img src="{{ url_for('static', filename='vendor/google-maps/google-maps-logo.svg') }}" alt="Google Maps" height="18"></div>
+    </div>
+  </div>
+  <p id="ortho-basemap-status" class="ortho-message" role="status" aria-live="polite"></p>
+  <p id="ortho-message" class="ortho-message" role="status" aria-live="polite"></p>
+  <dialog id="ortho-dialog" class="ortho-dialog">
+    <form id="ortho-form">
+      <div class="ortho-dialog-head"><h2>Novo ortomosaico</h2><button id="ortho-close" type="button" aria-label="Fechar">×</button></div>
+      <p>Envie um GeoTIFF RGB georreferenciado. O mapa ficará disponível após o processamento.</p>
+      <label for="ortho-name">Nome do levantamento</label><input id="ortho-name" name="nome" maxlength="120" required placeholder="Ex.: Base PCTI · Outubro 2026">
+      <label for="ortho-prefeitura">Prefeitura responsável</label><select id="ortho-prefeitura" name="prefeitura_id" required><option value="">Selecione a prefeitura</option>{% for p in prefeituras %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
+      <label for="ortho-file">Arquivo do ortomosaico</label><input id="ortho-file" name="arquivo" type="file" accept=".tif,.tiff,image/tiff" required>
+      <small>RGB de 8 bits, com ou sem transparência.
+        {% if limite_mb %}Até {{ limite_mb }} MB por arquivo.{% else %}Sem limite de tamanho definido pelo sistema.{% endif %}
+        {% if limite_pixels %}Até {{ limite_pixels }} pixels.{% endif %}
+        Arquivos grandes podem levar mais tempo para enviar e processar.
+      </small>
+      <progress id="ortho-upload-progress" max="100" value="0" hidden></progress>
+      <p id="ortho-upload-status" role="status" aria-live="polite"></p>
+      <button id="ortho-send" class="ortho-primary" type="submit">Enviar e preparar mapa</button>
+    </form>
+  </dialog>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/geotiff/geotiff.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/openlayers/ol.js') }}"></script>
+<script id="ortho-basemap-config" type="application/json">{{ {'key': ortho_google_key | default('')} | tojson }}</script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js') }}"></script>
+{% endblock %}
