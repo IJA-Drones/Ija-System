@@ -1,0 +1,15 @@
+{% if login_retry_after %}
+<div class="login-blocked-notice" role="alert" tabindex="-1"
+     aria-labelledby="login-blocked-title" data-login-blocked data-retry-after="{{ login_retry_after }}">
+  <div class="login-blocked-heading">
+    <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+    <strong id="login-blocked-title">Acesso temporariamente bloqueado</strong>
+  </div>
+  <p>O limite de tentativas de login sem sucesso foi atingido. Por segurança, novas tentativas foram bloqueadas por um período.</p>
+  <div class="login-blocked-wait" data-login-wait aria-live="off">
+    Aguarde cerca de {{ login_retry_minutes }} {{ 'minuto' if login_retry_minutes == 1 else 'minutos' }} antes de tentar novamente.
+  </div>
+  <p>Depois, confira seu usuário e sua senha antes de entrar. Se esqueceu a senha ou precisa de ajuda, fale com o suporte do sistema.</p>
+</div>
+<script src="{{ url_for('static', filename='js/login-blocked.js') }}" defer></script>
+{% endif %}

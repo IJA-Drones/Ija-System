@@ -2,12 +2,14 @@ from flask import current_app, has_app_context
 
 from app.models import Usuario
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user, is_dev_user
+from app.shared.login_protection import protect_login
 
 
-def _authenticate_any_user(login_value, password):
+def _authenticate_any_user(login_value, password, *, auth_session=None):
     if not login_value or not password:
         return None
-    user = Usuario.query.filter_by(login=login_value).first()
+    query = auth_session.query(Usuario) if auth_session is not None else Usuario.query
+    user = query.filter_by(login=login_value).first()
     if user and user.check_senha(password):
         if user.tipo_usuario == "piloto_agro":
             piloto_agro = getattr(user, "piloto_agro", None)
@@ -17,15 +19,17 @@ def _authenticate_any_user(login_value, password):
     return None
 
 
-def authenticate_user(login_value, password):
-    user = _authenticate_any_user(login_value, password)
+@protect_login("principal")
+def authenticate_user(login_value, password, *, auth_session=None):
+    user = _authenticate_any_user(login_value, password, auth_session=auth_session)
     if not user or user.tipo_usuario == "piloto_agro":
         return None
     return user
 
 
-def authenticate_uvis_operacional(login_value, password):
-    user = _authenticate_any_user(login_value, password)
+@protect_login("uvis")
+def authenticate_uvis_operacional(login_value, password, *, auth_session=None):
+    user = _authenticate_any_user(login_value, password, auth_session=auth_session)
     if not user:
         return None
 
@@ -38,8 +42,9 @@ def authenticate_uvis_operacional(login_value, password):
     return None
 
 
-def authenticate_piloto_agro(login_value, password):
-    user = _authenticate_any_user(login_value, password)
+@protect_login("agro")
+def authenticate_piloto_agro(login_value, password, *, auth_session=None):
+    user = _authenticate_any_user(login_value, password, auth_session=auth_session)
     if not user or user.tipo_usuario != "piloto_agro":
         return None, "invalid"
 

@@ -165,7 +165,8 @@ def migration_script():
 def upgrade_from_previous(connection):
     """Use Alembic's revision scheduler and real version-table update."""
     scripts = migration_script()
-    assert scripts.get_heads() == [REVISION]
+    assert len(scripts.get_heads()) == 1
+    assert REVISION in {r.revision for r in scripts.walk_revisions()}
     assert scripts.get_revision(REVISION).down_revision == PREVIOUS_REVISION
     context = MigrationContext.configure(
         connection,

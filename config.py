@@ -60,6 +60,13 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    LOGIN_PROTECTION_ENABLED = os.getenv("LOGIN_PROTECTION_ENABLED", "1").lower() in {"1", "true", "yes", "on"}
+    LOGIN_MAX_FAILURES = int(os.getenv("LOGIN_MAX_FAILURES", "5"))
+    LOGIN_IP_MAX_FAILURES = int(os.getenv("LOGIN_IP_MAX_FAILURES", "50"))
+    LOGIN_FAILURE_WINDOW_MINUTES = int(os.getenv("LOGIN_FAILURE_WINDOW_MINUTES", "15"))
+    LOGIN_LOCKOUT_MINUTES = int(os.getenv("LOGIN_LOCKOUT_MINUTES", "15"))
+    LOGIN_TRUSTED_PROXY_CIDRS = os.getenv("LOGIN_TRUSTED_PROXY_CIDRS", "")
+
     # configuração sqlalchemy
     SQLALCHEMY_DATABASE_URI = uri
     SQLALCHEMY_ENGINE_OPTIONS = {
