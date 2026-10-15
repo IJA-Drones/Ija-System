@@ -20,7 +20,7 @@ from app.modules.equipes.service import (
     upsert_equipe_account,
     validate_equipe_account_form,
 )
-from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
+from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura, is_veiculos_supervisor, normalize_role
 
 
 def _require_admin_or_operario():
@@ -118,6 +118,13 @@ def register_routes(bp):
                     flash(errors["auxiliar_id"], "warning")
 
             prefeitura_id = getattr(current_user, "prefeitura_id", None)
+            try:
+                prefeitura_id = resolve_linked_prefeitura(prefeitura_id, piloto_obj)
+                prefeitura_id = resolve_linked_prefeitura(prefeitura_id, auxiliar_obj)
+                if piloto_obj is not None and piloto_obj.prefeitura_id != prefeitura_id:
+                    raise ValueError("Os pilotos devem pertencer à mesma prefeitura.")
+            except ValueError as exc:
+                errors["piloto_id"] = str(exc)
             if errors:
                 flash("Corrija os campos destacados.", "warning")
                 return render_template(
@@ -362,6 +369,13 @@ def register_routes(bp):
                     errors["auxiliar_id"] = msg
                     flash(msg, "warning")
 
+
+            try:
+                for membro in (piloto_obj, aux_obj):
+                    if membro is not None and membro.prefeitura_id != equipe.prefeitura_id:
+                        raise ValueError("A equipe e seus pilotos devem pertencer à mesma prefeitura.")
+            except ValueError as exc:
+                errors["piloto_id"] = str(exc)
 
             if not errors:
                 equipe.nome_equipe = nome_equipe

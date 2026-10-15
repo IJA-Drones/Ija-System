@@ -107,7 +107,7 @@ def list_veiculos(tipo_usuario, args, user=None):
     status = (args.get("status") or "").strip()
 
     query = Veiculos.query
-    if user is not None and tipo_usuario != EQUIPE_OCEANO_USER_TYPE:
+    if user is not None:
         query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
 
     if tipo_usuario == EQUIPE_OCEANO_USER_TYPE:
@@ -594,7 +594,7 @@ def build_piloto_veiculos_context(user):
             }
 
         veiculos = (
-            Veiculos.query
+            apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
             .filter(_veiculo_equipe_operacional_filter(equipe, user))
             .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
             .all()
@@ -629,7 +629,7 @@ def build_piloto_veiculos_context(user):
             "agora_brasilia": _now_brazil(),
         }
     veiculos = (
-        Veiculos.query
+        apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
         .filter(Veiculos.equipe_id.in_(equipe_ids))
         .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
         .all()
@@ -1220,9 +1220,7 @@ def _equipe_ids_do_piloto(user):
             Equipe.ativa.is_(True),
         )
     )
-    prefeitura_id = getattr(user, "prefeitura_id", None)
-    if prefeitura_id is not None:
-        query = query.filter(Equipe.prefeitura_id == prefeitura_id)
+    query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
 
     rows = query.all()
     return [row.equipe_id for row in rows if row.equipe_id]
@@ -1245,7 +1243,7 @@ def _veiculos_operacionais_do_usuario(user):
         if not equipe:
             return []
         return (
-            Veiculos.query
+            apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
             .options(joinedload(Veiculos.equipe))
             .filter(
                 db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo",
@@ -1263,7 +1261,7 @@ def _veiculos_operacionais_do_usuario(user):
         return []
 
     return (
-        Veiculos.query
+        apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
         .options(joinedload(Veiculos.equipe))
         .filter(
             db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo",
@@ -1579,8 +1577,10 @@ def _parse_optional_int(raw_value):
 
 
 def _veiculo_do_operacional_logado(veiculo_id, *, user=None):
-    query = Veiculos.query.filter(Veiculos.id == veiculo_id)
-    veiculo = query.first_or_404()
+    query = apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id).filter(Veiculos.id == veiculo_id)
+    veiculo = query.first()
+    if veiculo is None:
+        raise PermissionError
 
     if is_veiculos_supervisor(user):
         if not supervisor_equipment_query(Veiculos, user).filter(Veiculos.id == veiculo.id).first():
@@ -2860,7 +2860,7 @@ def _build_deleted_log_history_item(audit_log):
 
 
 def _get_veiculo_logs_scoped(veiculo_id, user):
-    query = Veiculos.query.filter(Veiculos.id == veiculo_id)
+    query = apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id).filter(Veiculos.id == veiculo_id)
     if user is not None and getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
         equipe = _equipe_oceano_logada(user)
         if not equipe:

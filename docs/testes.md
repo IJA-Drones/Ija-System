@@ -36,6 +36,7 @@ Esses resultados não medem cobertura de linhas, carga, integração real, insta
 | --- | --- |
 | Sessões, senhas, CSRF e redirects | `test_security_controls.py`, `test_csrf_security.py`, `test_redirects.py`, `test_login_protection.py`, `test_password_expiration.py`, testes Node. |
 | Escopos e operação de veículos | `test_supervisor_veiculos.py`, `test_veiculos_operational_scope.py`, `test_veiculos_rastreamento.py`, `test_checklist_embreagem_freios.py`. |
+| Isolamento entre prefeituras | `test_municipal_isolation.py`: duas prefeituras com a mesma região, Central de TI ligada/desligada, URLs diretas, anexos, encaminhamento, notificações, formulários adulterados, exportação, ausência/mudança de vínculo e bloqueio de uploads estáticos. Usa somente SQLite descartável. |
 | Solicitações, retorno e relatórios | `test_solicitacao_place_id_block.py`, `test_retorno_ciclo.py`, `test_retorno_ciclo_prefeitura_scope.py`, `test_relatorios_retornos_automaticos.py`, `test_relatorios_region_team_filters.py`. |
 | Agenda e clima | `test_operational_schedule_filters.py`, `test_painel_operacional_weather.py`. |
 | Portal, boletim e triagem | `test_portal_cidadao_denuncias.py`, `test_portal_cidadao_health_data.py`, `test_denuncias_triagem.py`. |

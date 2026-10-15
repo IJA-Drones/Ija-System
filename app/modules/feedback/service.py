@@ -11,6 +11,7 @@ from app.extensions import db
 from app.models import FeedbackComentario, FeedbackComentarioAnexo, FeedbackTopico, Usuario
 from app.shared.access import (
     apply_prefeitura_scope,
+    can_access_prefeitura,
     get_user_regiao,
     is_admin_global_user,
     is_covisa_user,
@@ -172,6 +173,8 @@ def get_accessible_uvis(user):
 def user_can_use_uvis(user, uvis_usuario) -> bool:
     if not uvis_usuario:
         return False
+    if not can_access_prefeitura(user, getattr(uvis_usuario, "prefeitura_id", None)):
+        return False
 
     if is_admin_global_user(user):
         return True
@@ -204,6 +207,7 @@ def build_feedback_query(user):
     if is_admin_global_user(user):
         return query
 
+    query = apply_prefeitura_scope(query, user, FeedbackTopico.prefeitura_id)
     support_sectors = get_user_support_sectors(user)
     if support_sectors:
         return query.filter(FeedbackTopico.setor_suporte.in_(support_sectors))

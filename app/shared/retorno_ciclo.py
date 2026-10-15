@@ -84,6 +84,7 @@ def _equipe_ids_for_user(user):
 
 
 def apply_retorno_ciclo_access_scope(query, user):
+    query = apply_prefeitura_scope(query, user, Solicitacao.prefeitura_id)
     from app.modules.gestao_ti.permissions import active_configuration
     from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
     if active_configuration(user) is not None:

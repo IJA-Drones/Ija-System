@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
-from app.shared.access import apply_prefeitura_scope, is_admin_global_user, is_prefeitura_admin_user
+from app.shared.access import apply_prefeitura_scope, apply_solicitacao_prefeitura_scope, can_access_prefeitura, is_admin_global_user
 from app.shared.geofencing import detectar_area_restrita
 from app.shared.place_id import resolve_google_place_id_for_address
 from app.shared.solicitacao_focos import (
@@ -218,7 +218,7 @@ def resolve_prefeitura_id_para_bloqueio(user, uvis_responsavel_id=None):
             uvis = Usuario.query.filter_by(id=uvis_responsavel_id, tipo_usuario="uvis").first()
             if not uvis:
                 return getattr(user, "prefeitura_id", None)
-            if is_prefeitura_admin_user(user) and uvis.prefeitura_id != getattr(user, "prefeitura_id", None):
+            if not can_access_prefeitura(user, uvis.prefeitura_id):
                 return getattr(user, "prefeitura_id", None)
             return uvis.prefeitura_id or getattr(user, "prefeitura_id", None)
 
@@ -321,12 +321,15 @@ def create_nova_solicitacao(user, form_data, *, commit=True):
         uvis = Usuario.query.filter_by(id=uvis_id_final, tipo_usuario="uvis").first()
         if not uvis:
             raise NovoCadastroValidationError("UVIS selecionada nao encontrada.")
-        if is_prefeitura_admin_user(user) and uvis.prefeitura_id != getattr(user, "prefeitura_id", None):
+        if not can_access_prefeitura(user, uvis.prefeitura_id):
             raise NovoCadastroValidationError("Essa UVIS nao pertence a sua prefeitura.", category="danger")
         prefeitura_id_final = uvis.prefeitura_id or getattr(user, "prefeitura_id", None)
     else:
         uvis_id_final = user.id
         prefeitura_id_final = getattr(user, "prefeitura_id", None)
+
+    if prefeitura_id_final is None:
+        raise NovoCadastroValidationError("Vincule a conta a uma prefeitura antes de criar solicitações.")
 
     validar_limite_diario_solicitacoes_uvis(uvis_id_final, data_referencia=data_obj)
 
@@ -415,8 +418,8 @@ def create_nova_solicitacao(user, form_data, *, commit=True):
 
 def build_editar_solicitacao_context(user, solicitacao_id):
     pedido = (
-        Solicitacao.query.options(joinedload(Solicitacao.usuario))
-        .get_or_404(solicitacao_id)
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(joinedload(Solicitacao.usuario))
+        .filter(Solicitacao.id == solicitacao_id).first_or_404()
     )
     is_admin = is_admin_global_user(user)
     allow_custom_visit_other = can_use_custom_visit_other(user)

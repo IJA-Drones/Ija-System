@@ -292,8 +292,9 @@ def registrar_visualizacao_coleta_imagens(user, os_id):
         raise PermissionError("Apenas usuarios UVIS podem registrar o OK de visualizacao.")
 
     ordem = (
-        db.session.query(OrdemServico)
-        .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+        apply_solicitacao_prefeitura_scope(
+            db.session.query(OrdemServico).join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id), user
+        )
         .filter(
             Solicitacao.id == os_id,
             Solicitacao.usuario_id == user.id,

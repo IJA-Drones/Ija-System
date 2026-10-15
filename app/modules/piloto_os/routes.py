@@ -102,10 +102,8 @@ def _require_admin_os_export():
 
 
 def _ensure_os_region_access(os_id):
-    query = Solicitacao.query
-    if active_configuration(current_user) is not None:
-        from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
-        query = apply_solicitacao_regiao_scope(apply_solicitacao_prefeitura_scope(query, current_user), current_user)
+    from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
+    query = apply_solicitacao_regiao_scope(apply_solicitacao_prefeitura_scope(Solicitacao.query, current_user), current_user)
     solicitacao = (
         query
         .options(

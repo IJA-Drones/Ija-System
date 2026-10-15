@@ -1,3 +1,4 @@
+from werkzeug.exceptions import NotFound
 import json
 import unittest
 from datetime import date, time
@@ -9,7 +10,6 @@ from app.extensions import db
 from app.models import Equipe, EquipePiloto, OrdemServico, Pilotos, Prefeitura, Solicitacao, Usuario
 from app.modules.dashboard.service import build_uvis_os_form_context
 from app.modules.piloto_os.service import (
-    PilotoOsError,
     get_os_complementary_image_path_for_user,
     get_os_principal_image_path_for_user,
     get_os_video_path_for_user,
@@ -156,7 +156,7 @@ class UvisOsMediaAccessTests(unittest.TestCase):
         )
 
     def test_other_uvis_cannot_resolve_os_media_paths(self):
-        with self.assertRaises(PilotoOsError):
+        with self.assertRaises(NotFound):
             get_os_principal_image_path_for_user(self.outra_uvis, self.solicitacao.id)
 
     def test_uvis_visual_form_context_includes_saved_media(self):

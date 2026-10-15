@@ -251,6 +251,7 @@ def _has_equipe_uvis_os():
 
 
 def _admin_update_error(message: str, status_code: int, category: str):
+    db.session.rollback()
     if _prefers_html_response():
         flash(message, category)
         return _redirect_back_to_admin()

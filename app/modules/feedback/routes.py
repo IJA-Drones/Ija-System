@@ -41,7 +41,7 @@ from app.modules.feedback.service import (
     update_feedback_status,
     user_can_use_uvis,
 )
-from app.shared.access import get_user_regiao, is_covisa_user, is_dev_user, is_regional_user
+from app.shared.access import apply_prefeitura_scope, can_access_prefeitura, get_user_regiao, is_covisa_user, is_dev_user, is_regional_user
 from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
 
 
@@ -132,7 +132,7 @@ def _build_coordination_bug_query(user):
     if not regiao:
         return FeedbackTopico.query.filter(False)
 
-    query = FeedbackTopico.query.filter_by(categoria="bug", setor_suporte="tecnico", regiao=regiao)
+    query = apply_prefeitura_scope(FeedbackTopico.query, user, FeedbackTopico.prefeitura_id).filter_by(categoria="bug", setor_suporte="tecnico", regiao=regiao)
     if is_covisa_user(user):
         query = query.filter(FeedbackTopico.criado_por_id == getattr(user, "id", None))
     return query
@@ -265,7 +265,7 @@ def register_routes(bp):
             FeedbackTopico.atualizado_em.desc(),
         ).paginate(page=page, per_page=FEEDBACK_PER_PAGE, error_out=False)
         uvis_options = (
-            Usuario.query.filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc()).all()
+            apply_prefeitura_scope(Usuario.query, current_user, Usuario.prefeitura_id).filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc()).all()
             if can_moderate
             else get_accessible_uvis(current_user)
         )
@@ -374,7 +374,7 @@ def register_routes(bp):
 
         owner = current_user if is_covisa_user(current_user) else get_feedback_owner_uvis(current_user)
         uvis_options = (
-            Usuario.query.filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc()).all()
+            apply_prefeitura_scope(Usuario.query, current_user, Usuario.prefeitura_id).filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc()).all()
             if can_moderate_feedback(current_user)
             else get_accessible_uvis(current_user)
         )
@@ -601,6 +601,8 @@ def register_routes(bp):
         if topico is None:
             abort(404)
         _abort_if_not_technical_bug(topico)
+        if not can_access_prefeitura(current_user, topico.prefeitura_id):
+            abort(403)
 
         can_view_as_dev = is_dev_user(current_user) and can_view_feedback_attachment(current_user, anexo)
         can_view_as_coordination = False

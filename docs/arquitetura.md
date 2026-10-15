@@ -83,8 +83,8 @@ As permissões resultam da combinação de tipo de usuário, flags, vínculos e 
 | --- | --- |
 | `dev`, `diretor`, `admin` | Administradores globais no helper de escopo municipal. Apenas `dev` acessa diagnóstico e backup pela interface. |
 | `prefeitura_admin` | Administração municipal; helper comum bloqueia consulta quando não há prefeitura configurada. |
-| `regional` | Consultas regionais usam região normalizada. Ausência de região bloqueia o helper regional. |
-| `covisa` | Triagem central das denúncias. O legado `visualizar` com região `COVISA` também é reconhecido para esse fluxo. |
+| `regional` | Consultas exigem a prefeitura e a região normalizada. Duas cidades com região NORTE não compartilham registros. |
+| `covisa` | Triagem das denúncias da própria prefeitura. O legado `visualizar` com região `COVISA` recebe o mesmo escopo municipal. |
 | `uvis`, `equipe_uvis` | Acesso à demanda/unidade ou equipe vinculada, com regras específicas para formulário operacional e mídias. |
 | `piloto`, `equipe_oceano` | Operação urbana conforme vínculos com piloto/equipe. |
 | `sup_veiculos` | Supervisor operacional; atribuição direta ao veículo e equipe desse veículo em fluxos de OS. Alguns helpers reconhecem também o alias `sup_veiculo`, mas as listas de módulos não são uniformes; use o identificador cadastrado pela tela. |
@@ -94,11 +94,19 @@ As permissões resultam da combinação de tipo de usuário, flags, vínculos e 
 | `trabalha_agro` | Exigida pelo helper de acesso ao painel agro inclusive para administradores. |
 | `trabalha_oceano_azul`, `suporte_operacional`, `suporte_tecnico` | Indicadores usados nos fluxos específicos, não concessão global de acesso. |
 
-O helper comum `apply_prefeitura_scope` deixa consultas de administradores globais sem filtro municipal. Para `prefeitura_admin` e supervisor sem prefeitura ele nega o resultado; para outros perfis sem prefeitura pode retornar a consulta sem filtro. Além disso, existem consultas específicas da frota com comportamento próprio. Portanto, não há garantia automática de isolamento apenas por existir uma coluna `prefeitura_id`. Toda nova consulta, download e exportação precisa aplicar a regra do domínio e ser verificada com usuários de municípios diferentes.
+O helper comum `apply_prefeitura_scope` mantém o alcance intermunicipal de `dev`, `diretor` e `admin`. Para os demais perfis, consultas municipais exigem vínculo de prefeitura; ausência de vínculo retorna zero registros. O vínculo do piloto pode vir do cadastro de piloto associado. Perfis corporativos do Agro conservam o escopo próprio desse domínio, sem receber acesso municipal por essa exceção.
+
+O filtro municipal é aplicado independentemente da ativação da Central de TI, junto das restrições de unidade, região e equipe. Permissões da Central autorizam ações, mas não removem o escopo dos registros. Denúncias, anexos, OS, exportações, mapas, agenda, frota e bugs de coordenadoria usam esse limite; notificações de contas municipais são pessoais. Backups e diagnóstico geral não são delegados a identidades municipais.
+
+Novas denúncias do portal exigem a seleção de uma prefeitura ativa. Denúncias antigas sem prefeitura ficam visíveis apenas para administradores globais; não há atribuição automática por nome da cidade ou da região. Equipamentos locais antigos sem prefeitura explícita podem herdar o escopo da equipe vinculada. Um vínculo explícito conflitante não recebe essa exceção. Ações de gravação municipal sem prefeitura na conta são recusadas com orientação para regularizar o cadastro.
+
+Encaminhamento de denúncias para UVIS, atribuição de equipe à solicitação e vínculos entre equipamentos/estoque/pilotos validam a compatibilidade municipal. Editar um piloto como administrador global preserva a prefeitura do registro. A revisão não altera o schema nem redistribui dados existentes. Antes da implantação, cadastros municipais sem vínculo devem ser conferidos pelo administrador. A proteção está na aplicação, não em políticas PostgreSQL RLS: toda nova consulta, download e exportação precisa aplicar o helper e ter teste de isolamento.
 
 ## Arquivos, tarefas e frontend
 
 Uploads locais ficam em `upload-files/`. Caminhos com `skybox://` e `webdav://` identificam armazenamento remoto. O banco mantém referências, não uma cópia completa dos arquivos. Um backup SQL não restaura sozinho esses arquivos nem os currículos no Dropbox.
+
+Mídias locais legadas de OS e veículos também podem estar em `app/static/uploads/`. `PrivateUploadsMiddleware`, instalado antes do WhiteNoise, bloqueia acesso direto por `/uploads/` e `/static/uploads/`; os downloads continuam pelas rotas autenticadas do registro. Se um proxy/CDN servir arquivos diretamente, ele também deve impedir a publicação dessa pasta, pois requisições atendidas fora do Flask não passam pelo middleware.
 
 Vídeos usam `ThreadPoolExecutor`, metadados em memória e arquivos temporários; PDFs de coleta usam jobs em memória. O backup utiliza APScheduler e thread daemon. Não há fila externa durável implementada. Reinícios e múltiplos workers exigem atenção a jobs interrompidos, estado não compartilhado e execuções duplicadas do scheduler. Veja o [guia de operação](operacao.md).
 

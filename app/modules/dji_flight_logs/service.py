@@ -1,4 +1,4 @@
-from app.modules.gestao_ti.permissions import active_configuration, capability
+from app.modules.gestao_ti.permissions import capability
 import hashlib
 import json
 import math
@@ -34,7 +34,7 @@ def _scoped_dji_actor(user=None):
         from flask_login import current_user
         user = current_user
     from app.shared.access import is_admin_global_user
-    return user if active_configuration(user) is not None and not is_admin_global_user(user) else None
+    return user if not is_admin_global_user(user) else None
 
 
 def _scope_dji_ordens(query, user=None):

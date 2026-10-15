@@ -2,7 +2,7 @@
 
 from app.extensions import db
 from app.models import Equipe, Veiculos
-from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor
+from app.shared.access import is_veiculos_supervisor
 
 
 def get_supervisor_equipe(user):
@@ -41,4 +41,6 @@ def supervisor_equipment_query(model, user):
                 ),
             )
         )
+    else:
+        return query.filter(db.false())
     return query

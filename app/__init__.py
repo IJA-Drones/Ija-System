@@ -146,7 +146,8 @@ def create_app():
     from config import Config
 
     app.config.from_object(Config)
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root="app/static/")
+    from app.shared.private_uploads import PrivateUploadsMiddleware
+    app.wsgi_app = PrivateUploadsMiddleware(WhiteNoise(app.wsgi_app, root="app/static/"))
 
     if app.config.get("CSS_BUNDLE_AUTO_BUILD"):
         from scripts.build_css_bundle import build_css_bundle_if_stale

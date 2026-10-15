@@ -31,7 +31,7 @@ def _prefeituras_ativas():
 
 
 def _resolve_prefeitura_uvis(prefeitura_id_form, atual_prefeitura_id=None):
-    if getattr(current_user, "tipo_usuario", None) == "prefeitura_admin":
+    if not is_admin_user(current_user):
         return getattr(current_user, "prefeitura_id", None)
     return prefeitura_id_form or atual_prefeitura_id
 

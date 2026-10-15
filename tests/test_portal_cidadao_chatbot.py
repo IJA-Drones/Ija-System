@@ -122,7 +122,8 @@ def test_public_route_sets_token_and_prevents_caching(app):
     register_routes(bp)
     app.register_blueprint(bp)
     module = 'app.modules.portal_cidadao.routes.'
-    with patch(module + 'get_portal_health_news', return_value=[]), \
+    with patch(module + 'list_public_prefeituras', return_value=[]), \
+         patch(module + 'get_portal_health_news', return_value=[]), \
          patch(module + 'get_infodengue_alert', return_value={}), \
          patch(module + 'render_template', return_value='portal') as render:
         client = app.test_client()

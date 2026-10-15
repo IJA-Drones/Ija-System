@@ -7,7 +7,8 @@ from sqlalchemy.orm import joinedload, lazyload
 
 from app.models import Denuncia, DenunciaAnexo, Solicitacao, Usuario
 from app.extensions import db
-from app.shared.access import get_user_regiao, is_admin_global_user, is_covisa_user, is_regional_user
+from app.shared.access import (get_user_regiao, is_admin_global_user, is_covisa_user,
+                               is_regional_user, is_prefeitura_admin_user, can_access_prefeitura)
 from app.shared.uploads import get_upload_folder
 
 
@@ -28,7 +29,7 @@ COORDENADORIAS_DENUNCIA = (
 
 
 def can_triage_denuncias(user):
-    return is_covisa_user(user) or is_admin_global_user(user)
+    return is_covisa_user(user) or is_admin_global_user(user) or is_prefeitura_admin_user(user)
 
 
 def _require_active_denuncia(denuncia):
@@ -41,15 +42,18 @@ def can_access_denuncias(user):
     return bool(
         is_covisa_user(user)
         or is_admin_global_user(user)
+        or is_prefeitura_admin_user(user)
         or is_regional_user(user)
         or getattr(user, "tipo_usuario", None) == "uvis"
     )
 
 
 def can_access_denuncia(user, denuncia):
+    if not can_access_prefeitura(user, denuncia.prefeitura_id):
+        return False
     if active_configuration(user) is not None:
         return _scope_denuncias(Denuncia.query, user).filter(Denuncia.id == denuncia.id).first() is not None
-    if is_covisa_user(user) or is_admin_global_user(user):
+    if can_triage_denuncias(user):
         return True
     if is_regional_user(user):
         return bool(get_user_regiao(user)) and get_user_regiao(user) == (denuncia.coordenadoria or "").strip().upper()
@@ -59,11 +63,13 @@ def can_access_denuncia(user, denuncia):
 
 
 def _scope_denuncias(query, user):
-    if active_configuration(user) is None or is_covisa_user(user) or is_admin_global_user(user):
+    if is_admin_global_user(user):
         return query
     role = getattr(user, "tipo_usuario", None)
     from app.shared.access import apply_prefeitura_scope, central_ti_team_ids, get_user_prefeitura_id
     query = apply_prefeitura_scope(query, user, Denuncia.prefeitura_id)
+    if is_covisa_user(user) or is_prefeitura_admin_user(user):
+        return query
     teams = central_ti_team_ids(user)
     if teams is not None:
         query = query.filter(Denuncia.solicitacao.has(Solicitacao.equipe_id.in_(teams)))
@@ -71,9 +77,9 @@ def _scope_denuncias(query, user):
         owner = user.id if role == "uvis" else getattr(user, "equipe_uvis_uvis_usuario_id", None)
         return query.filter(Denuncia.uvis_usuario_id == owner) if owner is not None else query.filter(db.false())
     regiao = get_user_regiao(user)
-    if regiao:
+    if is_regional_user(user) and regiao:
         return query.filter(func.upper(func.coalesce(Denuncia.coordenadoria, "")) == regiao)
-    if not is_regional_user(user) and (get_user_prefeitura_id(user) is not None or teams):
+    if active_configuration(user) is not None and not is_regional_user(user) and (get_user_prefeitura_id(user) is not None or teams):
         return query
     return query.filter(db.false())
 
@@ -184,6 +190,7 @@ def resolve_denuncia_local_media(anexo):
 
 
 def encaminhar_denuncia_para_coordenadoria(denuncia, coordenadoria, user):
+    _require_denuncia_prefeitura(denuncia, user)
     if not route_access(user, can_triage_denuncias(user)):
         raise ValueError("Somente a COVISA pode encaminhar denúncias.")
     _require_active_denuncia(denuncia)
@@ -203,6 +210,7 @@ def encaminhar_denuncia_para_coordenadoria(denuncia, coordenadoria, user):
 
 
 def arquivar_denuncia(denuncia, motivo, user):
+    _require_denuncia_prefeitura(denuncia, user)
     if not route_access(user, can_triage_denuncias(user)):
         raise ValueError("Somente a COVISA pode arquivar denúncias.")
     _require_active_denuncia(denuncia)
@@ -220,11 +228,12 @@ def arquivar_denuncia(denuncia, motivo, user):
 
 def build_uvis_options_for_denuncia(denuncia):
     coordenadoria = (denuncia.coordenadoria or "").strip().upper()
-    if not coordenadoria:
+    if not coordenadoria or denuncia.prefeitura_id is None:
         return []
     return (
         Usuario.query
         .filter(Usuario.tipo_usuario == "uvis")
+        .filter(Usuario.prefeitura_id == denuncia.prefeitura_id)
         .filter(func.upper(func.coalesce(Usuario.regiao, "")) == coordenadoria)
         .order_by(Usuario.nome_uvis.asc())
         .all()
@@ -232,6 +241,7 @@ def build_uvis_options_for_denuncia(denuncia):
 
 
 def designar_denuncia_para_uvis(denuncia, uvis_id, user):
+    _require_denuncia_prefeitura(denuncia, user)
     if not route_access(user, is_regional_user(user) or is_admin_global_user(user)):
         raise ValueError("Usuario sem permissao para designar UVIS.")
 
@@ -251,6 +261,8 @@ def designar_denuncia_para_uvis(denuncia, uvis_id, user):
     uvis = Usuario.query.filter(Usuario.id == uvis_id, Usuario.tipo_usuario == "uvis").first()
     if not uvis:
         raise ValueError("Selecione uma UVIS valida.")
+    if denuncia.prefeitura_id is None or uvis.prefeitura_id != denuncia.prefeitura_id:
+        raise ValueError("A UVIS selecionada não pertence à prefeitura da denúncia.")
     if (uvis.regiao or "").strip().upper() != coordenadoria:
         raise ValueError("A UVIS selecionada nao pertence a coordenadoria da denuncia.")
 
@@ -259,6 +271,11 @@ def designar_denuncia_para_uvis(denuncia, uvis_id, user):
     denuncia.triado_por_id = getattr(user, "id", None)
     db.session.commit()
     return denuncia
+
+
+def _require_denuncia_prefeitura(denuncia, user):
+    if not can_access_prefeitura(user, denuncia.prefeitura_id):
+        raise ValueError("Esta denúncia não pertence à sua prefeitura.")
 
 
 def build_solicitacao_form_from_denuncia(denuncia, form_source=None):

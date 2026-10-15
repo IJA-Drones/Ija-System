@@ -64,11 +64,13 @@
 
   function renderReview() {
     review.replaceChildren();
-    const labels = {tipo_visita:'Ocorrência',tipo_imovel:'Tipo de local',foco:'Foco',logradouro:'Logradouro',numero:'Número',complemento:'Complemento',bairro:'Bairro',cidade:'Cidade',uf:'UF',cep:'CEP',nome:'Nome',cpf:'CPF',rg:'RG',telefone:'Telefone',descricao:'Descrição'};
+    const labels = {tipo_visita:'Ocorrência',tipo_imovel:'Tipo de local',foco:'Foco',prefeitura_id:'Prefeitura responsável',logradouro:'Logradouro',numero:'Número',complemento:'Complemento',bairro:'Bairro',cidade:'Cidade',uf:'UF',cep:'CEP',nome:'Nome',cpf:'CPF',rg:'RG',telefone:'Telefone',descricao:'Descrição'};
     const data = new FormData(form);
     const list = document.createElement('dl');
     for (const [key, label] of Object.entries(labels)) {
-      const value = data.get(key);
+      const value = key === 'prefeitura_id'
+        ? form.querySelector('[name="prefeitura_id"]')?.selectedOptions[0]?.textContent
+        : data.get(key);
       if (!value) continue;
       const dt = document.createElement('dt'); dt.textContent = label;
       const dd = document.createElement('dd'); dd.textContent = value;

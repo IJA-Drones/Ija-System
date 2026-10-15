@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from app import db
 from app.clients.cep_client import CepLookupError, CepNotFoundError, lookup_cep
 from app.clients.google_maps_client import geocode_endereco_google, reverse_geocode_lat_lng_google_details
-from app.models import Denuncia, DenunciaAnexo
+from app.models import Denuncia, DenunciaAnexo, Prefeitura
 from app.shared.skybox import SkyboxError, skybox_enabled, upload_file_to_skybox
 from app.shared.uploads import get_upload_folder
 
@@ -25,6 +25,13 @@ class DenunciaValidationError(ValueError):
 
 
 def criar_denuncia(form, files, *, ip_origem=None, user_agent=None):
+    try:
+        prefeitura_id = int(form.get("prefeitura_id", ""))
+    except (TypeError, ValueError):
+        prefeitura_id = None
+    prefeitura = Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first() if prefeitura_id else None
+    if prefeitura is None:
+        raise DenunciaValidationError({"prefeitura_id": "Selecione a prefeitura responsável pelo local do relato."})
     data = _parse_denuncia_form(form)
     anexos = [arquivo for arquivo in files.getlist("midias") if arquivo and arquivo.filename]
 
@@ -47,6 +54,7 @@ def criar_denuncia(form, files, *, ip_origem=None, user_agent=None):
         raise DenunciaValidationError(errors)
 
     denuncia = Denuncia(
+        prefeitura_id=prefeitura.id,
         protocolo=_generate_protocolo(),
         status=Denuncia.STATUS_RECEBIDA,
         tipo_visita=data["tipo_visita"],

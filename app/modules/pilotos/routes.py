@@ -247,13 +247,12 @@ def register_routes(bp):
             piloto.regiao = regiao or None
             piloto.regiao_alternativa = regiao_alternativa or None
             piloto.telefone = tel_digits or None
-            piloto.prefeitura_id = getattr(current_user, "prefeitura_id", None)
 
             if not usuario_piloto:
                 usuario_piloto = Usuario(
                     nome_uvis=nome_piloto,
                     regiao=regiao or None,
-                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    prefeitura_id=piloto.prefeitura_id,
                     codigo_setor=None,
                     login=login,
                     tipo_usuario="piloto",
@@ -274,7 +273,7 @@ def register_routes(bp):
             else:
                 usuario_piloto.nome_uvis = nome_piloto
                 usuario_piloto.regiao = regiao or None
-                usuario_piloto.prefeitura_id = getattr(current_user, "prefeitura_id", None)
+                usuario_piloto.prefeitura_id = piloto.prefeitura_id
                 usuario_piloto.login = login
                 if senha:
                     usuario_piloto.set_senha(senha)

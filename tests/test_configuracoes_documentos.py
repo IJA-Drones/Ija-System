@@ -133,7 +133,7 @@ class DocumentSettingsTests(unittest.TestCase):
         page = self.client.get("/configuracoes")
         self.assertIn("ainda não está vinculado", page.text)
         self.assertNotIn('id="document-settings-form"', page.text)
-        self.assertEqual(self.save().status_code, 404)
+        self.assertEqual(self.save().status_code, 403)
 
     def test_dev_can_select_and_change_every_city(self):
         self.login(3)

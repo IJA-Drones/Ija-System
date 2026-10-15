@@ -3,15 +3,17 @@ import os
 from app.extensions import db
 from app.models import Solicitacao
 from app.modules.gestao_ti.permissions import active_configuration, has_permission
-from app.shared.access import can_access_regiao
+from app.shared.access import can_access_regiao, can_access_prefeitura
 from app.shared.uploads import get_upload_folder
 
 
-ALLOWED_ATTACHMENT_VIEW_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "uvis", "regional"}
+ALLOWED_ATTACHMENT_VIEW_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "covisa", "prefeitura_admin", "uvis", "regional"}
 ALLOWED_ATTACHMENT_EDIT_TYPES = {"dev", "diretor", "admin", "operario"}
 
 
 def can_view_attachment(user, pedido) -> bool:
+    if not can_access_prefeitura(user, getattr(pedido, "prefeitura_id", None)):
+        return False
     if active_configuration(user) is not None:
         from app.shared.access import apply_solicitacao_prefeitura_scope, apply_solicitacao_regiao_scope
         query = apply_solicitacao_regiao_scope(apply_solicitacao_prefeitura_scope(Solicitacao.query, user), user)

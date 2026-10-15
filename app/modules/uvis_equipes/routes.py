@@ -23,7 +23,7 @@ from app.modules.uvis_equipes.service import (
     validate_team_login,
     validate_team_password,
 )
-from app.shared.access import is_admin_global_user, is_veiculos_supervisor, normalize_role
+from app.shared.access import is_admin_global_user, is_veiculos_supervisor, normalize_role, apply_prefeitura_scope, apply_solicitacao_prefeitura_scope
 
 
 def _uvis_only():
@@ -337,7 +337,7 @@ def register_routes(bp):
     def atribuir_equipe_uvis_solicitacao(id):
         if not route_access(current_user, not (is_veiculos_supervisor(current_user))):
             abort(403)
-        solicitacao = Solicitacao.query.get_or_404(id)
+        solicitacao = apply_solicitacao_prefeitura_scope(Solicitacao.query, current_user).filter(Solicitacao.id == id).first_or_404()
 
         if solicitacao.usuario_id != current_user.id and not is_admin_global_user(current_user):
             flash("Voce nao tem permissao para alterar esta solicitacao.", "danger")
@@ -363,7 +363,7 @@ def register_routes(bp):
     def admin_listar_equipes_uvis():
         _admin_or_operario_view_only()
         search = (request.args.get("q") or "").strip()
-        equipes = build_admin_uvis_teams_listing(search=search)
+        equipes = build_admin_uvis_teams_listing(search=search, user=current_user)
         return render_template(
             "admin_uvis_equipes_listar.html",
             equipes=equipes,
@@ -379,7 +379,7 @@ def register_routes(bp):
     def admin_atualizar_acesso_operacional_uvis(uvis_id):
         _admin_or_operario_view_only()
 
-        uvis = Usuario.query.filter_by(id=uvis_id, tipo_usuario="uvis").first_or_404()
+        uvis = apply_prefeitura_scope(Usuario.query, current_user, Usuario.prefeitura_id).filter_by(id=uvis_id, tipo_usuario="uvis").first_or_404()
         conta = get_operational_uvis_account(uvis.id)
         login_operacional = (request.form.get("login_operacional") or "").strip()
         senha = password_input(request.form.get("senha"))

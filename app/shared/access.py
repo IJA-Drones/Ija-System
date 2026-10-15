@@ -118,17 +118,55 @@ def get_user_prefeitura_id(user):
     if value is not None:
         return value
     # A pilot's tenant may be stored on the linked pilot record.
-    from app.modules.gestao_ti.permissions import active_configuration
-    if active_configuration(user) is not None:
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    if role == "piloto":
         return getattr(getattr(user, "piloto", None), "prefeitura_id", None)
+    if role == "piloto_agro":
+        return getattr(getattr(user, "piloto_agro", None), "prefeitura_id", None)
     return None
+
+
+def can_access_prefeitura(user, prefeitura_id):
+    """A capability grants an action, never access to another municipality."""
+    if is_admin_global_user(user):
+        return True
+    tenant = get_user_prefeitura_id(user)
+    return tenant is not None and prefeitura_id == tenant
+
+
+def resolve_linked_prefeitura(prefeitura_id, parent):
+    """Keep new/edited associations inside one tenant, including global edits."""
+    if parent is None:
+        return prefeitura_id
+    parent_id = parent.prefeitura_id
+    if prefeitura_id is not None and parent_id != prefeitura_id:
+        raise ValueError("Os registros vinculados devem pertencer à mesma prefeitura.")
+    return parent_id
+
+
+def register_prefeitura_write_security(bp):
+    @bp.before_request
+    def require_municipality_for_writes():
+        from flask import request
+        from flask_login import current_user
+        from app.core.errors import _render_error
+        from app.modules.gestao_ti.permissions import route_options
+
+        if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+            return None
+        if not current_user.is_authenticated or is_admin_global_user(current_user):
+            return None
+        options = route_options(request.endpoint, request.method, request.args) or ()
+        if any(code.startswith(("prefeitura.", "sistema.estoque.")) for code in options):
+            if get_user_prefeitura_id(current_user) is None:
+                return _render_error(403, "Prefeitura não vinculada",
+                    "Sua conta precisa estar vinculada a uma prefeitura para salvar dados. "
+                    "Solicite a correção do cadastro ao administrador.")
+        return None
 
 
 def central_ti_team_ids(user):
     """None means no team restriction; an empty tuple means no linked team."""
-    from app.modules.gestao_ti.permissions import active_configuration
-    if active_configuration(user) is None:
-        return None
     role = normalize_role(getattr(user, "tipo_usuario", None))
     if role not in {"piloto", "equipe_oceano"}:
         return None
@@ -158,8 +196,10 @@ def central_ti_team_ids(user):
 
 def apply_prefeitura_scope(query, user, column):
     role = normalize_role(getattr(user, "tipo_usuario", None)) if user is not None else None
-    if user is None or role in GLOBAL_ADMIN_USER_TYPES:
+    if role in GLOBAL_ADMIN_USER_TYPES:
         return query
+    if user is None:
+        return query.filter(false())
 
     from app.modules.gestao_ti.permissions import active_configuration
     configured = active_configuration(user) is not None
@@ -173,6 +213,12 @@ def apply_prefeitura_scope(query, user, column):
             query = query.filter(Usuario.id.in_(
                 db.select(Solicitacao.usuario_id).where(Solicitacao.equipe_id.in_(teams))
             ))
+        elif model is Solicitacao:
+            query = query.filter(Solicitacao.equipe_id.in_(teams) | (
+                Solicitacao.equipe_id.is_(None)
+                & Solicitacao.gerada_automaticamente.is_(True)
+                & Solicitacao.origem_retorno.has(Solicitacao.equipe_id.in_(teams))
+            ))
         elif model is not None and hasattr(model, "equipe_id"):
             query = query.filter(model.equipe_id.in_(teams))
     if configured and role == "piloto_agro":
@@ -185,33 +231,34 @@ def apply_prefeitura_scope(query, user, column):
             query = query.filter(model.id == team) if team else query.filter(false())
     prefeitura_id = get_user_prefeitura_id(user)
     if prefeitura_id is None:
-        # Finance's existing IJA scope is independent of a municipal tenant.
-        # A newly enabled municipal module must never fall through to all data.
+        # Corporate finance has a separate scope. Municipal accounts without
+        # a tenant must not silently inherit access to every municipality.
         model = getattr(column, "class_", None)
-        municipal = model is not None and model.__name__ in {
-            "Solicitacao", "Denuncia", "Equipe", "Pilotos", "Drones", "Baterias", "Veiculos", "Clientes", "Usuario",
-        }
-        legacy_unscoped = role in ADMIN_PANEL_VIEW_TYPES and not (is_veiculos_supervisor(user) or is_prefeitura_admin_user(user))
-        if configured and municipal and not legacy_unscoped and not teams:
-            return query.filter(false())
-        if is_veiculos_supervisor(user):
-            return query.filter(false())
-        if is_prefeitura_admin_user(user):
-            return query.filter(false())
-        return query
+        if model is not None and "Agro" in model.__name__ and not is_covisa_user(user):
+            corporate_roles = AGRO_FINANCE_VIEW_TYPES | {"piloto_agro", "operario", "operador", "visualizador", "visualizar"}
+            if role in corporate_roles:
+                return query
+        return query.filter(false())
 
+    from app.models import Equipamentos, Equipe
+    model = getattr(column, "class_", None)
+    if model is not None and issubclass(model, Equipamentos):
+        # Legacy equipment may inherit a municipality from its registered team.
+        # An explicit, conflicting municipality always wins and is denied.
+        return query.filter((column == prefeitura_id) | (
+            column.is_(None) & model.equipe.has(Equipe.prefeitura_id == prefeitura_id)
+        ))
     return query.filter(column == prefeitura_id)
 
 
 def apply_solicitacao_prefeitura_scope(query, user):
     query = apply_prefeitura_scope(query, user, Solicitacao.prefeitura_id)
-    from app.modules.gestao_ti.permissions import active_configuration
-    if active_configuration(user) is not None:
-        role = normalize_role(getattr(user, "tipo_usuario", None))
-        if role == "uvis":
-            query = query.filter(Solicitacao.usuario_id == user.id)
-        elif role == "equipe_uvis":
-            query = query.filter(Solicitacao.usuario_id == getattr(user, "equipe_uvis_uvis_usuario_id", None))
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    if role == "uvis":
+        query = query.filter(Solicitacao.usuario_id == user.id)
+    elif role == "equipe_uvis":
+        owner = getattr(user, "equipe_uvis_uvis_usuario_id", None)
+        query = query.filter(Solicitacao.usuario_id == owner) if owner else query.filter(false())
     return query
 
 

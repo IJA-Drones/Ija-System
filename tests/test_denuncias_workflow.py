@@ -6,7 +6,7 @@ from unittest.mock import patch
 from flask import Blueprint, Flask, g
 from flask_login import LoginManager
 from app.extensions import db
-from app.models import Denuncia, Solicitacao, Usuario
+from app.models import Denuncia, Solicitacao, Usuario, Prefeitura
 from app.modules.denuncias.routes import register_routes
 from app.modules.denuncias.service import count_denuncias_alerta
 
@@ -26,12 +26,13 @@ class DenunciasWorkflowTests(unittest.TestCase):
         self.ctx = self.app.app_context()
         self.ctx.push()
         db.create_all()
+        db.session.add(Prefeitura(id=1, nome="Município de teste", slug="municipio-teste"))
         for uid, role, region in [(1,"covisa","COVISA"),(2,"regional","NORTE"),(3,"uvis","NORTE"),
                                    (4,"regional","SUL"),(5,"uvis","SUL"),(6,"operario","NORTE"),
                                    (7,"visualizar","COVISA"),(8,"regional",None)]:
             db.session.add(Usuario(id=uid, login=str(uid), senha_hash="test", nome_uvis=str(uid),
-                                   tipo_usuario=role, regiao=region))
-        self.report = Denuncia(protocolo="DEN-TEST", status="RECEBIDA", tipo_visita="Aedes",
+                                   tipo_usuario=role, regiao=region, prefeitura_id=1))
+        self.report = Denuncia(prefeitura_id=1, protocolo="DEN-TEST", status="RECEBIDA", tipo_visita="Aedes",
             tipo_imovel="Imovel Geral", foco="Piscina", descricao="Observação de teste",
             logradouro="Rua Teste", numero="10", bairro="Centro", cidade="São Paulo", uf="SP",
             cidadao_nome="Pessoa de teste", cidadao_cpf="529.982.247-25", cidadao_rg="",
