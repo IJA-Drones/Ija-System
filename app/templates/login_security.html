@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Proteção de login | IJA System{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <header class="mb-4">
+    <a href="{{ url_for('main.dev_dashboard') }}" class="btn btn-outline-secondary btn-sm mb-3">Voltar ao painel</a>
+    <h1 class="h3">Proteção de login</h1>
+    <p class="text-muted">Tentativas dos acessos principal, UVIS operacional e Agro. Horários em Brasília.</p>
+  </header>
+  {% if not config.LOGIN_PROTECTION_ENABLED %}<div class="alert alert-warning">A proteção está desativada neste ambiente.</div>{% endif %}
+  <div class="alert alert-info">
+    Até <strong>{{ policy.account_limit }} falhas por conta</strong> e <strong>{{ policy.ip_limit }} por origem</strong>
+    em {{ policy.window_minutes }} minutos. Bloqueio por {{ policy.lock_minutes }} minutos.
+    As telas de login compartilham os mesmos limites.
+  </div>
+  <section class="card mb-4"><div class="card-body">
+    <h2 class="h5">Bloqueios ativos</h2>
+    <p class="small text-muted">Mostrando até 100 bloqueios. A liberação é automática ao vencer o prazo. Para antecipá-la, confira a solicitação e registre o motivo. Conta e origem podem ter bloqueios independentes.</p>
+    {% if blocked %}<div class="table-responsive"><table class="table align-middle">
+      <thead><tr><th>Tipo</th><th>Identificação</th><th>Falhas</th><th>Liberado em</th><th>Desbloqueio</th></tr></thead>
+      <tbody>{% for item in blocked %}<tr>
+        <td>{{ 'Conta' if item.escopo == 'conta' else 'Origem (IP)' }}</td>
+        <td class="text-break">{{ item.identificacao }}</td><td>{{ item.falhas }}</td>
+        <td>{{ brazil_datetime(item.bloqueado_ate).strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td><form method="post" action="{{ url_for('main.login_security_unlock', key=item.chave) }}">
+          <input type="hidden" name="_csrf_token" value="{{ unlock_csrf }}">
+          <label for="reason-{{ loop.index }}" class="visually-hidden">Motivo do desbloqueio de {{ item.identificacao }}</label>
+          <input id="reason-{{ loop.index }}" class="form-control form-control-sm mb-2" name="motivo" placeholder="Motivo do desbloqueio" minlength="5" maxlength="300" required>
+          <button class="btn btn-outline-primary btn-sm" type="submit" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.login_security_unlock', key=item.chave), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">Desbloquear</button>
+        </form></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="mb-0">Nenhum bloqueio ativo.</p>{% endif %}
+  </div></section>
+  <section class="card"><div class="card-body">
+    <h2 class="h5">Últimos 100 eventos</h2>
+    <p class="small text-muted">Senhas e tokens não são registrados. O histórico permanece mesmo após o desbloqueio.</p>
+    {% set labels = {'sucesso':'Login realizado', 'falha':'Acesso recusado', 'limite_atingido':'Limite atingido', 'bloqueado':'Tentativa durante bloqueio', 'desbloqueio':'Desbloqueio manual'} %}
+    <div class="table-responsive"><table class="table table-sm">
+      <thead><tr><th>Data</th><th>Login informado</th><th>Origem (IP)</th><th>Acesso</th><th>Resultado</th><th>Responsável / motivo</th></tr></thead>
+      <tbody>{% for item in events %}<tr>
+        <td>{{ brazil_datetime(item.criado_em).strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td class="text-break">{{ item.login or '-' }}</td><td>{{ item.ip }}</td><td>{{ item.canal }}</td>
+        <td>{{ labels.get(item.resultado, item.resultado) }}</td>
+        <td>{% if item.responsavel_id %}Usuário #{{ item.responsavel_id }}{% endif %} {{ item.motivo or '' }}</td>
+      </tr>{% else %}<tr><td colspan="6">Nenhum evento registrado.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div></section>
+</div>
+{% endblock %}

@@ -305,6 +305,7 @@ class DocumentSettingsMigrationTests(unittest.TestCase):
                 module.downgrade()
                 self.assertEqual(set(inspect(connection).get_table_names()), {"prefeituras", "usuarios"})
         scripts = ScriptDirectory(str(ROOT / "migrations"))
-        self.assertEqual(scripts.get_heads(), ["c1a0f8b6d2e4"])
+        self.assertEqual(len(scripts.get_heads()), 1)
+        self.assertIn("c1a0f8b6d2e4", {r.revision for r in scripts.walk_revisions()})
         self.assertEqual(scripts.get_revision("c1a0f8b6d2e4").down_revision, module.revision)
         self.assertIn(module.revision, {revision.revision for revision in scripts.walk_revisions()})

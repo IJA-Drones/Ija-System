@@ -4,6 +4,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/login_uvis_operacional.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/login-blocked.css') }}">
 {% endblock %}
 
 {% block auth_content %}
@@ -31,9 +32,10 @@
     </div>
 
     <form method="POST" action="{{ url_for('auth.login_uvis_operacional') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('auth.login_uvis_operacional'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+      {% include "_login_blocked.html" %}
       {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
       <div class="form-floating mb-3">
-        <input type="text" name="login" class="form-control rounded-3" id="uvisOperacionalLogin" placeholder="Usuario" required autocomplete="username">
+        <input type="text" name="login" value="{{ login_value|default('') }}" class="form-control rounded-3" id="uvisOperacionalLogin" placeholder="Usuario" required autocomplete="username">
         <label for="uvisOperacionalLogin">Usuario</label>
       </div>
 

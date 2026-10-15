@@ -5,6 +5,31 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from flask_login import UserMixin
 
 
+class LoginBloqueio(db.Model):
+    __tablename__ = "login_bloqueios"
+
+    chave = db.Column(db.String(64), primary_key=True)
+    escopo = db.Column(db.String(10), nullable=False)
+    identificacao = db.Column(db.String(128), nullable=False)
+    falhas = db.Column(db.Integer, nullable=False, default=0)
+    janela_inicio = db.Column(db.DateTime, nullable=False)
+    bloqueado_ate = db.Column(db.DateTime, index=True)
+
+
+class LoginEvento(db.Model):
+    __tablename__ = "login_eventos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    criado_em = db.Column(db.DateTime, nullable=False, index=True)
+    login = db.Column(db.String(50), nullable=False)
+    ip = db.Column(db.String(45), nullable=False)
+    canal = db.Column(db.String(20), nullable=False)
+    resultado = db.Column(db.String(24), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"))
+    responsavel_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"))
+    motivo = db.Column(db.String(500))
+
+
 class Prefeitura(db.Model):
     __tablename__ = "prefeituras"
 

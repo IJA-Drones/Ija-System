@@ -1,0 +1,57 @@
+.login-blocked-notice {
+  margin-bottom: 12px;
+  padding: 18px;
+  border: 1px solid #e8ac4c;
+  border-left: 5px solid #b45309;
+  border-radius: 14px;
+  background: #fff8e8;
+  color: #713f12;
+  scroll-margin-block: 100px;
+}
+
+.login-blocked-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.login-blocked-notice p,
+body.dark-mode .login-blocked-notice p {
+  margin: 12px 0 0;
+  color: inherit !important;
+  font-size: .88rem;
+  line-height: 1.55;
+}
+
+.login-blocked-wait {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ffedc2;
+  font-weight: 700;
+  font-size: .94rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.login-blocked-notice:focus-visible {
+  outline: 3px solid #b45309;
+  outline-offset: 3px;
+}
+
+body.dark-mode .login-blocked-notice {
+  background: #332719;
+  border-color: #e8ac4c;
+  color: #ffe2aa;
+}
+
+body.dark-mode .login-blocked-wait {
+  background: #4b351b;
+}
+
+/* Keep the larger form reachable on short screens and mobile devices. */
+.login-screen.login-screen-blocked {
+  height: auto;
+  min-height: calc(100dvh - var(--navbar-offset, 70px));
+}

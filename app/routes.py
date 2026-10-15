@@ -1,3 +1,4 @@
+from app.modules.auth.security_routes import register_routes as register_login_security_routes
 from flask import Blueprint
 from app.modules.gestao_ti.permissions import register_permission_security
 from app.core.errors import register_error_handlers
@@ -62,6 +63,7 @@ register_cep_routes(bp)
 register_chatbot_routes(bp)
 register_clientes_routes(bp)
 register_configuracoes_routes(bp)
+register_login_security_routes(bp)
 register_dashboard_routes(bp)
 register_dev_dashboard_routes(bp)
 register_dji_flight_logs_routes(bp)
