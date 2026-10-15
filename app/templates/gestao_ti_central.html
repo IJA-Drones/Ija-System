@@ -9,6 +9,9 @@
 <div class="ti-central" id="ti-central">
   <header class="page-toolbar ti-heading">
     <h1 class="h2 mb-0"><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Central de TI</h1>
+    {% if can_view_permission_audit is defined and can_view_permission_audit(current_user) %}
+    <a class="btn btn-outline-primary" href="{{ url_for('main.auditoria_permissoes') }}"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Auditoria de permissões</a>
+    {% endif %}
   </header>
 
   <div class="ti-workspace">

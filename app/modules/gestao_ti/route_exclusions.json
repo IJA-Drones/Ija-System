@@ -17,6 +17,7 @@
   "main.limpar_notificacoes": "public, personal or separately protected endpoint",
   "main.central_ti": "public, personal or separately protected endpoint",
   "main.central_ti_salvar": "public, personal or separately protected endpoint",
+  "main.auditoria_permissoes": "read-only permission history with its own fixed authenticated dev/diretor guard; dynamic capabilities cannot grant or revoke access",
   "main.api_cep": "public, personal or separately protected endpoint",
   "main.api_cep_by_address": "public, personal or separately protected endpoint"
 }

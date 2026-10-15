@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
+{% block title %}Auditoria de permissões | Oceano Azul{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/listing.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/gestao-ti-auditoria.css', v='20261015a') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page permission-audit">
+  <header class="page-toolbar mb-4">
+    <div>
+      <h1 class="h2 mb-2"><i class="bi bi-shield-check me-2 text-primary" aria-hidden="true"></i>Auditoria de permissões</h1>
+      <p class="text-muted mb-0">Histórico de alterações da Central de TI.</p>
+    </div>
+    <span class="permission-audit-readonly"><i class="bi bi-eye" aria-hidden="true"></i>Somente consulta</span>
+  </header>
+
+  <section class="card border-0 shadow-sm mb-4" aria-labelledby="audit-filters-title">
+    <div class="card-body">
+      <h2 class="h6 mb-3" id="audit-filters-title"><i class="bi bi-funnel me-2" aria-hidden="true"></i>Filtrar alterações</h2>
+      <form method="GET" action="{{ url_for('main.auditoria_permissoes') }}" class="row g-3 align-items-end">
+        <div class="col-12 col-md-6 col-xl-3">
+          <label for="audit-profile" class="form-label small fw-semibold">Perfil alterado</label>
+          <select id="audit-profile" name="perfil" class="form-select">
+            <option value="">Todos os perfis</option>
+            {% for profile in profile_options %}
+            <option value="{{ profile.id }}" {% if filters.perfil == profile.id %}selected{% endif %}>{{ profile.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <label for="audit-user" class="form-label small fw-semibold">Responsável</label>
+          <input id="audit-user" type="search" name="usuario" class="form-control" value="{{ filters.usuario }}" placeholder="Buscar pelo login" maxlength="100">
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+          <label for="audit-from" class="form-label small fw-semibold">De</label>
+          <input id="audit-from" type="date" name="data_inicio" class="form-control" value="{{ filters.data_inicio }}">
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+          <label for="audit-until" class="form-label small fw-semibold">Até</label>
+          <input id="audit-until" type="date" name="data_fim" class="form-control" value="{{ filters.data_fim }}">
+        </div>
+        <div class="col-12 col-md-4 col-xl-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1" aria-hidden="true"></i>Filtrar</button>
+          {% if filters.perfil or filters.usuario or filters.data_inicio or filters.data_fim %}
+          <a class="btn btn-outline-secondary" href="{{ url_for('main.auditoria_permissoes') }}" aria-label="Limpar filtros" title="Limpar filtros"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
+          {% endif %}
+        </div>
+      </form>
+      {% for error in filter_errors %}
+      <p class="small text-danger mt-3 mb-0" role="alert">{{ error }}</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="d-flex flex-wrap justify-content-between gap-2 mb-3 small text-muted">
+    <span><strong>{{ paginacao.total }}</strong> {{ 'alteração encontrada' if paginacao.total == 1 else 'alterações encontradas' }}</span>
+    <span>Horário de Brasília</span>
+  </div>
+
+  <section aria-label="Alterações de permissões" class="permission-audit-records">
+    {% for entry in entries %}
+    <article class="card border-0 shadow-sm permission-audit-record" data-audit-id="{{ entry.id }}">
+      <header class="permission-audit-record-header">
+        <div>
+          <span class="permission-audit-label">Data e hora</span>
+          <time datetime="{{ entry.created_at.isoformat() if entry.created_at else '' }}">
+            <strong>{{ entry.created_at.strftime('%d/%m/%Y') if entry.created_at else 'Não informada' }}</strong>
+            {% if entry.created_at %}<span class="small text-muted">{{ entry.created_at.strftime('%H:%M:%S') }}</span>{% endif %}
+          </time>
+        </div>
+        <div>
+          <span class="permission-audit-label">Responsável</span>
+          <strong class="permission-audit-login">{{ entry.actor_login or 'Não informado' }}</strong>
+          {% if entry.is_initialization %}<span class="small text-muted">Preparação inicial</span>{% endif %}
+        </div>
+        <div>
+          <span class="permission-audit-label">Perfil alterado</span>
+          <strong>{{ entry.profile_label }}</strong>
+        </div>
+        <div>
+          <span class="permission-audit-label">Versão</span>
+          <span class="permission-audit-version">v{{ entry.version_before }} <i class="bi bi-arrow-right" aria-label="para"></i> v{{ entry.version_after }}</span>
+        </div>
+      </header>
+      <details class="permission-audit-details" {% if loop.first %}open{% endif %}>
+        <summary>
+          <span>Ver alterações <i class="bi bi-chevron-down" aria-hidden="true"></i></span>
+          <span class="permission-audit-counts">
+            <span class="permission-audit-count permission-audit-count-added"><i class="bi bi-plus-circle" aria-hidden="true"></i>{{ entry.added|length }} adicionadas</span>
+            <span class="permission-audit-count permission-audit-count-removed"><i class="bi bi-dash-circle" aria-hidden="true"></i>{{ entry.removed|length }} removidas</span>
+          </span>
+        </summary>
+        <div class="permission-audit-detail-body">
+          {% if entry.is_initialization %}
+          <p class="permission-audit-note"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Registro de preparação inicial. Não representa uma alteração de permissões feita por um usuário.</p>
+          {% elif entry.first_configuration %}
+          <p class="permission-audit-note"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Primeira configuração registrada. A comparação considera as opções salvas; as regras de acesso anteriores não foram registradas neste evento.</p>
+          {% endif %}
+          <div class="permission-audit-diff">
+            <section class="permission-audit-diff-added" aria-labelledby="audit-added-{{ entry.id }}">
+              <h3 class="h6" id="audit-added-{{ entry.id }}"><i class="bi bi-plus-circle me-2" aria-hidden="true"></i>Adicionadas</h3>
+              {% if entry.added %}
+              <ul>{% for label in entry.added %}<li>{{ label }}</li>{% endfor %}</ul>
+              {% else %}<p class="small text-muted mb-0">Nenhuma área ou permissão adicionada.</p>{% endif %}
+            </section>
+            <section class="permission-audit-diff-removed" aria-labelledby="audit-removed-{{ entry.id }}">
+              <h3 class="h6" id="audit-removed-{{ entry.id }}"><i class="bi bi-dash-circle me-2" aria-hidden="true"></i>Removidas</h3>
+              {% if entry.removed %}
+              <ul>{% for label in entry.removed %}<li>{{ label }}</li>{% endfor %}</ul>
+              {% else %}<p class="small text-muted mb-0">Nenhuma área ou permissão removida.</p>{% endif %}
+            </section>
+          </div>
+          <div class="permission-audit-reference small text-muted">
+            <span>Registro #{{ entry.id }}{% if entry.actor_id %} · Responsável #{{ entry.actor_id }}{% endif %}</span>
+            <span>Grupo de alterações: <code>{{ entry.batch }}</code></span>
+          </div>
+        </div>
+      </details>
+    </article>
+    {% else %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-journal-check permission-audit-empty-icon" aria-hidden="true"></i>
+        <h2 class="h5 mt-3">Nenhuma alteração encontrada</h2>
+        <p class="text-muted mb-0">{% if filters.perfil or filters.usuario or filters.data_inicio or filters.data_fim %}Ajuste os filtros para consultar outros registros.{% else %}As alterações salvas na Central de TI aparecerão aqui.{% endif %}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {{ render_pagination('main.auditoria_permissoes', paginacao, pagination_args, nav_class='mt-4 pb-3', show_summary=True, summary_label='alterações') }}
+</div>
+{% endblock %}

@@ -27,6 +27,11 @@
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-clipboard-data me-1"></i> Auditoria
           </a>
+          {% if can_view_permission_audit is defined and can_view_permission_audit(current_user) %}
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.auditoria_permissoes') }}">
+            <i class="bi bi-shield-check me-1" aria-hidden="true"></i> Permissões
+          </a>
+          {% endif %}
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.financeiro_central') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-bank me-1"></i> Central Financeiro
           </a>

@@ -1,0 +1,79 @@
+.permission-audit {
+  --audit-border: rgba(113, 128, 150, 0.2);
+  max-width: 1320px;
+}
+
+.permission-audit h1 { color: var(--color-primary-dark); font-weight: 800; }
+.permission-audit-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--audit-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  background: var(--color-bg-white);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.permission-audit-records { display: grid; gap: 1rem; }
+.permission-audit-record { overflow: hidden; border-radius: var(--radius-lg); }
+.permission-audit-record-header {
+  display: grid;
+  grid-template-columns: minmax(145px, 0.9fr) minmax(0, 1.3fr) minmax(0, 1.1fr) minmax(95px, 0.6fr);
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.permission-audit-record-header > div { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.permission-audit-label { color: var(--color-text-muted); font-size: 0.76rem; }
+.permission-audit-record-header strong { color: var(--color-text-main); font-size: 0.94rem; overflow-wrap: anywhere; }
+.permission-audit-record-header time { display: flex; flex-direction: column; gap: 0.1rem; }
+.permission-audit-version { font-size: 0.86rem; white-space: nowrap; }
+.permission-audit-version i { margin: 0 0.3rem; font-size: 0.8rem; color: var(--color-text-muted); }
+.permission-audit-details { border-top: 1px solid var(--audit-border); }
+.permission-audit-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  list-style: none;
+}
+.permission-audit-details summary::-webkit-details-marker { display: none; }
+.permission-audit-details summary > span:first-child { display: inline-flex; align-items: center; gap: 0.6rem; }
+.permission-audit-details summary .bi-chevron-down { transition: transform 0.15s; }
+.permission-audit-details[open] summary .bi-chevron-down { transform: rotate(180deg); }
+.permission-audit-details summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
+.permission-audit-counts { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
+.permission-audit-count { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.76rem; padding: 0.3rem 0.6rem; border-radius: var(--radius-pill); }
+.permission-audit-count-added { background: rgba(47, 133, 90, 0.1); color: var(--color-success); }
+.permission-audit-count-removed { background: rgba(229, 62, 62, 0.08); color: var(--color-danger); }
+.permission-audit-detail-body { padding: 0.25rem 1.25rem 1.25rem; }
+.permission-audit-note { padding: 0.75rem; margin: 0 0 1rem; border-radius: var(--radius-md); background: var(--color-accent-soft); color: var(--color-text-main); font-size: 0.82rem; line-height: 1.55; }
+.permission-audit-diff { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.permission-audit-diff > section { border: 1px solid var(--audit-border); border-radius: var(--radius-md); padding: 1rem; min-width: 0; }
+.permission-audit-diff-added h3 { color: var(--color-success); }
+.permission-audit-diff-removed h3 { color: var(--color-danger); }
+.permission-audit-diff ul { margin: 0; padding-left: 1.15rem; font-size: 0.85rem; line-height: 1.6; }
+.permission-audit-diff li { margin-top: 0.4rem; overflow-wrap: anywhere; }
+.permission-audit-reference { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; margin-top: 1rem; font-size: 0.72rem; }
+.permission-audit-reference code { color: inherit; overflow-wrap: anywhere; font-size: inherit; }
+.permission-audit-empty-icon { color: var(--color-primary); font-size: 2rem; }
+body.dark-mode .permission-audit h1 { color: var(--color-text-main); }
+body.dark-mode .permission-audit-count-added { color: #8ddab1; background: rgba(47, 133, 90, 0.17); }
+body.dark-mode .permission-audit-count-removed { color: #ffaaaa; background: rgba(229, 62, 62, 0.13); }
+body.dark-mode .permission-audit-diff-added h3 { color: #8ddab1; }
+body.dark-mode .permission-audit-diff-removed h3 { color: #ffaaaa; }
+
+@media (max-width: 767.98px) {
+  .permission-audit-record-header { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .permission-audit-diff { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .permission-audit-details summary .bi-chevron-down { transition: none; }
+}
