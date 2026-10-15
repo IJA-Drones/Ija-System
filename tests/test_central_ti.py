@@ -4,6 +4,7 @@ import importlib.util
 import json
 import re
 import unittest
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -470,63 +471,217 @@ class CentralTiTests(unittest.TestCase):
 
 
 class CentralTiMigrationTests(unittest.TestCase):
-    def test_pending_migration_is_not_executed_by_automatic_upgrade(self):
+    MODELS = (CentralTiPerfilConfiguracao, CentralTiSelecao, CentralTiAuditoria)
+    REVISION = "c1a0f8b6d2e4"
+    PARENT = "a71d9c4e203b"
+
+    def setUp(self):
+        path = ROOT / "migrations/versions/c1a0f8b6d2e4_add_central_ti_configurations.py"
+        spec = importlib.util.spec_from_file_location("isolated_central_migration", path)
+        self.migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.migration)
+
+    def engine(self):
+        engine = sa.create_engine("sqlite:///:memory:")
+        self.addCleanup(engine.dispose)
+        return engine
+
+    def create_users(self, connection):
+        connection.execute(sa.text(
+            "CREATE TABLE usuarios (id INTEGER PRIMARY KEY, tipo_usuario TEXT NOT NULL, "
+            "login TEXT NOT NULL, marcador TEXT NOT NULL)"
+        ))
+        connection.execute(sa.text(
+            "INSERT INTO usuarios VALUES (7, 'dev', 'dev_existente', 'preservar')"
+        ))
+
+    def create_existing_schema(self, connection, *, replacement=None, index_replacement=None):
+        """Represent the schema already installed in homologation, independently of upgrade()."""
+        for model in self.MODELS:
+            ddl = str(sa.schema.CreateTable(model.__table__).compile(dialect=connection.dialect))
+            if replacement and model.__tablename__ == replacement[0]:
+                self.assertEqual(ddl.count(replacement[1]), 1, ddl)
+                ddl = ddl.replace(replacement[1], replacement[2])
+            connection.execute(sa.text(ddl))
+            for index in model.__table__.indexes:
+                ddl = str(sa.schema.CreateIndex(index).compile(dialect=connection.dialect))
+                if index_replacement and index.name == index_replacement[0]:
+                    if index_replacement[1] is None:
+                        continue
+                    ddl = index_replacement[1]
+                connection.execute(sa.text(ddl))
+
+    def snapshot(self, connection):
+        return tuple(connection.execute(sa.text(
+            "SELECT type, name, tbl_name, sql FROM sqlite_master "
+            "WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name"
+        )).all())
+
+    def assert_upgrade_does_not_write(self, connection):
+        statements = []
+
+        def capture(connection, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().split()[0].upper() in {
+                "CREATE", "ALTER", "DROP", "INSERT", "UPDATE", "DELETE", "REPLACE"
+            }:
+                statements.append(statement)
+
+        sa.event.listen(connection, "before_cursor_execute", capture)
+        try:
+            with Operations.context(MigrationContext.configure(connection)):
+                self.migration.upgrade()
+        finally:
+            sa.event.remove(connection, "before_cursor_execute", capture)
+        self.assertEqual(statements, [])
+
+    def test_promoted_migration_is_the_single_head_after_document_settings(self):
         config = Config(str(ROOT / "migrations/alembic.ini"))
         config.set_main_option("script_location", str(ROOT / "migrations"))
-        revisions = {revision.revision for revision in ScriptDirectory.from_config(config).walk_revisions()}
-        self.assertNotIn("c1a0f8b6d2e4", revisions)
-        self.assertIn("f2c531cc9f71", revisions)
+        scripts = ScriptDirectory.from_config(config)
+        self.assertEqual(scripts.get_heads(), [self.REVISION])
+        self.assertEqual(scripts.get_revision(self.REVISION).down_revision, self.PARENT)
+        self.assertIn(self.PARENT, {revision.revision for revision in scripts.walk_revisions()})
+        self.assertFalse((ROOT / "migrations/pending/c1a0f8b6d2e4_add_central_ti_configurations.py").exists())
+
+    def test_homologation_preparation_loads_the_same_promoted_migration(self):
+        from scripts.prepare_central_ti_neon import load_migration
+        migration = load_migration()
+        self.assertEqual(Path(migration.__file__).parent, ROOT / "migrations/versions")
+        self.assertEqual(migration.revision, self.REVISION)
+        self.assertEqual(migration.down_revision, self.PARENT)
+
+    def test_offline_upgrade_is_rejected_before_generating_sql(self):
+        output = StringIO()
+        context = MigrationContext.configure(url="sqlite://", opts={"as_sql": True, "output_buffer": output})
+        with Operations.context(context), self.assertRaisesRegex(RuntimeError, "online"):
+            self.migration.upgrade()
+        self.assertEqual(output.getvalue(), "")
+
+    def test_missing_or_incompatible_users_table_stops_before_creating_central_tables(self):
+        cases = (
+            None,
+            "CREATE TABLE usuarios (id VARCHAR(20) PRIMARY KEY)",
+            "CREATE TABLE usuarios (id INTEGER, login TEXT PRIMARY KEY)",
+            "CREATE TABLE usuarios (id INTEGER, login TEXT, PRIMARY KEY (id, login))",
+        )
+        for ddl in cases:
+            with self.subTest(users_table=ddl), self.engine().begin() as connection:
+                if ddl:
+                    connection.execute(sa.text(ddl))
+                schema_before = self.snapshot(connection)
+                with Operations.context(MigrationContext.configure(connection)), self.assertRaises(RuntimeError):
+                    self.migration.upgrade()
+                self.assertEqual(self.snapshot(connection), schema_before)
 
     def test_migration_only_adds_and_removes_central_tables(self):
-        path = ROOT / "migrations/pending/c1a0f8b6d2e4_add_central_ti_configurations.py"
-        spec = importlib.util.spec_from_file_location("isolated_central_migration", path)
-        migration = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(migration)
-        engine = sa.create_engine("sqlite:///:memory:")
-        with engine.begin() as connection:
-            connection.execute(sa.text("CREATE TABLE usuarios (id INTEGER PRIMARY KEY, tipo_usuario TEXT NOT NULL)"))
-            connection.execute(sa.text("INSERT INTO usuarios VALUES (1, 'dev')"))
+        with self.engine().begin() as connection:
+            self.create_users(connection)
+            users_before = connection.execute(sa.text("SELECT * FROM usuarios")).all()
             context = MigrationContext.configure(connection)
             with Operations.context(context):
-                migration.upgrade()
+                self.migration.upgrade()
             tables = set(sa.inspect(connection).get_table_names())
-            self.assertEqual(tables, {"usuarios", "central_ti_perfis_configuracoes", "central_ti_selecoes", "central_ti_auditoria"})
+            self.assertEqual(tables, {"usuarios", *self.migration.EXPECTED_COLUMNS})
             inspector = sa.inspect(connection)
-            for model in (CentralTiPerfilConfiguracao, CentralTiSelecao, CentralTiAuditoria):
+            for model in self.MODELS:
                 self.assertEqual({column["name"] for column in inspector.get_columns(model.__tablename__)}, set(model.__table__.columns.keys()))
                 self.assertEqual(set(inspector.get_pk_constraint(model.__tablename__)["constrained_columns"]), {column.name for column in model.__table__.primary_key.columns})
-            self.assertEqual(connection.execute(sa.text("SELECT tipo_usuario FROM usuarios WHERE id=1")).scalar_one(), "dev")
+            self.migration.validate_existing_schema(connection)
+            connection.execute(sa.text("INSERT INTO central_ti_perfis_configuracoes (perfil_codigo) VALUES ('admin')"))
+            row = connection.execute(sa.text("SELECT versao, atualizado_em FROM central_ti_perfis_configuracoes")).one()
+            self.assertEqual(row.versao, 1)
+            self.assertIsNotNone(row.atualizado_em)
+            with self.assertRaises(sa.exc.IntegrityError):
+                connection.execute(sa.text("UPDATE central_ti_perfis_configuracoes SET versao=0"))
+            self.assertEqual(connection.execute(sa.text("SELECT * FROM usuarios")).all(), users_before)
             with Operations.context(context):
-                migration.downgrade()
+                self.migration.downgrade()
             self.assertEqual(sa.inspect(connection).get_table_names(), ["usuarios"])
-            self.assertEqual(connection.execute(sa.text("SELECT count(*) FROM usuarios")).scalar_one(), 1)
-        engine.dispose()
+            self.assertEqual(connection.execute(sa.text("SELECT * FROM usuarios")).all(), users_before)
 
-    def test_later_upgrade_reuses_neon_tables_without_losing_selections(self):
-        from scripts.prepare_central_ti_neon import load_migration
-        migration = load_migration()
-        engine = sa.create_engine("sqlite:///:memory:")
-        with engine.begin() as connection:
-            connection.execute(sa.text("CREATE TABLE usuarios (id INTEGER PRIMARY KEY)"))
-            with Operations.context(MigrationContext.configure(connection)):
-                migration.upgrade()
-                connection.execute(sa.text("INSERT INTO central_ti_perfis_configuracoes (perfil_codigo, versao) VALUES ('dev', 2)"))
-                connection.execute(sa.text("INSERT INTO central_ti_selecoes VALUES ('dev', 'area:sistema')"))
-                migration.upgrade()
-            self.assertEqual(connection.execute(sa.text("SELECT versao FROM central_ti_perfis_configuracoes WHERE perfil_codigo='dev'")).scalar_one(), 2)
-            self.assertEqual(connection.execute(sa.text("SELECT codigo FROM central_ti_selecoes")).scalar_one(), "area:sistema")
-        engine.dispose()
+    def test_upgrade_reuses_homologation_tables_without_losing_permissions_audit_or_users(self):
+        with self.engine().begin() as connection:
+            self.create_users(connection)
+            self.create_existing_schema(connection)
+            connection.execute(sa.text(
+                "INSERT INTO central_ti_perfis_configuracoes (perfil_codigo, versao, atualizado_por_id) "
+                "VALUES ('dev', 2, 7)"
+            ))
+            connection.execute(sa.text(
+                "INSERT INTO central_ti_selecoes VALUES ('dev', :code)"
+            ), [{"code": "area:sistema"}, {"code": "sistema.estoque.consultar"}])
+            connection.execute(sa.text(
+                "INSERT INTO central_ti_auditoria "
+                "(id, lote, perfil_codigo, usuario_id, usuario_login, versao_anterior, versao_nova, antes, depois) "
+                "VALUES (12, 'lote-existente', 'dev', 7, 'dev_existente', 1, 2, :before, :after)"
+            ), {"before": json.dumps({"areas": [], "permissions": []}),
+                "after": json.dumps({"areas": ["sistema"], "permissions": ["sistema.estoque.consultar"]})})
+            tables = ["usuarios", *self.migration.EXPECTED_COLUMNS]
+            rows_before = {table: connection.execute(sa.text(f"SELECT * FROM {table}")).all() for table in tables}
+            schema_before = self.snapshot(connection)
+            self.assert_upgrade_does_not_write(connection)
+            self.assert_upgrade_does_not_write(connection)
+            self.assertEqual(self.snapshot(connection), schema_before)
+            self.assertEqual({table: connection.execute(sa.text(f"SELECT * FROM {table}")).all() for table in tables}, rows_before)
 
     def test_partial_existing_schema_is_rejected_without_creating_other_tables(self):
-        from scripts.prepare_central_ti_neon import load_migration
-        migration = load_migration()
-        engine = sa.create_engine("sqlite:///:memory:")
-        with engine.begin() as connection:
-            connection.execute(sa.text("CREATE TABLE central_ti_selecoes (perfil_codigo TEXT, codigo TEXT)"))
-            with Operations.context(MigrationContext.configure(connection)), self.assertRaises(RuntimeError):
-                migration.upgrade()
-            self.assertEqual(sa.inspect(connection).get_table_names(), ["central_ti_selecoes"])
-        engine.dispose()
+        for model in self.MODELS:
+            with self.subTest(table=model.__tablename__), self.engine().begin() as connection:
+                self.create_users(connection)
+                connection.execute(sa.text(str(sa.schema.CreateTable(model.__table__).compile(dialect=connection.dialect))))
+                schema_before = self.snapshot(connection)
+                with Operations.context(MigrationContext.configure(connection)), self.assertRaises(RuntimeError):
+                    self.migration.upgrade()
+                self.assertEqual(self.snapshot(connection), schema_before)
+                self.assertEqual(set(sa.inspect(connection).get_table_names()), {"usuarios", model.__tablename__})
+                self.assertEqual(connection.execute(sa.text("SELECT marcador FROM usuarios")).scalar_one(), "preservar")
+
+    def test_structurally_divergent_existing_tables_are_rejected_without_changes(self):
+        cases = {
+            "integer type": ("central_ti_perfis_configuracoes", "versao INTEGER", "versao VARCHAR(8)"),
+            "string size": ("central_ti_auditoria", "usuario_login VARCHAR(50)", "usuario_login VARCHAR(20)"),
+            "json type": ("central_ti_auditoria", "antes JSON", "antes TEXT"),
+            "datetime type": ("central_ti_auditoria", "criado_em DATETIME", "criado_em VARCHAR(30)"),
+            "missing column": ("central_ti_auditoria", "usuario_login VARCHAR(50) NOT NULL,", ""),
+            "extra column": ("central_ti_perfis_configuracoes", "atualizado_por_id INTEGER,", "atualizado_por_id INTEGER, legado TEXT,"),
+            "nullable version": ("central_ti_perfis_configuracoes", "versao INTEGER DEFAULT '1' NOT NULL", "versao INTEGER DEFAULT '1'"),
+            "missing version default": ("central_ti_perfis_configuracoes", "versao INTEGER DEFAULT '1'", "versao INTEGER"),
+            "incorrect version default": ("central_ti_perfis_configuracoes", "versao INTEGER DEFAULT '1'", "versao INTEGER DEFAULT '0'"),
+            "missing timestamp default": ("central_ti_auditoria", "criado_em DATETIME DEFAULT CURRENT_TIMESTAMP", "criado_em DATETIME"),
+            "not nullable author": ("central_ti_auditoria", "usuario_id INTEGER,", "usuario_id INTEGER NOT NULL,"),
+            "primary key": ("central_ti_selecoes", "PRIMARY KEY (perfil_codigo, codigo)", "PRIMARY KEY (perfil_codigo)"),
+            "foreign key target": ("central_ti_auditoria", "REFERENCES usuarios (id)", "REFERENCES usuarios (login)"),
+            "foreign key table": ("central_ti_selecoes", "REFERENCES central_ti_perfis_configuracoes", "REFERENCES usuarios"),
+            "author delete rule": ("central_ti_perfis_configuracoes", "ON DELETE SET NULL", "ON DELETE CASCADE"),
+            "selection delete rule": ("central_ti_selecoes", "ON DELETE CASCADE", "ON DELETE RESTRICT"),
+            "missing check": ("central_ti_perfis_configuracoes", "CONSTRAINT ck_central_ti_perfil_versao CHECK (versao >= 1),", ""),
+            "weakened named check": ("central_ti_perfis_configuracoes", "CHECK (versao >= 1)", "CHECK (versao >= 0)"),
+            "weakened audit check": ("central_ti_auditoria", "CHECK (versao_anterior >= 0 AND versao_nova > versao_anterior)", "CHECK (versao_anterior >= 0)"),
+        }
+        for description, replacement in cases.items():
+            with self.subTest(drift=description), self.engine().begin() as connection:
+                self.create_users(connection)
+                self.create_existing_schema(connection, replacement=replacement)
+                schema_before = self.snapshot(connection)
+                with Operations.context(MigrationContext.configure(connection)), self.assertRaises(RuntimeError):
+                    self.migration.upgrade()
+                self.assertEqual(self.snapshot(connection), schema_before)
+                self.assertEqual(connection.execute(sa.text("SELECT marcador FROM usuarios")).scalar_one(), "preservar")
+
+    def test_missing_or_divergent_required_indexes_are_rejected_without_changes(self):
+        cases = {
+            "missing": ("ix_central_ti_auditoria_lote", None),
+            "wrong columns": ("ix_central_ti_auditoria_lote", "CREATE INDEX ix_central_ti_auditoria_lote ON central_ti_auditoria (usuario_login)"),
+            "unexpected uniqueness": ("ix_central_ti_auditoria_perfil_codigo", "CREATE UNIQUE INDEX ix_central_ti_auditoria_perfil_codigo ON central_ti_auditoria (perfil_codigo)"),
+        }
+        for description, replacement in cases.items():
+            with self.subTest(drift=description), self.engine().begin() as connection:
+                self.create_users(connection)
+                self.create_existing_schema(connection, index_replacement=replacement)
+                schema_before = self.snapshot(connection)
+                with Operations.context(MigrationContext.configure(connection)), self.assertRaises(RuntimeError):
+                    self.migration.upgrade()
+                self.assertEqual(self.snapshot(connection), schema_before)
 
 
 if __name__ == "__main__":

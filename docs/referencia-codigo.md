@@ -17,9 +17,9 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Templates HTML | 173 |
 | Arquivos CSS, incluindo bundle | 182 |
 | Arquivos JavaScript em `app/static`, incluindo service worker | 14 |
-| Revisões Alembic | 130 |
-| Arquivos Python de teste | 39 |
-| Funções/métodos Python com prefixo `test_` | 511 |
+| Revisões Alembic | 131 |
+| Arquivos Python de teste | 40 |
+| Funções/métodos Python com prefixo `test_` | 524 |
 | Arquivos Node de teste | 7 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
@@ -143,7 +143,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 ## Migrações
 
-Heads: `a71d9c4e203b`.
+Heads: `c1a0f8b6d2e4`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -829,8 +829,9 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | --- | ---: |
 | [test_agro_payment_receipt_skybox.py](../tests/test_agro_payment_receipt_skybox.py) | 1 |
 | [test_agro_talent_bank.py](../tests/test_agro_talent_bank.py) | 4 |
-| [test_central_ti.py](../tests/test_central_ti.py) | 33 |
+| [test_central_ti.py](../tests/test_central_ti.py) | 38 |
 | [test_central_ti_documentos_permissions.py](../tests/test_central_ti_documentos_permissions.py) | 7 |
+| [test_central_ti_migration_postgres.py](../tests/test_central_ti_migration_postgres.py) | 8 |
 | [test_central_ti_permissions.py](../tests/test_central_ti_permissions.py) | 34 |
 | [test_central_ti_preparation.py](../tests/test_central_ti_preparation.py) | 2 |
 | [test_checklist_embreagem_freios.py](../tests/test_checklist_embreagem_freios.py) | 4 |

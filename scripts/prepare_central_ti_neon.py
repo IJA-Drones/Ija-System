@@ -1,6 +1,6 @@
 """Prepare only the Central TI tables in the explicitly authorized Neon test DB.
 
-Default mode is read-only. --apply installs the pending migration directly,
+Default mode is read-only. --apply installs the Central TI migration directly,
 without running other migrations or changing the general alembic_version.
 --seed-profiles adds missing profile configurations, with no permissions selected.
 No login account is created or changed. Never call the application factory here.
@@ -22,11 +22,11 @@ from sqlalchemy.pool import NullPool
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION_PATH = ROOT / "migrations/pending/c1a0f8b6d2e4_add_central_ti_configurations.py"
+MIGRATION_PATH = ROOT / "migrations/versions/c1a0f8b6d2e4_add_central_ti_configurations.py"
 
 
 def load_migration():
-    spec = importlib.util.spec_from_file_location("central_ti_pending", MIGRATION_PATH)
+    spec = importlib.util.spec_from_file_location("central_ti_migration", MIGRATION_PATH)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
