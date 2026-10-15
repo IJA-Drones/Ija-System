@@ -1,3 +1,5 @@
+from app.shared.edit_control import EditConflict
+from sqlalchemy.orm.exc import StaleDataError
 from app.modules.gestao_ti.permissions import route_access
 import os
 from datetime import date
@@ -223,6 +225,8 @@ def register_routes(bp):
             except NovoCadastroValidationError as exc:
                 db.session.rollback()
                 flash(exc.message, exc.category)
+            except (EditConflict, StaleDataError):
+                raise
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception("Erro ao converter denuncia %s em solicitacao.", denuncia.id)

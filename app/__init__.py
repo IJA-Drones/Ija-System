@@ -186,4 +186,8 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 
+    from app.shared.edit_control import register_edit_control
+
+    register_edit_control(app)
+
     return app

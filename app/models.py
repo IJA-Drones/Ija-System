@@ -595,6 +595,9 @@ class PilotoUvis(db.Model):
 class Solicitacao(db.Model):
     __tablename__ = "solicitacoes"
 
+    versao_edicao = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": versao_edicao}
+
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
@@ -732,6 +735,9 @@ class Denuncia(db.Model):
     STATUS_CONVERTIDA_SOLICITACAO = "CONVERTIDA_SOLICITACAO"
     STATUS_ARQUIVADA = "ARQUIVADA"
 
+    versao_edicao = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": versao_edicao}
+
     id = db.Column(db.Integer, primary_key=True)
     protocolo = db.Column(db.String(40), nullable=False, unique=True, index=True)
     status = db.Column(db.String(40), nullable=False, default=STATUS_RECEBIDA, index=True)
@@ -811,6 +817,9 @@ class DenunciaAnexo(db.Model):
 # -------------------------------------------------------------
 class OrdemServico(db.Model):
     __tablename__ = "ordens_servico"
+
+    versao_edicao = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": versao_edicao}
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -952,6 +961,9 @@ class OrdemServico(db.Model):
 
 class OrdemServicoEquipeUvis(db.Model):
     __tablename__ = "ordens_servico_equipe_uvis"
+
+    versao_edicao = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": versao_edicao}
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -3296,3 +3308,16 @@ class FinanceiroEmpresaPerfil(db.Model):
     cnpj = db.Column(db.String(14), nullable=True, unique=True)
     logo_path = db.Column(db.String(500), nullable=True)
     tem_logo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+
+
+class EdicaoReserva(db.Model):
+    """One durable lease per business object, shared across processes and tabs."""
+    __tablename__ = "edicao_reservas"
+    tipo = db.Column(db.String(20), primary_key=True)
+    objeto_id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"))
+    usuario_nome = db.Column(db.String(100))
+    token_hash = db.Column(db.String(64))
+    expira_em = db.Column(db.DateTime, index=True)
+    iniciado_em = db.Column(db.DateTime)
+    geracao = db.Column(db.Integer, nullable=False, default=0, server_default="0")

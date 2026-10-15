@@ -701,6 +701,7 @@ def salvar_piloto_os_form(user, os_id, form_data, files_data, root_path):
         if not retorno_existente:
             criar_solicitacao_retorno_monitoramento(solicitacao, ordem)
 
+    solicitacao.endereco_bloqueado = (form_data.get("endereco_concluido") == "true")
     db.session.commit()
 
     if gerar_retorno:

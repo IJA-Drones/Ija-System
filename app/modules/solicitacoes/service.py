@@ -609,5 +609,6 @@ def deletar_solicitacao_admin(user, solicitacao_id):
         db.session.commit()
     except Exception:
         db.session.rollback()
+        raise
 
     return f"Pedido #{pedido_id} da {autor_nome} deletado permanentemente."

@@ -1,3 +1,5 @@
+from app.shared.edit_control import EditConflict
+from sqlalchemy.orm.exc import StaleDataError
 from app.modules.gestao_ti.permissions import route_access
 from app.modules.gestao_ti.permissions import active_configuration, can_manage_os_media
 import json
@@ -447,6 +449,8 @@ def _build_upload_context(os_id):
 
     if not can_manage_os_media(current_user, context):
         abort(403)
+    from app.shared.edit_control import check_available
+    check_available("solicitacao", os_id)
     return context
 
 
@@ -733,6 +737,8 @@ def _create_video_upload_job(
     total_bytes,
     source_session_id=None,
 ):
+    from app.shared.edit_control import media_job_credentials
+    edit_credentials = media_job_credentials()
     job_id = uuid.uuid4().hex
     now = _now_epoch()
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
@@ -746,6 +752,7 @@ def _create_video_upload_job(
             "temp_path": temp_path,
             "total_bytes": total_bytes,
             "source_session_id": source_session_id,
+            **edit_credentials,
             "status": "queued",
             "progress": 0,
             "message": "Video recebido. Aguardando envio para o Skybox.",
@@ -1127,6 +1134,8 @@ def _run_video_upload_job(app, job_id):
                 raise RuntimeError(detailed_message)
 
             _set_video_upload_job(job_id, progress=97, message="Atualizando registro da OS.")
+            from app.shared.edit_control import prepare_background_media, background_media_versions
+            edit_versions_before = prepare_background_media(job)
             ordem, _error_response = _get_or_create_ordem_for_upload({"solicitacao": Solicitacao.query.get(os_id)}, lock=True)
             ordem.video = build_skybox_marker(file_remote_path)
             if not ordem.quantidade_videos_registradas or ordem.quantidade_videos_registradas < 1:
@@ -1135,6 +1144,8 @@ def _run_video_upload_job(app, job_id):
 
             _set_video_upload_job(
                 job_id,
+                edit_versions_before=edit_versions_before,
+                edit_versions_after=background_media_versions(os_id),
                 status="success",
                 progress=100,
                 message="Video enviado com sucesso.",
@@ -1152,6 +1163,7 @@ def _run_video_upload_job(app, job_id):
                 error=error_message,
             )
         finally:
+            db.session.info.pop("_edit_background_media", None)
             try:
                 if temp_path and os.path.isfile(temp_path):
                     os.remove(temp_path)
@@ -1380,21 +1392,14 @@ def register_routes(bp):
                     current_app.root_path,
                 )
 
-                # 2. Atualiza a flag de bloqueio na Solicitação pai
-                solicitacao = context.get("solicitacao")
-                if solicitacao:
-                    # Captura a marcação do switch (se o switch estiver visível e marcado, envia 'true')
-                    solicitacao.endereco_bloqueado = (request.form.get("endereco_concluido") == "true")
-                    
-                    from app.extensions import db
-                    db.session.commit()
-
                 flash(msg_sucesso, "success")
                 return redirect(url_for("main.piloto_os"))
 
             except PilotoOsError as exc:
                 flash(str(exc), exc.category)
                 return _redirect_from_piloto_os_error(exc, os_id=os_id)
+            except (EditConflict, StaleDataError):
+                raise
             except Exception:
                 from app.extensions import db
 
@@ -1483,6 +1488,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel no upload principal da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco no upload principal da OS %s", os_id)
@@ -1528,6 +1535,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel no upload de video da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco no upload de video da OS %s", os_id)
@@ -1607,6 +1616,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel no upload background de video da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco ao preparar upload background de video da OS %s", os_id)
@@ -1674,6 +1685,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel ao iniciar upload em partes da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco ao iniciar upload em partes da OS %s", os_id)
@@ -1740,6 +1753,8 @@ def register_routes(bp):
             })
         except HTTPException:
             raise
+        except (EditConflict, StaleDataError):
+            raise
         except Exception:
             current_app.logger.exception("Erro ao receber chunk %s da sessao %s.", chunk_index, session_id)
             return _media_error_response("Nao foi possivel receber uma das partes do video.", 500)
@@ -1805,6 +1820,8 @@ def register_routes(bp):
             return _media_error_response(str(exc) or MEDIA_UNEXPECTED_ERROR_MESSAGE, 400)
         except HTTPException:
             raise
+        except (EditConflict, StaleDataError):
+            raise
         except Exception:
             current_app.logger.exception("Erro ao finalizar upload em partes da sessao %s.", session_id)
             return _media_error_response("Nao foi possivel concluir a montagem do video.", 500)
@@ -1831,6 +1848,8 @@ def register_routes(bp):
         if job.get("user_id") != current_user_id and getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
             abort(403)
 
+        from app.shared.edit_control import publish_media_transition
+        publish_media_transition(job)
         return jsonify({
             "success": True,
             "job_id": job["id"],
@@ -1886,6 +1905,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel no upload complementar da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco no upload complementar da OS %s", os_id)
@@ -1922,6 +1943,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel ao remover foto principal da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco ao remover foto principal da OS %s", os_id)
@@ -1956,6 +1979,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel ao remover video da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco ao remover video da OS %s", os_id)
@@ -1996,6 +2021,8 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Configuracao de armazenamento indisponivel ao remover imagem complementar da OS %s", os_id)
             return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except (EditConflict, StaleDataError):
+            raise
         except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Erro de banco ao remover imagem complementar da OS %s", os_id)
@@ -2030,6 +2057,8 @@ def register_routes(bp):
                 if exc.redirect_endpoint == "main.admin_os_formulario_view":
                     return redirect(url_for("main.admin_os_formulario_view", os_id=os_id))
                 return redirect(url_for(exc.redirect_endpoint))
+            except (EditConflict, StaleDataError):
+                raise
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception("Erro ao salvar formulario admin da OS %s", os_id)

@@ -1,3 +1,5 @@
+from app.shared.edit_control import EditConflict
+from sqlalchemy.orm.exc import StaleDataError
 from app.modules.gestao_ti.permissions import route_access
 import json
 import os
@@ -215,6 +217,8 @@ def _run_historico_os_pdf_job(app, job_id):
                 path=zip_path,
                 download_name=download_name,
             )
+        except (EditConflict, StaleDataError):
+            raise
         except Exception as exc:
             db.session.rollback()
             current_app.logger.exception("Erro ao gerar ZIP assincrono de PDFs individuais das OS.")
@@ -416,6 +420,8 @@ def register_routes(bp):
                 save_admin_attachment(pedido, uploaded_file)
             except ValueError as exc:
                 return _admin_update_error(str(exc), 400, "warning")
+            except (EditConflict, StaleDataError):
+                raise
             except Exception as exc:
                 current_app.logger.error(f"Erro ao salvar arquivo fisico: {exc}")
                 return _admin_update_error("Falha ao salvar o arquivo no servidor.", 500, "danger")
@@ -437,6 +443,8 @@ def register_routes(bp):
 
             flash("Solicitacao atualizada com sucesso!", "success")
             return _redirect_back_to_admin()
+        except (EditConflict, StaleDataError):
+            raise
         except Exception as exc:
             db.session.rollback()
             current_app.logger.error(f"Erro de Banco (Atualizar ID {id}): {exc}")

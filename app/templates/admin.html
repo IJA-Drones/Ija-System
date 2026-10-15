@@ -432,6 +432,7 @@
                             {# --- FORMULÁRIO DESKTOP (ADMIN/OPERÁRIO) --- #}
                             {% set quadra_admin = is_admin_solicitacao_quadra(p) %}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.atualizar', id=p.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+{% if edit_fields is defined %}{{ edit_fields(p, 'main.atualizar') }}{% endif %}
                                 <input type="hidden" name="next" value="{{ admin_return_url }}">
                                 <div class="row g-1 mb-2 {% if quadra_admin %}quadra-readonly-fields{% endif %}">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
@@ -640,6 +641,7 @@
                                     <h6 class="small fw-bold text-primary mb-3 text-uppercase">Tomar Decisão</h6>
 
                                     <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.atualizar', id=p.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+{% if edit_fields is defined %}{{ edit_fields(p, 'main.atualizar') }}{% endif %}
                                         <input type="hidden" name="next" value="{{ admin_return_url }}">
                                         <div class="d-none">
                                             <input name="latitude" value="{{ p.latitude }}">

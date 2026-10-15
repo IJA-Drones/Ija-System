@@ -1,3 +1,5 @@
+from app.shared.edit_control import EditConflict
+from sqlalchemy.orm.exc import StaleDataError
 from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -60,6 +62,8 @@ def register_routes(bp):
             except EquipeUvisDashboardError as exc:
                 db.session.rollback()
                 flash(exc.message, exc.category)
+            except (EditConflict, StaleDataError):
+                raise
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception("Erro ao salvar OS da equipe UVIS %s", os_id)
@@ -106,6 +110,8 @@ def register_routes(bp):
         except EquipeUvisDashboardError as exc:
             db.session.rollback()
             flash(exc.message, exc.category)
+        except (EditConflict, StaleDataError):
+            raise
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao concluir OS da equipe UVIS %s", os_id)

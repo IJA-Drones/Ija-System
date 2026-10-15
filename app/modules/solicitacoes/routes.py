@@ -1,3 +1,5 @@
+from app.shared.edit_control import EditConflict
+from sqlalchemy.orm.exc import StaleDataError
 from app.modules.gestao_ti.permissions import route_access
 import os
 
@@ -65,6 +67,8 @@ def register_routes(bp):
                 flash(exc.message, exc.category)
                 context = build_novo_cadastro_context_with_form(current_user, google_maps_key, request.form)
                 return render_template("cadastro.html", **context)
+            except (EditConflict, StaleDataError):
+                raise
             except Exception:
                 current_app.logger.exception("Erro ao criar nova solicitacao.")
                 flash("Erro ao salvar o pedido.", "danger")
@@ -91,6 +95,8 @@ def register_routes(bp):
             except SolicitacaoAccessError as exc:
                 flash(exc.message, exc.category)
                 return redirect(url_for(exc.redirect_endpoint))
+            except (EditConflict, StaleDataError):
+                raise
             except Exception:
                 current_app.logger.exception("Erro ao editar solicitacao %s.", id)
                 flash("Erro interno ao salvar a solicitacao. Tente novamente.", "danger")

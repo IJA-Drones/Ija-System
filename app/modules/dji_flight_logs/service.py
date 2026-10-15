@@ -582,11 +582,10 @@ def delete_kml_route(route_id):
     _require_access_to_linked_ordens(route.id)
     stored_path = route.stored_path
     original_filename = route.original_filename
-    linked_count = (
-        OrdemServico.query
-        .filter(OrdemServico.dji_kml_route_id == route.id)
-        .update({OrdemServico.dji_kml_route_id: None}, synchronize_session=False)
-    )
+    linked_orders = OrdemServico.query.filter(OrdemServico.dji_kml_route_id == route.id).all()
+    linked_count = len(linked_orders)
+    for linked_order in linked_orders:
+        linked_order.dji_kml_route_id = None
 
     db.session.delete(route)
     db.session.commit()
