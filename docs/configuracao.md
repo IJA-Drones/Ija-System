@@ -21,6 +21,10 @@ Referência conferida em 25/09/2026 contra [config.py](../config.py), [run.py](.
 
 A porta de `run.py` é fixa em **5002**. Não existe leitura de `PORT` nesse arquivo. `APP_ENV` não seleciona configuração Flask nem desliga tarefas. Não existe suporte atual a `IJA_AUTO_DB_MIGRATE`: o Procfile executa migrações em toda inicialização.
 
+## Proteção de login
+
+Os três acessos compartilham limite por conta e origem, com bloqueio temporário e histórico. O recurso vem habilitado no Config e exige a migração `b82e0d5f314c`. Confira padrões, configuração de proxies e liberação pelo desenvolvedor em [Proteção de login](protecao-login.md).
+
 ## Sessões, senhas e CSRF
 
 | Variável | Padrão do Config | Regras |

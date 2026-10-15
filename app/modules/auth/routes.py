@@ -11,9 +11,41 @@ from app.modules.auth.service import (
 from app.shared.presence import record_user_presence
 from app.shared.session_security import start_security_session
 from app.shared.csrf_security import rotate_csrf_token
+from app.shared.login_protection import LoginBlocked, LoginProtectionUnavailable
 
 
 bp = Blueprint("auth", __name__)
+
+
+def _login_error_page(message, status, retry_after=None):
+    template = {
+        "auth.login_uvis_operacional": "login_uvis_operacional.html",
+        "auth.login_piloto_agro": "login_piloto_agro.html",
+    }.get(request.endpoint, "login.html")
+    if not retry_after:
+        flash(message, "warning")
+    headers = {"Cache-Control": "private, no-store"}
+    if retry_after:
+        headers["Retry-After"] = str(retry_after)
+    return render_template(
+        template, login_retry_after=retry_after,
+        login_retry_minutes=(retry_after + 59) // 60 if retry_after else None,
+        login_value=(request.form.get("login") or "")[:50] if retry_after else "",
+    ), status, headers
+
+
+@bp.errorhandler(LoginBlocked)
+def login_blocked(error):
+    minutes = max(1, (error.seconds + 59) // 60)
+    return _login_error_page(
+        f"Muitas tentativas de acesso. Aguarde cerca de {minutes} minuto(s) e tente novamente.",
+        429, error.seconds,
+    )
+
+
+@bp.errorhandler(LoginProtectionUnavailable)
+def login_protection_unavailable(error):
+    return _login_error_page("Não foi possível verificar o acesso agora. Tente novamente em instantes.", 503)
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -36,7 +68,7 @@ def login():
 
         piloto_agro = (
             Usuario.query.filter_by(login=login_form, tipo_usuario="piloto_agro").first()
-            if login_form and senha_form else None
+            if login_form and senha_form and len(login_form) <= 50 and len(senha_form) <= 128 else None
         )
         if piloto_agro and piloto_agro.check_senha(senha_form):
             flash("Piloto Agro deve acessar pelo login exclusivo do Agro.", "warning")

@@ -11,15 +11,15 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Item | Quantidade |
 | --- | ---: |
 | Módulos em `app/modules` | 38 |
-| Arquivos Python em `app` | 173 |
-| Declarações de rotas | 369 |
-| Modelos com tabela em `app/models.py` | 67 |
-| Templates HTML | 173 |
-| Arquivos CSS, incluindo bundle | 182 |
-| Arquivos JavaScript em `app/static`, incluindo service worker | 14 |
-| Revisões Alembic | 131 |
-| Arquivos Python de teste | 40 |
-| Funções/métodos Python com prefixo `test_` | 524 |
+| Arquivos Python em `app` | 175 |
+| Declarações de rotas | 371 |
+| Modelos com tabela em `app/models.py` | 69 |
+| Templates HTML | 175 |
+| Arquivos CSS, incluindo bundle | 183 |
+| Arquivos JavaScript em `app/static`, incluindo service worker | 15 |
+| Revisões Alembic | 132 |
+| Arquivos Python de teste | 41 |
+| Funções/métodos Python com prefixo `test_` | 543 |
 | Arquivos Node de teste | 7 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
@@ -35,7 +35,7 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [agro](../app/modules/agro/) | 101 | 9 |
 | [anexos](../app/modules/anexos/) | 3 | 3 |
 | [auditoria](../app/modules/auditoria/) | 1 | 3 |
-| [auth](../app/modules/auth/) | 4 | 3 |
+| [auth](../app/modules/auth/) | 6 | 4 |
 | [backup](../app/modules/backup/) | 3 | 3 |
 | [canceladas](../app/modules/canceladas/) | 2 | 3 |
 | [cep](../app/modules/cep/) | 2 | 3 |
@@ -73,6 +73,8 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 | Modelo | Tabela | Campos declarados | Chaves estrangeiras declaradas |
 | --- | --- | --- | --- |
+| `LoginBloqueio` | `login_bloqueios` | `chave`, `escopo`, `identificacao`, `falhas`, `janela_inicio`, `bloqueado_ate` | — |
+| `LoginEvento` | `login_eventos` | `id`, `criado_em`, `login`, `ip`, `canal`, `resultado`, `usuario_id`, `responsavel_id`, `motivo` | `usuario_id → usuarios.id`; `responsavel_id → usuarios.id` |
 | `Prefeitura` | `prefeituras` | `id`, `nome`, `slug`, `ativa`, `criada_em` | — |
 | `PrefeituraDocumentoConfig` | `prefeitura_documento_config` | `prefeitura_id`, `ativo`, `imagem_path`, `imagem_nome`, `opacidade`, `largura_percentual`, `identificar_usuario`, `atualizado_em`, `versao` | `prefeitura_id → prefeituras.id` |
 | `PrefeituraDocumentoHistorico` | `prefeitura_documento_historico` | `id`, `prefeitura_id`, `usuario_id`, `usuario_nome`, `antes`, `depois`, `criado_em` | `prefeitura_id → prefeituras.id`; `usuario_id → usuarios.id` |
@@ -143,7 +145,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 ## Migrações
 
-Heads: `c1a0f8b6d2e4`.
+Heads: `b82e0d5f314c`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -367,10 +369,19 @@ Fonte: [app/modules/auth/routes.py](../app/modules/auth/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/login` | `login` | 19 |
-| GET, POST | `/uvis-operacional/login` | `login_uvis_operacional` | 50 |
-| GET, POST | `/agro/login` | `login_piloto_agro` | 76 |
-| GET | `/logout` | `logout` | 102 |
+| GET, POST | `/login` | `login` | 51 |
+| GET, POST | `/uvis-operacional/login` | `login_uvis_operacional` | 82 |
+| GET, POST | `/agro/login` | `login_piloto_agro` | 108 |
+| GET | `/logout` | `logout` | 134 |
+
+### app/modules/auth/security_routes.py
+
+Fonte: [app/modules/auth/security_routes.py](../app/modules/auth/security_routes.py).
+
+| Método | Caminho | Endpoint local | Linha |
+| --- | --- | --- | ---: |
+| GET | `/dev/seguranca-login` | `login_security` | 15 |
+| POST | `/dev/seguranca-login/<string:key>/desbloquear` | `login_security_unlock` | 28 |
 
 ### app/modules/backup/routes.py
 
@@ -845,6 +856,7 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_dji_kml_auto_link.py](../tests/test_dji_kml_auto_link.py) | 10 |
 | [test_financeiro_central.py](../tests/test_financeiro_central.py) | 42 |
 | [test_historico_os_templates.py](../tests/test_historico_os_templates.py) | 1 |
+| [test_login_protection.py](../tests/test_login_protection.py) | 19 |
 | [test_mapas_filters.py](../tests/test_mapas_filters.py) | 16 |
 | [test_operational_schedule_filters.py](../tests/test_operational_schedule_filters.py) | 13 |
 | [test_painel_operacional_weather.py](../tests/test_painel_operacional_weather.py) | 3 |

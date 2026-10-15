@@ -1155,5 +1155,11 @@
   },
   "main.agro_equipamento_deletar": {
     "POST": "agro.equipamentos.excluir"
+  },
+  "main.login_security": {
+    "GET": "sistema.tecnico.consultar"
+  },
+  "main.login_security_unlock": {
+    "POST": "sistema.tecnico.operar"
   }
 }

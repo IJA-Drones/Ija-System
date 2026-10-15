@@ -4,6 +4,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_agro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/login-blocked.css') }}">
 {% endblock %}
 
 {% block auth_content %}
@@ -68,12 +69,13 @@
     </div>
 
     <form method="POST" class="d-grid gap-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+      {% include "_login_blocked.html" %}
       {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
       <div>
         <label class="form-label fw-semibold text-muted small">Login</label>
         <input
           type="text"
-          name="login"
+          name="login" value="{{ login_value|default('') }}"
           class="form-control"
           placeholder="Seu login do Agro"
           autocomplete="username"

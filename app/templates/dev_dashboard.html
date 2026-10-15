@@ -35,6 +35,11 @@
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.financeiro_central') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-bank me-1"></i> Central Financeiro
           </a>
+          {% if is_dev_user(current_user) %}
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.login_security') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.login_security')) if central_ti_url_allowed is defined else true) else 'false' }}">
+            <i class="bi bi-shield-lock me-1"></i> Proteção de login
+          </a>
+          {% endif %}
           {% if can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-shield-check me-1"></i> Central de TI
