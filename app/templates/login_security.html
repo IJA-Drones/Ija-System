@@ -7,6 +7,27 @@
     <h1 class="h3">Proteção de login</h1>
     <p class="text-muted">Tentativas dos acessos principal, UVIS operacional e Agro. Horários em Brasília.</p>
   </header>
+  <section class="card mb-4"><div class="card-body">
+    <h2 class="h5">Validade das senhas</h2>
+    <p>Defina por quantos dias uma senha pode ser usada antes de exigir a troca. A regra vale para os acessos principal, UVIS operacional e Agro.</p>
+    <div class="alert alert-info">
+      <strong>Contas antigas continuam como estão.</strong> Elas entram na regra somente na próxima troca ou redefinição de senha. Contas novas seguem a regra desde a criação da senha.
+    </div>
+    <form method="post" action="{{ url_for('main.password_policy_save') }}">
+      <input type="hidden" name="_csrf_token" value="{{ unlock_csrf }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-sm-5 col-lg-3">
+          <label for="password-validity" class="form-label fw-semibold">Prazo de validade (dias)</label>
+          <input id="password-validity" name="validade_dias" type="number" min="1" max="365" step="1" required
+                 class="form-control" value="{{ password_validity_days }}" aria-describedby="password-policy-help">
+        </div>
+        <div class="col-sm-auto">
+          <button type="submit" class="btn btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.password_policy_save'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">Salvar validade</button>
+        </div>
+      </div>
+      <p id="password-policy-help" class="small text-muted mt-3 mb-0">De 1 a 365 dias; padrão inicial de 90 dias. O prazo é contado desde a última troca. Reduzir o prazo pode vencer imediatamente senhas que já estão na regra. A alteração é registrada no histórico.</p>
+    </form>
+  </div></section>
   {% if not config.LOGIN_PROTECTION_ENABLED %}<div class="alert alert-warning">A proteção está desativada neste ambiente.</div>{% endif %}
   <div class="alert alert-info">
     Até <strong>{{ policy.account_limit }} falhas por conta</strong> e <strong>{{ policy.ip_limit }} por origem</strong>
@@ -34,7 +55,7 @@
   <section class="card"><div class="card-body">
     <h2 class="h5">Últimos 100 eventos</h2>
     <p class="small text-muted">Senhas e tokens não são registrados. O histórico permanece mesmo após o desbloqueio.</p>
-    {% set labels = {'sucesso':'Login realizado', 'falha':'Acesso recusado', 'limite_atingido':'Limite atingido', 'bloqueado':'Tentativa durante bloqueio', 'desbloqueio':'Desbloqueio manual'} %}
+    {% set labels = {'sucesso':'Login realizado', 'falha':'Acesso recusado', 'limite_atingido':'Limite atingido', 'bloqueado':'Tentativa durante bloqueio', 'desbloqueio':'Desbloqueio manual', 'senha_expirada':'Senha vencida', 'senha_renovada':'Senha renovada', 'politica_senha':'Validade das senhas alterada'} %}
     <div class="table-responsive"><table class="table table-sm">
       <thead><tr><th>Data</th><th>Login informado</th><th>Origem (IP)</th><th>Acesso</th><th>Resultado</th><th>Responsável / motivo</th></tr></thead>
       <tbody>{% for item in events %}<tr>

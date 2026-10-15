@@ -1,6 +1,6 @@
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from flask_login import UserMixin
 
@@ -130,6 +130,8 @@ class Usuario(UserMixin, db.Model):
 
     login = db.Column(db.String(50), unique=True, nullable=False, index=True)
     senha_hash = db.Column(db.String(200), nullable=False)
+    # NULL preserves legacy credentials until their next password change.
+    senha_alterada_em = db.Column(db.DateTime(), nullable=True)
 
     # + incluir "equipe_uvis" e "regional"
     # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano", "supervisor_veiculos"
@@ -233,10 +235,23 @@ class Usuario(UserMixin, db.Model):
         if error:
             raise PasswordPolicyError(error)
         self.senha_hash = generate_password_hash(senha)
+        self.senha_alterada_em = datetime.now(timezone.utc).replace(tzinfo=None)
 
     def check_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
 
+
+class PoliticaSenha(db.Model):
+    __tablename__ = "politica_senha"
+
+    id = db.Column(db.Integer(), primary_key=True)
+    validade_dias = db.Column(db.Integer(), nullable=False, default=90)
+    atualizado_em = db.Column(db.DateTime(), nullable=True)
+    atualizado_por_id = db.Column(db.Integer(), db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    __table_args__ = (
+        db.CheckConstraint("id = 1", name="ck_politica_senha_singleton"),
+        db.CheckConstraint("validade_dias BETWEEN 1 AND 365", name="ck_politica_senha_validade"),
+    )
 
 class CentralTiPerfilConfiguracao(db.Model):
     """Proposed profile configuration; not consumed by access checks yet."""

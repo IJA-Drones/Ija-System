@@ -30,7 +30,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 | Retornos | [Visualização do ciclo](README-retorno-automatico.md), [central de retornos automáticos](relatorio-central-retornos-automaticos.md) |
 | Endereços e voos | [Bloqueio por endereço resolvido](relatorio-bloqueio-novas-solicitacoes-endereco-resolvido.md), [Place ID e vínculo de KML](relatorio-melhoria-place-id-vinculo-kml-os.md) |
 | Arquivos | [Streaming WebDAV](relatorio-upload-stream-webdav.md) |
-| Acesso | [Sessões, senhas e CSRF](seguranca-sessoes-senhas.md), [proteção de login](protecao-login.md) |
+| Acesso | [Sessões, senhas e CSRF](seguranca-sessoes-senhas.md), [proteção de login](protecao-login.md), [validade das senhas pelo DEV](expiracao-senhas.md) |
 | Suporte | [Reporte de bugs](notion_reporte_bugs.md) |
 | Interface | [Refatoração visual e dark mode](relatorio-refatoracao-visual-css-dark-mode.md), [checkpoint CSS](refatoracao_css_para_arrumar_darkmode.md) |
 

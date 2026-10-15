@@ -39,9 +39,9 @@ def password_input(value):
     return value if security_enabled() else value.strip()
 
 
-def validate_password(password):
+def validate_password(password, *, enforce=False):
     """Return a user-facing error, or None. Never apply this during login."""
-    if not security_enabled():
+    if not enforce and not security_enabled():
         return None
 
     policy = password_policy()

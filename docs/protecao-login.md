@@ -1,6 +1,6 @@
 # Proteção dos três acessos
 
-Implementação do item 4.5.7 da auditoria CONDOMAR, iniciada em 15/10/2026. Cobre login principal (`/login`), UVIS operacional (`/uvis-operacional/login`) e piloto Agro (`/agro/login`). A expiração de senha do item 4.5.8 e a trilha geral/syslog do item 4.5.4 continuam sendo etapas separadas.
+Implementação do item 4.5.7 da auditoria CONDOMAR, iniciada em 15/10/2026. Cobre login principal (`/login`), UVIS operacional (`/uvis-operacional/login`) e piloto Agro (`/agro/login`). A expiração de senha do item 4.5.8 está descrita em [Validade das senhas](expiracao-senhas.md). A trilha geral/syslog do item 4.5.4 continua sendo uma etapa separada.
 
 ## Comportamento
 

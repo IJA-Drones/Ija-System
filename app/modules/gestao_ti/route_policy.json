@@ -1161,5 +1161,8 @@
   },
   "main.login_security_unlock": {
     "POST": "sistema.tecnico.operar"
+  },
+  "main.password_policy_save": {
+    "POST": "sistema.tecnico.operar"
   }
 }

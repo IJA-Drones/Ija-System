@@ -25,6 +25,10 @@ A porta de `run.py` é fixa em **5002**. Não existe leitura de `PORT` nesse arq
 
 Os três acessos compartilham limite por conta e origem, com bloqueio temporário e histórico. O recurso vem habilitado no Config e exige a migração `b82e0d5f314c`. Confira padrões, configuração de proxies e liberação pelo desenvolvedor em [Proteção de login](protecao-login.md).
 
+## Validade das senhas
+
+O DEV define o prazo em **Painel Dev → Proteção de login**. O padrão inicial é de 90 dias, configurável de 1 a 365, armazenado no banco e aplicado aos três acessos. Contas antigas só entram na regra na próxima troca de senha. A migração `d94f2a7610be` é necessária. Consulte [validade das senhas](expiracao-senhas.md).
+
 ## Sessões, senhas e CSRF
 
 | Variável | Padrão do Config | Regras |

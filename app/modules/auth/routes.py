@@ -12,9 +12,26 @@ from app.shared.presence import record_user_presence
 from app.shared.session_security import start_security_session
 from app.shared.csrf_security import rotate_csrf_token
 from app.shared.login_protection import LoginBlocked, LoginProtectionUnavailable
+from app.shared.password_expiration import password_expired, start_renewal, remember_password_version
+from sqlalchemy.exc import SQLAlchemyError
 
 
 bp = Blueprint("auth", __name__)
+
+
+def _password_renewal_redirect(user, channel):
+    try:
+        verified_hash = getattr(user, "_verified_password_hash", None)
+        if verified_hash is not None and verified_hash != user.senha_hash:
+            raise LoginProtectionUnavailable()
+        if password_expired(user):
+            start_renewal(user, channel)
+            return redirect(url_for("auth.renew_password"), code=303)
+    except SQLAlchemyError:
+        from app.extensions import db
+        db.session.rollback()
+        raise LoginProtectionUnavailable() from None
+    remember_password_version(user)
 
 
 def _login_error_page(message, status, retry_after=None):
@@ -59,6 +76,9 @@ def login():
 
         user = authenticate_user(login_form, senha_form)
         if user:
+            renewal = _password_renewal_redirect(user, "principal")
+            if renewal:
+                return renewal
             login_user(user)
             start_security_session()
             rotate_csrf_token()
@@ -93,6 +113,9 @@ def login_uvis_operacional():
 
         user = authenticate_uvis_operacional(login_form, senha_form)
         if user:
+            renewal = _password_renewal_redirect(user, "uvis")
+            if renewal:
+                return renewal
             login_user(user)
             start_security_session()
             rotate_csrf_token()
@@ -116,6 +139,9 @@ def login_piloto_agro():
 
         user, error_code = authenticate_piloto_agro(login_form, senha_form)
         if user:
+            renewal = _password_renewal_redirect(user, "agro")
+            if renewal:
+                return renewal
             login_user(user)
             start_security_session()
             rotate_csrf_token()
@@ -139,3 +165,7 @@ def logout():
     session.clear()
     flash("Voce saiu do sistema.", "info")
     return redirect(url_for("auth.login"))
+
+
+from app.modules.auth.password_routes import register_routes as register_password_routes
+register_password_routes(bp)
