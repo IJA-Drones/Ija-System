@@ -1061,6 +1061,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/video-upload-recovery.js') }}"></script>
 <script>
 (function () {
   // ✅ Lógica de Drones e Datetime (Mantida original)
@@ -1622,13 +1623,13 @@ document.addEventListener("DOMContentLoaded", () => {
         resolve(payload);
         return;
       }
-      reject(new Error(buildHttpErrorMessage({
+      reject(window.IjaVideoUploadRecovery.httpError(buildHttpErrorMessage({
         status: xhr.status,
         statusText: xhr.statusText,
         payload,
         rawText,
         fallbackMessage: "Falha ao enviar uma das partes do video",
-      })));
+      }), xhr.status, payload));
     };
 
     xhr.onerror = () => reject(new Error("Falha de conexao ao enviar uma das partes do video."));
@@ -1640,13 +1641,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawText = await response.text();
     const payload = parseJsonSafely(rawText);
     if (!response.ok || !payload.success) {
-      throw new Error(buildHttpErrorMessage({
+      throw window.IjaVideoUploadRecovery.httpError(buildHttpErrorMessage({
         status: response.status,
         statusText: response.statusText,
         payload,
         rawText,
         fallbackMessage,
-      }));
+      }), response.status, payload);
     }
     return payload;
   };
@@ -2075,35 +2076,27 @@ document.addEventListener("DOMContentLoaded", () => {
     setVideoUploadStatus(`Preparando upload em partes (${formatFileSize(file.size)})... 0%`, "loading");
 
     try {
-      const sessionPayload = await createVideoUploadSession(file);
-      const totalChunks = Number(sessionPayload.totalChunks || Math.ceil(file.size / VIDEO_UPLOAD_CHUNK_BYTES));
-      let uploadedBytes = 0;
-
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
-        const start = chunkIndex * VIDEO_UPLOAD_CHUNK_BYTES;
-        const end = Math.min(file.size, start + VIDEO_UPLOAD_CHUNK_BYTES);
-        const chunkBlob = file.slice(start, end);
-        await uploadBlobChunkWithProgress(
-          `/api/video-upload-sessions/${encodeURIComponent(sessionPayload.session_id)}/chunks/${chunkIndex}`,
-          chunkBlob,
-          (loadedBytes) => {
-            const currentTotal = uploadedBytes + loadedBytes;
-            const normalized = Math.max(0, Math.min(99, Math.round((currentTotal / file.size) * 100)));
-            setVideoUploadProgress(normalized, true);
-            setVideoUploadStatus(
-              `Enviando video em partes (${chunkIndex + 1}/${totalChunks})... ${normalized}%`,
-              "loading"
-            );
-          }
-        );
-        uploadedBytes += chunkBlob.size;
-        const committedPercent = Math.max(0, Math.min(99, Math.round((uploadedBytes / file.size) * 100)));
-        setVideoUploadProgress(committedPercent, true);
-      }
-
-      setVideoUploadStatus("Todas as partes foram recebidas. Montando video no servidor...", "loading");
-      setVideoUploadProgress(99, true);
-      const payload = await finalizeVideoUploadSession(sessionPayload.session_id);
+      const payload = await window.IjaVideoUploadRecovery.upload({
+        file, chunkBytes: VIDEO_UPLOAD_CHUNK_BYTES,
+        createSession: createVideoUploadSession,
+        sendChunk: (sessionId, index, blob, progress) => uploadBlobChunkWithProgress(
+          `/api/video-upload-sessions/${encodeURIComponent(sessionId)}/chunks/${index}`, blob, progress),
+        complete: finalizeVideoUploadSession,
+        onRestart: () => {
+          setVideoUploadProgress(0, true);
+          setVideoUploadStatus("O envio foi interrompido no servidor. Reiniciando uma vez com o mesmo arquivo. Mantenha esta página aberta.", "loading");
+        },
+        onProgress: (loaded, total, part, parts, attempt) => {
+          const percent = Math.max(0, Math.min(99, Math.round(loaded / total * 100)));
+          setVideoUploadProgress(percent, true);
+          const label = attempt ? "Reenviando após interrupção" : "Enviando vídeo";
+          setVideoUploadStatus(`${label} (${part}/${parts})... ${percent}%`, "loading");
+        },
+        onAssembling: () => {
+          setVideoUploadStatus("Todas as partes foram recebidas. Montando vídeo no servidor...", "loading");
+          setVideoUploadProgress(99, true);
+        },
+      });
 
       setVideoUploadProgress(100, true);
       setVideoUploadStatus(payload.message || "Video recebido. O envio continuara em segundo plano.", "success");

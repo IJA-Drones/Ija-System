@@ -5,7 +5,9 @@ from app.modules.gestao_ti.permissions import active_configuration, can_manage_o
 import json
 import mimetypes
 import os
+import re
 import shutil
+import socket
 import subprocess
 import threading
 import time
@@ -632,7 +634,7 @@ def _query_ordem_servico_for_upload(solicitacao_id, *, lock=False):
 
 
 def _video_upload_jobs_dir():
-    path = os.path.join(current_app.instance_path, "video_upload_jobs")
+    path = os.path.join(_video_upload_root(), "video_upload_jobs")
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -641,20 +643,26 @@ def _video_upload_job_meta_path(job_id):
     return os.path.join(_video_upload_jobs_dir(), f"{job_id}.json")
 
 
-def _video_upload_sessions_dir():
-    path = os.path.join(current_app.instance_path, "video_upload_sessions")
-    os.makedirs(path, exist_ok=True)
+def _video_upload_root():
+    return current_app.config.get("VIDEO_UPLOAD_TEMP_DIR") or current_app.instance_path
+
+
+def _video_upload_sessions_dir(*, create=True):
+    path = os.path.join(_video_upload_root(), "video_upload_sessions")
+    if create:
+        os.makedirs(path, exist_ok=True)
     return path
 
 
-def _video_upload_session_dir(session_id):
-    path = os.path.join(_video_upload_sessions_dir(), session_id)
-    os.makedirs(path, exist_ok=True)
+def _video_upload_session_dir(session_id, *, create=True):
+    path = os.path.join(_video_upload_sessions_dir(create=create), session_id)
+    if create:
+        os.makedirs(path, exist_ok=True)
     return path
 
 
-def _video_upload_session_meta_path(session_id):
-    return os.path.join(_video_upload_session_dir(session_id), "session.json")
+def _video_upload_session_meta_path(session_id, *, create=True):
+    return os.path.join(_video_upload_session_dir(session_id, create=create), "session.json")
 
 
 def _write_json_file(path, payload):
@@ -792,13 +800,26 @@ def _video_upload_chunk_file_path(session_id, chunk_index):
 
 
 def _get_video_upload_session(session_id):
+    if not re.fullmatch(r"[0-9a-f]{32}", session_id):
+        return None
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
-        return _read_json_file(_video_upload_session_meta_path(session_id))
+        return _read_json_file(_video_upload_session_meta_path(session_id, create=False))
+
+
+def _missing_video_upload_session(session_id):
+    current_app.logger.warning(
+        "Sessao temporaria de video ausente: sessao=%s usuario_id=%s endpoint=%s servidor=%s",
+        session_id, current_user.id, request.endpoint, socket.gethostname(),
+    )
+    return jsonify(success=False, code="video_upload_session_missing", error=(
+        "O servidor perdeu a sessão temporária deste envio. "
+        "É necessário reiniciar o envio do vídeo; mantenha o arquivo selecionado."
+    )), 404
 
 
 def _set_video_upload_session(session_id, **updates):
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
-        session = _read_json_file(_video_upload_session_meta_path(session_id))
+        session = _read_json_file(_video_upload_session_meta_path(session_id, create=False))
         if not session:
             return None
         session.update(updates)
@@ -830,11 +851,15 @@ def _create_video_upload_session(*, os_id, user_id, file_name, original_name, co
     }
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
         _write_json_file(_video_upload_session_meta_path(session_id), payload)
+    current_app.logger.info(
+        "Sessao temporaria de video criada: sessao=%s usuario_id=%s os_id=%s servidor=%s",
+        session_id, user_id, os_id, socket.gethostname(),
+    )
     return payload
 
 
 def _delete_video_upload_session(session_id):
-    session_dir = os.path.join(_video_upload_sessions_dir(), session_id)
+    session_dir = os.path.join(_video_upload_sessions_dir(create=False), session_id)
     try:
         if os.path.isdir(session_dir):
             shutil.rmtree(session_dir)
@@ -1703,7 +1728,7 @@ def register_routes(bp):
     def video_upload_session_chunk(session_id, chunk_index):
         session = _get_video_upload_session(session_id)
         if not session:
-            return _media_error_response("Sessao de upload de video nao encontrada.", 404)
+            return _missing_video_upload_session(session_id)
 
         current_user_id = getattr(current_user, "id", None)
         if session.get("user_id") != current_user_id and getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
@@ -1739,6 +1764,8 @@ def register_routes(bp):
                 uploaded_bytes=uploaded_bytes,
                 status="receiving",
             )
+            if not updated_session:
+                return _missing_video_upload_session(session_id)
             progress = 0
             if updated_session and int(updated_session.get("total_bytes") or 0) > 0:
                 progress = min(100, int((uploaded_bytes / int(updated_session["total_bytes"])) * 100))
@@ -1764,7 +1791,7 @@ def register_routes(bp):
     def video_upload_session_complete(session_id):
         session = _get_video_upload_session(session_id)
         if not session:
-            return _media_error_response("Sessao de upload de video nao encontrada.", 404)
+            return _missing_video_upload_session(session_id)
 
         current_user_id = getattr(current_user, "id", None)
         if session.get("user_id") != current_user_id and getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
