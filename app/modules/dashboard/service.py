@@ -1,3 +1,4 @@
+from app.shared.access import apply_solicitacao_prefeitura_scope, apply_prefeitura_scope
 import json
 import os
 from datetime import datetime
@@ -65,7 +66,7 @@ class DashboardError(Exception):
 
 def build_dashboard_context(user, args, google_maps_key):
     query = (
-        Solicitacao.query.options(
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
@@ -137,7 +138,7 @@ def build_dashboard_context(user, args, google_maps_key):
         error_out=False,
     )
 
-    equipes_query = Equipe.query.filter_by(ativa=True)
+    equipes_query = apply_prefeitura_scope(Equipe.query, user, Equipe.prefeitura_id).filter_by(ativa=True)
     if user.regiao:
         equipes_query = equipes_query.filter(Equipe.regiao == user.regiao)
     equipes = equipes_query.order_by(Equipe.nome_equipe.asc()).all()
@@ -163,7 +164,7 @@ def build_uvis_historico_os_context(user, args):
         filtro_tipo_os = "piloto"
 
     query = (
-        Solicitacao.query.options(
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
@@ -191,7 +192,7 @@ def build_uvis_historico_os_context(user, args):
     query = _apply_uvis_historico_equipe_filter(query, filtro_equipe)
 
     total_piloto = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .filter(
             Solicitacao.usuario_id == user.id,
         )
@@ -246,7 +247,7 @@ def _apply_uvis_historico_equipe_filter(query, filtro_equipe):
 
 
 def _build_uvis_historico_equipes_select(user):
-    query = Equipe.query.filter_by(ativa=True)
+    query = apply_prefeitura_scope(Equipe.query, user, Equipe.prefeitura_id).filter_by(ativa=True)
     if getattr(user, "regiao", None):
         query = query.filter(Equipe.regiao == user.regiao)
     return query.order_by(Equipe.nome_equipe.asc()).all()
@@ -257,14 +258,14 @@ def build_uvis_os_form_context(user, os_id):
         raise DashboardError("Acesso restrito.", category="danger")
 
     solicitacao = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id).first_or_404()
     )
 
     if solicitacao.usuario_id != user.id:
@@ -274,7 +275,7 @@ def build_uvis_os_form_context(user, os_id):
     ordem = solicitacao.ordem_servico
     ordem_uvis = solicitacao.ordem_servico_equipe_uvis
     retorno_existente = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .filter(
             Solicitacao.origem_retorno_id == solicitacao.id,
             Solicitacao.gerada_automaticamente.is_(True),
@@ -352,13 +353,13 @@ def build_uvis_equipe_os_form_context(user, os_id):
         raise DashboardError("Acesso restrito.", category="danger")
 
     solicitacao = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id).first_or_404()
     )
 
     if solicitacao.usuario_id != user.id:
@@ -373,7 +374,7 @@ def build_uvis_equipe_os_form_context(user, os_id):
         )
 
     retorno_existente = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .filter(
             Solicitacao.origem_retorno_id == solicitacao.id,
             Solicitacao.gerada_automaticamente.is_(True),

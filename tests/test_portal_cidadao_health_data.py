@@ -144,7 +144,7 @@ class PortalHealthPageTests(unittest.TestCase):
             [weekly_record()], city="São Paulo", disease="dengue",
             source_url=health_data.INFO_DENGUE_SOURCE_URL,
         ).to_dict() if available else None
-        with patch(
+        with patch("app.modules.portal_cidadao.routes.list_public_prefeituras", return_value=[]), patch(
             "app.modules.portal_cidadao.routes.get_infodengue_alert", return_value=alert,
         ), patch(
             "app.modules.portal_cidadao.routes.get_portal_health_news",

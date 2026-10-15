@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipamentos, Equipe, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso
-from app.shared.access import apply_prefeitura_scope
+from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
 
 
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
@@ -333,6 +333,8 @@ def validate_drone_form(form_data, *, existing_drone=None, user=None):
     if equipe_id_raw:
         try:
             equipe_id = _validate_equipe_id(equipe_id_raw, user=user)
+            if existing_drone is not None:
+                resolve_linked_prefeitura(existing_drone.prefeitura_id, db.session.get(Equipe, equipe_id))
         except ValueError as exc:
             errors["equipe_id"] = str(exc)
 
@@ -386,6 +388,8 @@ def validate_drone_form(form_data, *, existing_drone=None, user=None):
 
 
 def create_drone(cleaned_data, *, prefeitura_id=None):
+    if cleaned_data["equipe_id"]:
+        prefeitura_id = resolve_linked_prefeitura(prefeitura_id, db.session.get(Equipe, cleaned_data["equipe_id"]))
     drone = Drones(
         tipo_equipamento="drones",
         status=cleaned_data["status"],
@@ -407,6 +411,8 @@ def create_drone(cleaned_data, *, prefeitura_id=None):
 
 
 def update_drone(drone, cleaned_data):
+    if cleaned_data["equipe_id"]:
+        drone.prefeitura_id = resolve_linked_prefeitura(drone.prefeitura_id, db.session.get(Equipe, cleaned_data["equipe_id"]))
     drone.modelo = cleaned_data["modelo"]
     drone.renomacao = cleaned_data["renomacao"]
     drone.categoria = cleaned_data["categoria"]
@@ -534,6 +540,8 @@ def validate_bateria_form(form_data, *, existing_bateria=None, user=None):
     if drone_id_raw:
         try:
             drone_id = _validate_drone_id(drone_id_raw, user=user)
+            if existing_bateria is not None:
+                resolve_linked_prefeitura(existing_bateria.prefeitura_id, db.session.get(Drones, drone_id))
         except ValueError as exc:
             errors["drone_id"] = str(exc)
 
@@ -564,6 +572,8 @@ def validate_bateria_form(form_data, *, existing_bateria=None, user=None):
 
 
 def create_bateria(cleaned_data, *, prefeitura_id=None):
+    if cleaned_data["drone_id"]:
+        prefeitura_id = resolve_linked_prefeitura(prefeitura_id, db.session.get(Drones, cleaned_data["drone_id"]))
     bateria = Baterias(
         tipo_equipamento="baterias",
         status=cleaned_data["status"],
@@ -583,6 +593,8 @@ def create_bateria(cleaned_data, *, prefeitura_id=None):
 
 
 def update_bateria(bateria, cleaned_data):
+    if cleaned_data["drone_id"]:
+        bateria.prefeitura_id = resolve_linked_prefeitura(bateria.prefeitura_id, db.session.get(Drones, cleaned_data["drone_id"]))
     bateria.modelo = cleaned_data["modelo"]
     bateria.renomacao = cleaned_data["renomacao"]
     bateria.status = cleaned_data["status"]

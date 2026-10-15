@@ -8,7 +8,7 @@ from app.modules.backup.service import (
     start_daily_backup_scheduler,
     trigger_backup_async,
 )
-from app.shared.access import is_dev_user
+from app.shared.access import is_dev_user, is_admin_global_user
 
 
 def register_routes(bp):
@@ -19,7 +19,7 @@ def register_routes(bp):
     @bp.route("/backup", methods=["GET"], endpoint="backup_page")
     @login_required
     def backup_page():
-        if not route_access(current_user, is_dev_user(current_user)):
+        if not is_admin_global_user(current_user) or not route_access(current_user, is_dev_user(current_user)):
             return (
                 render_template(
                     "backup_aguarde.html",
@@ -44,7 +44,7 @@ def register_routes(bp):
     @bp.route("/backup/status", methods=["GET"], endpoint="backup_status")
     @login_required
     def backup_status():
-        if not route_access(current_user, is_dev_user(current_user)):
+        if not is_admin_global_user(current_user) or not route_access(current_user, is_dev_user(current_user)):
             return jsonify({"ok": False, "error": "forbidden"}), 403
 
         return jsonify(get_backup_state())
@@ -52,7 +52,7 @@ def register_routes(bp):
     @bp.route("/backups", methods=["GET"], endpoint="backups_list_page")
     @login_required
     def backups_list_page():
-        if not route_access(current_user, is_dev_user(current_user)):
+        if not is_admin_global_user(current_user) or not route_access(current_user, is_dev_user(current_user)):
             return (
                 render_template(
                     "backup_lista.html",

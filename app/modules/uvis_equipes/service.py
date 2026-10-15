@@ -6,6 +6,7 @@ from sqlalchemy import func
 from app.extensions import db
 from app.shared.password_policy import validate_password
 from app.models import EquipeUvis, Solicitacao, Usuario
+from app.shared.access import apply_prefeitura_scope, apply_regiao_scope
 
 
 MAX_MEMBROS_EQUIPE_UVIS = 5
@@ -296,9 +297,10 @@ def assign_team_to_solicitacao(solicitacao_id: int, nome_equipe: str):
     return solicitacao
 
 
-def build_admin_uvis_teams_listing(search: str = ""):
+def build_admin_uvis_teams_listing(search: str = "", *, user):
     uvis_list = (
-        Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+        apply_regiao_scope(apply_prefeitura_scope(Usuario.query, user, Usuario.prefeitura_id), user, Usuario.regiao)
+        .filter(Usuario.tipo_usuario == "uvis")
         .order_by(Usuario.nome_uvis.asc())
         .all()
     )

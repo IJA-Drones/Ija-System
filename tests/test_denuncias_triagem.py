@@ -19,8 +19,8 @@ class DenunciasTriagemTests(unittest.TestCase):
         denuncias_service.Usuario = self.original_usuario_model
 
     def test_encaminhar_denuncia_updates_status_and_coordenadoria(self):
-        denuncia = Denuncia(status=Denuncia.STATUS_RECEBIDA)
-        user = SimpleNamespace(id=42, tipo_usuario="covisa")
+        denuncia = Denuncia(prefeitura_id=1, status=Denuncia.STATUS_RECEBIDA)
+        user = SimpleNamespace(prefeitura_id=1, id=42, tipo_usuario="covisa")
 
         denuncias_service.encaminhar_denuncia_para_coordenadoria(denuncia, "norte", user)
 
@@ -31,15 +31,15 @@ class DenunciasTriagemTests(unittest.TestCase):
         self.assertIsNone(denuncia.arquivado_motivo)
 
     def test_arquivar_denuncia_requires_meaningful_reason(self):
-        denuncia = Denuncia(status=Denuncia.STATUS_RECEBIDA)
-        user = SimpleNamespace(id=42, tipo_usuario="covisa")
+        denuncia = Denuncia(prefeitura_id=1, status=Denuncia.STATUS_RECEBIDA)
+        user = SimpleNamespace(prefeitura_id=1, id=42, tipo_usuario="covisa")
 
         with self.assertRaises(ValueError):
             denuncias_service.arquivar_denuncia(denuncia, "trote", user)
 
     def test_arquivar_denuncia_updates_status_and_reason(self):
-        denuncia = Denuncia(status=Denuncia.STATUS_RECEBIDA)
-        user = SimpleNamespace(id=42, tipo_usuario="covisa")
+        denuncia = Denuncia(prefeitura_id=1, status=Denuncia.STATUS_RECEBIDA)
+        user = SimpleNamespace(prefeitura_id=1, id=42, tipo_usuario="covisa")
 
         denuncias_service.arquivar_denuncia(denuncia, "Relato duplicado e sem evidencias", user)
 
@@ -54,14 +54,14 @@ class DenunciasTriagemTests(unittest.TestCase):
                 return self
 
             def first(self):
-                return SimpleNamespace(id=9, tipo_usuario="uvis", regiao="NORTE")
+                return SimpleNamespace(prefeitura_id=1, id=9, tipo_usuario="uvis", regiao="NORTE")
 
-        denuncias_service.Usuario = SimpleNamespace(id=0, tipo_usuario="", query=FakeQuery())
+        denuncias_service.Usuario = SimpleNamespace(prefeitura_id=1, id=0, tipo_usuario="", query=FakeQuery())
         denuncia = Denuncia(
-            status=Denuncia.STATUS_ENCAMINHADA_COORDENADORIA,
+            prefeitura_id=1, status=Denuncia.STATUS_ENCAMINHADA_COORDENADORIA,
             coordenadoria="NORTE",
         )
-        user = SimpleNamespace(id=42, tipo_usuario="regional", regiao="NORTE")
+        user = SimpleNamespace(prefeitura_id=1, id=42, tipo_usuario="regional", regiao="NORTE")
 
         denuncias_service.designar_denuncia_para_uvis(denuncia, 9, user)
 
@@ -75,22 +75,22 @@ class DenunciasTriagemTests(unittest.TestCase):
                 return self
 
             def first(self):
-                return SimpleNamespace(id=9, tipo_usuario="uvis", regiao="SUL")
+                return SimpleNamespace(prefeitura_id=1, id=9, tipo_usuario="uvis", regiao="SUL")
 
-        denuncias_service.Usuario = SimpleNamespace(id=0, tipo_usuario="", query=FakeQuery())
+        denuncias_service.Usuario = SimpleNamespace(prefeitura_id=1, id=0, tipo_usuario="", query=FakeQuery())
         denuncia = Denuncia(
-            status=Denuncia.STATUS_ENCAMINHADA_COORDENADORIA,
+            prefeitura_id=1, status=Denuncia.STATUS_ENCAMINHADA_COORDENADORIA,
             coordenadoria="NORTE",
         )
-        user = SimpleNamespace(id=42, tipo_usuario="regional", regiao="NORTE")
+        user = SimpleNamespace(prefeitura_id=1, id=42, tipo_usuario="regional", regiao="NORTE")
 
         with self.assertRaises(ValueError):
             denuncias_service.designar_denuncia_para_uvis(denuncia, 9, user)
 
     def test_uvis_can_access_only_assigned_denuncia(self):
-        user = SimpleNamespace(id=7, tipo_usuario="uvis", regiao="NORTE")
-        assigned = Denuncia(uvis_usuario_id=7)
-        other = Denuncia(uvis_usuario_id=8)
+        user = SimpleNamespace(prefeitura_id=1, id=7, tipo_usuario="uvis", regiao="NORTE")
+        assigned = Denuncia(prefeitura_id=1, uvis_usuario_id=7)
+        other = Denuncia(prefeitura_id=1, uvis_usuario_id=8)
 
         self.assertTrue(denuncias_service.can_access_denuncia(user, assigned))
         self.assertFalse(denuncias_service.can_access_denuncia(user, other))

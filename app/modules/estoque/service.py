@@ -1,6 +1,6 @@
 from app.extensions import db
 from app.models import Drones, EstoquePeca
-from app.shared.access import apply_prefeitura_scope
+from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
 
 
 ESTOQUE_STATUS = {
@@ -84,8 +84,14 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None):
             query = Drones.query.filter(Drones.id == drone_id)
             if user is not None:
                 query = apply_prefeitura_scope(query, user, Drones.prefeitura_id)
-            if not query.first():
+            drone = query.first()
+            if not drone:
                 errors["drone_id"] = "Drone invalido."
+            elif existing_peca is not None:
+                try:
+                    resolve_linked_prefeitura(existing_peca.prefeitura_id, drone)
+                except ValueError as exc:
+                    errors["drone_id"] = str(exc)
 
     if numero_serie:
         query = EstoquePeca.query.filter(EstoquePeca.numero_serie == numero_serie)
@@ -106,6 +112,8 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None):
 
 
 def create_peca(cleaned_data, *, prefeitura_id=None):
+    if cleaned_data.get("drone_id"):
+        prefeitura_id = resolve_linked_prefeitura(prefeitura_id, db.session.get(Drones, cleaned_data["drone_id"]))
     peca = EstoquePeca(prefeitura_id=prefeitura_id, **cleaned_data)
     db.session.add(peca)
     db.session.commit()
@@ -113,6 +121,8 @@ def create_peca(cleaned_data, *, prefeitura_id=None):
 
 
 def update_peca(peca, cleaned_data):
+    if cleaned_data.get("drone_id"):
+        peca.prefeitura_id = resolve_linked_prefeitura(peca.prefeitura_id, db.session.get(Drones, cleaned_data["drone_id"]))
     for key, value in cleaned_data.items():
         setattr(peca, key, value)
     db.session.commit()

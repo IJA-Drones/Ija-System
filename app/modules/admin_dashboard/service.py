@@ -1070,6 +1070,8 @@ def apply_admin_update_fields(pedido, form, *, user=None):
         equipe = equipe_query.first()
         if not equipe:
             raise ValueError("Equipe selecionada nao existe.")
+        if equipe.prefeitura_id != pedido.prefeitura_id:
+            raise ValueError("A equipe deve pertencer à mesma prefeitura da solicitação.")
 
         pedido.equipe_id = equipe_id_int
         equipe_nome = equipe.nome_equipe

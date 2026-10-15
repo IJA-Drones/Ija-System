@@ -28,6 +28,7 @@ def build_rastreamento_payload(user):
     query = Veiculos.query.options(joinedload(Veiculos.equipe)).filter(
         db.func.lower(db.func.coalesce(Veiculos.status, "")) != "inativo"
     )
+    query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
     if role == EQUIPE_OCEANO_USER_TYPE:
         equipe = _equipe_oceano_logada(user)
         if not equipe:

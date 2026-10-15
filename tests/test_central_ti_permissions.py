@@ -17,7 +17,7 @@ from app.modules.gestao_ti.service import save_configurations
 from app.modules.auth.service import get_authenticated_redirect_endpoint
 from app.modules.relatorios.service import build_relatorios_solicitacoes_context, build_relatorios_os_context, build_relatorios_coleta_imagens_context
 from app.modules.dji_flight_logs import service as dji_service
-from app.models import DjiFlightKmlRoute, Denuncia, OrdemServico
+from app.models import DjiFlightKmlRoute, Denuncia, OrdemServico, Prefeitura
 from scripts.prepare_central_ti_neon import seed_profiles
 from tests import test_central_ti as central_base
 from tests.test_relatorios_region_team_filters import _seed_relatorio_rows
@@ -167,7 +167,9 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.assertEqual(self.client.get('/agro/admin').status_code,403)
 
     def test_consulting_inventory_does_not_grant_creation_editing_or_deletion(self):
-        item=EstoquePeca(modelo_peca='Peça isolada',quantidade=3)
+        db.session.add(Prefeitura(id=1, nome="Município", slug="municipio"))
+        self.users["piloto"].prefeitura_id = 1
+        item=EstoquePeca(modelo_peca='Peça isolada',quantidade=3,prefeitura_id=1)
         db.session.add(item);db.session.commit()
         self.configure('piloto',['sistema.estoque.consultar'])
         self.login('piloto')
@@ -184,6 +186,9 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.assertEqual(db.session.get(EstoquePeca,item.id).quantidade,3)
 
     def test_each_inventory_mutation_can_be_granted_and_removed_independently(self):
+        db.session.add(Prefeitura(id=1, nome="Município", slug="municipio"))
+        self.users["piloto"].prefeitura_id = 1
+        db.session.commit()
         self.configure('piloto',['sistema.estoque.consultar','sistema.estoque.criar'])
         self.login('piloto')
         response=self.client.post('/estoque/novo',data={'modelo_peca':'Peça nova','quantidade':'2'})

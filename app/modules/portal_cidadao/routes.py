@@ -12,9 +12,14 @@ from app.modules.portal_cidadao.health_news import (
     get_portal_health_news,
 )
 from app.modules.portal_cidadao.service import DenunciaValidationError, criar_denuncia
+from app.models import Prefeitura
 from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.portal_cidadao.chatbot import chat_token, reply
 from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
+
+
+def list_public_prefeituras():
+    return Prefeitura.query.filter_by(ativa=True).order_by(Prefeitura.nome).all()
 
 
 def register_routes(bp):
@@ -28,6 +33,7 @@ def register_routes(bp):
     def portal_cidadao():
         response = current_app.make_response(render_template(
             "portal_cidadao.html",
+            prefeituras=list_public_prefeituras(),
             portal_chat_token=chat_token(),
             oceano_azul_summary=OCEANO_AZUL_SUMMARY,
             oceano_azul_url=OCEANO_AZUL_URL,

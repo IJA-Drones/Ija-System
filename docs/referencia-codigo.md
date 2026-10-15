@@ -11,15 +11,15 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Item | Quantidade |
 | --- | ---: |
 | Módulos em `app/modules` | 38 |
-| Arquivos Python em `app` | 177 |
+| Arquivos Python em `app` | 178 |
 | Declarações de rotas | 373 |
 | Modelos com tabela em `app/models.py` | 70 |
 | Templates HTML | 176 |
 | Arquivos CSS, incluindo bundle | 183 |
 | Arquivos JavaScript em `app/static`, incluindo service worker | 15 |
 | Revisões Alembic | 133 |
-| Arquivos Python de teste | 42 |
-| Funções/métodos Python com prefixo `test_` | 562 |
+| Arquivos Python de teste | 43 |
+| Funções/métodos Python com prefixo `test_` | 585 |
 | Arquivos Node de teste | 7 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
@@ -162,8 +162,8 @@ Fonte: [app/__init__.py](../app/__init__.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/healthz` | `healthz` | 185 |
-| GET | `/healthz/full` | `healthz_full` | 189 |
+| GET | `/healthz` | `healthz` | 186 |
+| GET | `/healthz/full` | `healthz_full` | 190 |
 
 ### app/core/routes.py
 
@@ -192,18 +192,18 @@ Fonte: [app/modules/admin_dashboard/routes.py](../app/modules/admin_dashboard/ro
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/admin` | `admin_dashboard` | 261 |
-| GET | `/admin/exportar_excel` | `exportar_excel` | 346 |
-| POST | `/admin/atualizar/<int:id>` | `atualizar` | 399 |
-| POST | `/admin/solicitacao/<int:id>/cancelar` | `cancelar_solicitacao_admin` | 444 |
-| GET | `/admin/canceladas` | `admin_canceladas` | 462 |
-| GET | `/admin/historico-os` | `admin_historico_os` | 513 |
-| GET | `/admin/historico-os/exportar-excel` | `admin_historico_os_exportar_excel` | 561 |
-| GET | `/admin/historico-os/exportar-excel-individuais` | `admin_historico_os_exportar_excel_individuais` | 595 |
-| GET | `/admin/historico-os/exportar-pdf-individuais` | `admin_historico_os_exportar_pdf_individuais` | 625 |
-| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>` | `admin_historico_os_pdf_job_status` | 641 |
-| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>/download` | `admin_historico_os_pdf_job_download` | 657 |
-| GET | `/admin/os/<int:os_id>/equipe-uvis-formulario` | `admin_equipe_uvis_os_formulario_view` | 684 |
+| GET | `/admin` | `admin_dashboard` | 262 |
+| GET | `/admin/exportar_excel` | `exportar_excel` | 347 |
+| POST | `/admin/atualizar/<int:id>` | `atualizar` | 400 |
+| POST | `/admin/solicitacao/<int:id>/cancelar` | `cancelar_solicitacao_admin` | 445 |
+| GET | `/admin/canceladas` | `admin_canceladas` | 463 |
+| GET | `/admin/historico-os` | `admin_historico_os` | 514 |
+| GET | `/admin/historico-os/exportar-excel` | `admin_historico_os_exportar_excel` | 562 |
+| GET | `/admin/historico-os/exportar-excel-individuais` | `admin_historico_os_exportar_excel_individuais` | 596 |
+| GET | `/admin/historico-os/exportar-pdf-individuais` | `admin_historico_os_exportar_pdf_individuais` | 626 |
+| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>` | `admin_historico_os_pdf_job_status` | 642 |
+| GET | `/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>/download` | `admin_historico_os_pdf_job_download` | 658 |
+| GET | `/admin/os/<int:os_id>/equipe-uvis-formulario` | `admin_equipe_uvis_os_formulario_view` | 685 |
 
 ### app/modules/admin_uvis/routes.py
 
@@ -566,10 +566,10 @@ Fonte: [app/modules/equipes/routes.py](../app/modules/equipes/routes.py).
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
 | GET, POST | `/equipes/cadastrar` | `cadastrar_equipes` | 32 |
-| GET | `/equipes` | `listar_equipes` | 170 |
-| POST | `/equipes/<int:equipe_id>/credenciais` | `atualizar_credenciais_equipe` | 247 |
-| GET, POST | `/equipes/<int:equipe_id>/editar` | `editar_equipe` | 274 |
-| POST | `/equipes/<int:equipe_id>/deletar` | `deletar_equipe` | 438 |
+| GET | `/equipes` | `listar_equipes` | 177 |
+| POST | `/equipes/<int:equipe_id>/credenciais` | `atualizar_credenciais_equipe` | 254 |
+| GET, POST | `/equipes/<int:equipe_id>/editar` | `editar_equipe` | 281 |
+| POST | `/equipes/<int:equipe_id>/deletar` | `deletar_equipe` | 452 |
 
 ### app/modules/estoque/routes.py
 
@@ -600,11 +600,11 @@ Fonte: [app/modules/feedback/routes.py](../app/modules/feedback/routes.py).
 | GET | `/feedback/<int:topico_id>/status` | `feedback_status` | 550 |
 | POST | `/feedback/<int:topico_id>/comentar` | `feedback_comentar` | 569 |
 | GET | `/feedback/anexos/<int:anexo_id>` | `feedback_anexo` | 596 |
-| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/editar` | `feedback_comentario_editar` | 642 |
-| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/apagar` | `feedback_comentario_apagar` | 663 |
-| POST | `/feedback/<int:topico_id>/atualizar` | `feedback_atualizar` | 679 |
-| POST | `/feedback/<int:topico_id>/assumir` | `feedback_assumir` | 720 |
-| POST | `/feedback/<int:topico_id>/corrigir` | `feedback_corrigir` | 740 |
+| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/editar` | `feedback_comentario_editar` | 644 |
+| POST | `/feedback/<int:topico_id>/comentarios/<int:comment_id>/apagar` | `feedback_comentario_apagar` | 665 |
+| POST | `/feedback/<int:topico_id>/atualizar` | `feedback_atualizar` | 681 |
+| POST | `/feedback/<int:topico_id>/assumir` | `feedback_assumir` | 722 |
+| POST | `/feedback/<int:topico_id>/corrigir` | `feedback_corrigir` | 742 |
 
 ### app/modules/financeiro/routes.py
 
@@ -674,31 +674,31 @@ Fonte: [app/modules/piloto_os/routes.py](../app/modules/piloto_os/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/piloto/os` | `piloto_os` | 1245 |
-| GET | `/piloto/dosagem` | `piloto_dosagem` | 1283 |
-| GET, POST | `/piloto/os/<int:os_id>/dosagem` | `piloto_os_dosagem` | 1289 |
-| GET | `/piloto/os/historico` | `piloto_os_historico` | 1318 |
-| POST | `/piloto/os/<int:os_id>/concluir` | `piloto_concluir_os` | 1334 |
-| GET | `/piloto/os/formulario` | `piloto_os_formulario_redirect` | 1347 |
-| GET, POST | `/piloto/os/<int:os_id>/formulario` | `piloto_os_formulario_view` | 1359 |
-| GET | `/os/<int:os_id>/video` | `os_video` | 1414 |
-| GET | `/os/<int:os_id>/imagem-principal` | `os_imagem_principal` | 1424 |
-| GET | `/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_imagem_complementar` | 1434 |
-| GET | `/piloto/api/drone/<int:drone_id>` | `piloto_api_drone` | 1444 |
-| PUT | `/api/os/<int:os_id>/upload-stream` | `os_upload_stream` | 1454 |
-| PUT | `/api/os/<int:os_id>/upload-video-stream` | `os_upload_video_stream` | 1499 |
-| PUT | `/api/os/<int:os_id>/upload-video-background` | `os_upload_video_background` | 1544 |
-| POST | `/api/os/<int:os_id>/upload-video-background/init` | `os_upload_video_background_init` | 1623 |
-| PUT | `/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>` | `video_upload_session_chunk` | 1690 |
-| POST | `/api/video-upload-sessions/<session_id>/complete` | `video_upload_session_complete` | 1749 |
-| GET | `/api/video-upload-jobs/<job_id>` | `video_upload_job_status` | 1814 |
-| PUT | `/api/os/<int:os_id>/upload-complementary-stream` | `os_upload_complementary_stream` | 1848 |
-| DELETE | `/api/os/<int:os_id>/imagem-principal` | `os_delete_principal_image` | 1902 |
-| DELETE | `/api/os/<int:os_id>/video` | `os_delete_video` | 1938 |
-| DELETE | `/api/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_delete_complementary_image` | 1972 |
-| GET, POST | `/admin/os/<int:os_id>/formulario` | `admin_os_formulario_view` | 2012 |
-| GET | `/admin/os/<int:os_id>/export/pdf/v2` | `admin_export_os_pdf_v2` | 2053 |
-| GET | `/admin/os/<int:os_id>/export/excel/v2` | `admin_export_os_excel_v2` | 2067 |
+| GET | `/piloto/os` | `piloto_os` | 1243 |
+| GET | `/piloto/dosagem` | `piloto_dosagem` | 1281 |
+| GET, POST | `/piloto/os/<int:os_id>/dosagem` | `piloto_os_dosagem` | 1287 |
+| GET | `/piloto/os/historico` | `piloto_os_historico` | 1316 |
+| POST | `/piloto/os/<int:os_id>/concluir` | `piloto_concluir_os` | 1332 |
+| GET | `/piloto/os/formulario` | `piloto_os_formulario_redirect` | 1345 |
+| GET, POST | `/piloto/os/<int:os_id>/formulario` | `piloto_os_formulario_view` | 1357 |
+| GET | `/os/<int:os_id>/video` | `os_video` | 1412 |
+| GET | `/os/<int:os_id>/imagem-principal` | `os_imagem_principal` | 1422 |
+| GET | `/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_imagem_complementar` | 1432 |
+| GET | `/piloto/api/drone/<int:drone_id>` | `piloto_api_drone` | 1442 |
+| PUT | `/api/os/<int:os_id>/upload-stream` | `os_upload_stream` | 1452 |
+| PUT | `/api/os/<int:os_id>/upload-video-stream` | `os_upload_video_stream` | 1497 |
+| PUT | `/api/os/<int:os_id>/upload-video-background` | `os_upload_video_background` | 1542 |
+| POST | `/api/os/<int:os_id>/upload-video-background/init` | `os_upload_video_background_init` | 1621 |
+| PUT | `/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>` | `video_upload_session_chunk` | 1688 |
+| POST | `/api/video-upload-sessions/<session_id>/complete` | `video_upload_session_complete` | 1747 |
+| GET | `/api/video-upload-jobs/<job_id>` | `video_upload_job_status` | 1812 |
+| PUT | `/api/os/<int:os_id>/upload-complementary-stream` | `os_upload_complementary_stream` | 1846 |
+| DELETE | `/api/os/<int:os_id>/imagem-principal` | `os_delete_principal_image` | 1900 |
+| DELETE | `/api/os/<int:os_id>/video` | `os_delete_video` | 1936 |
+| DELETE | `/api/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_delete_complementary_image` | 1970 |
+| GET, POST | `/admin/os/<int:os_id>/formulario` | `admin_os_formulario_view` | 2010 |
+| GET | `/admin/os/<int:os_id>/export/pdf/v2` | `admin_export_os_pdf_v2` | 2051 |
+| GET | `/admin/os/<int:os_id>/export/excel/v2` | `admin_export_os_excel_v2` | 2065 |
 
 ### app/modules/pilotos/routes.py
 
@@ -709,7 +709,7 @@ Fonte: [app/modules/pilotos/routes.py](../app/modules/pilotos/routes.py).
 | GET, POST | `/pilotos/cadastrar` | `cadastrar_pilotos` | 42 |
 | GET | `/pilotos` | `listar_pilotos` | 129 |
 | GET, POST | `/pilotos/<int:piloto_id>/editar` | `editar_piloto` | 190 |
-| POST | `/pilotos/<int:piloto_id>/deletar` | `deletar_piloto` | 303 |
+| POST | `/pilotos/<int:piloto_id>/deletar` | `deletar_piloto` | 302 |
 
 ### app/modules/portal_cidadao/routes.py
 
@@ -717,12 +717,12 @@ Fonte: [app/modules/portal_cidadao/routes.py](../app/modules/portal_cidadao/rout
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| POST | `/portal-cidadao/chatbot` | `portal_cidadao_chatbot` | 21 |
-| GET | `/portal-cidadao` | `portal_cidadao` | 27 |
-| GET | `/portal-cidadao/boletim-dengue` | `portal_cidadao_boletim_dengue` | 42 |
-| POST | `/portal-cidadao/denuncias` | `portal_cidadao_denuncias_criar` | 69 |
-| GET | `/portal-cidadao/cep/<cep>` | `portal_cidadao_cep` | 91 |
-| POST | `/portal-cidadao/reverse-geocode` | `portal_cidadao_reverse_geocode` | 114 |
+| POST | `/portal-cidadao/chatbot` | `portal_cidadao_chatbot` | 26 |
+| GET | `/portal-cidadao` | `portal_cidadao` | 32 |
+| GET | `/portal-cidadao/boletim-dengue` | `portal_cidadao_boletim_dengue` | 48 |
+| POST | `/portal-cidadao/denuncias` | `portal_cidadao_denuncias_criar` | 75 |
+| GET | `/portal-cidadao/cep/<cep>` | `portal_cidadao_cep` | 97 |
+| POST | `/portal-cidadao/reverse-geocode` | `portal_cidadao_reverse_geocode` | 120 |
 
 ### app/modules/relatorios/routes.py
 
@@ -753,10 +753,10 @@ Fonte: [app/modules/solicitacoes/routes.py](../app/modules/solicitacoes/routes.p
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/api/solicitacao/checar-bloqueio` | `api_solicitacao_checar_bloqueio` | 22 |
-| GET, POST | `/novo_cadastro` | `novo` | 46 |
-| GET, POST | `/solicitacao/editar/<int:id>` | `editar_solicitacao` | 72 |
-| POST | `/admin/deletar/<int:id>` | `deletar_registro` | 98 |
+| GET | `/api/solicitacao/checar-bloqueio` | `api_solicitacao_checar_bloqueio` | 23 |
+| GET, POST | `/novo_cadastro` | `novo` | 49 |
+| GET, POST | `/solicitacao/editar/<int:id>` | `editar_solicitacao` | 75 |
+| POST | `/admin/deletar/<int:id>` | `deletar_registro` | 101 |
 
 ### app/modules/usuarios/routes.py
 
@@ -764,15 +764,15 @@ Fonte: [app/modules/usuarios/routes.py](../app/modules/usuarios/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/admin/prefeituras/nova` | `admin_prefeitura_nova` | 113 |
-| GET | `/admin/prefeituras` | `admin_prefeituras` | 172 |
-| GET, POST | `/admin/prefeituras/<int:id>/editar` | `admin_prefeitura_editar` | 206 |
-| POST | `/admin/prefeituras/<int:id>/excluir` | `admin_prefeitura_excluir` | 267 |
-| GET, POST | `/admin/usuarios/novo` | `admin_usuario_novo` | 302 |
-| GET | `/admin/usuarios` | `admin_usuarios_listar` | 441 |
-| GET, POST | `/admin/usuarios/<int:id>/editar` | `admin_usuario_editar` | 462 |
-| POST | `/admin/usuarios/<int:id>/reset_senha` | `admin_usuario_reset_senha` | 625 |
-| POST | `/admin/usuarios/<int:id>/excluir` | `admin_usuario_excluir` | 660 |
+| GET, POST | `/admin/prefeituras/nova` | `admin_prefeitura_nova` | 115 |
+| GET | `/admin/prefeituras` | `admin_prefeituras` | 176 |
+| GET, POST | `/admin/prefeituras/<int:id>/editar` | `admin_prefeitura_editar` | 210 |
+| POST | `/admin/prefeituras/<int:id>/excluir` | `admin_prefeitura_excluir` | 271 |
+| GET, POST | `/admin/usuarios/novo` | `admin_usuario_novo` | 306 |
+| GET | `/admin/usuarios` | `admin_usuarios_listar` | 447 |
+| GET, POST | `/admin/usuarios/<int:id>/editar` | `admin_usuario_editar` | 468 |
+| POST | `/admin/usuarios/<int:id>/reset_senha` | `admin_usuario_reset_senha` | 633 |
+| POST | `/admin/usuarios/<int:id>/excluir` | `admin_usuario_excluir` | 668 |
 
 ### app/modules/uvis_equipes/routes.py
 
@@ -868,6 +868,7 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_historico_os_templates.py](../tests/test_historico_os_templates.py) | 1 |
 | [test_login_protection.py](../tests/test_login_protection.py) | 19 |
 | [test_mapas_filters.py](../tests/test_mapas_filters.py) | 16 |
+| [test_municipal_isolation.py](../tests/test_municipal_isolation.py) | 23 |
 | [test_operational_schedule_filters.py](../tests/test_operational_schedule_filters.py) | 13 |
 | [test_painel_operacional_weather.py](../tests/test_painel_operacional_weather.py) | 3 |
 | [test_password_expiration.py](../tests/test_password_expiration.py) | 19 |

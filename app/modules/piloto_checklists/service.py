@@ -17,7 +17,7 @@ from app.models import (
     Veiculos,
 )
 from app.modules.agenda_notificacoes import agora_brasilia_naive, criar_notificacao
-from app.shared.access import is_veiculos_supervisor
+from app.shared.access import is_veiculos_supervisor, apply_prefeitura_scope
 from app.shared.vehicle_supervisor import get_supervisor_equipe, supervisor_equipment_query
 
 
@@ -258,7 +258,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
 
     piloto_nome = _piloto_nome(user)
 
-    veiculos_query = Veiculos.query
+    veiculos_query = apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
     if is_supervisor:
         veiculos_query = supervisor_equipment_query(Veiculos, user)
     else:
@@ -273,7 +273,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
         Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc()
     ).all()
 
-    drones_query = Drones.query.filter(Drones.status == "Ativo")
+    drones_query = apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id).filter(Drones.status == "Ativo")
     if is_supervisor:
         drones_query = supervisor_equipment_query(Drones, user).filter(Drones.status == "Ativo")
     else:
@@ -631,8 +631,7 @@ def _piloto_vinculo_ativo(user):
         return None
 
     return (
-        EquipePiloto.query
-        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        apply_prefeitura_scope(EquipePiloto.query.join(Equipe, Equipe.id == EquipePiloto.equipe_id), user, Equipe.prefeitura_id)
         .options(joinedload(EquipePiloto.equipe))
         .filter(
             EquipePiloto.piloto_id == user.piloto_id,
@@ -666,9 +665,7 @@ def _equipe_operacional_ativa(user):
         if not equipe_id:
             return None
         query = Equipe.query.filter(Equipe.id == equipe_id, Equipe.ativa.is_(True))
-        prefeitura_id = getattr(user, "prefeitura_id", None)
-        if prefeitura_id is not None:
-            query = query.filter(Equipe.prefeitura_id == prefeitura_id)
+        query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
         return query.first()
 
     vinculo = _piloto_vinculo_ativo(user)

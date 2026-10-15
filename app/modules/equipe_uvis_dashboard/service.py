@@ -1,3 +1,4 @@
+from app.shared.access import apply_solicitacao_prefeitura_scope
 from datetime import datetime
 
 from sqlalchemy import or_
@@ -101,13 +102,13 @@ def _load_solicitacao_para_equipe_uvis(user, os_id):
     uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     solicitacao = (
-        Solicitacao.query.options(
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id).first_or_404()
     )
 
     if solicitacao.usuario_id != uvis_id:
@@ -130,9 +131,9 @@ def _load_solicitacao_para_equipe_uvis(user, os_id):
     return solicitacao, nome_equipe
 
 
-def _get_retorno_existente_equipe_uvis(solicitacao_id):
+def _get_retorno_existente_equipe_uvis(solicitacao_id, user):
     return (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .filter(
             Solicitacao.origem_retorno_id == solicitacao_id,
             Solicitacao.gerada_automaticamente.is_(True),
@@ -185,7 +186,7 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
     uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     query = (
-        Solicitacao.query.options(
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
@@ -268,7 +269,7 @@ def build_equipe_uvis_os_historico_context(user, args):
     uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     query = (
-        Solicitacao.query.options(
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
@@ -341,12 +342,12 @@ def build_equipe_uvis_os_form_context(user, os_id):
     uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     solicitacao = (
-        Solicitacao.query.options(
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user).options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id).first_or_404()
     )
 
     if solicitacao.usuario_id != uvis_id:
@@ -368,7 +369,7 @@ def build_equipe_uvis_os_form_context(user, os_id):
 
     ordem = solicitacao.ordem_servico_equipe_uvis
     retorno_existente = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .filter(
             Solicitacao.origem_retorno_id == solicitacao.id,
             Solicitacao.gerada_automaticamente.is_(True),
@@ -411,7 +412,7 @@ def build_equipe_uvis_os_unificado_context(user, os_id):
     solicitacao, nome_equipe = _load_solicitacao_para_equipe_uvis(user, os_id)
     ordem = solicitacao.ordem_servico
     ordem_uvis = solicitacao.ordem_servico_equipe_uvis
-    retorno_existente = _get_retorno_existente_equipe_uvis(solicitacao.id)
+    retorno_existente = _get_retorno_existente_equipe_uvis(solicitacao.id, user)
 
     return {
         "solicitacao": solicitacao,

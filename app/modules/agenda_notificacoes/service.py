@@ -1,4 +1,5 @@
 from app.modules.gestao_ti.permissions import capability
+from app.shared.access import is_admin_global_user
 import json
 import os
 from datetime import date, datetime, timedelta
@@ -123,7 +124,7 @@ def can_export_agenda(user):
 
 
 def can_view_all_notifications(user):
-    return getattr(user, "tipo_usuario", None) in NOTIFICATION_GLOBAL_VIEW_TYPES
+    return is_admin_global_user(user)
 
 
 def is_piloto_agenda_user(user):
@@ -194,6 +195,7 @@ def _build_piloto_equipes_query(user):
 
 
 def apply_agenda_user_scope(query, user):
+    query = apply_solicitacao_prefeitura_scope(query, user)
     if is_uvis_owner_agenda_user(user):
         owner_usuario_id = _agenda_owner_usuario_id(user)
         if not owner_usuario_id:
@@ -206,7 +208,6 @@ def apply_agenda_user_scope(query, user):
             return query.filter(false())
         return query.filter(Solicitacao.equipe_id == equipe_id)
 
-    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_solicitacao_regiao_scope(query, user)
 
     if is_piloto_agenda_user(user):

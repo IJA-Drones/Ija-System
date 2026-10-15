@@ -3,11 +3,11 @@ from flask import abort, render_template, request
 from flask_login import current_user, login_required
 
 from app.modules.auditoria.service import build_auditoria_filters, build_auditoria_query
-from app.shared.access import is_dev_user
+from app.shared.access import is_dev_user, is_admin_global_user
 
 
 def _dev_only():
-    if not route_access(current_user, is_dev_user(current_user)):
+    if not is_admin_global_user(current_user) or not route_access(current_user, is_dev_user(current_user)):
         abort(403)
 
 

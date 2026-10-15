@@ -12,6 +12,7 @@ from app.shared.access import (
     REGIONAL_USER_TYPE,
     VEICULOS_SUPERVISOR_USER_TYPES,
     is_admin_global_user,
+    can_access_prefeitura,
     is_dev_user,
     normalize_regiao,
 )
@@ -89,6 +90,8 @@ def can_assign_ti_manager_role(actor) -> bool:
 
 
 def can_manage_admin_user(actor, usuario) -> bool:
+    if not can_access_prefeitura(actor, getattr(usuario, "prefeitura_id", None)):
+        return False
     from app.modules.gestao_ti.permissions import active_configuration, can_delegate_profile, profile_code
     if (active_configuration(actor) is not None and not is_admin_global_user(actor)
             and profile_code(usuario) in {"dev", "diretor", "admin", "gestor_ti"}):
@@ -188,7 +191,7 @@ def validate_new_admin_user(
         errors["tipo_usuario"] = "Ative a Central de TI antes de criar esse perfil."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
-    if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
+    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos"} and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
     if not senha:
         errors["senha"] = "Informe uma senha."
@@ -226,7 +229,7 @@ def validate_edit_admin_user(
         errors["tipo_usuario"] = "A Central de TI está desativada."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
-    if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
+    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos"} and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
 
     if senha or senha2:

@@ -14,12 +14,12 @@ from app.modules.dev_dashboard.service import (
     record_watchdog_deploy_event,
     run_manual_check,
 )
-from app.shared.access import is_dev_user
+from app.shared.access import is_dev_user, is_admin_global_user
 
 
 def register_routes(bp):
     def require_dev_user():
-        if not route_access(current_user, is_dev_user(current_user)):
+        if not is_admin_global_user(current_user) or not route_access(current_user, is_dev_user(current_user)):
             abort(403)
 
     def require_watchdog_token():

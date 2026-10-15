@@ -256,6 +256,16 @@
             <legend>Onde está o problema?</legend>
             <div class="portal-cidadao-form-grid">
               <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalPrefeitura">Prefeitura responsável</label>
+                <select class="form-select" id="portalPrefeitura" name="prefeitura_id" required>
+                  <option value="">Selecione a prefeitura do local</option>
+                  {% for prefeitura in prefeituras %}
+                  <option value="{{ prefeitura.id }}">{{ prefeitura.nome }}</option>
+                  {% endfor %}
+                </select>
+                <small>Seu relato será encaminhado à prefeitura selecionada.</small>
+              </div>
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
                 <label for="portalLogradouro">Logradouro</label>
                 <input class="form-control" id="portalLogradouro" name="logradouro" type="text" placeholder="Rua, avenida ou estrada" required>
               </div>

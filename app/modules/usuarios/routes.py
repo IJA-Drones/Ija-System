@@ -37,6 +37,8 @@ from app.shared.access import (
     is_veiculos_supervisor,
     can_manage_user_work_flags,
     is_admin_global_user,
+    apply_prefeitura_scope,
+    can_access_prefeitura,
     is_dev_user,
 )
 
@@ -113,6 +115,8 @@ def register_routes(bp):
     @bp.route("/admin/prefeituras/nova", methods=["GET", "POST"], endpoint="admin_prefeitura_nova")
     @login_required
     def admin_prefeitura_nova():
+        if not is_admin_global_user(current_user):
+            abort(403)
         if not _admin_only():
             return redirect(url_for("main.dashboard"))
 
@@ -178,7 +182,7 @@ def register_routes(bp):
         q = (request.args.get("q") or "").strip()
         ativa = (request.args.get("ativa") or "").strip()
 
-        query = Prefeitura.query.options(selectinload(Prefeitura.usuarios))
+        query = apply_prefeitura_scope(Prefeitura.query, current_user, Prefeitura.id).options(selectinload(Prefeitura.usuarios))
 
         if q:
             term = f"%{q}%"
@@ -209,7 +213,7 @@ def register_routes(bp):
         if not _admin_only():
             return redirect(url_for("main.dashboard"))
 
-        prefeitura = Prefeitura.query.get_or_404(id)
+        prefeitura = apply_prefeitura_scope(Prefeitura.query, current_user, Prefeitura.id).filter(Prefeitura.id == id).first_or_404()
         form = {
             "nome": prefeitura.nome or "",
             "slug": prefeitura.slug or "",
@@ -270,7 +274,7 @@ def register_routes(bp):
         if not _admin_only():
             return redirect(url_for("main.dashboard"))
 
-        prefeitura = Prefeitura.query.get_or_404(id)
+        prefeitura = apply_prefeitura_scope(Prefeitura.query, current_user, Prefeitura.id).filter(Prefeitura.id == id).first_or_404()
         linked = _prefeitura_dependency_labels(prefeitura)
         if linked:
             linked_preview = ", ".join(linked[:4])
@@ -306,7 +310,7 @@ def register_routes(bp):
             flash("Voce nao tem permissao para acessar esta pagina.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        prefeituras = Prefeitura.query.filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
+        prefeituras = apply_prefeitura_scope(Prefeitura.query, current_user, Prefeitura.id).filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
         errors = {}
         form = {}
 
@@ -322,6 +326,8 @@ def register_routes(bp):
                 (request.form.get("regiao") or "").strip() or None,
             )
             prefeitura_id = request.form.get("prefeitura_id", type=int)
+            if not can_access_prefeitura(current_user, prefeitura_id):
+                abort(403)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             can_manage_work_flags = can_manage_user_work_flags(current_user)
             trabalha_oceano_azul = can_manage_work_flags and request.form.get("trabalha_oceano_azul") == "1"
@@ -448,7 +454,7 @@ def register_routes(bp):
         tipo = (request.args.get("tipo") or "").strip().lower()
         page = request.args.get("page", 1, type=int)
 
-        paginacao = build_admin_users_query(q, tipo).paginate(page=page, per_page=10, error_out=False)
+        paginacao = apply_prefeitura_scope(build_admin_users_query(q, tipo), current_user, Usuario.prefeitura_id).paginate(page=page, per_page=10, error_out=False)
 
         return render_template(
             "admin_usuarios_listar.html",
@@ -466,7 +472,7 @@ def register_routes(bp):
             abort(403)
 
         usuario = Usuario.query.get_or_404(id)
-        prefeituras = Prefeitura.query.filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
+        prefeituras = apply_prefeitura_scope(Prefeitura.query, current_user, Prefeitura.id).filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
         if not is_admin_managed_user(usuario):
             flash("Registro invalido para edicao.", "warning")
             return redirect(url_for("main.admin_usuarios_listar"))
@@ -480,6 +486,8 @@ def register_routes(bp):
             nome_uvis = (request.form.get("nome_uvis") or "").strip()
             login = (request.form.get("login") or "").strip()
             prefeitura_id = request.form.get("prefeitura_id", type=int)
+            if not can_access_prefeitura(current_user, prefeitura_id):
+                abort(403)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             can_manage_work_flags = can_manage_user_work_flags(current_user)
             trabalha_oceano_azul = (

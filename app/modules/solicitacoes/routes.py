@@ -1,7 +1,8 @@
 from app.modules.gestao_ti.permissions import route_access
 import os
 
-from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
+from app.shared.access import is_admin_global_user
 from flask_login import current_user, login_required
 
 from app.modules.solicitacoes.service import (
@@ -27,6 +28,8 @@ def register_routes(bp):
             current_user,
             request.args.get("uvis_responsavel_id"),
         )
+        if prefeitura_id is None and not is_admin_global_user(current_user):
+            abort(403)
         bloqueada = find_solicitacao_bloqueada_por_place_id(
             place_id,
             prefeitura_id=prefeitura_id,

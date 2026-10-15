@@ -29,6 +29,8 @@ from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
     apply_solicitacao_prefeitura_scope,
+    apply_prefeitura_scope,
+    can_access_prefeitura,
     can_access_regiao,
     is_veiculos_supervisor,
     normalize_role,
@@ -182,9 +184,10 @@ def _dji_kml_date_window(solicitacao, ordem):
     return start_dt, end_dt
 
 
-def _build_dji_kml_route_options(solicitacao, ordem):
+def _build_dji_kml_route_options(solicitacao, ordem, user):
+    from app.modules.dji_flight_logs.service import _scope_dji_query
     query = (
-        DjiFlightKmlRoute.query
+        _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute, user)
         .options(joinedload(DjiFlightKmlRoute.flight_record))
     )
 
@@ -211,9 +214,9 @@ def _build_dji_kml_route_options(solicitacao, ordem):
     selected_id = getattr(ordem, "dji_kml_route_id", None) if ordem else None
     if selected_id and all(route.id != selected_id for route in routes):
         selected = (
-            DjiFlightKmlRoute.query
+            _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute, user)
             .options(joinedload(DjiFlightKmlRoute.flight_record))
-            .get(selected_id)
+            .filter(DjiFlightKmlRoute.id == selected_id).first()
         )
         if selected:
             routes.insert(0, selected)
@@ -221,17 +224,19 @@ def _build_dji_kml_route_options(solicitacao, ordem):
     return routes
 
 
-def _get_selected_dji_route(ordem):
-    return getattr(ordem, "dji_kml_route", None) if ordem else None
+def _get_selected_dji_route(ordem, routes):
+    selected_id = getattr(ordem, "dji_kml_route_id", None)
+    return next((route for route in routes if route.id == selected_id), None)
 
 
 def _get_valid_dji_kml_route(user, route_id):
+    from app.modules.dji_flight_logs.service import _scope_dji_query
     if not route_id:
         return None
     route = (
-        DjiFlightKmlRoute.query
+        _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute, user)
         .options(joinedload(DjiFlightKmlRoute.flight_record))
-        .get(route_id)
+        .filter(DjiFlightKmlRoute.id == route_id).first()
     )
     if not route:
         raise PilotoOsError(
@@ -243,12 +248,13 @@ def _get_valid_dji_kml_route(user, route_id):
 
 
 def _get_valid_dji_kml_route_by_code(user, route_code):
+    from app.modules.dji_flight_logs.service import _scope_dji_query
     route_code = _clean_str(route_code).upper()
     if not route_code:
         return None
 
     route = (
-        DjiFlightKmlRoute.query
+        _scope_dji_query(DjiFlightKmlRoute.query, DjiFlightKmlRoute, user)
         .options(joinedload(DjiFlightKmlRoute.flight_record))
         .filter(DjiFlightKmlRoute.route_code.ilike(route_code))
         .first()
@@ -278,7 +284,7 @@ def _drone_form_error_redirect(user):
 
 
 def _get_valid_os_drone(user, solicitacao, drone_id, expected_category, field_label):
-    drone = Drones.query.get(drone_id)
+    drone = apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id).filter(Drones.id == drone_id).first()
     redirect_endpoint = _drone_form_error_redirect(user)
     if not drone or drone.equipe_id != solicitacao.equipe_id:
         raise PilotoOsError(
@@ -322,7 +328,7 @@ def _buscar_equipe_operacional_usuario(user):
         raise PilotoOsError("Conta de equipe sem vinculo operacional.", "danger", redirect_endpoint="main.piloto_os")
 
     equipe = (
-        Equipe.query
+        apply_prefeitura_scope(Equipe.query, user, Equipe.prefeitura_id)
         .filter(
             Equipe.id == equipe_id,
             Equipe.ativa.is_(True),
@@ -372,6 +378,9 @@ def build_piloto_os_context(user, args, google_maps_key):
         vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
         equipe = vinculo.equipe if vinculo else None
 
+    if equipe and not can_access_prefeitura(user, equipe.prefeitura_id):
+        equipe = None
+
     if not equipe:
         return {
             "sem_equipe_ativa": True,
@@ -392,7 +401,7 @@ def build_piloto_os_context(user, args, google_maps_key):
         }
 
     query = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
@@ -493,7 +502,7 @@ def build_piloto_os_historico_context(user, args):
         equipes_filter = Solicitacao.equipe_id.in_(equipes_vinculadas)
 
     query = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
@@ -508,7 +517,7 @@ def build_piloto_os_historico_context(user, args):
     query = apply_os_history_filters(query, filtros)
 
     unidades_select = (
-        Usuario.query
+        apply_prefeitura_scope(Usuario.query, user, Usuario.prefeitura_id)
         .join(Solicitacao, Solicitacao.usuario_id == Usuario.id)
         .filter(equipes_filter, Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
         .distinct()
@@ -537,7 +546,7 @@ def concluir_os_piloto(user, os_id):
     if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
-    solicitacao = Solicitacao.query.get_or_404(os_id)
+    solicitacao = apply_solicitacao_prefeitura_scope(Solicitacao.query, user).filter(Solicitacao.id == os_id).first_or_404()
 
     if solicitacao.status not in STATUS_OS_APROVADAS_COM_ACENTO:
         raise PilotoOsError("A OS nao esta aprovada.", "warning")
@@ -569,7 +578,7 @@ def build_piloto_os_form_context(user, os_id):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     query = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
@@ -578,7 +587,7 @@ def build_piloto_os_form_context(user, os_id):
         )
         .filter(Solicitacao.id == os_id)
     )
-    solicitacao = apply_solicitacao_prefeitura_scope(query, user).first_or_404()
+    solicitacao = query.first_or_404()
 
     status_permitidos = set(STATUS_OS_APROVADAS_COM_ACENTO + STATUS_OS_CONCLUIDAS)
     if solicitacao.status not in status_permitidos:
@@ -597,7 +606,7 @@ def build_piloto_os_form_context(user, os_id):
         getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
     )
     drones_equipe = (
-        Drones.query
+        apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id)
         .filter(
             Drones.equipe_id == solicitacao.equipe_id,
             Drones.status == "Ativo",
@@ -606,8 +615,8 @@ def build_piloto_os_form_context(user, os_id):
         .all()
     )
     drones_pulverizacao, drones_monitoramento = _split_drones_by_category(drones_equipe)
-    dji_kml_routes = _build_dji_kml_route_options(solicitacao, ordem)
-    selected_dji_route = _get_selected_dji_route(ordem)
+    dji_kml_routes = _build_dji_kml_route_options(solicitacao, ordem, user)
+    selected_dji_route = _get_selected_dji_route(ordem, dji_kml_routes)
 
     respondido_por_padrao = ""
     if getattr(user, "piloto", None):
@@ -703,7 +712,7 @@ def get_piloto_drone_payload(user, drone_id):
     if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo.", "danger")
 
-    drone = Drones.query.get_or_404(drone_id)
+    drone = apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id).filter(Drones.id == drone_id).first_or_404()
     if not drone.equipe_id:
         raise PilotoOsError("Drone sem equipe.", "danger")
 
@@ -730,7 +739,7 @@ def build_admin_os_form_context(user, os_id):
         raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
 
     query = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
@@ -739,7 +748,7 @@ def build_admin_os_form_context(user, os_id):
         )
         .filter(Solicitacao.id == os_id)
     )
-    solicitacao = apply_solicitacao_prefeitura_scope(query, user).first_or_404()
+    solicitacao = query.first_or_404()
     pedido_regiao = getattr(getattr(solicitacao, "usuario", None), "regiao", None)
     if not can_access_regiao(user, pedido_regiao):
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger", redirect_endpoint="main.dashboard")
@@ -754,7 +763,7 @@ def build_admin_os_form_context(user, os_id):
     drones_equipe = []
     if solicitacao.equipe_id:
         drones_equipe = (
-            Drones.query
+            apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id)
             .filter(
                 Drones.equipe_id == solicitacao.equipe_id,
                 Drones.status == "Ativo",
@@ -763,8 +772,8 @@ def build_admin_os_form_context(user, os_id):
             .all()
         )
     drones_pulverizacao, drones_monitoramento = _split_drones_by_category(drones_equipe)
-    dji_kml_routes = _build_dji_kml_route_options(solicitacao, ordem)
-    selected_dji_route = _get_selected_dji_route(ordem)
+    dji_kml_routes = _build_dji_kml_route_options(solicitacao, ordem, user)
+    selected_dji_route = _get_selected_dji_route(ordem, dji_kml_routes)
 
     return {
         "solicitacao": solicitacao,
@@ -1273,13 +1282,13 @@ def build_uvis_os_media_context(user, os_id):
         raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
 
     solicitacao = (
-        Solicitacao.query
+        apply_solicitacao_prefeitura_scope(Solicitacao.query, user)
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id).first_or_404()
     )
 
     if solicitacao.usuario_id != owner_id:

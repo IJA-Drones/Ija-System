@@ -33,8 +33,9 @@ function setup() {
   const dependent=new Element(), consent=new Element(), footer=new Element(), feedback=new Element();
   Object.assign(form.selectors,{'#portalCidadaoDependentFields':dependent,'.portal-cidadao-consent':consent,'.portal-cidadao-form-footer':footer,'#portalCidadaoFeedback':feedback,'[data-tipo-visita]':new Element()});
   const inputs={};
-  for(const [name,index] of [['tipo_visita',0],['foco',0],['logradouro',1],['nome',2],['cpf',2],['midias',3],['consentimento',4]]) {
+  for(const [name,index] of [['tipo_visita',0],['foco',0],['logradouro',1],['prefeitura_id',1],['nome',2],['cpf',2],['midias',3],['consentimento',4]]) {
     const input=new Element(); input.name=name; input.value=name==='tipo_visita'?'Aedes':'teste'; input.files=[];
+    if(name==='prefeitura_id') input.selectedOptions=[{textContent:'Prefeitura Teste'}];
     inputs[name]=input; form.selectors[`[name="${name}"]`]=input;
     (index===4?consent:fieldsets[index]).append(input);
   }
@@ -82,4 +83,17 @@ test('server validation errors return to the relevant step without claiming succ
   assert.equal(ui.root.selectors['[data-report-progress]'].textContent,'Etapa 3 de 5');
   assert.equal(ui.root.selectors['[data-report-feedback]'].textContent,'CPF inválido');
   assert.equal(ui.root.selectors['[data-report-next]'].disabled,false);
+});
+
+test('municipality is required in the location step and named in the review',()=>{
+  const ui=setup(); ui.click('[data-start-report]'); ui.click('[data-report-next]');
+  ui.inputs.prefeitura_id.valid=false; ui.click('[data-report-next]');
+  assert.equal(ui.root.selectors['[data-report-progress]'].textContent,'Etapa 2 de 5');
+  assert.equal(ui.inputs.prefeitura_id.reported,true);
+  ui.inputs.prefeitura_id.valid=true;
+  ui.click('[data-report-next]'); ui.click('[data-report-next]'); ui.click('[data-report-next]');
+  const list=ui.root.selectors['[data-report-review]'].childNodes[0];
+  assert.ok(list.childNodes.some(node=>node.textContent==='Prefeitura Teste'));
+  ui.form.listeners['portal:report-error']({detail:{errors:{prefeitura_id:'Selecione a prefeitura'},message:'Selecione a prefeitura'}});
+  assert.equal(ui.root.selectors['[data-report-progress]'].textContent,'Etapa 2 de 5');
 });
