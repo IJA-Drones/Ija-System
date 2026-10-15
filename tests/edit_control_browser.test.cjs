@@ -81,3 +81,26 @@ test('successful save releases editing and requires refreshed data',async()=>{
   assert(b.input.disabled);assert.equal(b.items['[name="_edit_token"]'].value,'');
   assert.match(b.items['.edit-message'].textContent,/Alterações salvas/);
 });
+
+test('exempt profile unlocks an old form without renewing or sending lease headers',async()=>{
+  const b=browser();b.input.value='dados preenchidos';
+  b.replies.push({ok:true,required:false,token:'direct-edit',expires:new Date(100000+86400000).toISOString()});
+  await b.items['.edit-start'].fire('click');
+  assert.equal(b.input.disabled,false);assert.equal(b.fixed.disabled,true);
+  assert.equal(b.input.value,'dados preenchidos');
+  assert.equal(b.items['[name="_edit_token"]'].value,'');
+  b.tick(2*86400000);await b.intervals[0]();assert.equal(b.requests.length,1);
+  let blocked=false;
+  await b.form.fire('submit',{preventDefault(){blocked=true;},stopImmediatePropagation(){}});
+  assert.equal(blocked,false);
+  await b.context.fetch('/api/os/1/upload-stream',{method:'PUT'});
+  assert.equal(b.requests.at(-1).options.headers,undefined);
+});
+
+test('renewal discovers exemption and preserves unsaved fields',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');b.input.value='em andamento';
+  b.replies.push({ok:true,required:false,token:'direct-edit',expires:new Date(100000+86400000).toISOString()});
+  await b.intervals[0]();assert.equal(b.input.disabled,false);assert.equal(b.input.value,'em andamento');
+  assert.equal(b.items['[name="_edit_ticket"]'].value,'');
+  await b.intervals[0]();assert.equal(b.requests.length,2);
+});

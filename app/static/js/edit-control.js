@@ -21,7 +21,7 @@
     headers.set('X-Edit-Ticket', c.ticket.value);
   }
   function responseHeaders(c, get, status) {
-    if (!c) return;
+    if (!c || c.direct) return;
     const ticket = get('X-Edit-Ticket');
     const versions = (get('X-Edit-Versions') || '').split(',').map(Number);
     // Concurrent media responses can arrive out of order.
@@ -77,6 +77,7 @@
       const controls = new Map();
       const editableControls = () => form.querySelectorAll('input:not([type="hidden"]), select, textarea, button:not([role="tab"])');
       c.lock = () => {
+        if (c.direct) return;
         c.editing = false;
         editableControls().forEach(el => {
           if (box.contains(el)) return;
@@ -90,6 +91,14 @@
         box.classList.toggle('alert-info', !attention);
         if (attention) { reload.hidden = false; start.hidden = true; }
       };
+      function allowDirectEditing() {
+        c.direct = true; c.editing = true;
+        c.token.value = ''; c.ticket.value = '';
+        controls.forEach((disabled, el) => { el.disabled = disabled; }); controls.clear();
+        start.hidden = true; cancel.hidden = true; reload.hidden = true;
+        if (dev) dev.hidden = true;
+        box.hidden = true;
+      }
       async function call(action, extra = {}, keepalive = false) {
         const response = await fetch(`${box.dataset.editApi}/${action}`, {
           method: 'POST', credentials: 'same-origin', keepalive,
@@ -114,6 +123,7 @@
         start.disabled = true;
         try {
           const data = await call('reservar');
+          if (data.required === false) { allowDirectEditing(); return; }
           c.token.value = data.token; c.expires = Date.parse(data.expires); c.lastActivity = Date.now();
           controls.forEach((disabled, el) => { el.disabled = disabled; }); controls.clear();
           c.editing = true; start.hidden = true; cancel.hidden = false; reload.hidden = true;
@@ -140,6 +150,7 @@
       });
       ['input','change','pointerdown','keydown'].forEach(type => form.addEventListener(type, () => { c.lastActivity = Date.now(); }));
       form.addEventListener('submit', event => {
+        if (c.direct) return;
         if (!c.editing || !c.token.value || Date.now() >= c.expires) {
           event.preventDefault(); event.stopImmediatePropagation();
           c.lock(); c.show('A edição não está reservada ou a reserva expirou. Copie o que precisar e recarregue antes de salvar.', true);
@@ -148,12 +159,16 @@
       }, true);
       // Renew only for active editing. An abandoned/background tab expires naturally.
       setInterval(async () => {
-        if (!c.editing || !c.token.value) return;
+        if (c.direct || !c.editing || !c.token.value) return;
         if (Date.now() >= c.expires) {
           c.lock(); c.show('Sua reserva expirou por falta de atividade. Os campos permanecem nesta tela; copie o que precisar e recarregue.', true); return;
         }
         if (document.hidden || Date.now() - c.lastActivity > 90000) return;
-        try { const data = await call('renovar'); c.expires = Date.parse(data.expires); }
+        try {
+          const data = await call('renovar');
+          if (data.required === false) { allowDirectEditing(); return; }
+          c.expires = Date.parse(data.expires);
+        }
         catch (error) { fail(error); }
       }, 20000);
       // Do not release on pagehide: it races normal form submission. Timeout recovers closed tabs.

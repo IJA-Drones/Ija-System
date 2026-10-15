@@ -239,6 +239,16 @@ def lease(action):
         abort(400)
     if len(payload.get('ticket', '')) > 4096 or len(payload.get('token', '')) > 256:
         abort(400)
+    if _direct_request():
+        if action == 'liberar-dev':
+            abort(403)
+        # Older open pages still send lease heartbeats after the role exemption.
+        # This is a no-op: do not decode obsolete tickets, inspect a record or
+        # change anyone's reservation. Business routes retain their own guards.
+        # Token/expiry keep already-loaded legacy JS usable until a page refresh;
+        # neither value authorizes access or extends the authenticated session.
+        return jsonify(ok=True, required=False, token='direct-edit',
+                       expires=(now()+timedelta(days=1)).isoformat()+'Z')
     data = _decode(payload.get('ticket', ''))
     _authorize(data)
     row = _locked_state(data['kind'], data['id'])

@@ -10,6 +10,8 @@ Essa dispensa não concede acesso a outra prefeitura, equipe ou OS encerrada, ne
 
 A dispensa exige publicar o código e recarregar as páginas já abertas; não exige nova migração ou alteração de contas no banco. O guia PDF anterior descreve o fluxo original, anterior a essa exceção operacional. As regras de reserva e credenciais de mídia abaixo se aplicam aos demais perfis.
 
+Para páginas antigas que ainda chamam `/api/edicao/reservar`, `/renovar` ou `/liberar`, os perfis dispensados recebem `required: false`, sem consultar o registro nem criar, renovar ou liberar reservas. Login e CSRF continuam exigidos; a edição real mantém as autorizações de prefeitura, equipe e estado da OS. O JavaScript atualizado restaura os campos originalmente editáveis, preserva o preenchimento e interrompe as renovações. A resposta mantém token e validade sintéticos para compatibilidade com JavaScript já carregado; esses valores não concedem acesso nem prolongam a sessão. A ação `liberar-dev` permanece vedada às equipes. Os registros históricos de conflito continuam na auditoria após a correção.
+
 ## Uso
 
 Para os perfis que continuam protegidos, o formulário abre para consulta. **Iniciar edição** solicita uma reserva; o aviso permanece dentro do formulário. Quem consegue a reserva pode preencher e salvar. Outro usuário protegido, inclusive o mesmo login em outra aba, recebe o nome do editor responsável e continua podendo consultar.

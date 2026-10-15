@@ -393,6 +393,41 @@ def add_direct_editor(app, role='equipe_oceano'):
     return client(app,20)
 
 
+@pytest.mark.parametrize('role',['piloto','equipe_oceano','equipe_uvis','piloto_agro'])
+def test_old_field_pages_lease_calls_are_noops_and_preserve_admin_reservation(app,role):
+    team=add_direct_editor(app,role)
+    admin=client(app);admin_ticket=ticket(admin);token=reserve(admin,admin_ticket).json['token']
+    with app.app_context():
+        row=EdicaoReserva.query.one()
+        before=(row.usuario_id,row.token_hash,row.geracao,row.expira_em)
+    for action in ('reservar','renovar','liberar'):
+        # An expired or obsolete ticket must not bring the retired guard back.
+        result=team.post('/api/edicao/'+action,json={'ticket':'obsolete-ticket','token':'obsolete-token'})
+        assert result.status_code==200,result.data
+        assert result.json['required'] is False
+        assert result.json['token'] and result.json['expires']  # Old JS compatibility.
+    assert team.post('/api/edicao/liberar-dev',json={'ticket':admin_ticket,'motivo':'Não pode liberar reserva administrativa'}).status_code==403
+    with app.app_context():
+        row=EdicaoReserva.query.one()
+        assert (row.usuario_id,row.token_hash,row.geracao,row.expira_em)==before
+    # A non-exempt editor continues to renew its real reservation normally.
+    assert admin.post('/api/edicao/renovar',json={'ticket':admin_ticket,'token':token}).status_code==200
+
+
+def test_direct_lease_noop_still_requires_login_and_csrf(app):
+    from app.shared.csrf_security import register_csrf_security
+    add_direct_editor(app)
+    app.config.update(CSRF_PROTECTION_ENABLED=True,SECRET_KEY='test-only-secret-key-long-enough-for-csrf-32')
+    register_csrf_security(app)
+    anonymous=app.test_client()
+    with anonymous.session_transaction() as s:s['_ija_csrf']='test-csrf'
+    assert anonymous.post('/api/edicao/reservar',json={},headers={'X-CSRFToken':'test-csrf'}).status_code in (302,401)
+    team=client(app,20)
+    with team.session_transaction() as s:s['_ija_csrf']='test-csrf'
+    assert team.post('/api/edicao/renovar',json={}).status_code==403
+    assert team.post('/api/edicao/renovar',json={},headers={'X-CSRFToken':'test-csrf'}).json['required'] is False
+
+
 @pytest.mark.parametrize('role',['piloto','equipe_oceano'])
 def test_field_team_saves_real_form_without_ticket_despite_admin_reservation(app,role):
     team=add_direct_editor(app,role)
