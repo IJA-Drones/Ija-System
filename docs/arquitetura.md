@@ -27,7 +27,11 @@ flowchart LR
 - `app/modules/*/routes.py`: entradas HTTP e validações de acesso; `service.py`: regras, consultas e gravações; `exporters.py`/`excel_exporters.py`: documentos.
 - [app/models.py](../app/models.py): modelos centrais. [app/extensions.py](../app/extensions.py) permite compartilhar extensões sem criar a aplicação na importação.
 
-A auditoria automática cobre métodos de escrita que também correspondem às palavras-chave de ação em `_should_audit_request`. Há exclusões por endpoint/caminho. Ela registra metadados da requisição, não um histórico universal de antes/depois das entidades. A retenção é por quantidade. Presença e sessão possuem finalidades e prazos distintos.
+A auditoria central em `modules/auditoria/recorder.py` registra autenticação, falhas, bloqueios, saída, expiração de sessão, consultas autenticadas, exportações e respostas a gravações. O identificador de requisição relaciona esses eventos às alterações ORM. Alterações individuais são gravadas na mesma transação do objeto, com prefeitura, objeto, campos e valores antes/depois permitidos. Um rollback desfaz também a evidência de alteração; uma resposta HTTP 200/302, sozinha, não significa que houve gravação. Operações ORM em lote registram tabela, operação e quantidade, sem inventar diferenças individuais. SQL executado diretamente por conexão fora da sessão não recebe diferenças automáticas e exige instrumentação explícita quando um domínio precisar desse nível de detalhe.
+
+Senhas, hashes, tokens, corpos de requisição, query strings, URLs arbitrárias e conteúdo de campos livres não são copiados para a nova trilha. Campos protegidos mostram apenas que houve alteração. Tabelas internas de auditoria, presença, limitação de login e telemetria contínua são excluídas da captura de mudanças para evitar recursão/ruído; o resultado de autenticação continua registrado. A identidade é capturada antes dos controles de sessão e o IP respeita os proxies configurados em `LOGIN_TRUSTED_PROXY_CIDRS`.
+
+`auditoria_arquivos` mantém lotes duráveis com hash, tentativas e reserva temporária para trabalhadores concorrentes. O envio ao Skybox ocorre em segundo plano, seguido de leitura e comparação SHA-256. Somente eventos com cópia verificada podem ser removidos pelo limite local de retenção. A tela e o download dos arquivos são exclusivos de DEV. O arquivamento WebDAV/JSONL não implementa syslog remoto nem armazenamento imutável; o item 4.5.4 não deve ser marcado integralmente atendido apenas por essa entrega.
 
 ## Mapa de domínios
 

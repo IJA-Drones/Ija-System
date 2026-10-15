@@ -403,6 +403,42 @@ class AuditoriaUsuario(db.Model):
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
+    # Nullable additions preserve historical rows without inventing old details.
+    evento_id = db.Column(db.String(36), unique=True, nullable=True)
+    requisicao_id = db.Column(db.String(36), index=True, nullable=True)
+    prefeitura_id = db.Column(db.Integer, index=True, nullable=True)
+    prefeitura_usuario_id = db.Column(db.Integer, nullable=True)
+    objeto_tipo = db.Column(db.String(100), index=True, nullable=True)
+    objeto_id = db.Column(db.String(100), nullable=True)
+    resultado = db.Column(db.String(30), index=True, nullable=True)
+    detalhes = db.Column(db.JSON, nullable=True)
+    arquivo_id = db.Column(db.String(36), db.ForeignKey('auditoria_arquivos.id'), index=True, nullable=True)
+    arquivado_em = db.Column(db.DateTime, nullable=True, index=True)
+
+
+class AuditoriaArquivo(db.Model):
+    __tablename__ = 'auditoria_arquivos'
+    id = db.Column(db.String(36), primary_key=True)
+    caminho = db.Column(db.String(500), nullable=False, unique=True)
+    conteudo = db.Column(db.Text, nullable=True)
+    sha256 = db.Column(db.String(64), nullable=False)
+    quantidade = db.Column(db.Integer, nullable=False)
+    prefeitura_id = db.Column(db.Integer, nullable=True)
+    criado_em = db.Column(db.DateTime, nullable=False)
+    enviado_em = db.Column(db.DateTime, nullable=True)
+    tentativas = db.Column(db.Integer, nullable=False, default=0)
+    proxima_tentativa = db.Column(db.DateTime, nullable=False, index=True)
+    lease_token = db.Column(db.String(36), nullable=True)
+    lease_ate = db.Column(db.DateTime, nullable=True)
+    ultimo_erro = db.Column(db.String(200), nullable=True)
+
+
+class AuditoriaInstalacao(db.Model):
+    __tablename__ = 'auditoria_instalacao'
+    id = db.Column(db.Integer, primary_key=True)
+    identificador = db.Column(db.String(36), nullable=False)
+    __table_args__ = (db.CheckConstraint('id = 1', name='ck_auditoria_instalacao_singleton'),)
+
 
 # -------------------------------------------------------------
 # EQUIPE UVIS (atÃ© 5 pessoas por UVIS)
