@@ -58,7 +58,7 @@
       ["tecnico", "Ferramentas técnicas", "Erros, verificações, backups e importações DJI.", "bi-terminal", "consultar operar importar"],
     ] },
   ];
-  const profiles = editorData?.profiles || [
+  const profiles = (editorData?.profiles || [
     ["prefeitura_admin", "Admin Prefeitura", "Administração municipal", "prefeitura", "administrativo", "bi-buildings"],
     ["financeiro", "Financeiro", "Operação financeira", "financeiro", "financeiro", "bi-wallet2"],
     ["financeiro_admin", "Admin Financeiro", "Gestão financeira", "financeiro", "financeiro", "bi-bank"],
@@ -79,7 +79,8 @@
     ["visualizador", "Visualizador (legado)", "Consulta administrativa", "prefeitura", "legado", "bi-eye"],
     ["operador", "Operador (legado)", "Cadastros operacionais", "prefeitura", "legado", "bi-tools"],
     ["sup_veiculo", "Supervisor (legado)", "Alias de supervisor de veículos", "prefeitura", "legado", "bi-truck"],
-  ].map(([id, name, description, area, group, glyph]) => ({ id, name, description, area, group, glyph }));
+  ].map(([id, name, description, area, group, glyph]) => ({ id, name, description, area, group, glyph })))
+    .filter((profile) => profile.id !== "dev");
 
   const get = (id) => root.querySelector(`#${id}`);
   const create = (tag, className = "", text = "") => {
