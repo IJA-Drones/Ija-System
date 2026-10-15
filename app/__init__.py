@@ -166,6 +166,10 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    from app.shared.password_expiration import register_password_expiration
+
+    register_password_expiration(app)
+
     from app.shared.session_security import register_session_security
 
     register_session_security(app)

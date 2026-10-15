@@ -11,6 +11,9 @@ def _authenticate_any_user(login_value, password, *, auth_session=None):
     query = auth_session.query(Usuario) if auth_session is not None else Usuario.query
     user = query.filter_by(login=login_value).first()
     if user and user.check_senha(password):
+        # Preserve the credential actually verified across the protection commit.
+        # A concurrent reset must not authorize renewal of the replacement password.
+        user._verified_password_hash = user.senha_hash
         if user.tipo_usuario == "piloto_agro":
             piloto_agro = getattr(user, "piloto_agro", None)
             if piloto_agro is None or not piloto_agro.ativo:

@@ -122,10 +122,12 @@ def protect_login(channel):
                     user = result[0] if isinstance(result, tuple) else result
                     now = utcnow()  # The block starts after verification finishes.
                     if user:
+                        from app.shared.password_expiration import password_expired
                         account.falhas, account.bloqueado_ate, account.janela_inicio = 0, None, now
                         # A valid account must not clear failures from other
                         # accounts using the same origin (password spraying).
-                        _event(store, login_value, ip, channel, 'sucesso', now, user)
+                        _event(store, login_value, ip, channel,
+                               'senha_expirada' if password_expired(user) else 'sucesso', now, user)
                     else:
                         for bucket, limit in ((origin, rules['ip_limit']), (account, rules['account_limit'])):
                             bucket.falhas += 1

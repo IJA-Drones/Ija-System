@@ -11,15 +11,15 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Item | Quantidade |
 | --- | ---: |
 | Módulos em `app/modules` | 38 |
-| Arquivos Python em `app` | 175 |
-| Declarações de rotas | 371 |
-| Modelos com tabela em `app/models.py` | 69 |
-| Templates HTML | 175 |
+| Arquivos Python em `app` | 177 |
+| Declarações de rotas | 373 |
+| Modelos com tabela em `app/models.py` | 70 |
+| Templates HTML | 176 |
 | Arquivos CSS, incluindo bundle | 183 |
 | Arquivos JavaScript em `app/static`, incluindo service worker | 15 |
-| Revisões Alembic | 132 |
-| Arquivos Python de teste | 41 |
-| Funções/métodos Python com prefixo `test_` | 543 |
+| Revisões Alembic | 133 |
+| Arquivos Python de teste | 42 |
+| Funções/métodos Python com prefixo `test_` | 562 |
 | Arquivos Node de teste | 7 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
@@ -35,7 +35,7 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [agro](../app/modules/agro/) | 101 | 9 |
 | [anexos](../app/modules/anexos/) | 3 | 3 |
 | [auditoria](../app/modules/auditoria/) | 1 | 3 |
-| [auth](../app/modules/auth/) | 6 | 4 |
+| [auth](../app/modules/auth/) | 8 | 5 |
 | [backup](../app/modules/backup/) | 3 | 3 |
 | [canceladas](../app/modules/canceladas/) | 2 | 3 |
 | [cep](../app/modules/cep/) | 2 | 3 |
@@ -78,7 +78,8 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | `Prefeitura` | `prefeituras` | `id`, `nome`, `slug`, `ativa`, `criada_em` | — |
 | `PrefeituraDocumentoConfig` | `prefeitura_documento_config` | `prefeitura_id`, `ativo`, `imagem_path`, `imagem_nome`, `opacidade`, `largura_percentual`, `identificar_usuario`, `atualizado_em`, `versao` | `prefeitura_id → prefeituras.id` |
 | `PrefeituraDocumentoHistorico` | `prefeitura_documento_historico` | `id`, `prefeitura_id`, `usuario_id`, `usuario_nome`, `antes`, `depois`, `criado_em` | `prefeitura_id → prefeituras.id`; `usuario_id → usuarios.id` |
-| `Usuario` | `usuarios` | `id`, `prefeitura_id`, `nome_uvis`, `regiao`, `codigo_setor`, `login`, `senha_hash`, `tipo_usuario`, `trabalha_oceano_azul`, `trabalha_agro`, `suporte_operacional`, `suporte_tecnico`, `piloto_id`, `piloto_agro_id`, `equipe_uvis_uvis_usuario_id`, `equipe_uvis_nome` | `prefeitura_id → prefeituras.id`; `piloto_id → pilotos.id`; `piloto_agro_id → pilotos_agro.id`; `equipe_uvis_uvis_usuario_id → usuarios.id` |
+| `Usuario` | `usuarios` | `id`, `prefeitura_id`, `nome_uvis`, `regiao`, `codigo_setor`, `login`, `senha_hash`, `senha_alterada_em`, `tipo_usuario`, `trabalha_oceano_azul`, `trabalha_agro`, `suporte_operacional`, `suporte_tecnico`, `piloto_id`, `piloto_agro_id`, `equipe_uvis_uvis_usuario_id`, `equipe_uvis_nome` | `prefeitura_id → prefeituras.id`; `piloto_id → pilotos.id`; `piloto_agro_id → pilotos_agro.id`; `equipe_uvis_uvis_usuario_id → usuarios.id` |
+| `PoliticaSenha` | `politica_senha` | `id`, `validade_dias`, `atualizado_em`, `atualizado_por_id` | `atualizado_por_id → usuarios.id` |
 | `CentralTiPerfilConfiguracao` | `central_ti_perfis_configuracoes` | `perfil_codigo`, `versao`, `atualizado_em`, `atualizado_por_id` | `atualizado_por_id → usuarios.id` |
 | `CentralTiSelecao` | `central_ti_selecoes` | `perfil_codigo`, `codigo` | `perfil_codigo → central_ti_perfis_configuracoes.perfil_codigo` |
 | `CentralTiAuditoria` | `central_ti_auditoria` | `id`, `lote`, `perfil_codigo`, `usuario_id`, `usuario_login`, `versao_anterior`, `versao_nova`, `antes`, `depois`, `criado_em` | `usuario_id → usuarios.id` |
@@ -145,7 +146,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 ## Migrações
 
-Heads: `b82e0d5f314c`.
+Heads: `d94f2a7610be`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -161,8 +162,8 @@ Fonte: [app/__init__.py](../app/__init__.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/healthz` | `healthz` | 181 |
-| GET | `/healthz/full` | `healthz_full` | 185 |
+| GET | `/healthz` | `healthz` | 185 |
+| GET | `/healthz/full` | `healthz_full` | 189 |
 
 ### app/core/routes.py
 
@@ -363,16 +364,24 @@ Fonte: [app/modules/auditoria/routes.py](../app/modules/auditoria/routes.py).
 | --- | --- | --- | ---: |
 | GET | `/admin/logs-usuarios` | `admin_logs_usuarios` | 21 |
 
+### app/modules/auth/password_routes.py
+
+Fonte: [app/modules/auth/password_routes.py](../app/modules/auth/password_routes.py).
+
+| Método | Caminho | Endpoint local | Linha |
+| --- | --- | --- | ---: |
+| GET, POST | `/renovar-senha` | `renew_password` | 17 |
+
 ### app/modules/auth/routes.py
 
 Fonte: [app/modules/auth/routes.py](../app/modules/auth/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/login` | `login` | 51 |
-| GET, POST | `/uvis-operacional/login` | `login_uvis_operacional` | 82 |
-| GET, POST | `/agro/login` | `login_piloto_agro` | 108 |
-| GET | `/logout` | `logout` | 134 |
+| GET, POST | `/login` | `login` | 68 |
+| GET, POST | `/uvis-operacional/login` | `login_uvis_operacional` | 102 |
+| GET, POST | `/agro/login` | `login_piloto_agro` | 131 |
+| GET | `/logout` | `logout` | 160 |
 
 ### app/modules/auth/security_routes.py
 
@@ -380,8 +389,9 @@ Fonte: [app/modules/auth/security_routes.py](../app/modules/auth/security_routes
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/dev/seguranca-login` | `login_security` | 15 |
-| POST | `/dev/seguranca-login/<string:key>/desbloquear` | `login_security_unlock` | 28 |
+| GET | `/dev/seguranca-login` | `login_security` | 21 |
+| POST | `/dev/seguranca-login/validade-senha` | `password_policy_save` | 35 |
+| POST | `/dev/seguranca-login/<string:key>/desbloquear` | `login_security_unlock` | 74 |
 
 ### app/modules/backup/routes.py
 
@@ -860,6 +870,7 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_mapas_filters.py](../tests/test_mapas_filters.py) | 16 |
 | [test_operational_schedule_filters.py](../tests/test_operational_schedule_filters.py) | 13 |
 | [test_painel_operacional_weather.py](../tests/test_painel_operacional_weather.py) | 3 |
+| [test_password_expiration.py](../tests/test_password_expiration.py) | 19 |
 | [test_pdf_watermark.py](../tests/test_pdf_watermark.py) | 15 |
 | [test_portal_cidadao_chatbot.py](../tests/test_portal_cidadao_chatbot.py) | 22 |
 | [test_portal_cidadao_denuncias.py](../tests/test_portal_cidadao_denuncias.py) | 13 |

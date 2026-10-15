@@ -265,7 +265,8 @@ def test_migration_tables_foreign_keys_and_downgrade():
             migration.downgrade()
             assert inspect(conn).get_table_names()==['usuarios']
     graph=ScriptDirectory(str(ROOT/'migrations'))
-    assert graph.get_heads()==[migration.revision]
+    assert len(graph.get_heads()) == 1
+    assert migration.revision in {rev.revision for rev in graph.walk_revisions()}
     assert migration.down_revision=='c1a0f8b6d2e4'
 
 
