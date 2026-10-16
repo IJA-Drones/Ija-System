@@ -43,6 +43,10 @@ class Config:
     INFODENGUE_DISEASE = os.environ.get("INFODENGUE_DISEASE", "dengue")
     INFODENGUE_LOOKBACK_WEEKS = os.environ.get("INFODENGUE_LOOKBACK_WEEKS", "8")
     VIGILANCIA_PREVIEW_ENABLED = os.getenv("VIGILANCIA_PREVIEW_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
+    SINAN_ENABLED = os.getenv("SINAN_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    SINAN_IMPORT_ENABLED = os.getenv("SINAN_IMPORT_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    # Separate bounded local store. Mount this path on persistent storage in deployment.
+    SINAN_STORAGE_PATH = os.getenv("SINAN_STORAGE_PATH", "")
     # Activation is explicit per environment; neutral profiles retain legacy rules.
     CENTRAL_TI_ENABLED = os.getenv("CENTRAL_TI_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
 

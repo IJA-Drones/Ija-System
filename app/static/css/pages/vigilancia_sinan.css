@@ -1,0 +1,36 @@
+.sinan-page { max-width: 1200px; color: var(--color-text-main); }
+.sinan-page .sinan-panel { padding: 20px; margin-bottom: 20px; background: var(--color-bg-white); }
+.sinan-panel h2, .sinan-results-heading h2 { font-size: 1.05rem; font-weight: 700; margin: 0 0 14px; }
+.sinan-results-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.sinan-results-heading h2 { margin-bottom: 5px; }
+.sinan-results-heading p { margin: 0; }
+.sinan-help, #sinan-context { font-size: .82rem; color: var(--color-text-muted); line-height: 1.6; }
+.sinan-panel > p:last-child { margin-bottom: 0; }
+.sinan-status { padding: 14px 16px; background: var(--color-accent-soft); border-radius: var(--radius-sm); margin: 20px 0; font-size: .88rem; line-height: 1.6; }
+.sinan-status[data-phase="error"], .sinan-status[data-phase="cancelled"] { border-left: 4px solid #cc8b20; }
+.sinan-badge { padding: 6px 12px; background: var(--color-accent-soft); font-size: .8rem; font-weight: 700; border-radius: var(--radius-pill); white-space: nowrap; }
+.sinan-page .table { font-size: .85rem; }
+.sinan-breakdowns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.sinan-breakdowns > * { min-width: 0; }
+.sinan-weeks { max-height: 380px; overflow-y: auto; padding: 3px; }
+.sinan-week { display: grid; grid-template-columns: 76px 1fr 52px; gap: 12px; align-items: center; font-size: .82rem; margin-bottom: 10px; }
+.sinan-week-bar { height: 9px; border-radius: 6px; background: var(--color-accent); min-width: 2px; }
+.sinan-week-count { text-align: right; font-variant-numeric: tabular-nums; }
+.sinan-page [hidden] { display: none !important; }
+@media (max-width: 700px) {
+  .sinan-results-heading { align-items: start; flex-direction: column; gap: 12px; }
+  .sinan-page .sinan-panel { padding: 16px; }
+  .sinan-breakdowns { grid-template-columns: 1fr; gap: 0; }
+}
+
+.sinan-details summary { color: var(--color-primary-dark); font-size: .88rem; font-weight: 600; cursor: pointer; }
+.sinan-page .pagination .page-link:disabled { cursor: default; }
+.sinan-import-limit { padding: 12px 14px; border-radius: 10px; background: var(--color-accent-soft); font-size: .83rem; }
+.sinan-page .nav-pills .nav-link { border-radius: 10px; }
+.sinan-workflow .table td, .sinan-workflow .table th { white-space: nowrap; }
+#sinan-map { height: 380px; width: 100%; border-radius: 12px; background: var(--color-accent-soft); }
+.sinan-map-filter { width: auto; max-width: 100%; }
+#sinan-import-status[data-error="true"] { color: #b42318; }
+.sinan-job-selected { font-weight: 600; }
+#sinan-snapshot { scroll-margin-top: 100px; }
+.sinan-demo-label { color: #9a6700; font-weight: 700; }

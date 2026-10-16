@@ -673,6 +673,20 @@
   "main.remover_anexo": {
     "POST": "prefeitura.os.midias"
   },
+  "main.vigilancia_sinan": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_sinan_api": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_sinan_jobs": {"GET": "prefeitura.vigilancia.consultar"},
+  "main.vigilancia_sinan_import": {"POST": "prefeitura.vigilancia.editar"},
+  "main.vigilancia_sinan_cases_import": {"POST": "prefeitura.vigilancia.editar"},
+  "main.vigilancia_sinan_job": {"GET": "prefeitura.vigilancia.consultar"},
+  "main.vigilancia_sinan_job_cancel": {"POST": "prefeitura.vigilancia.editar"},
+  "main.vigilancia_sinan_job_map": {"GET": "prefeitura.vigilancia.consultar"},
+  "main.vigilancia_sinan_export": {"GET": "prefeitura.relatorios.exportar"},
+  "main.vigilancia_sinan_cases_sample": {"GET": "prefeitura.vigilancia.consultar"},
   "main.vigilancia_validacao": {
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"

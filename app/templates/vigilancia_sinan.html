@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_sinan.css') }}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 sinan-page" id="sinan-page" data-endpoint="{{ url_for('main.vigilancia_sinan_api') }}">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div><h2 class="text-dark mb-1"><i class="bi bi-activity me-2 text-primary" aria-hidden="true"></i>SINAN · Arboviroses</h2>
+      <p class="text-muted mb-0">Consulta de notificações por município.</p></div>
+    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Voltar</a>
+  </div>
+  <section class="card shadow-sm rounded-4 mb-4 border-0 filter-card" aria-labelledby="sinan-filter-title">
+    <button type="button" class="card-header border-0 p-3 d-flex justify-content-between align-items-center filter-card-header cursor-pointer w-100" data-bs-toggle="collapse" data-bs-target="#sinan-filters" aria-expanded="true" aria-controls="sinan-filters">
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-funnel-fill text-primary" aria-hidden="true"></i><span class="text-dark fw-bold" id="sinan-filter-title">Filtros de busca</span></span><i class="bi bi-chevron-down text-muted filter-card-toggle" aria-hidden="true"></i>
+    </button>
+    <div class="collapse show" id="sinan-filters"><div class="card-body pt-0 pb-3">
+      <form id="sinan-form" class="form-no-loading">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3"><label class="small text-muted" for="sinan-disease">Doença</label><select class="form-select form-select-sm" id="sinan-disease" name="disease">
+            {% for code, disease in diseases.items() %}<option value="{{ code }}">{{ disease.label }}</option>{% endfor %}
+          </select></div>
+          <div class="col-md-6"><label class="small text-muted" for="sinan-scope">Município de notificação</label><select class="form-select form-select-sm" id="sinan-scope" name="scope">
+            <optgroup label="São Paulo"><option value="3550308" selected>São Paulo — capital / SP</option></optgroup>
+            <optgroup label="CONDOMAR · 15 municípios">
+              {% for city in municipalities if city.region == 'condomar' %}<option value="{{ city.ibge }}">{{ city.name }} / {{ city.uf }}</option>{% endfor %}
+            </optgroup>
+          </select></div>
+          <div class="col-md-3"><label class="small text-muted" for="sinan-year">Ano de notificação</label><select class="form-select form-select-sm" id="sinan-year" name="year">
+            {% for year in range(current_year, 2014, -1) %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
+          </select></div>
+          <div class="col-12 d-flex flex-wrap gap-2 justify-content-end mt-3">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="sinan-clear"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar busca</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="sinan-cancel" hidden>Interromper</button>
+            <button type="submit" class="btn btn-info text-white btn-sm" id="sinan-submit"><i class="bi bi-search me-1" id="sinan-search-icon" aria-hidden="true"></i><span class="spinner-border spinner-border-sm me-1" id="sinan-spinner" aria-hidden="true" hidden></span><span id="sinan-submit-label">Consultar</span></button>
+          </div>
+        </div>
+      </form>
+    </div></div>
+  </section>
+  {% if sinan_import_enabled %}
+  <nav class="nav nav-pills gap-2 mb-4" role="tablist" aria-label="Visualização SINAN">
+    <button class="nav-link active" id="sinan-query-tab" data-bs-toggle="tab" data-bs-target="#sinan-query-pane" type="button" role="tab" aria-controls="sinan-query-pane" aria-selected="true">Consulta pública</button>
+    <button class="nav-link" id="sinan-saved-tab" data-bs-toggle="tab" data-bs-target="#sinan-workflow" type="button" role="tab" aria-controls="sinan-workflow" aria-selected="false">Dados salvos</button>
+  </nav>
+  {% endif %}
+  <div class="tab-content">
+  <div id="sinan-query-pane" class="tab-pane fade show active" role="tabpanel" aria-labelledby="sinan-query-tab">
+  <div id="sinan-status" class="sinan-status" role="status" aria-live="polite" hidden></div>
+  <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="sinan-retry" hidden>Tentar novamente</button>
+  <section id="sinan-results" hidden aria-labelledby="sinan-results-title">
+    <div class="sinan-results-heading"><div><h2 id="sinan-results-title">Notificações</h2><p id="sinan-context"></p></div><span id="sinan-badge" class="sinan-badge"></span></div>
+    <section class="card border-0 shadow-sm rounded-4 sinan-panel" aria-label="Notificações da página">
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th scope="col">Registro</th><th scope="col">Município de notificação</th><th scope="col">Semana epidemiológica</th><th scope="col">Classificação</th><th scope="col">Residência</th></tr></thead>
+        <tbody id="sinan-records"></tbody>
+      </table></div>
+      <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between mt-3">
+        <span id="sinan-page-summary" class="small text-muted"></span>
+        <nav aria-label="Páginas das notificações"><ul class="pagination pagination-sm mb-0 listing-pagination">
+          <li class="page-item" id="sinan-prev-item"><button type="button" class="page-link shadow-none" id="sinan-prev">Anterior</button></li>
+          <li class="page-item active"><span class="page-link shadow-none" id="sinan-page-number" aria-current="page">1</span></li>
+          <li class="page-item" id="sinan-next-item"><button type="button" class="page-link shadow-none" id="sinan-next">Próxima</button></li>
+        </ul></nav>
+      </div>
+      <p id="sinan-page-status" class="small text-muted mt-3 mb-0" role="status" aria-live="polite" hidden></p>
+    </section>
+    <details class="sinan-details mb-3" id="sinan-indicators" hidden>
+      <summary>Indicadores desta página</summary>
+      <div class="sinan-breakdowns mt-3">
+        <section class="card border-0 shadow-sm rounded-4 sinan-panel" aria-labelledby="sinan-classifications-title"><h2 id="sinan-classifications-title">Classificação</h2>
+          <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th scope="col">Classificação</th><th scope="col">Registros</th></tr></thead><tbody id="sinan-classifications"></tbody></table></div>
+        </section>
+        <section class="card border-0 shadow-sm rounded-4 sinan-panel" aria-labelledby="sinan-weeks-title"><h2 id="sinan-weeks-title">Semanas de notificação</h2>
+          <div id="sinan-weeks" class="sinan-weeks"></div><p id="sinan-week-missing" class="sinan-help" hidden></p>
+        </section>
+      </div>
+    </details>
+    <p id="sinan-timestamp" class="sinan-help"></p>
+  </section>
+  </div>
+  {% include '_sinan_imports.html' %}
+  </div>
+  <details class="sinan-details" id="sinan-about">
+    <summary>Sobre os dados</summary>
+    <div class="sinan-help mt-3">
+      <p>Fonte: <a id="sinan-source" href="{{ source_url }}" target="_blank" rel="noopener noreferrer">Ministério da Saúde · SINAN · Dengue</a>. Recortes: São Paulo capital e os <a href="{{ region_url }}" target="_blank" rel="noopener noreferrer">15 municípios do CONDOMAR</a>.</p>
+      <p>O município é onde a notificação foi feita, podendo incluir residentes de outras cidades. Sem registros neste filtro não significa ausência de casos; tente outro ano.</p>
+      <p>Cada página mostra até 10 notificações. Os indicadores se referem apenas à página exibida, não ao total municipal. O número da linha indica a posição na consulta, não um identificador da notificação.</p>
+      <p>Classificações conforme o <a id="sinan-dictionary" href="{{ diseases.dengue.dictionary_url }}" target="_blank" rel="noopener noreferrer">dicionário de Dengue</a><span id="sinan-legacy-layout"> e o <a href="https://portalsinan.saude.gov.br/images/documentos/Agravos/Dengue/DIC_DADOS_ONLINE.pdf" target="_blank" rel="noopener noreferrer">layout SINAN Online</a></span>. Notificações não são necessariamente casos confirmados, e confirmação não significa necessariamente exame laboratorial.</p>
+      <p class="mb-0">Dados sujeitos a revisão. A fonte não informa o total de páginas nem a data de atualização da base; o horário exibido é o da consulta. O ano da semana epidemiológica pode divergir do ano civil.</p>
+    </div>
+  </details>
+  <noscript><p class="sinan-status">Ative o JavaScript para consultar os indicadores.</p></noscript>
+</div>
+<script id="sinan-config" type="application/json">{{ {'municipalities': municipalities, 'diseases': diseases}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia_sinan.js') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia_sinan_import.js') }}" defer></script>{% endblock %}

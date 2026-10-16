@@ -18,7 +18,7 @@ SCREENS = {
  'prefeitura.prefeituras': [('admin_prefeituras','Prefeituras'),('admin_prefeitura_nova','Cadastrar prefeitura')],
  'prefeitura.documentos': [('configuracoes','Documentos da prefeitura')],
  'prefeitura.voos': [('relatorios_dji_logs','Logs de voo DJI')],
- 'prefeitura.vigilancia': [('vigilancia_validacao','Vigilância')],
+ 'prefeitura.vigilancia': [('vigilancia_sinan','SINAN · Arboviroses'),('vigilancia_validacao','Validação Focal/LIRAa')],
  'agro.clientes': [('agro_clientes_menu','Visão geral'),('agro_clientes_listar','Clientes'),('agro_fornecedores_listar','Fornecedores'),('agro_cliente_novo','Cadastrar cliente'),('agro_fornecedor_novo','Cadastrar fornecedor')],
  'agro.comercial': [('agro_orcamentos_listar','Orçamentos'),('agro_orcamento_novo','Novo orçamento')],
  'agro.contratos': [('agro_contratos_listar','Contratos'),('agro_contratos_template','Template de contrato')],
@@ -83,6 +83,8 @@ def first_allowed_screen_endpoint(user, area=None):
         for screen, _ in _screens_for(user, key):
             endpoint = 'main.' + screen
             if endpoint == 'main.vigilancia_validacao' and not current_app.config.get('VIGILANCIA_PREVIEW_ENABLED'):
+                continue
+            if endpoint == 'main.vigilancia_sinan' and not current_app.config.get('SINAN_ENABLED', True):
                 continue
             if can_access_endpoint(user, endpoint) and any(
                 not rule.arguments for rule in current_app.url_map.iter_rules(endpoint)
