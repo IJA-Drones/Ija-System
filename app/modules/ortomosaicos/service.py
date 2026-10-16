@@ -217,4 +217,6 @@ def serialize(row):
         metadados=row.metadados or {}, criado_em=row.criado_em.isoformat()+'Z',
         status_url=url_for('main.ortomosaico_status', oid=row.id),
         retry_url=url_for('main.ortomosaico_retry', oid=row.id),
-        arquivo_url=url_for('main.ortomosaico_arquivo', oid=row.id) if row.status == 'pronto' and row.tipo == 'rgb' else None)
+        arquivo_url=url_for('main.ortomosaico_arquivo', oid=row.id,
+            v=hashlib.sha256((row.cog_path or '').encode()).hexdigest()[:16])
+            if row.status == 'pronto' and row.tipo == 'rgb' else None)

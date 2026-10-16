@@ -27,6 +27,28 @@
     });
     map.on('pointermove',event=>{const point=ol.proj.toLonLat(event.coordinate);el('coordinates').textContent=`${point[1].toFixed(6)}°, ${point[0].toFixed(6)}° · WGS 84`;});
   } catch (_) {message('Não foi possível iniciar o mapa neste navegador.',true);}
+  const rasterCache = map ? window.createOrthoRasterCache({map, onStatus: rasterStatus}) : null;
+  function referenceStatus(entry) {
+    const notice=el('reference-status');notice.hidden=false;
+    const item=items.find(i=>String(i.id)===el('reference').value);
+    const bounds=item?.metadados?.limites, demBounds=selected?.metadados?.limites;
+    const outside=bounds&&demBounds&&!ol.extent.intersects(bounds,demBounds);
+    notice.textContent=entry.status==='error'?'Não foi possível carregar a referência. Selecione-a novamente para tentar.':
+      outside?'Esta referência não cobre a área das curvas selecionadas.':
+      entry.status==='ready'?'Referência carregada.':'Carregando ortomosaico de referência…';
+    notice.classList.toggle('error',entry.status==='error');
+    notice.setAttribute('aria-busy',String(!outside&&entry.status==='loading'));
+  }
+  function rasterStatus(entry) {
+    if(entry.layer===referenceLayer)referenceStatus(entry);
+    if(entry.layer===layer&&selected?.tipo!=='dem')message(entry.status==='error'?
+      'Não foi possível carregar o ortomosaico. Selecione-o novamente para tentar.':
+      entry.status==='ready'?'Ortomosaico disponível. Use o zoom e a opacidade para explorar.':'Carregando ortomosaico…',entry.status==='error');
+  }
+  function releaseMainLayer() {
+    if(layer&&map&&!rasterCache.release(layer)){map.removeLayer(layer);layer.dispose();}
+    layer=null;source=null;
+  }
   function fit() {
     if (!selected?.metadados?.limites || !map) return;
     map.getView().fit(ol.proj.transformExtent(selected.metadados.limites,'EPSG:4326','EPSG:3857'),
@@ -62,7 +84,8 @@
     styleCache.set(key,style);return style;
   }
   function clearReference() {
-    if(referenceLayer&&map){map.removeLayer(referenceLayer);referenceLayer.dispose();}referenceLayer=null;
+    if(referenceLayer)rasterCache?.release(referenceLayer);referenceLayer=null;
+    el('reference-status').hidden=true;el('reference-status').textContent='';el('reference-status').setAttribute('aria-busy','false');
   }
   function referenceOptions(item) {
     const previous=el('reference').value;
@@ -79,9 +102,10 @@
     el('layer-label').textContent=item.tipo==='dem'?'Curvas de nível':'Ortomosaico RGB';
     if(item.tipo==='dem')referenceOptions(item);else clearReference();
     selected=item;renderList();details(item);el('active-title').textContent=item.nome;
+    if(item.tipo!=='dem'||item.status!=='pronto')clearReference();
     el('empty').hidden=item.status==='pronto';
     if(item.status!=='pronto'){
-      if(layer&&map){map.removeLayer(layer);layer.dispose();layer=null;source=null;}
+      releaseMainLayer();
       el('empty').querySelector('h2').textContent=labels[item.status]||item.status;
       el('empty').querySelector('p').textContent=item.erro||'Seu arquivo está salvo. O sistema está preparando o mapa e os resultados. Acompanhe o estado na biblioteca.';
       message(item.erro||'O processamento continua em segundo plano. Você pode voltar a esta página depois.',item.status==='falha');
@@ -99,8 +123,9 @@
       }
       return;
     }
-    if(!needsLayer||!map)return;
-    if(layer){map.removeLayer(layer);layer.dispose();}
+    if(!needsLayer||!map){if(item.tipo==='dem'&&map)updateReference();return;}
+    releaseMainLayer();
+    if(item.tipo==='dem')updateReference();
     if(item.tipo==='dem'){
       source=new ol.source.Vector();
       layer=new ol.layer.Vector({source,style:curveStyle,declutter:true,opacity:Number(el('opacity').value)/100,visible:el('visible').checked});
@@ -114,34 +139,30 @@
       return;
     }
     message('Carregando ortomosaico…');
-    // The processor emits RGB(A). readRGB would discard the fourth alpha band.
-    source=new ol.source.GeoTIFF({sources:[{url:item.arquivo_url}],convertToRGB:false,interpolate:true});
-    const thisSource=source;
-    layer=new ol.layer.WebGLTile({source,opacity:Number(el('opacity').value)/100,visible:el('visible').checked});
-    map.addLayer(layer);fit();
-    source.on('change',()=>{if(source===thisSource&&source.getState()==='error')message('Não foi possível ler o ortomosaico. Verifique sua sessão e tente abrir novamente.',true);});
-    source.on('tileloaderror',()=>{if(source===thisSource)message('Uma parte do mapa não carregou. Confira sua conexão e recarregue a página.',true);});
-    source.getView().then(()=>{if(source===thisSource)message('Ortomosaico disponível. Use o zoom e a opacidade para explorar.');}).catch(()=>message('O navegador não conseguiu abrir este GeoTIFF.',true));
+    const raster=rasterCache.acquire(item);source=raster.source;layer=raster.layer;
+    layer.setZIndex(1);layer.setOpacity(Number(el('opacity').value)/100);layer.setVisible(el('visible').checked);
+    fit();rasterStatus(raster);
   }
   async function load(preferId) {
-    const data=await api(`${app.dataset.listUrl}?prefeitura_id=${encodeURIComponent(el('filter').value)}`);items=data.items;
+    const data=await api(`${app.dataset.listUrl}?prefeitura_id=${encodeURIComponent(el('filter').value)}`);items=data.items;rasterCache?.retain(items);
     const wanted=items.find(i=>i.id===preferId)||items.find(i=>i.id===selected?.id)||items[0];
     if(wanted)select(wanted);else{
       vectorRequest?.abort();clearReference();el('dem-controls').hidden=true;el('jpeg').removeAttribute('href');
-      selected=null;if(layer&&map){map.removeLayer(layer);layer.dispose();layer=null;}source=null;
+      selected=null;releaseMainLayer();
       el('empty').hidden=false;el('empty').querySelector('h2').textContent='Selecione um levantamento';
       el('empty').querySelector('p').textContent='Envie um ortomosaico ou escolha outra prefeitura para visualizar os mapas.';
       el('active-title').textContent='Selecione um levantamento';el('detail-name').textContent='Detalhes do levantamento';
       el('details').replaceChildren();message('Escolha um ortomosaico na biblioteca.');renderList();
     }
   }
-  el('reference').onchange=()=>{
-    clearReference();const item=items.find(i=>String(i.id)===el('reference').value&&i.prefeitura_id===selected?.prefeitura_id&&i.tipo!=='dem');
-    if(!item||!map)return;
-    const refSource=new ol.source.GeoTIFF({sources:[{url:item.arquivo_url}],convertToRGB:false,interpolate:true});
-    referenceLayer=new ol.layer.WebGLTile({source:refSource});referenceLayer.setZIndex(1);map.addLayer(referenceLayer);
-    refSource.on('tileloaderror',()=>message('Não foi possível carregar o ortomosaico de referência.',true));
-  };
+  function updateReference() {
+    const item=items.find(i=>String(i.id)===el('reference').value&&i.prefeitura_id===selected?.prefeitura_id&&i.tipo!=='dem'&&i.status==='pronto');
+    if(!item||!map){clearReference();return;}
+    clearReference();
+    const raster=rasterCache.acquire(item);referenceLayer=raster.layer;
+    referenceLayer.setZIndex(1);referenceLayer.setOpacity(1);referenceLayer.setVisible(true);referenceStatus(raster);
+  }
+  el('reference').onchange=updateReference;
   ['color','width','labels'].forEach(name=>el(name).addEventListener('input',()=>{if(selected?.tipo==='dem'){styleCache.clear();layer?.changed();}}));
   function updateType(){
     const dem=el('type').value==='dem';el('dem-fields').hidden=!dem;
