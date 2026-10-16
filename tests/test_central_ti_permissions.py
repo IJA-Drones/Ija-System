@@ -1,5 +1,6 @@
 """Real grants/revocations, disposable SQLite only; never the project's DB."""
 import re
+import tempfile
 import unittest
 from io import BytesIO
 from types import SimpleNamespace
@@ -62,6 +63,48 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.app.url_map.add(Rule('/demo-unmapped',endpoint='main.demo_unmapped',methods=['GET']))
         with self.assertRaisesRegex(ValueError,'rota sem permissão'):
             validate_route_policy(self.app)
+
+    def test_sinan_consult_permission_grants_and_revokes_page_and_api(self):
+        self.configure('uvis', ['prefeitura.vigilancia.consultar'])
+        self.login('uvis')
+        with patch('app.modules.vigilancia.sinan.fetch_page', return_value={'persisted': False}) as source:
+            self.assertEqual(self.client.get('/vigilancia/sinan').status_code, 200)
+            self.assertEqual(self.client.get('/api/vigilancia/sinan?ibge=2610905&year=2025').status_code, 200)
+            source.assert_called_once_with(ibge='2610905', year=2025, offset=0, disease='dengue')
+            source.reset_mock()
+            self.configure('uvis', [])
+            self.assertEqual(self.client.get('/vigilancia/sinan').status_code, 403)
+            self.assertEqual(self.client.get('/api/vigilancia/sinan?ibge=2610905&year=2025').status_code, 403)
+            source.assert_not_called()
+
+    def test_sinan_import_and_export_require_their_own_permissions(self):
+        from app.modules.vigilancia.sinan_store import Store
+        directory = tempfile.TemporaryDirectory(prefix='sinan-permissions-')
+        self.addCleanup(directory.cleanup)
+        self.app.config['SINAN_STORAGE_PATH'] = directory.name + '/sinan.sqlite'
+        municipality = Prefeitura(nome='SINAN teste isolado', slug='sinan-teste-isolado')
+        db.session.add(municipality)
+        db.session.flush()
+        self.users['uvis'].prefeitura_id = municipality.id
+        db.session.commit()
+        scope = {'disease': 'zika', 'ibge': '2610905', 'year': 2025}
+        self.configure('uvis', ['prefeitura.vigilancia.consultar'])
+        self.login('uvis')
+        self.client.get('/vigilancia/sinan')
+        with self.client.session_transaction() as stored:
+            csrf = stored['_ija_csrf']
+        headers = {'X-CSRFToken': csrf}
+        path = '/api/vigilancia/sinan/importacoes'
+        self.assertEqual(self.client.post(path, json=scope, headers=headers).status_code, 403)
+        self.configure('uvis', ['prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar'])
+        with patch('app.modules.vigilancia.sinan_import.threading.Thread.start'):
+            response = self.client.post(path, json=scope, headers=headers)
+        self.assertEqual(response.status_code, 202, response.get_data(as_text=True))
+        job_id = response.json['job']['id']
+        Store(self.app.config['SINAN_STORAGE_PATH']).finish(job_id, 'completed', {'total': 0, 'groups': []})
+        self.assertEqual(self.client.get(f'{path}/{job_id}/exportar.csv').status_code, 403)
+        self.configure('uvis', ['prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar', 'prefeitura.relatorios.consultar', 'prefeitura.relatorios.exportar'])
+        self.assertEqual(self.client.get(f'{path}/{job_id}/exportar.csv').status_code, 200)
 
     def test_public_chatbot_keeps_its_tokens_when_logged_in_profile_has_no_business_access(self):
         self.configure('admin')
