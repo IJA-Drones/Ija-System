@@ -5,6 +5,7 @@
   const el = name => document.getElementById(`ortho-${name}`);
   const labels = {pendente:'Na fila',processando:'Processando',pronto:'Disponível',falha:'Falha no processamento'};
   let items = [], selected = null, layer = null, map = null, source = null, uploading = false, pollBusy = false;
+  let referenceLayer = null, vectorRequest = null;
   const base = new ol.layer.Tile({source:new ol.source.OSM()});
   const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
   function message(text, error=false) {el('message').textContent=text;el('message').classList.toggle('error',error);}
@@ -19,6 +20,11 @@
     window.initOrthoBasemap(base);
     el('layers-panel').hidden=map.getSize()[0]<650;
     el('layers-toggle').setAttribute('aria-expanded',String(!el('layers-panel').hidden));
+    map.on('singleclick', event=>{
+      if(selected?.tipo!=='dem')return;
+      const feature=map.forEachFeatureAtPixel(event.pixel, f=>f, {layerFilter:l=>l===layer,hitTolerance:6});
+      el('elevation').textContent=feature?`Cota: ${Number(feature.get('cota')).toLocaleString('pt-BR')} m${feature.get('mestra')?' · Curva mestra':''}`:'Clique em uma curva para consultar sua cota.';
+    });
     map.on('pointermove',event=>{const point=ol.proj.toLonLat(event.coordinate);el('coordinates').textContent=`${point[1].toFixed(6)}°, ${point[0].toFixed(6)}° · WGS 84`;});
   } catch (_) {message('Não foi possível iniciar o mapa neste navegador.',true);}
   function fit() {
@@ -33,7 +39,7 @@
       const button=document.createElement('button');button.type='button';button.className=`ortho-item${item.id===selected?.id?' selected':''}`;
       button.setAttribute('aria-pressed',String(item.id===selected?.id));
       const title=document.createElement('strong');title.textContent=item.nome;
-      const sub=document.createElement('small');sub.textContent=`${item.prefeitura} · ${(item.tamanho_bytes/1048576).toFixed(1)} MB`;
+      const sub=document.createElement('small');sub.textContent=`${item.tipo==='dem'?'Curvas de nível':'RGB'} · ${item.prefeitura} · ${(item.tamanho_bytes/1048576).toFixed(1)} MB`;
       const status=document.createElement('span');status.className=`status ${item.status}`;status.textContent=labels[item.status]||item.status;
       button.append(title,sub,status);button.addEventListener('click',()=>select(item));el('list').append(button);
     });
@@ -41,27 +47,72 @@
   function details(item) {
     const meta=item.metadados||{};el('details').replaceChildren();
     const data=[['Prefeitura',item.prefeitura],['Dimensões',`${meta.largura} × ${meta.altura}`],['Coordenadas',meta.crs_origem],['Bandas',meta.bandas],['Enviado em',new Date(item.criado_em).toLocaleDateString('pt-BR')]];
+    if(item.tipo==='dem')data.push(['Intervalo',`${item.intervalo_m} m`],['Grade',`${meta.resolucao_m||item.resolucao_m} m`],['Curvas',meta.curvas||'—'],['CRS de cálculo',meta.crs_processamento||'—']);
     data.forEach(([label,value])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value??'—';el('details').append(dt,dd);});
-    el('detail-name').textContent=item.nome;
+    el('detail-name').textContent=item.nome;el('loading-note').textContent=item.tipo==='dem'?'JPEG com estilo cartográfico fixo. Os controles acima alteram a camada no mapa.':'O mapa carrega os trechos necessários conforme você navega.';
+  }
+  const styleCache=new Map();
+  function curveStyle(feature, resolution) {
+    const key=[feature.get("cota"),feature.get("mestra"),resolution<1].join(":");
+    if(styleCache.has(key))return styleCache.get(key);
+    const master=feature.get('mestra');
+    const style=new ol.style.Style({stroke:new ol.style.Stroke({color:el('color').value,width:Number(el('width').value)*(master?1.8:1)}),
+      text:el('labels').checked&&(master||resolution<1)?new ol.style.Text({text:`${feature.get('cota')} m`,placement:'line',repeat:250,
+        font:'12px sans-serif',fill:new ol.style.Fill({color:el('color').value}),stroke:new ol.style.Stroke({color:'#14212b',width:3})}):undefined});
+    styleCache.set(key,style);return style;
+  }
+  function clearReference() {
+    if(referenceLayer&&map){map.removeLayer(referenceLayer);referenceLayer.dispose();}referenceLayer=null;
+  }
+  function referenceOptions(item) {
+    const previous=el('reference').value;
+    el('reference').replaceChildren(new Option('Sem ortomosaico',''));
+    items.filter(i=>i.tipo!=='dem'&&i.status==='pronto'&&i.prefeitura_id===item.prefeitura_id).forEach(i=>el('reference').add(new Option(i.nome,String(i.id))));
+    el('reference').value=previous;
+    if(!el('reference').value)clearReference();
   }
   function select(item) {
-    const needsLayer = !layer || source?.getState()==='error' || selected?.id!==item.id || selected?.arquivo_url!==item.arquivo_url;
+    const needsLayer = !layer || layer.get('loadError') || source?.getState()==='error' || selected?.id!==item.id || selected?.arquivo_url!==item.arquivo_url || selected?.curvas_url!==item.curvas_url;
+    if(needsLayer){vectorRequest?.abort();vectorRequest=null;styleCache.clear();}
+    el('dem-controls').hidden=item.tipo!=='dem'||item.status!=='pronto';
+    el('jpeg').removeAttribute('href');if(item.jpeg_url)el('jpeg').href=item.jpeg_url;
+    el('layer-label').textContent=item.tipo==='dem'?'Curvas de nível':'Ortomosaico RGB';
+    if(item.tipo==='dem')referenceOptions(item);else clearReference();
     selected=item;renderList();details(item);el('active-title').textContent=item.nome;
     el('empty').hidden=item.status==='pronto';
     if(item.status!=='pronto'){
       if(layer&&map){map.removeLayer(layer);layer.dispose();layer=null;source=null;}
       el('empty').querySelector('h2').textContent=labels[item.status]||item.status;
-      el('empty').querySelector('p').textContent=item.erro||'Seu arquivo está salvo. O sistema está preparando os níveis de zoom para a visualização.';
+      el('empty').querySelector('p').textContent=item.erro||'Seu arquivo está salvo. O sistema está preparando o mapa e os resultados. Acompanhe o estado na biblioteca.';
       message(item.erro||'O processamento continua em segundo plano. Você pode voltar a esta página depois.',item.status==='falha');
       if(item.status==='falha'){
         const retry=document.createElement('button');retry.type='button';retry.textContent='Processar novamente';
-        retry.onclick=async()=>{retry.disabled=true;try{const data=await api(item.retry_url,{method:'POST'});Object.assign(item,data.item);select(item);}catch(e){message(e.message,true);retry.disabled=false;el('message').append(retry);}};
+        const params={};
+        if(item.tipo==='dem'){
+          for(const [key,label,value,min,max] of [['intervalo_m','Intervalo (m)',item.intervalo_m,.25,1000],['resolucao_m','Resolução (m)',item.resolucao_m,.25,100]]){
+            const control=document.createElement('input');control.type='number';control.min=min;control.max=max;control.step='any';control.value=value;control.required=true;
+            control.setAttribute('aria-label',label);const wrapper=document.createElement('label');wrapper.textContent=label;wrapper.append(control);el('message').append(wrapper);params[key]=control;
+          }
+        }
+        retry.onclick=async()=>{retry.disabled=true;try{const values=Object.fromEntries(Object.entries(params).map(([k,v])=>[k,v.value]));const data=await api(item.retry_url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});Object.assign(item,data.item);select(item);}catch(e){retry.disabled=false;const notice=document.createElement('p');notice.textContent=e.message;el('message').append(notice);}};
         el('message').append(retry);
       }
       return;
     }
     if(!needsLayer||!map)return;
     if(layer){map.removeLayer(layer);layer.dispose();}
+    if(item.tipo==='dem'){
+      source=new ol.source.Vector();
+      layer=new ol.layer.Vector({source,style:curveStyle,declutter:true,opacity:Number(el('opacity').value)/100,visible:el('visible').checked});
+      layer.setZIndex(10);map.addLayer(layer);fit();message('Carregando curvas de nível…');
+      const thisSource=source,controller=new AbortController();vectorRequest=controller;
+      api(item.curvas_url,{signal:controller.signal}).then(data=>{
+        if(source!==thisSource)return;
+        source.addFeatures(new ol.format.GeoJSON().readFeatures(data,{dataProjection:'EPSG:4326',featureProjection:'EPSG:3857'}));
+        message(`Curvas disponíveis · intervalo ${item.intervalo_m} m · grade ${item.metadados.resolucao_m} m. ${item.metadados.aviso||''}`);
+      }).catch(e=>{if(e.name!=='AbortError'&&source===thisSource){layer.set('loadError',true);message(e.message,true);}});
+      return;
+    }
     message('Carregando ortomosaico…');
     // The processor emits RGB(A). readRGB would discard the fourth alpha band.
     source=new ol.source.GeoTIFF({sources:[{url:item.arquivo_url}],convertToRGB:false,interpolate:true});
@@ -76,6 +127,7 @@
     const data=await api(`${app.dataset.listUrl}?prefeitura_id=${encodeURIComponent(el('filter').value)}`);items=data.items;
     const wanted=items.find(i=>i.id===preferId)||items.find(i=>i.id===selected?.id)||items[0];
     if(wanted)select(wanted);else{
+      vectorRequest?.abort();clearReference();el('dem-controls').hidden=true;el('jpeg').removeAttribute('href');
       selected=null;if(layer&&map){map.removeLayer(layer);layer.dispose();layer=null;}source=null;
       el('empty').hidden=false;el('empty').querySelector('h2').textContent='Selecione um levantamento';
       el('empty').querySelector('p').textContent='Envie um ortomosaico ou escolha outra prefeitura para visualizar os mapas.';
@@ -83,6 +135,22 @@
       el('details').replaceChildren();message('Escolha um ortomosaico na biblioteca.');renderList();
     }
   }
+  el('reference').onchange=()=>{
+    clearReference();const item=items.find(i=>String(i.id)===el('reference').value&&i.prefeitura_id===selected?.prefeitura_id&&i.tipo!=='dem');
+    if(!item||!map)return;
+    const refSource=new ol.source.GeoTIFF({sources:[{url:item.arquivo_url}],convertToRGB:false,interpolate:true});
+    referenceLayer=new ol.layer.WebGLTile({source:refSource});referenceLayer.setZIndex(1);map.addLayer(referenceLayer);
+    refSource.on('tileloaderror',()=>message('Não foi possível carregar o ortomosaico de referência.',true));
+  };
+  ['color','width','labels'].forEach(name=>el(name).addEventListener('input',()=>{if(selected?.tipo==='dem'){styleCache.clear();layer?.changed();}}));
+  function updateType(){
+    const dem=el('type').value==='dem';el('dem-fields').hidden=!dem;
+    ['interval','resolution','meters'].forEach(name=>{el(name).disabled=!dem;el(name).required=dem;});
+    el('format-hint').textContent=dem?'Uma banda numérica com altitudes em metros.':'RGB de 8 bits, com ou sem transparência.';
+    el('send').textContent=dem?'Enviar e gerar curvas':'Enviar e preparar mapa';
+  }
+  el('type').onchange=updateType;
+  updateType();
   el('filter').addEventListener('change',()=>load().catch(e=>message(e.message,true)));
   el('visible').onchange=()=>layer?.setVisible(el('visible').checked);
   el('opacity').oninput=()=>{el('opacity-label').textContent=`${el('opacity').value}%`;layer?.setOpacity(Number(el('opacity').value)/100);};
@@ -104,7 +172,7 @@
     const finish=()=>{uploading=false;el('send').disabled=false;el('close').disabled=false;};
     xhr.onload=async()=>{finish();let data={};try{data=JSON.parse(xhr.responseText);}catch(_){}
       if(xhr.status!==202){el('upload-status').textContent=data.error||(xhr.status===413?'A hospedagem recusou o tamanho deste envio. Solicite o ajuste do limite de upload do servidor.':'Não foi possível enviar. Confira sua sessão e tente novamente.');return;}
-      el('dialog').close();el('form').reset();el('filter').value=String(data.item.prefeitura_id);
+      el('dialog').close();el('form').reset();updateType();el('filter').value=String(data.item.prefeitura_id);
       await load(data.item.id).catch(e=>message(e.message,true));};
     xhr.onerror=()=>{finish();el('upload-status').textContent='A conexão foi interrompida. Confira a biblioteca antes de repetir o envio.';};
     xhr.send(new FormData(el('form')));
