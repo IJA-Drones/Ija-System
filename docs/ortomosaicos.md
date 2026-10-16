@@ -66,3 +66,17 @@ Os dois resultados são publicados juntos somente após processamento e uploads 
 No mapa: zoom/enquadramento, visibilidade, opacidade, cor, espessura, cotas, clique para consultar altitude e opção de sobrepor a um ortomosaico RGB pronto da mesma prefeitura. Sem fundo, mapa de ruas e Google Satélite continuam disponíveis. O seletor de referência não garante que os levantamentos cubram a mesma área.
 
 Validação: `python -m pytest tests/test_dem_contours.py tests/test_ortomosaicos.py tests/test_central_ti_permissions.py -q`. O DEM de exemplo `Result_MDS_DEM.tif` foi validado com intervalo 1 m e grade 2 m; limites e cotas são derivados da grade processada, não das estatísticas completas do TIFF original.
+
+## Carregamento e reaproveitamento das referências
+
+O visualizador mantém em memória as duas imagens RGB usadas mais recentemente, compartilhando a mesma camada entre visualização principal e referência das curvas. Desligar/ligar a referência ou voltar ao RGB reaproveita os blocos e tiles enquanto permanecerem no cache da página. Trocar o filtro remove as imagens que deixaram de constar na lista autorizada. Fechar/recarregar a página elimina esse reaproveitamento; não há cache persistente em disco nem publicação dos arquivos.
+
+A leitura parcial usa blocos de 256 KiB e cache de 64 blocos (16 MiB de dados comprimidos por fonte), além do cache de renderização do OpenLayers configurado para 128 tiles por camada. Continua recusando o download integral como resposta a uma leitura parcial. As URLs locais incluem uma versão derivada da referência privada do COG; um novo resultado invalida a imagem anterior, sem expor seu caminho. Erros também permitem uma nova tentativa ao selecionar novamente.
+
+No servidor, somente as leituras GET/HEAD do COG optam por uma Session HTTP reutilizável por thread. Configuração/credenciais ou processo diferentes fecham/substituem a sessão anterior; cookies não são reaproveitados entre chamadas. As autorizações de perfil e prefeitura continuam sendo verificadas antes de cada acesso, e as respostas continuam `private, no-store`. Outros acessos ao Skybox mantêm o transporte anterior. Não requer migração nem reprocessamento dos arquivos existentes.
+
+O seletor mostra carregamento, conclusão das leituras ou falha; metadados carregados sozinhos não anunciam a imagem como pronta. Se os limites da referência não interceptam os limites do DEM, informa que a referência não cobre a área. A disponibilidade do Skybox, a rede e o nível de zoom ainda afetam a primeira abertura.
+
+Validação de desempenho local em 16/10/2026: COG RGBA real Base PCTI de 43.285.787 bytes, enquadramento inicial e atraso simulado de 120 ms por leitura remota. Código anterior: 5 leituras, 655.360 bytes, janela de transferência de 0,692 s. Código ajustado: 3 leituras, 786.432 bytes, 0,417 s. Blocos maiores reduzem viagens de rede, podendo transferir bytes extras. Desligar/ligar a referência carregada não gerou leituras adicionais na versão ajustada. Esses números medem esse cenário local, não o tempo total garantido no site. Uma amostra somente leitura no Skybox real também confirmou menor latência com conexão reutilizada (aproximadamente 120–150 ms após a primeira chamada, contra 220–370 ms com conexões novas).
+
+Testes adicionais: `node --test tests/ortomosaicos_raster.test.cjs` e `python -m pytest tests/test_skybox_read_pool.py tests/test_ortomosaicos.py -q`.

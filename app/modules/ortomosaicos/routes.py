@@ -124,7 +124,8 @@ def register_routes(bp):
             return Response(status=416)
         # Never expose remote credentials or publish a Skybox URL to the browser.
         upstream = skybox._request(request.method, skybox.remote_path_from_marker(row.cog_path),
-                                  headers={'Range': header} if header else {}, stream=True)
+                                  headers={'Range': header} if header else {}, stream=True,
+                                  reuse_connection=True)
         if upstream.status_code not in (200, 206, 416) or (header and upstream.status_code == 200):
             upstream.close()
             return jsonify(error='Não foi possível carregar esta parte do mapa.'), 502

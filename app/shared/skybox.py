@@ -1,6 +1,7 @@
 import mimetypes
 import os
 import time
+import threading
 import uuid
 from urllib.parse import quote
 
@@ -10,6 +11,7 @@ from flask import Response, current_app, stream_with_context
 
 SKYBOX_MARKER_PREFIX = "skybox://"
 REQUEST_TIMEOUT = (15, 300)
+_read_connections = threading.local()
 STREAM_CHUNK_SIZE = 1024 * 1024
 
 
@@ -392,9 +394,23 @@ def _auth():
     return username, password
 
 
-def _request(method, remote_path, **kwargs):
+def _request(method, remote_path, *, reuse_connection=False, **kwargs):
     kwargs.setdefault("timeout", REQUEST_TIMEOUT)
-    return requests.request(method, _remote_url(remote_path), auth=_auth(), **kwargs)
+    url, auth = _remote_url(remote_path), _auth()
+    if not reuse_connection or method.upper() not in {'GET', 'HEAD'}:
+        return requests.request(method, url, auth=auth, **kwargs)
+    # TIFF viewing performs many small range reads. Keep TLS connections alive,
+    # but never share mutable Sessions between threads or across a fork/config change.
+    identity = (os.getpid(), _setting('SKYBOX_WEBDAV_URL'), auth)
+    if getattr(_read_connections, 'identity', None) != identity:
+        previous = getattr(_read_connections, 'session', None)
+        if previous is not None:
+            previous.close()
+        _read_connections.session = requests.Session()
+        _read_connections.identity = identity
+    session = _read_connections.session
+    session.cookies.clear()
+    return session.request(method, url, auth=auth, **kwargs)
 
 
 def _ensure_parent_collections(remote_path):

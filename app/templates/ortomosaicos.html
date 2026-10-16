@@ -39,6 +39,7 @@
           <a id="ortho-jpeg" class="ortho-primary" download>Baixar JPEG</a>
           <label for="ortho-reference">Ortomosaico de referência</label>
           <select id="ortho-reference"><option value="">Sem ortomosaico</option></select>
+          <p id="ortho-reference-status" class="ortho-muted" role="status" aria-live="polite" hidden></p>
           <label for="ortho-color">Cor das curvas <input id="ortho-color" type="color" value="#f5cf7b"></label>
           <label for="ortho-width">Espessura</label><input id="ortho-width" type="range" min="0.25" max="4" step="0.25" value="0.75">
           <label>Mostrar cotas <input id="ortho-labels" type="checkbox" checked></label>
@@ -88,5 +89,6 @@
 <script src="{{ url_for('static', filename='vendor/openlayers/ol.js') }}"></script>
 <script id="ortho-basemap-config" type="application/json">{{ {'key': ortho_google_key | default('')} | tojson }}</script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261016-dem') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261016-perf') }}"></script>
 {% endblock %}
