@@ -69,7 +69,11 @@ def register_routes(bp):
             file = request.files.get('arquivo')
             if not file:
                 return jsonify(error='Selecione o arquivo TIF.'), 400
-            row = service.create_upload(file, request.form.get('nome'), pid, current_user.id)
+            if request.form.get('tipo') == 'dem' and request.form.get('elevacoes_metros') != '1':
+                return jsonify(error='Confirme que as elevações do DEM estão em metros.'), 400
+            row = service.create_upload(file, request.form.get('nome'), pid, current_user.id,
+                tipo=request.form.get('tipo', 'rgb'), interval=request.form.get('intervalo_m'),
+                resolution=request.form.get('resolucao_m'))
             payload = service.serialize(row)
             service.dispatch(row.id)
             return jsonify(item=payload), 202
@@ -95,6 +99,16 @@ def register_routes(bp):
         row = get_record(oid)
         if row.status != 'falha':
             return jsonify(error='Este ortomosaico não está aguardando uma nova tentativa.'), 409
+        if row.tipo == 'dem':
+            from .dem_processor import parameters
+            values = request.get_json(silent=True) or {}
+            if not isinstance(values, dict):
+                return jsonify(error='Parâmetros inválidos.'), 400
+            try:
+                row.intervalo_m, row.resolucao_m = parameters(values.get('intervalo_m', row.intervalo_m),
+                                                            values.get('resolucao_m', row.resolucao_m))
+            except ValueError as exc:
+                return jsonify(error=str(exc)), 400
         row.status = 'pendente'; row.erro = None; row.atualizado_em = service.now()
         db.session.commit(); service.dispatch(oid)
         return jsonify(item=service.serialize(row)), 202
@@ -110,7 +124,8 @@ def register_routes(bp):
             return Response(status=416)
         # Never expose remote credentials or publish a Skybox URL to the browser.
         upstream = skybox._request(request.method, skybox.remote_path_from_marker(row.cog_path),
-                                  headers={'Range': header} if header else {}, stream=True)
+                                  headers={'Range': header} if header else {}, stream=True,
+                                  reuse_connection=True)
         if upstream.status_code not in (200, 206, 416) or (header and upstream.status_code == 200):
             upstream.close()
             return jsonify(error='Não foi possível carregar esta parte do mapa.'), 502
@@ -128,6 +143,43 @@ def register_routes(bp):
         result = Response(stream_with_context(stream()), status=upstream.status_code, headers=headers)
         result.call_on_close(upstream.close)
         return result
+
+    def contour_output(oid, field, mime, attachment):
+        row = get_record(oid)
+        marker = getattr(row, field)
+        if row.tipo != 'dem' or row.status != 'pronto' or not marker:
+            abort(404)
+        upstream = skybox._request(request.method, skybox.remote_path_from_marker(marker), stream=True)
+        if upstream.status_code != 200:
+            upstream.close()
+            return jsonify(error='Não foi possível recuperar o resultado. Tente novamente.'), 502
+        headers = {'Content-Type':mime, 'Cache-Control':'private, no-store',
+                   'X-Content-Type-Options':'nosniff'}
+        if 'Content-Length' in upstream.headers:
+            headers['Content-Length'] = upstream.headers['Content-Length']
+        if attachment:
+            headers['Content-Disposition'] = f'attachment; filename="curvas-nivel-{oid}.jpg"'
+        if request.method == 'HEAD':
+            upstream.close()
+            return Response(headers=headers)
+        def stream():
+            try:
+                yield from upstream.iter_content(256*1024)
+            finally:
+                upstream.close()
+        response = Response(stream_with_context(stream()), headers=headers)
+        response.call_on_close(upstream.close)
+        return response
+
+    @bp.route('/ortomosaicos/<int:oid>/curvas.geojson', methods=['GET', 'HEAD'], endpoint='ortomosaico_curvas')
+    @restricted
+    def curves(oid):
+        return contour_output(oid, 'curvas_path', 'application/geo+json', False)
+
+    @bp.route('/ortomosaicos/<int:oid>/curvas.jpg', methods=['GET', 'HEAD'], endpoint='ortomosaico_jpeg')
+    @restricted
+    def jpeg(oid):
+        return contour_output(oid, 'jpeg_path', 'image/jpeg', True)
 
     @bp.cli.command('processar-ortomosaicos')
     @click.option('--limite', default=5, type=click.IntRange(1, 100))

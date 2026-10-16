@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Ortomosaicos | IJA System{% endblock %}
+{% block title %}Ortomosaicos e curvas | IJA System{% endblock %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/openlayers/ol.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css') }}">
@@ -7,8 +7,8 @@
 {% block content %}
 <section id="ortho-app" class="ortho" data-list-url="{{ url_for('main.ortomosaicos_listar') }}" data-upload-url="{{ url_for('main.ortomosaico_upload') }}" data-max-mb="{{ limite_mb }}">
   <header class="ortho-header">
-    <div><span class="ortho-eyebrow">INTELIGÊNCIA TERRITORIAL</span><h1>Ortomosaicos</h1><p>Seu levantamento, na posição certa.</p></div>
-    <button id="ortho-new" class="ortho-primary" type="button"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Enviar ortomosaico</button>
+    <div><span class="ortho-eyebrow">INTELIGÊNCIA TERRITORIAL</span><h1>Ortomosaicos e curvas de nível</h1><p>Seu levantamento, na posição certa.</p></div>
+    <button id="ortho-new" class="ortho-primary" type="button"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Enviar levantamento</button>
   </header>
   <div class="ortho-workspace">
     <aside class="ortho-library" aria-label="Biblioteca de ortomosaicos">
@@ -31,12 +31,22 @@
         <h2><i class="bi bi-layers" aria-hidden="true"></i> Camadas</h2>
         <label for="ortho-basemap">Mapa de fundo</label>
         <select id="ortho-basemap"><option value="satellite">Google Satélite</option><option value="streets">Mapa de ruas</option><option value="none">Sem fundo</option></select>
-        <label><span>Ortomosaico RGB</span><input id="ortho-visible" type="checkbox" checked></label>
+        <label><span id="ortho-layer-label">Ortomosaico RGB</span><input id="ortho-visible" type="checkbox" checked></label>
         <label for="ortho-opacity">Opacidade <output id="ortho-opacity-label">100%</output></label>
         <input id="ortho-opacity" type="range" min="0" max="100" value="100">
+        <div id="ortho-dem-controls" hidden>
+          <p id="ortho-elevation" class="ortho-muted" role="status">Clique em uma curva para consultar sua cota.</p>
+          <a id="ortho-jpeg" class="ortho-primary" download>Baixar JPEG</a>
+          <label for="ortho-reference">Ortomosaico de referência</label>
+          <select id="ortho-reference"><option value="">Sem ortomosaico</option></select>
+          <p id="ortho-reference-status" class="ortho-muted" role="status" aria-live="polite" hidden></p>
+          <label for="ortho-color">Cor das curvas <input id="ortho-color" type="color" value="#f5cf7b"></label>
+          <label for="ortho-width">Espessura</label><input id="ortho-width" type="range" min="0.25" max="4" step="0.25" value="0.75">
+          <label>Mostrar cotas <input id="ortho-labels" type="checkbox" checked></label>
+        </div>
         <hr><h3 id="ortho-detail-name">Detalhes do levantamento</h3>
         <dl id="ortho-details"><dt>Formato</dt><dd>GeoTIFF RGB</dd></dl>
-        <p class="ortho-muted">O mapa carrega os trechos necessários conforme você navega.</p>
+        <p id="ortho-loading-note" class="ortho-muted">O mapa carrega os trechos necessários conforme você navega.</p>
       </section>
       <div id="ortho-coordinates" class="ortho-coordinates">Coordenadas · WGS 84</div>
       <div id="ortho-google-credit" class="ortho-google-credit" hidden><img src="{{ url_for('static', filename='vendor/google-maps/google-maps-logo.svg') }}" alt="Google Maps" height="18"></div>
@@ -46,12 +56,23 @@
   <p id="ortho-message" class="ortho-message" role="status" aria-live="polite"></p>
   <dialog id="ortho-dialog" class="ortho-dialog">
     <form id="ortho-form">
-      <div class="ortho-dialog-head"><h2>Novo ortomosaico</h2><button id="ortho-close" type="button" aria-label="Fechar">×</button></div>
-      <p>Envie um GeoTIFF RGB georreferenciado. O mapa ficará disponível após o processamento.</p>
+      <div class="ortho-dialog-head"><h2>Novo levantamento</h2><button id="ortho-close" type="button" aria-label="Fechar">×</button></div>
+      <p>Envie um GeoTIFF georreferenciado. O resultado ficará disponível após o processamento.</p>
+      <label for="ortho-type">Tipo de arquivo</label>
+      <select id="ortho-type" name="tipo"><option value="rgb">Ortomosaico RGB</option><option value="dem">DEM / curvas de nível</option></select>
+      <div id="ortho-dem-fields" hidden>
+        <label for="ortho-interval">Intervalo entre curvas (m)</label>
+        <input id="ortho-interval" name="intervalo_m" type="number" min="0.25" max="1000" step="any" value="1" disabled>
+        <label for="ortho-resolution">Resolução de processamento (m por célula)</label>
+        <input id="ortho-resolution" name="resolucao_m" type="number" min="0.25" max="100" step="any" value="2" disabled>
+        <small>Células maiores reduzem o detalhe e o peso do processamento. O original é preservado. Mestras a cada 5 curvas. O JPEG e o mapa usam as mesmas linhas.</small>
+        <small>Envie uma banda de elevação em metros. MDS pode incluir árvores e construções; o sistema não transforma MDS em terreno limpo.</small>
+        <label><input id="ortho-meters" name="elevacoes_metros" value="1" type="checkbox" disabled> Confirmo que as elevações deste arquivo estão em metros.</label>
+      </div>
       <label for="ortho-name">Nome do levantamento</label><input id="ortho-name" name="nome" maxlength="120" required placeholder="Ex.: Base PCTI · Outubro 2026">
       <label for="ortho-prefeitura">Prefeitura responsável</label><select id="ortho-prefeitura" name="prefeitura_id" required><option value="">Selecione a prefeitura</option>{% for p in prefeituras %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
-      <label for="ortho-file">Arquivo do ortomosaico</label><input id="ortho-file" name="arquivo" type="file" accept=".tif,.tiff,image/tiff" required>
-      <small>RGB de 8 bits, com ou sem transparência.
+      <label for="ortho-file">Arquivo GeoTIFF</label><input id="ortho-file" name="arquivo" type="file" accept=".tif,.tiff,image/tiff" required>
+      <small><span id="ortho-format-hint">RGB de 8 bits, com ou sem transparência.</span>
         {% if limite_mb %}Até {{ limite_mb }} MB por arquivo.{% else %}Sem limite de tamanho definido pelo sistema.{% endif %}
         {% if limite_pixels %}Até {{ limite_pixels }} pixels.{% endif %}
         Arquivos grandes podem levar mais tempo para enviar e processar.
@@ -68,5 +89,6 @@
 <script src="{{ url_for('static', filename='vendor/openlayers/ol.js') }}"></script>
 <script id="ortho-basemap-config" type="application/json">{{ {'key': ortho_google_key | default('')} | tojson }}</script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261016-perf') }}"></script>
 {% endblock %}

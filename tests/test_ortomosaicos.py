@@ -239,3 +239,41 @@ def test_migration_preserves_existing_records(tmp_path):
             assert c.execute(text('SELECT COUNT(*) FROM prefeituras')).scalar()==1
             migration.downgrade();assert not inspect(c).has_table('ortomosaicos')
     engine.dispose()
+
+
+def test_raster_version_changes_only_when_processed_file_changes(app):
+    c = client(app)
+    oid = upload(c).json['item']['id']
+    with app.app_context():
+        assert service.process_one(oid)
+    first = c.get(f'/api/ortomosaicos/{oid}').json['item']['arquivo_url']
+    assert '?v=' in first and 'skybox' not in first
+    assert c.get(first, headers={'Range': 'bytes=0-15'}).status_code == 206
+    assert c.get(f'/api/ortomosaicos/{oid}').json['item']['arquivo_url'] == first
+    with app.app_context():
+        db.session.get(Ortomosaico, oid).cog_path = 'skybox://different-private-result.tif'
+        db.session.commit()
+    assert c.get(f'/api/ortomosaicos/{oid}').json['item']['arquivo_url'] != first
+
+
+def test_pooled_raster_reads_still_require_role_and_municipality(app, monkeypatch):
+    from app.modules.ortomosaicos import routes
+    c = client(app)
+    oid = upload(c).json['item']['id']
+    with app.app_context():
+        assert service.process_one(oid)
+    original = skybox._request
+    calls = []
+    def record(*args, **kwargs):
+        calls.append(kwargs)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(skybox, '_request', record)
+    path = f'/ortomosaicos/{oid}/arquivo.tif'
+    assert c.get(path, headers={'Range': 'bytes=0-15'}).status_code == 206
+    assert calls[-1]['reuse_connection'] is True
+    calls.clear()
+    assert app.test_client().get(path).status_code == 401
+    assert client(app, 3).get(path).status_code == 403
+    monkeypatch.setattr(routes, 'can_access_prefeitura', lambda *_: False)
+    assert c.get(path).status_code == 404
+    assert calls == []

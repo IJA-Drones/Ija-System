@@ -23,3 +23,7 @@ sgsv.db
 .flaskenv
 .vscode/
 .idea/
+
+# Local DEM development previews and generated deliverables
+/tmp/dem-preview/
+/output/dem/

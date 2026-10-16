@@ -3,3 +3,5 @@
 .ortho h1,.ortho h2,.ortho h3{color:#edf5f8!important}
 .ortho-google-credit{position:absolute;left:8px;bottom:0;padding:10px 10px 5px;pointer-events:none}.ortho-google-credit img{display:block;height:18px;width:auto}.ortho-coordinates{bottom:55px}.ortho .ol-attribution{background:#fffffff0;color:#23313a;font-size:11px;max-width:calc(100% - 155px);max-height:70px;overflow:auto;white-space:normal}.ortho .ol-attribution ul{white-space:normal}.ortho-layers select{margin-bottom:8px}#ortho-basemap-status{line-height:1.6}
 .ortho-layers,.ortho-stage:fullscreen .ortho-layers{top:160px;max-height:calc(100% - 215px);overflow-y:auto}@media(max-width:700px){.ortho-layers{top:auto;max-height:calc(100% - 220px)}}
+#ortho-jpeg{display:block;text-align:center;text-decoration:none;margin:14px 0}#ortho-dem-controls input[type=color]{width:42px;padding:2px;height:28px}.ortho-dialog{max-height:90vh;overflow:auto}.ortho [hidden]{display:none!important}
+.ortho-message>label{display:inline-block;max-width:150px;margin:10px 10px 0 0}.ortho-message>label input{display:block;margin-top:5px}
