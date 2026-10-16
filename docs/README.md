@@ -30,6 +30,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 | Retornos | [Visualização do ciclo](README-retorno-automatico.md), [central de retornos automáticos](relatorio-central-retornos-automaticos.md) |
 | Endereços e voos | [Bloqueio por endereço resolvido](relatorio-bloqueio-novas-solicitacoes-endereco-resolvido.md), [Place ID e vínculo de KML](relatorio-melhoria-place-id-vinculo-kml-os.md) |
 | Arquivos | [Streaming WebDAV](relatorio-upload-stream-webdav.md) |
+| Vigilância | [Carga persistida Focal/LIRAa](vigilancia-carga-campo.md), [prévia CSV](vigilancia-validacao-inicial.md), [SINAN](sinan-consulta-publica.md) |
 | Acesso | [Sessões, senhas e CSRF](seguranca-sessoes-senhas.md), [proteção de login](protecao-login.md), [validade das senhas pelo DEV](expiracao-senhas.md) |
 | Suporte | [Reporte de bugs](notion_reporte_bugs.md) |
 | Interface | [Refatoração visual e dark mode](relatorio-refatoracao-visual-css-dark-mode.md), [checkpoint CSS](refatoracao_css_para_arrumar_darkmode.md) |
@@ -37,6 +38,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 Os relatórios de funcionalidades registram a entrega e seus testes na época indicada. Os guias de configuração e operação descrevem a revisão atual. Quando houver divergência, confronte com o código e com a data do documento; contagens e resultados antigos não são resultados da suíte atual.
 
 ## Documentos históricos e planejamento
+
 
 - [Documentação técnica INPI em Markdown](documentacao-tecnica-inpi-ija-system.md) e [em Word](documentacao-tecnica-inpi-ija-system.docx): emissão 1.0, de 26/08/2026, referente ao snapshot de 25/08/2026. Permanecem como registro daquela versão. A atualização técnica de setembro está nos guias acima e na [revisão](revisao-documentacao-2026-09-25.md); não foi emitida uma nova versão formal do Word.
 - [Auditoria contratual de 15/09/2026](auditoria-contratual-vigilancia-2026-09-15.md) e [evidências](auditoria-vigilancia-evidencias-2026-09-15/): conclusões e inventário daquela data.

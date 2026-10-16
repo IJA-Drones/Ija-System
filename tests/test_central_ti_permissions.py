@@ -106,6 +106,39 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.configure('uvis', ['prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar', 'prefeitura.relatorios.consultar', 'prefeitura.relatorios.exportar'])
         self.assertEqual(self.client.get(f'{path}/{job_id}/exportar.csv').status_code, 200)
 
+    def test_field_import_requires_actions_and_keeps_delegated_municipal_scope(self):
+        from io import BytesIO
+        from app.modules.vigilancia.sample import build_sample_csv
+        from app.modules.vigilancia.field_store import FieldStore
+        self.app.config.update(VIGILANCIA_IMPORT_ENABLED=True)
+        municipality = Prefeitura(nome='Campo isolado', slug='campo-isolado')
+        db.session.add(municipality)
+        db.session.flush()
+        self.users['uvis'].prefeitura_id = municipality.id
+        db.session.commit()
+        self.configure('uvis', ['prefeitura.vigilancia.consultar'])
+        self.login('uvis')
+        self.assertEqual(self.client.get('/vigilancia/importacoes').status_code, 200)
+        with self.client.session_transaction() as stored:
+            csrf = stored['_ija_csrf']
+        def prepare():
+            return self.client.post('/vigilancia/importacoes', data={
+                'acao': 'preparar', 'fonte': 'Amostra de teste', 'demo': 'true', '_csrf_token': csrf,
+                'arquivo': (BytesIO(build_sample_csv(municipality.id)), 'sample.csv'),
+            })
+        self.assertEqual(prepare().status_code, 403)
+        self.configure('uvis', ['prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar'])
+        self.assertEqual(prepare().status_code, 303)
+        batch = FieldStore().history(municipality.id)[0]
+        self.assertEqual(self.client.get('/vigilancia/importacoes?prefeitura_id=999').status_code, 403)
+        export = f"/vigilancia/importacoes/{batch['id']}/origem.csv"
+        self.assertEqual(self.client.get(export).status_code, 403)
+        self.configure('uvis', ['prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar', 'prefeitura.relatorios.consultar', 'prefeitura.relatorios.exportar'])
+        self.assertEqual(self.client.get(export).status_code, 200)
+        self.configure('uvis', [])
+        self.assertEqual(self.client.get('/vigilancia/importacoes').status_code, 403)
+        self.assertEqual(self.client.get(export).status_code, 403)
+
     def test_public_chatbot_keeps_its_tokens_when_logged_in_profile_has_no_business_access(self):
         self.configure('admin')
         self.login('admin')

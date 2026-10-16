@@ -1,5 +1,8 @@
 # Prévia de validação de vigilância
 
+> Evolução: a [primeira carga persistida de campo](vigilancia-carga-campo.md)
+> possui tela e ativação próprias. A prévia descrita aqui continua sem gravação.
+
 Esta primeira entrega permite conferir arquivos CSV de tratamento focal e LIRAa em memória e revisar uma prévia por levantamento, estrato e área. O layout `ija-vigilancia-preview-v1` é **provisório**: foi desenhado para exercitar validação, conflitos e cálculo com dados sintéticos. Não substitui layouts oficiais, não importa SINAN, não grava imóveis ou inspeções e não executa migrações de banco.
 
 ## Acesso local e arquitetura

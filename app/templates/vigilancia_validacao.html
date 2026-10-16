@@ -9,7 +9,7 @@
   <header class="vigilancia-preview-header">
     <div>
       <p class="vigilancia-preview-eyebrow">Vigilância de campo</p>
-      <h1>Validação de Focal e LIRAa</h1>
+      <h1>{{ 'Importação de Focal e LIRAa' if field_mode else 'Validação de Focal e LIRAa' }}</h1>
       <p class="vigilancia-preview-muted">Confira o arquivo, revise inconsistências e consulte os indicadores preliminares.</p>
     </div>
     <span class="vigilancia-preview-tag">Layout provisório</span>
@@ -17,17 +17,31 @@
 
   <div class="vigilancia-preview-notice">
     <i class="bi bi-info-circle" aria-hidden="true"></i>
-    <p>Esta prévia não grava dados no sistema. Use o exemplo sintético para validar o fluxo; os layouts e resultados oficiais dependem de homologação da vigilância.</p>
+    <p>{% if field_mode %}O arquivo original e a prévia são preservados no lote. Imóveis e inspeções são gravados somente após confirmar a carga. Dados demonstrativos ficam separados dos dados autorizados. Os indicadores continuam preliminares.{% else %}Esta prévia não grava dados no sistema. Use o exemplo sintético para validar o fluxo; os layouts e resultados oficiais dependem de homologação da vigilância.{% endif %}</p>
   </div>
 
   {% if erro %}
   <div class="alert alert-danger" role="alert">{{ erro }}</div>
   {% endif %}
 
+  {% if field_mode %}
+    {% include '_vigilancia_cargas.html' %}
+  {% endif %}
+
   <section class="vigilancia-preview-panel" aria-labelledby="arquivo-heading">
     <h2 id="arquivo-heading">Conferir arquivo</h2>
-    <form method="post" action="{{ url_for('main.vigilancia_validacao') }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_validacao'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+    {% set form_endpoint = 'main.vigilancia_importacoes' if field_mode else 'main.vigilancia_validacao' %}
+    {% set sample_endpoint = 'main.vigilancia_import_modelo' if field_mode else 'main.vigilancia_modelo_csv' %}
+    <form method="post" action="{{ url_for(form_endpoint) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(form_endpoint), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
       <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
+      {% if field_mode %}
+      <input type="hidden" name="acao" value="preparar">
+      <div class="vigilancia-preview-form-grid mb-3">
+        <div><label for="campo-fonte" class="form-label">Fonte do arquivo</label><input id="campo-fonte" name="fonte" class="form-control" maxlength="120" required placeholder="Ex.: levantamento sintético para demonstração"></div>
+        <div><label for="campo-demo" class="form-label">Origem dos dados</label><select id="campo-demo" name="demo" class="form-select"><option value="true">Demonstração - dados fictícios</option><option value="false">Dados autorizados da vigilância</option></select></div>
+      </div>
+      <p><label><input type="checkbox" name="autorizado" value="sim"> Confirmo a autorização para uso de dados reais, caso tenha selecionado essa opção.</label></p>
+      {% endif %}
       <div class="vigilancia-preview-form-grid">
         <div>
           <label for="prefeitura-id" class="form-label">Código da prefeitura</label>
@@ -45,8 +59,8 @@
       <div class="vigilancia-preview-actions">
         <button class="btn btn-primary" type="submit"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Validar arquivo</button>
         <a class="btn btn-outline-primary {% if not prefeitura_id %}disabled{% endif %}" id="sample-download"
-          href="{% if prefeitura_id %}{{ url_for('main.vigilancia_modelo_csv', prefeitura_id=prefeitura_id) }}{% else %}#{% endif %}"
-          data-sample-url="{{ url_for('main.vigilancia_modelo_csv') }}" {% if not prefeitura_id %}aria-disabled="true" tabindex="-1"{% endif %}>
+          href="{% if prefeitura_id %}{{ url_for(sample_endpoint, prefeitura_id=prefeitura_id) }}{% else %}#{% endif %}"
+          data-sample-url="{{ url_for(sample_endpoint) }}" {% if not prefeitura_id %}aria-disabled="true" tabindex="-1"{% endif %}>
           <i class="bi bi-download me-2" aria-hidden="true"></i>Baixar exemplo sintético
         </a>
       </div>

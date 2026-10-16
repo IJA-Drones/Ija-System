@@ -3348,3 +3348,9 @@ class EdicaoReserva(db.Model):
     expira_em = db.Column(db.DateTime, index=True)
     iniciado_em = db.Column(db.DateTime)
     geracao = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+
+
+# Register the field domain for Alembic and isolated db.create_all() tests.
+from app.modules.vigilancia.field_models import (  # noqa: E402,F401
+    CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao,
+)

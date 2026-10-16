@@ -136,6 +136,18 @@
       </a>
     </div>
     {% endif %}
+    {% if config.get('VIGILANCIA_IMPORT_ENABLED') and (central_ti_ui_guard(['main.vigilancia_importacoes'], (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (config.get('VIGILANCIA_IMPORT_ENABLED') and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin'))) %}
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.vigilancia_importacoes') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_importacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 relatorios-menu-card">
+          <h6 class="mb-1 text-muted fw-bold text-uppercase">Vigilância de campo</h6>
+          <h3 class="mb-0 text-dark fw-bold">Carga Focal e LIRAa</h3>
+          <p class="text-muted small mt-3 mb-2">Validar, confirmar e consultar lotes, imóveis e inspeções.</p>
+          <span class="text-primary small fw-bold">Abrir importações</span>
+        </div>
+      </a>
+    </div>
+    {% endif %}
     {% if config.get('VIGILANCIA_PREVIEW_ENABLED') and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin') %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.vigilancia_validacao') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_validacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
