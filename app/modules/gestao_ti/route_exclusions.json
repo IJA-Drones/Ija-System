@@ -1,4 +1,6 @@
 {
+  "main.ortomosaico_curvas": "Private contour layer; fixed diretor/dev guard and municipality access checks",
+  "main.ortomosaico_jpeg": "Private contour JPEG; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaicos": "Fixed role guard: only diretor and dev; cannot be delegated by Central TI",
   "main.ortomosaicos_listar": "Fixed role guard and municipality access checks",
   "main.ortomosaico_upload": "Fixed role guard and municipality access checks",

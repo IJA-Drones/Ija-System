@@ -45,3 +45,24 @@ Bibliotecas do navegador são servidas localmente em `app/static/vendor`: OpenLa
 ## Validação
 
 `tests/test_ortomosaicos.py` usa bancos descartáveis e armazenamento simulado: restrição dos perfis, autenticação, CSRF, validação de arquivo e prefeitura, conversão real de raster, conferência de integridade, recuperação de tarefa expirada, leitura parcial privada e migração reversível. O arquivo Base PCTI foi usado para conferir visualmente a renderização RGBA no navegador e testar o fluxo real no banco de testes/Skybox.
+
+## DEM e curvas de nível
+
+A mesma biblioteca aceita o tipo **DEM / curvas de nível**, apenas para DIRETOR e DEV. O upload exige GeoTIFF de uma banda numérica, georreferenciamento válido e elevações em metros (confirmadas no formulário; unidades explicitamente incompatíveis são rejeitadas). O tipo RGB continua com a validação anterior. A migração `d9e4f81b203a`, após `c8d3e70a192f`, adiciona tipo, intervalo, resolução e referências privadas dos dois resultados; registros existentes ficam como `rgb`.
+
+Fluxo: enviar DEM → escolher intervalo vertical e resolução horizontal → acompanhar Na fila/Processando → abrir curvas no mapa ou baixar JPEG. Padrões da interface: intervalo 1 m e grade 2 m. Intervalo aceito: 0,25–1.000 m; resolução: 0,25–100 m. Resolução é espaçamento da grade, não precisão altimétrica. Se o processamento falhar, é possível ajustar esses parâmetros e tentar novamente sem reenviar o original.
+
+O subprocesso usa Rasterio/GDAL para ler máscaras e reprojetar/re-amostrar em grade métrica com interpolação bilinear; ContourPy extrai isolinhas lineares. Preserva o CRS projetado em metros quando disponível; caso contrário usa uma zona UTM local. A resolução efetiva nunca é menor que a estimativa da resolução nativa. O sistema registra a grade efetiva, CRS de cálculo, intervalo, contagem e amplitude de cotas da grade processada. O referencial vertical é o do arquivo original, sem conversão de datum. Não há classificação de solo, suavização nem remoção automática de vegetação/construções: MDS continua sendo superfície, não MDT. Resultados não são necessariamente idênticos aos de outro algoritmo/configuração no QGIS.
+
+Limites de trabalho desta versão: 4 milhões de células na grade, 500 cotas, 30.000 linhas e 1 milhão de vértices. Ao exceder, o trabalho falha com orientação para ajustar parâmetros, sem simplificar silenciosamente. A aplicação não impõe novo teto de MB ao original; continuam valendo timeout, espaço temporário e limites do servidor. Jobs compartilham o worker durável dos ortomosaicos e a CLI `flask --app app:create_app main processar-ortomosaicos --limite 5`.
+
+Resultados no Skybox, na pasta privada do levantamento e namespace do banco:
+
+- `curvas.geojson`: linhas WGS 84 com atributos `cota` (metros) e `mestra` (a cada cinco intervalos), servidas por rota autenticada. Nesta versão a camada é carregada inteira, respeitando os limites de complexidade; não usa tiles vetoriais.
+- `curvas.jpg`: JPEG de 3080 × 2200 pixels, fundo claro, cotas nas curvas mestras selecionadas, grade de coordenadas, indicação de norte da grade e escala no CRS de cálculo. Sem imagens do Google incorporadas. Usa as mesmas linhas do GeoJSON. Aparência fixa; controles do visualizador não alteram o JPEG.
+
+Os dois resultados são publicados juntos somente após processamento e uploads concluídos. Em falha parcial, o worker remove o resultado incompleto que criou. Rotas de saída verificam perfil, prefeitura, tipo e estado pronto; respostas privadas/no-store, sem URLs ou credenciais do Skybox no navegador. Hash e tamanho do original são conferidos antes de processar. Cada tentativa usa nomes próprios e um token de posse para impedir que jobs antigos publiquem sobre tentativas novas.
+
+No mapa: zoom/enquadramento, visibilidade, opacidade, cor, espessura, cotas, clique para consultar altitude e opção de sobrepor a um ortomosaico RGB pronto da mesma prefeitura. Sem fundo, mapa de ruas e Google Satélite continuam disponíveis. O seletor de referência não garante que os levantamentos cubram a mesma área.
+
+Validação: `python -m pytest tests/test_dem_contours.py tests/test_ortomosaicos.py tests/test_central_ti_permissions.py -q`. O DEM de exemplo `Result_MDS_DEM.tif` foi validado com intervalo 1 m e grade 2 m; limites e cotas são derivados da grade processada, não das estatísticas completas do TIFF original.
