@@ -2,14 +2,18 @@ from werkzeug.exceptions import NotFound
 import json
 import unittest
 from datetime import date, time
+from unittest.mock import patch
 
-from flask import Flask
+from flask import Blueprint, Flask, g
+from flask_login import LoginManager
 from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.models import Equipe, EquipePiloto, OrdemServico, Pilotos, Prefeitura, Solicitacao, Usuario
 from app.modules.dashboard.service import build_uvis_os_form_context
+from app.modules.piloto_os import routes as media_routes
 from app.modules.piloto_os.service import (
+    STATUS_OS_APROVADAS_COM_ACENTO,
     get_os_complementary_image_path_for_user,
     get_os_principal_image_path_for_user,
     get_os_video_path_for_user,
@@ -29,32 +33,23 @@ class UvisOsMediaAccessTests(unittest.TestCase):
             SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
             SERVER_NAME="localhost",
+            SECRET_KEY="isolated-uvis-media-tests",
         )
         self.app.add_url_rule(
             "/uvis/os/<int:os_id>",
             endpoint="main.uvis_os_formulario_view",
             view_func=lambda os_id: "",
         )
-        self.app.add_url_rule(
-            "/piloto/os/<int:os_id>/formulario",
-            endpoint="main.piloto_os_formulario_view",
-            view_func=lambda os_id: "",
-        )
-        self.app.add_url_rule(
-            "/os/<int:os_id>/imagem-principal",
-            endpoint="main.os_imagem_principal",
-            view_func=lambda os_id: "",
-        )
-        self.app.add_url_rule(
-            "/os/<int:os_id>/imagem-complementar/<int:image_index>",
-            endpoint="main.os_imagem_complementar",
-            view_func=lambda os_id, image_index: "",
-        )
-        self.app.add_url_rule(
-            "/os/<int:os_id>/video",
-            endpoint="main.os_video",
-            view_func=lambda os_id: "",
-        )
+        manager = LoginManager(self.app)
+        manager.user_loader(lambda uid: db.session.get(Usuario, int(uid)))
+
+        @self.app.before_request
+        def clear_cached_user():
+            g.pop("_login_user", None)
+
+        bp = Blueprint("main", __name__)
+        media_routes.register_routes(bp)
+        self.app.register_blueprint(bp)
         db.init_app(self.app)
         self.ctx = self.app.app_context()
         self.ctx.push()
@@ -148,6 +143,78 @@ class UvisOsMediaAccessTests(unittest.TestCase):
             get_os_video_path_for_user(self.uvis, self.solicitacao.id),
             "webdav://os/1/video.mp4",
         )
+
+    def media_client(self, user):
+        client = self.app.test_client()
+        with client.session_transaction() as session:
+            session["_user_id"] = str(user.id)
+            session["_fresh"] = True
+        return client
+
+    def assert_media_responses(self, user, expected):
+        client = self.media_client(user)
+        for suffix, path in (
+            ("imagem-principal", "webdav://os/1/principal.jpg"),
+            ("imagem-complementar/1", "webdav://os/1/extra-1.jpg"),
+            ("video", "webdav://os/1/video.mp4"),
+        ):
+            with self.subTest(user=user.tipo_usuario, media=suffix), patch.object(
+                media_routes, "_send_os_media", return_value="media-test"
+            ) as storage:
+                response = client.get(f"/os/{self.solicitacao.id}/{suffix}")
+                self.assertEqual(response.status_code, expected)
+                if expected == 200:
+                    self.assertEqual(response.data, b"media-test")
+                    self.assertEqual(storage.call_args.args[0], path)
+                else:
+                    storage.assert_not_called()
+
+    def test_owner_and_linked_team_can_read_media_while_approved_or_completed(self):
+        for status in (*STATUS_OS_APROVADAS_COM_ACENTO, "CONCLUIDO", "CONCLUÍDO"):
+            self.solicitacao.status = status
+            db.session.commit()
+            with self.subTest(status=status):
+                self.assert_media_responses(self.uvis, 200)
+                self.assert_media_responses(self.equipe_uvis, 200)
+
+    def test_pending_cancelled_or_unassigned_approved_os_remains_blocked(self):
+        for status in ("PENDENTE", "CANCELADO", "REJEITADO", "APROVADO"):
+            self.solicitacao.status = status
+            if status == "APROVADO":
+                self.solicitacao.equipe_id = None
+            db.session.commit()
+            with self.subTest(status=status):
+                self.assert_media_responses(self.uvis, 403)
+                self.assert_media_responses(self.equipe_uvis, 403)
+
+    def test_approved_media_stays_private_to_owner_and_municipality(self):
+        self.solicitacao.status = "APROVADO"
+        db.session.commit()
+        self.assert_media_responses(self.outra_uvis, 404)
+        self.equipe_uvis.equipe_uvis_uvis_usuario_id = self.outra_uvis.id
+        db.session.commit()
+        self.assert_media_responses(self.equipe_uvis, 404)
+        db.session.add(Prefeitura(id=2, nome="Outra prefeitura", slug="outra-prefeitura"))
+        self.uvis.prefeitura_id = 2
+        self.equipe_uvis.prefeitura_id = 2
+        self.equipe_uvis.equipe_uvis_uvis_usuario_id = self.uvis.id
+        db.session.commit()
+        self.assert_media_responses(self.uvis, 404)
+        self.assert_media_responses(self.equipe_uvis, 404)
+
+    def test_approved_os_without_media_returns_not_found(self):
+        self.solicitacao.status = "APROVADO"
+        self.ordem.imagem_principal = None
+        self.ordem.outras_imagens = None
+        self.ordem.video = None
+        db.session.commit()
+        self.assert_media_responses(self.uvis, 404)
+
+    def test_anonymous_cannot_read_media(self):
+        with patch.object(media_routes, "_send_os_media") as storage:
+            response = self.app.test_client().get(f"/os/{self.solicitacao.id}/imagem-principal")
+            self.assertEqual(response.status_code, 401)
+            storage.assert_not_called()
 
     def test_linked_equipe_uvis_can_resolve_owner_os_media_paths(self):
         self.assertEqual(
