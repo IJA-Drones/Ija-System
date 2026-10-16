@@ -1295,7 +1295,11 @@ def build_uvis_os_media_context(user, os_id):
     if solicitacao.usuario_id != owner_id:
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger", redirect_endpoint="main.dashboard")
 
-    if (solicitacao.status or "").strip().upper() not in set(STATUS_OS_CONCLUIDAS):
+    # O histórico da UVIS também exibe OS aprovadas com equipe atribuída.
+    # Suas mídias já salvas devem acompanhar essa consulta durante a execução.
+    status = (solicitacao.status or "").strip().upper()
+    em_andamento = status in STATUS_OS_APROVADAS_COM_ACENTO and solicitacao.equipe_id is not None
+    if status not in STATUS_OS_CONCLUIDAS and not em_andamento:
         raise PilotoOsError(
             "Esta OS ainda nao esta liberada para consulta de midias.",
             "warning",
