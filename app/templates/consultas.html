@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/consultas.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block content %}
+<main class="cq-page container-fluid py-4" id="consultas-app">
+  <header class="d-flex justify-content-between align-items-start gap-3 mb-4"><div>
+    <p class="text-primary fw-bold mb-1">CENTRAL DE RELATÓRIOS</p><h1>Consultas personalizadas</h1>
+    <p class="text-muted">Escolha os dados, defina os critérios e reutilize sua consulta.</p>
+  </div><a href="#cq-help" class="btn btn-outline-primary">Como usar</a></header>
+  <section class="card p-3 mb-3" aria-label="Catálogo pessoal">
+    <div class="d-flex flex-wrap gap-2 align-items-end">
+      <label>Minhas consultas<select id="cq-saved" class="form-select"><option value="">Nova consulta</option></select></label>
+      <label class="flex-grow-1">Nome para salvar<input id="cq-name" maxlength="100" class="form-control" placeholder="Ex.: Monitoramentos por bairro"></label>
+      <button id="cq-save" class="btn btn-outline-primary">Salvar consulta</button><button id="cq-copy" class="btn btn-outline-secondary">Salvar cópia</button><button id="cq-delete" class="btn btn-outline-danger" disabled>Excluir</button>
+    </div><small class="text-muted mt-2">Seu catálogo é pessoal. As permissões e a prefeitura são verificadas novamente a cada execução.</small>
+  </section>
+  <section class="card p-3 mb-3"><h2 class="h5">1. Base e campos</h2>
+    <label>Base de dados<select id="cq-source" class="form-select mb-3">{% for key,label in catalog.sources.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <div id="cq-fields" class="cq-fields">{% for field in catalog.fields %}<label><input type="checkbox" value="{{ field.id }}"> {{ field.label }}</label>{% endfor %}</div>
+    <p class="text-muted mt-2 mb-1">Até 12 campos. Ajuste a ordem e o formato abaixo.</p><div id="cq-selected" class="cq-selected"></div>
+    <details class="mt-3"><summary>Fórmulas calculadas</summary><p class="text-muted">Use os códigos dos campos numéricos e + − * /. Ex.: <code>imagens + videos</code>. Valores ausentes ou divisão por zero aparecem como “Não informado”.</p><div id="cq-formulas"></div><button id="cq-add-formula" class="btn btn-sm btn-outline-secondary" type="button">Adicionar fórmula</button></details>
+  </section>
+  <section class="card p-3 mb-3"><h2 class="h5">2. Filtros, condições e exceções</h2>
+    <div class="cq-filter-grid">
+      <label>Prefeitura<select id="cq-prefeitura" class="form-select"><option value="">Todas as permitidas</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeituras|length == 1 %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label>
+    {% for key,label in [('bairro','Bairro'),('categoria','Categoria / tipo de visita'),('status','Status da solicitação')] %}
+      <label>{{ label }}<select id="cq-{{ key }}" class="form-select"><option value="">Todos</option>{% for value in facets[key] %}<option>{{ value }}</option>{% endfor %}</select></label>
+    {% endfor %}
+      <label>Agendamento — início<input id="cq-inicio" type="date" class="form-control"></label><label>Agendamento — fim<input id="cq-fim" type="date" class="form-control"></label>
+    </div>
+    <details class="mt-3"><summary>Condições e exceções adicionais</summary><p class="text-muted">Todas as condições devem ser satisfeitas. Um registro que corresponda a qualquer exceção será excluído.</p><h3 class="h6">Condições</h3><div id="cq-conditions"></div><button class="btn btn-sm btn-outline-secondary" id="cq-add-condition">Adicionar condição</button><h3 class="h6 mt-3">Exceções</h3><div id="cq-exclusions"></div><button class="btn btn-sm btn-outline-secondary" id="cq-add-exclusion">Adicionar exceção</button></details>
+    <label class="mt-3">Quebrar o relatório por<select id="cq-group" class="form-select"><option value="">Sem quebra</option></select></label>
+  </section>
+  <div class="cq-toolbar card p-3 mb-3"><div class="d-flex flex-wrap gap-2 align-items-center">
+    <button id="cq-run" class="btn btn-primary">Executar consulta</button><button id="cq-pdf" class="btn btn-outline-primary">Baixar PDF</button><button id="cq-excel" class="btn btn-outline-success">Baixar Excel</button><button id="cq-print" class="btn btn-outline-secondary" disabled>Imprimir tabela</button><button id="cq-email" class="btn btn-outline-secondary" data-direct-send="{{ 'true' if email_available else 'false' }}">{{ 'Enviar por e-mail' if email_available else 'Preparar e-mail' }}</button>
+    <label class="ms-auto"><input id="cq-auto" type="checkbox"> Atualizar a cada 30 segundos</label></div>
+    {% if not email_available %}<small class="text-muted mt-2">Sem configuração extra: baixe o PDF e abra seu aplicativo de e-mail com a mensagem pronta. Anexe o PDF baixado e envie pelo Outlook ou outro aplicativo.</small>{% endif %}
+    <div id="cq-message" role="status" aria-live="polite" class="mt-2">Pronto para consultar.</div>
+  </div>
+  <section id="cq-result" class="card p-3" hidden><h2 class="h5">Resultado</h2><p id="cq-meta"></p>
+    <div id="cq-chart" aria-label="Quantidade por status"></div><div id="cq-map" aria-label="Mapa dos registros"></div><p id="cq-unmapped" class="text-muted"></p>
+    <div class="table-responsive"><table id="cq-table" class="table table-striped"><thead></thead><tbody></tbody></table></div><p id="cq-page-info"></p><div class="d-flex gap-2"><button id="cq-prev" class="btn btn-sm btn-outline-secondary">Anterior</button><button id="cq-next" class="btn btn-sm btn-outline-secondary">Próxima</button></div><div id="cq-totals" class="mt-3"></div>
+  </section>
+  <section id="cq-help" class="card p-4 mt-4"><h2 class="h5">Ajuda — consultas personalizadas</h2>
+    <p>Para enviar por e-mail, selecione uma prefeitura nos filtros e confirme o destinatário cadastrado em <strong>Configurações → E-mail dos relatórios</strong>. A COVISA administra o destino da própria prefeitura; o DEV administra todas. No modo simples, o botão Preparar e-mail baixa o PDF e disponibiliza a mensagem pronta para abrir no seu aplicativo. Anexe o arquivo manualmente e envie. Se houver envio direto configurado, o sistema anexa e envia o PDF. Os dados são consultados novamente com os critérios atuais.</p>
+    <ol><li>Escolha Solicitações ou Ordens de serviço. A segunda base contém somente solicitações que já possuem OS.</li><li>Marque os campos e ajuste sua ordem. “Percentual” multiplica o valor por 100; “Decimal” mostra duas casas.</li><li>Escolha o bairro cadastrado, a categoria e o status. O período corresponde à data de agendamento.</li><li>Adicione condições para incluir registros e exceções para removê-los. A quebra agrupa os registros e soma os campos numéricos, exceto o identificador.</li><li>Execute a consulta. Tabela, gráfico e mapa usam o mesmo resultado. Registros sem coordenadas válidas continuam na tabela e na contagem.</li><li>Salve a definição no seu catálogo para reutilizá-la. Ela não salva uma cópia dos dados.</li><li>Exporte PDF/Excel ou imprima a tabela. As exportações consultam novamente o banco com os mesmos critérios; alterações feitas por colegas podem aparecer na nova geração.</li></ol>
+    <p>Administradores globais seguem seu acesso global. Demais perfis seguem o município, a região e os vínculos operacionais já autorizados. A Central de TI pode conceder ou restringir consulta e exportação separadamente.</p>
+    <p>O limite por execução e por Excel é de 10.000 registros; PDF e e-mail aceitam até 2.000. Acima dele, restrinja os filtros: o sistema não entrega resultados truncados. Falhas aparecem acima e permitem repetir a consulta. A atualização automática ocorre enquanto esta tela estiver visível; a data exibida informa quando a última execução terminou.</p>
+  </section>
+  <dialog id="cq-dialog"><form method="dialog"><h2 class="h5" id="cq-dialog-title"></h2><p id="cq-dialog-text"></p><label id="cq-email-label" hidden>Destinatário cadastrado<input id="cq-recipient" type="email" class="form-control" readonly></label><div class="d-flex gap-2 mt-3"><button value="cancel" class="btn btn-outline-secondary">Cancelar</button><button id="cq-confirm" value="confirm" class="btn btn-primary">Confirmar</button></div></form></dialog>
+  <dialog id="cq-email-ready" aria-labelledby="cq-email-ready-title">
+    <h2 class="h5" id="cq-email-ready-title">PDF pronto. Agora abra seu e-mail.</h2>
+    <p>O download de <strong>consulta.pdf</strong> foi solicitado. Clique abaixo para abrir a mensagem, anexe o PDF baixado e envie.</p>
+    <p>Destinatário: <strong id="cq-ready-recipient" class="text-break"></strong></p>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a id="cq-open-email" class="btn btn-primary">Abrir mensagem no aplicativo de e-mail</a>
+      <a id="cq-outlook-web" class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer">Abrir Outlook na web</a>
+      <a id="cq-email-download" class="btn btn-outline-secondary" download="consulta.pdf">Baixar PDF novamente</a>
+    </div>
+    <p class="text-muted small" id="cq-email-launch-help">Se nada abrir, o navegador pode estar sem um aplicativo de e-mail associado. Use Abrir Outlook na web se sua conta for Microsoft 365, ou abra o Outlook manualmente. O PDF precisa ser anexado manualmente.</p>
+    <button id="cq-email-ready-close" type="button" class="btn btn-outline-secondary">Fechar</button>
+  </dialog>
+</main>
+<script type="application/json" id="cq-catalog-data">{{ catalog|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static',filename='js/consultas.js') }}" defer></script>
+{% endblock %}

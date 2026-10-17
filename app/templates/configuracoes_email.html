@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<main class="container py-4" style="max-width:1000px">
+  <a href="{{ url_for('main.configuracoes_documentos', prefeitura_id=prefeitura.id) }}" class="btn btn-outline-secondary mb-3">Voltar às configurações</a>
+  <h1 class="h3">E-mail dos relatórios</h1>
+  <p class="alert alert-info"><strong>{{ prefeitura.nome }}</strong> · Configuração compartilhada pelas contas desta prefeitura.</p>
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  {% if not can_configurar_email %}<div class="alert alert-info">Acesso de consulta. As alterações são realizadas pela COVISA responsável ou pelo DEV.</div>{% endif %}
+  <section class="card p-4 mb-4">
+    <form method="post">
+      <input type="hidden" name="_csrf_token" value="{{ config_csrf_token }}">
+      <input type="hidden" name="versao" value="{{ setting.versao if setting else 0 }}">
+      <label for="report-recipient" class="form-label fw-bold">E-mail que receberá os PDFs</label>
+      <input id="report-recipient" name="destinatario" type="email" {% if not can_configurar_email %}readonly{% endif %} maxlength="254" value="{{ destinatario }}" class="form-control" placeholder="relatorios@prefeitura.gov.br" aria-describedby="report-recipient-help">
+      <p id="report-recipient-help" class="text-muted mt-2">Informe um único destinatário. Deixe vazio para desabilitar o envio para esta prefeitura. Não informe a senha do e-mail.</p>
+      {% if can_configurar_email %}<button class="btn btn-primary">Salvar e-mail</button>{% endif %}
+    </form>
+  </section>
+  <p>Em <strong>Relatórios → Consultas personalizadas</strong>, confira os filtros e clique em <strong>Preparar e-mail</strong> (ou <strong>Enviar por e-mail</strong>, quando o envio direto estiver configurado). O endereço cadastrado será apresentado para sua confirmação. O PDF contém somente os dados da prefeitura selecionada e permitidos ao usuário.</p>
+  {% if not email_available %}<div class="alert alert-warning">Modo simples disponível: o sistema baixa o PDF e prepara a mensagem para abrir no seu aplicativo de e-mail. Você anexa o PDF baixado e envia. Não é necessário configurar SMTP.</div>{% endif %}
+  <section class="card p-4"><h2 class="h5">Últimos 20 envios diretos desta prefeitura</h2>
+    <p class="text-muted">E-mails preparados para envio manual pelo Outlook não aparecem neste histórico, pois o sistema não acompanha esse envio. “Aceito pelo servidor” não confirma a entrega na caixa de entrada. Em caso de resultado incerto, confira o recebimento antes de repetir. Horários em UTC.</p>
+    {% set estados = {'preparando':'Preparando PDF', 'enviando':'Envio iniciado; confirmação pendente', 'aceito':'Aceito pelo servidor', 'incerto':'Resultado incerto', 'falha':'Não enviado'} %}
+    <div class="table-responsive"><table class="table"><thead><tr><th>Data (UTC)</th><th>Usuário</th><th>Destinatário</th><th>Situação</th></tr></thead><tbody>
+    {% for envio,login in history %}<tr><td>{{ envio.criado_em.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ login }}</td><td>{{ envio.destinatario }}</td><td>{{ estados.get(envio.estado,envio.estado) }}</td></tr>{% else %}<tr><td colspan="4">Nenhum envio registrado.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</main>
+{% endblock %}

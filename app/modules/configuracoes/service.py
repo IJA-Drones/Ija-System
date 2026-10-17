@@ -31,16 +31,25 @@ class ConfigConflictError(ValueError):
     pass
 
 
-def require_access(user, *, write=False):
+def can_view_all_settings(user):
+    return is_dev_user(user) or getattr(user, 'tipo_usuario', None) == 'diretor'
+
+
+def can_access_settings(user, *, write=False):
     permission = "prefeitura.documentos.configurar" if write else "prefeitura.documentos.consultar"
-    if not has_permission(user, permission, legacy=is_dev_user(user) or is_covisa_user(user)):
+    legacy = is_dev_user(user) or is_covisa_user(user) or (not write and can_view_all_settings(user))
+    return has_permission(user, permission, legacy=legacy)
+
+
+def require_access(user, *, write=False):
+    if not can_access_settings(user, write=write):
         abort(403)
 
 
 def prefeituras_permitidas(user):
     require_access(user)
     query = Prefeitura.query
-    if not is_dev_user(user):
+    if not can_view_all_settings(user):
         # Use the persisted account association, never a posted municipality.
         query = query.join(Usuario, Usuario.prefeitura_id == Prefeitura.id).filter(Usuario.id == user.id)
     return query.order_by(Prefeitura.nome, Prefeitura.id)

@@ -73,6 +73,8 @@ def current_rules(profile_code):
             allow("prefeitura.prefeituras", "consultar criar editar excluir")
         if is_dev_user(user) or is_covisa_user(user):
             allow("prefeitura.documentos", "consultar configurar")
+        elif role == "diretor":
+            allow("prefeitura.documentos", "consultar")
 
         if administrative or operational or role in {"uvis", "equipe_uvis"}:
             allow("prefeitura.os", "consultar")
