@@ -45,6 +45,8 @@ def _require_document_schema():
 def register_routes(bp):
     from app.modules.consultas.email_settings import register_routes as register_email_settings
     register_email_settings(bp)
+    from app.modules.contatos_publicos import register_routes as register_contacts
+    register_contacts(bp)
 
     @bp.after_request
     def documentos_config_no_store(response):

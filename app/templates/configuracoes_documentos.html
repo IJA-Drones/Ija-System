@@ -44,6 +44,7 @@
     <a class="btn btn-outline-primary align-self-start" href="{{ url_for('main.configuracoes_email', prefeitura_id=prefeitura.id) }}">E-mail dos relatórios</a>
   </section>
   {% endif %}
+  <section class="card p-4 mb-4"><h2 class="h5">Contatos públicos da prefeitura</h2><p class="text-muted">Publique telefone, WhatsApp, Instagram, e-mail, horários e serviços no Portal do Cidadão e nas respostas da Azul.</p><a class="btn btn-outline-primary align-self-start" href="{{ url_for('main.configuracoes_contatos', prefeitura_id=prefeitura.id) }}">Configurar contatos públicos</a></section>
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
   {% if not can_configurar_documentos %}<div class="alert alert-info">Acesso de consulta. As alterações são realizadas pela COVISA responsável ou pelo DEV.</div>{% endif %}
   <form id="document-settings-form" action="{{ url_for('main.configuracoes_documentos', prefeitura_id=prefeitura.id) }}" method="post" enctype="multipart/form-data">

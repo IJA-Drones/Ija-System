@@ -1,4 +1,8 @@
 {
+  "main.configuracoes_contatos": {
+    "GET": "prefeitura.documentos.consultar",
+    "POST": "prefeitura.documentos.configurar"
+  },
   "main.configuracoes_email": {
     "GET": "prefeitura.documentos.consultar",
     "POST": "prefeitura.documentos.configurar"
