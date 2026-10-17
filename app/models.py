@@ -3435,6 +3435,32 @@ class ConsultaSalva(db.Model):
     __mapper_args__ = {'version_id_col': versao}
 
 
+class PrefeituraContatoPublico(db.Model):
+    __tablename__ = 'prefeitura_contatos_publicos'
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), primary_key=True)
+    publicado = db.Column(db.Boolean, nullable=False, default=False)
+    telefone = db.Column(db.String(20), nullable=False, default='')
+    whatsapp = db.Column(db.String(20), nullable=False, default='')
+    instagram = db.Column(db.String(30), nullable=False, default='')
+    email = db.Column(db.String(254), nullable=False, default='')
+    horario = db.Column(db.String(300), nullable=False, default='')
+    servicos = db.Column(db.String(1500), nullable=False, default='')
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    __mapper_args__ = {'version_id_col': versao}
+
+
+class PrefeituraContatoHistorico(db.Model):
+    __tablename__ = 'prefeitura_contatos_historico'
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    antes = db.Column(db.JSON, nullable=False)
+    depois = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
+
 class PrefeituraEmailConfig(db.Model):
     __tablename__ = 'prefeitura_email_config'
     prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), primary_key=True)

@@ -16,11 +16,12 @@
   function appendPortalText(entry, text) {
     const routes = {
       '/portal-cidadao#portal-relato': 'Registrar relato',
+      '/portal-cidadao/contatos': 'Contatos das prefeituras',
       '/portal-cidadao/boletim-dengue': 'Consultar boletim',
       '/portal-cidadao#como-funciona': 'Como funciona o atendimento',
       'https://www.oceanoazuldrones.com.br/oceano': 'Site institucional da Oceano Azul'
     };
-    const pattern = /https:\/\/www\.oceanoazuldrones\.com\.br\/oceano(?![\w/#?=-])|\/portal-cidadao(?:#portal-relato|\/boletim-dengue|#como-funciona)(?![\w/#?=-])/g;
+    const pattern = /https:\/\/www\.oceanoazuldrones\.com\.br\/oceano(?![\w/#?=-])|\/portal-cidadao(?:#portal-relato|\/boletim-dengue|\/contatos|#como-funciona)(?![\w/#?=-])/g;
     let cursor = 0;
     for (const match of text.matchAll(pattern)) {
       entry.append(document.createTextNode(text.slice(cursor, match.index)));
