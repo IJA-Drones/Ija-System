@@ -130,6 +130,8 @@ def current_rules(profile_code):
             allow("prefeitura.mapas", "consultar")
             if can_export_agenda(user):
                 allow("prefeitura.mapas", "exportar")
+        if is_admin_global_user(user) or is_covisa_user(user) or is_prefeitura_admin_user(user) or role == "uvis":
+            allow("prefeitura.relatos_saude", "consultar atender exportar")
         if can_access_denuncias(user):
             allow("prefeitura.denuncias", "consultar")
             if is_admin_global_user(user) or is_covisa_user(user):

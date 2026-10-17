@@ -21,6 +21,7 @@ from app.modules.configuracoes import register_routes as register_configuracoes_
 from app.modules.dashboard import register_routes as register_dashboard_routes
 from app.modules.dev_dashboard import register_routes as register_dev_dashboard_routes
 from app.modules.dji_flight_logs import register_routes as register_dji_flight_logs_routes
+from app.modules.relatos_saude import register_routes as register_relatos_saude_routes
 from app.modules.denuncias import register_routes as register_denuncias_routes
 from app.modules.drones_import import register_routes as register_drones_import_routes
 from app.modules.equipamentos import register_routes as register_equipamentos_routes
@@ -72,6 +73,7 @@ register_dashboard_routes(bp)
 register_dev_dashboard_routes(bp)
 register_dji_flight_logs_routes(bp)
 register_denuncias_routes(bp)
+register_relatos_saude_routes(bp)
 register_drones_import_routes(bp)
 register_equipamentos_routes(bp)
 register_equipe_uvis_dashboard_routes(bp)

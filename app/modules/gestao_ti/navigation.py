@@ -14,6 +14,7 @@ SCREENS = {
  'prefeitura.checklists': [('admin_checklists_semanais','Checklists semanais')],
  'prefeitura.relatorios': [('relatorios','Relatórios')],
  'prefeitura.mapas': [('mapa_relatorio','Mapas'),('agenda','Agenda'),('consultar_endereco_geolocalizacao','Geolocalização')],
+ 'prefeitura.relatos_saude': [('relatos_saude_listar','Relatos de saúde')],
  'prefeitura.denuncias': [('denuncias_listar','Denúncias')],
  'prefeitura.prefeituras': [('admin_prefeituras','Prefeituras'),('admin_prefeitura_nova','Cadastrar prefeitura')],
  'prefeitura.documentos': [('configuracoes','Documentos da prefeitura')],
