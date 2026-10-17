@@ -79,6 +79,9 @@
     <script src="{{ url_for('static', filename='js/permission-controls.js', v='20261009a') }}" defer></script>
     {% endif %}
     {% block extra_styles %}{% endblock %}
+    {% if edit_control_enabled|default(false) %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/edit-control.css', v='20261017a') }}">
+    {% endif %}
 
     <script>
       (function () {
@@ -1793,7 +1796,7 @@
     <script src="{{ url_for('static', filename='js/session-security.js', v='20261007a') }}" defer></script>
     {% endif %}
     {% if edit_control_enabled|default(false) %}
-    <script src="{{ url_for('static', filename='js/edit-control.js', v='20261015b') }}"></script>
+    <script src="{{ url_for('static', filename='js/edit-control.js', v='20261017a') }}"></script>
     {% endif %}
     {% block scripts %}{% endblock %}
   </body>

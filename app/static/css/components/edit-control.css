@@ -1,0 +1,23 @@
+.edit-control { border-left: 4px solid #087f8c !important; border-radius: 14px; padding: 1rem; }
+.edit-control.alert-warning { border-left-color: #ba7914 !important; }
+.edit-heading { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.edit-heading > i { font-size: 1.5rem; }
+.edit-heading small { opacity: .8; }
+.edit-control .edit-message { line-height: 1.6; }
+.edit-confirm-popup.swal2-popup { border-radius: 20px; padding: 1.5rem 1rem; color: #243747; }
+.edit-confirm-popup .swal2-title { font-size: 1.5rem; line-height: 1.35; color: inherit; }
+.edit-confirm-popup .swal2-html-container { font-size: 1rem; line-height: 1.65; color: inherit; }
+.edit-confirm-popup .swal2-actions { gap: .75rem; margin-top: 1.5rem; }
+.edit-confirm-popup .swal2-actions .btn { margin: 0; padding: .75rem 1rem; font-weight: 600; }
+.edit-confirm-popup .swal2-footer { font-size: .85rem; line-height: 1.5; color: #526777; }
+.edit-confirm-popup .swal2-validation-message { border-radius: 10px; }
+.dark-mode .edit-confirm-popup.swal2-popup { background: #152233; color: #e7eff6; border: 1px solid #38506a; }
+.dark-mode .edit-confirm-popup .swal2-footer { color: #bed0df; border-color: #38506a; }
+.dark-mode .edit-confirm-popup .btn-outline-secondary { color: #e7eff6; border-color: #839bb2; }
+.dark-mode .edit-confirm-popup .swal2-validation-message { background: #382b27; color: #ffe0cf; }
+@media (max-width: 575px) {
+  .edit-confirm-popup.swal2-popup { padding: 1rem .5rem; }
+  .edit-confirm-popup .swal2-title { font-size: 1.3rem; }
+  .edit-confirm-popup .swal2-actions { flex-direction: column; width: calc(100% - 2rem); }
+  .edit-confirm-popup .swal2-actions .btn { width: 100%; }
+}

@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const controllers = [];
+  let decisionOpen = false;
   const unsafe = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
   function localURL(input) {
     try { const u = new URL(input, location.href); return u.origin === location.origin ? u : null; }
@@ -30,9 +31,9 @@
     }
     if (get('X-Edit-Released') === '1') {
       c.token.value = ''; c.lock();
-      c.show('Alterações salvas. A reserva foi liberada. Recarregue para consultar os dados atualizados.', true);
+      c.show('Alterações salvas. A reserva foi liberada. Recarregue para consultar os dados atualizados.', true, 'Alterações salvas');
     } else if (status === 409) {
-      c.lock(); c.show('A operação encontrou um conflito de edição. Seus campos foram mantidos nesta tela. Copie o que precisar e recarregue para revisar.', true);
+      c.lock(); c.show('A operação encontrou um conflito de edição. Seus campos foram mantidos nesta tela. Copie o que precisar e recarregue para revisar.', true, 'Conflito de edição');
     }
   }
   const originalFetch = window.fetch;
@@ -85,11 +86,14 @@
           el.disabled = true;
         });
       };
-      c.show = (message, attention = false) => {
+      c.show = (message, attention = false, title = '') => {
         box.querySelector('.edit-message').textContent = message;
+        const heading = box.querySelector('.edit-title');
+        if (heading) heading.textContent = title || (attention ? 'A edição precisa da sua atenção' : 'Edição em andamento');
         box.classList.toggle('alert-warning', attention);
         box.classList.toggle('alert-info', !attention);
         if (attention) { reload.hidden = false; start.hidden = true; }
+        if (!c.token.value) cancel.hidden = true;
       };
       function allowDirectEditing() {
         c.direct = true; c.editing = true;
@@ -114,9 +118,53 @@
         c.token.value = ''; c.lock(); cancel.hidden = true;
       }
       function fail(error) {
-        c.lock(); c.show(error.message || 'Sem conexão. A edição foi pausada para proteger os dados.', true);
+        c.lock(); c.show(error.message || 'Sem conexão. A edição foi pausada para proteger os dados. Seus campos continuam nesta tela.', true,
+          error.data?.code === 'busy' ? 'Este registro já está sendo editado' : 'Edição pausada');
         if (dev && error.data?.code === 'busy') dev.hidden = false;
         if (error.data?.code === 'busy') { start.hidden = false; start.textContent = 'Tentar novamente'; }
+      }
+      async function confirmDiscard(reloading) {
+        if (decisionOpen) return;
+        if (!window.Swal) {
+          c.show('Não foi possível abrir a confirmação. Nenhuma alteração foi descartada. Aguarde e tente novamente.', true);
+          return;
+        }
+        decisionOpen = true;
+        const swal = window.Swal;
+        try {
+          const result = await swal.fire({
+            title: reloading ? 'Recarregar este registro?' : 'Descartar alterações e liberar?',
+            text: `Registro #${c.key.split(':')[1]}. Os campos ainda não salvos serão descartados e a página será recarregada. Arquivos e alterações já salvos não serão desfeitos.`,
+            footer: reloading ? 'Se precisar preservar algum texto, volte e copie antes de continuar.' : 'Ao liberar, outro usuário poderá iniciar uma edição protegida deste registro.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: reloading ? 'Descartar e recarregar' : 'Descartar alterações e liberar',
+            cancelButtonText: reloading || !c.editing ? 'Voltar ao registro' : 'Continuar editando',
+            reverseButtons: true, focusCancel: true, returnFocus: true,
+            buttonsStyling: false,
+            customClass: {popup: 'edit-confirm-popup', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-outline-secondary'},
+            showLoaderOnConfirm: true,
+            allowOutsideClick: () => !swal.isLoading(),
+            allowEscapeKey: () => !swal.isLoading(),
+            preConfirm: async () => {
+              c.releasing = true;
+              try {
+                await release();
+                return true;
+              } catch (error) {
+                // An already ended lease needs no release; never ignore network/auth failures.
+                if (error.data?.code === 'expired') {
+                  c.token.value = ''; c.lock(); cancel.hidden = true;
+                  return true;
+                }
+                fail(error);
+                swal.showValidationMessage('Não foi possível liberar o registro. Seus campos foram mantidos. Verifique a conexão ou volte ao registro e tente novamente.');
+                return false;
+              } finally { c.releasing = false; }
+            }
+          });
+          if (result.isConfirmed) location.reload();
+        } finally { decisionOpen = false; }
       }
       c.lock();
       start.addEventListener('click', async () => {
@@ -132,15 +180,8 @@
         } catch (error) { fail(error); }
         finally { start.disabled = false; }
       });
-      cancel.addEventListener('click', async () => {
-        if (!window.confirm('Cancelar a edição e liberar o registro? Os dados ainda não salvos serão descartados ao recarregar.')) return;
-        try { await release(); location.reload(); } catch (error) { fail(error); }
-      });
-      reload.addEventListener('click', async () => {
-        if (!window.confirm('Recarregar os dados atuais? Copie antes qualquer informação ainda não salva.')) return;
-        try { await release(); } catch (_) { /* expired/revoked leases are already safe */ }
-        location.reload();
-      });
+      cancel.addEventListener('click', () => confirmDiscard(false));
+      reload.addEventListener('click', () => confirmDiscard(true));
       box.querySelector('.edit-force')?.addEventListener('click', async () => {
         try {
           await call('liberar-dev', {motivo: box.querySelector('.edit-reason').value});
@@ -151,7 +192,7 @@
       ['input','change','pointerdown','keydown'].forEach(type => form.addEventListener(type, () => { c.lastActivity = Date.now(); }));
       form.addEventListener('submit', event => {
         if (c.direct) return;
-        if (!c.editing || !c.token.value || Date.now() >= c.expires) {
+        if (c.releasing || !c.editing || !c.token.value || Date.now() >= c.expires) {
           event.preventDefault(); event.stopImmediatePropagation();
           c.lock(); c.show('A edição não está reservada ou a reserva expirou. Copie o que precisar e recarregue antes de salvar.', true);
           box.scrollIntoView({block:'center', behavior:'smooth'});
@@ -159,7 +200,7 @@
       }, true);
       // Renew only for active editing. An abandoned/background tab expires naturally.
       setInterval(async () => {
-        if (c.direct || !c.editing || !c.token.value) return;
+        if (c.direct || c.releasing || !c.editing || !c.token.value) return;
         if (Date.now() >= c.expires) {
           c.lock(); c.show('Sua reserva expirou por falta de atividade. Os campos permanecem nesta tela; copie o que precisar e recarregue.', true); return;
         }

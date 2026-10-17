@@ -18,6 +18,8 @@ Para os perfis que continuam protegidos, o formulário abre para consulta. **Ini
 
 Salvar confirma os dados e libera a reserva na mesma transação. **Cancelar edição e liberar** pede confirmação antes de descartar o preenchimento. Fechar a aba não libera imediatamente: a expiração recupera a reserva sem depender de uma chamada de saída que poderia disputar com o salvamento.
 
+A confirmação usa uma janela do sistema com o número do registro e as ações **Continuar editando** e **Descartar alterações e liberar**. O foco inicial fica na opção de continuar. Recarregar também exige confirmação explícita; arquivos e alterações já salvos não são desfeitos. Durante a liberação, a janela mostra progresso. Uma falha de conexão ou autorização mantém os campos e mostra o erro, sem recarregar automaticamente. Reserva já encerrada permite recarregar após a confirmação. Os avisos de conflito e edição pausada permanecem no formulário. Essa melhoria de interface não exige migração de banco e preserva as exceções dos perfis operacionais.
+
 A duração padrão é de cinco minutos (`EDIT_LEASE_SECONDS=300`, mínimo 60, máximo 1800). Enquanto a aba está visível e há interação recente no formulário, ela renova a reserva a cada 20 segundos. Uma aba abandonada deixa de renovar. Perda de conexão ou expiração pausa a edição e mantém os campos na tela para cópia; é necessário recarregar e revisar antes de salvar.
 
 Uma versão assinada identifica os dados exibidos ao abrir a tela. A conferência no servidor impede sobrescrever uma versão mais recente mesmo depois da expiração da reserva. O banco também usa versões otimistas nas solicitações, denúncias e nas duas tabelas de OS para recusar gravações concorrentes com objetos antigos em memória.

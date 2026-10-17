@@ -6,14 +6,15 @@ const source = fs.readFileSync(require('node:path').join(__dirname, '../app/stat
 
 function browser() {
   let clock = 100000;
-  const requests = [], intervals = [], replies = [];
+  const requests = [], intervals = [], replies = [], dialogs = [], decisions = [], validation = [];
+  let reloads = 0;
   function element(extra = {}) {
     return {disabled:false,hidden:false,value:'',textContent:'',events:{},classList:{toggle(){}},
       addEventListener(name, fn){this.events[name]=fn;},scrollIntoView(){},
       async fire(name, event={}){return this.events[name]?.(event);}, ...extra};
   }
   const items = Object.fromEntries(['.edit-start','.edit-cancel','.edit-reload','.edit-dev','.edit-message','.edit-force','.edit-reason',
-    '[name="_edit_ticket"]','[name="_edit_token"]'].map(key=>[key,element()]));
+    '.edit-title','[name="_edit_ticket"]','[name="_edit_token"]'].map(key=>[key,element()]));
   items['[name="_edit_ticket"]'].value='signed-ticket';
   const input=element(), fixed=element({disabled:true}), submit=element();
   const form=element({action:'https://ija.test/admin/os/1/formulario',dataset:{},querySelectorAll:()=>[input,fixed,submit]});
@@ -21,7 +22,12 @@ function browser() {
     contains:el=>Object.values(items).includes(el),querySelector:selector=>items[selector]});
   class XHR {open(){}send(){}setRequestHeader(){}addEventListener(){}}
   const context={console,URL,Headers,Request,XMLHttpRequest:XHR,Date:class extends Date{static now(){return clock;}},
-    location:{href:form.action,origin:'https://ija.test',reload(){}},confirm:()=>true,
+    location:{href:form.action,origin:'https://ija.test',reload(){reloads++;}},
+    Swal:{async fire(options){
+      dialogs.push(options);
+      if (!decisions.shift()) return {isConfirmed:false};
+      return {isConfirmed:(await options.preConfirm()) !== false};
+    },isLoading:()=>false,showValidationMessage:message=>validation.push(message)},
     document:{readyState:'complete',hidden:false,querySelectorAll:()=>[box]},setInterval:fn=>intervals.push(fn),
     fetch:async(url,options)=>{
       requests.push({url,options});const reply=replies.shift()||{ok:true,token:'lease-token',expires:new Date(clock+120000).toISOString()};
@@ -29,7 +35,8 @@ function browser() {
         headers:new Headers(reply.headers||{})};
     }};
   context.window=context;vm.runInNewContext(source,context);
-  return {items,input,fixed,submit,form,context,requests,replies,intervals,tick:ms=>{clock+=ms;}};
+  return {items,input,fixed,submit,form,context,requests,replies,intervals,dialogs,decisions,validation,
+    get reloads(){return reloads;},tick:ms=>{clock+=ms;}};
 }
 
 test('consultation locks inputs, reservation enables only originally editable controls',async()=>{
@@ -103,4 +110,53 @@ test('renewal discovers exemption and preserves unsaved fields',async()=>{
   await b.intervals[0]();assert.equal(b.input.disabled,false);assert.equal(b.input.value,'em andamento');
   assert.equal(b.items['[name="_edit_ticket"]'].value,'');
   await b.intervals[0]();assert.equal(b.requests.length,2);
+});
+
+test('continuing editing dismisses the dialog without releasing or discarding fields',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');b.input.value='não descartar';
+  await b.items['.edit-cancel'].fire('click');
+  assert.equal(b.dialogs[0].cancelButtonText,'Continuar editando');
+  assert.equal(b.dialogs[0].focusCancel,true);
+  assert.match(b.dialogs[0].text,/Registro #1/);
+  assert.match(b.dialogs[0].text,/já salvos não serão desfeitos/);
+  assert.equal(b.requests.length,1);assert.equal(b.reloads,0);
+  assert.equal(b.input.value,'não descartar');assert.equal(b.input.disabled,false);
+});
+
+test('explicit confirmation releases before reloading and uses clear action labels',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');b.decisions.push(true);
+  await b.items['.edit-cancel'].fire('click');
+  assert.equal(b.dialogs[0].confirmButtonText,'Descartar alterações e liberar');
+  assert.equal(b.requests.at(-1).url,'/api/edicao/liberar');
+  assert.equal(b.items['[name="_edit_token"]'].value,'');assert.equal(b.reloads,1);
+});
+
+test('release failure keeps unsaved fields and presents a persistent dialog error',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');b.input.value='preservar';
+  b.decisions.push(true);b.replies.push({ok:false,status:503,error:'Servidor indisponível'});
+  await b.items['.edit-reload'].fire('click');
+  assert.equal(b.reloads,0);assert.equal(b.input.value,'preservar');
+  assert.equal(b.items['[name="_edit_token"]'].value,'lease-token');
+  assert.match(b.validation[0],/Seus campos foram mantidos/);
+});
+
+test('an already expired lease allows reload only after explicit confirmation',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');
+  b.decisions.push(true);b.replies.push({ok:false,status:409,code:'expired',error:'Reserva encerrada'});
+  await b.items['.edit-reload'].fire('click');assert.equal(b.reloads,1);
+});
+
+test('missing dialog library never falls back to destructive browser confirmation',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');delete b.context.Swal;
+  await b.items['.edit-cancel'].fire('click');
+  assert.equal(b.requests.length,1);assert.equal(b.reloads,0);
+  assert.match(b.items['.edit-message'].textContent,/Nenhuma alteração foi descartada/);
+});
+
+test('duplicate clicks cannot open competing dialogs or release twice',async()=>{
+  const b=browser();await b.items['.edit-start'].fire('click');let close;
+  b.context.Swal.fire=options=>{b.dialogs.push(options);return new Promise(resolve=>{close=resolve;});};
+  const pending=b.items['.edit-cancel'].fire('click');
+  await b.items['.edit-reload'].fire('click');assert.equal(b.dialogs.length,1);
+  close({isConfirmed:false});await pending;assert.equal(b.requests.length,1);
 });
