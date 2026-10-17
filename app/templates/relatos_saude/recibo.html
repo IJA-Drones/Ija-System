@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block auth_content %}
+<div class="card border-0 shadow-sm p-5 mx-auto" style="max-width:720px">
+  <i class="bi bi-check-circle-fill text-success display-5 mb-3"></i>
+  <h1 class="h2">Relato recebido</h1>
+  <p>Seu relato foi registrado para avaliação da <strong>COVISA de {{ recibo.prefeitura }}</strong>.</p>
+  <div class="alert alert-success"><span class="d-block">Guarde seu protocolo</span><strong class="fs-4">{{ recibo.protocolo }}</strong></div>
+  <p>A COVISA fará a triagem e poderá encaminhar à UVIS. O envio não confirma diagnóstico nem agendamento. Se precisar de atendimento, procure um serviço de saúde.</p>
+  <p class="small text-muted">O protocolo identifica seu relato quando você entrar em contato com a vigilância. Não há consulta pública de dados de saúde pelo número do protocolo.</p>
+  <a class="btn btn-primary" href="{{ url_for('main.portal_cidadao') }}">Voltar ao portal</a>
+</div>
+{% endblock %}
+
+{% block content %}{{ self.auth_content() }}{% endblock %}

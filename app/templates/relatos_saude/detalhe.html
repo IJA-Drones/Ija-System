@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <a href="{{ url_for('main.relatos_saude_listar') }}" class="btn btn-link mb-3">← Suspeitas de adoecimento</a>
+  <h1 class="h3">{{ relato.protocolo }}</h1>
+  <p>{{ relato.prefeitura.nome }} · <strong>{{ status[relato.status] }}</strong></p>
+  <div class="alert alert-info">Suspeita relatada pelo cidadão. Não é diagnóstico nem confirmação de caso no SINAN. Dados restritos ao atendimento.</div>
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  <div class="row g-4">
+    <section class="col-lg-7"><div class="card border-0 shadow-sm p-4">
+      <h2 class="h5">Informações do relato</h2>
+      <dl><dt>Cidadão / contato</dt><dd>{{ relato.cidadao_nome }} · {{ relato.cidadao_telefone }}</dd><dt>Endereço informado</dt><dd>{{ relato.logradouro }}, {{ relato.numero }} · {{ relato.bairro }}</dd><dt>Início dos sintomas</dt><dd>{{ relato.inicio_sintomas.strftime('%d/%m/%Y') if relato.inicio_sintomas else 'Não informado' }}</dd><dt>Recebido em</dt><dd>{{ relato.criado_em|saude_datetime }} (Brasília)</dd><dt>UVIS responsável</dt><dd>{{ relato.uvis.nome_uvis if relato.uvis else 'Aguardando direcionamento da COVISA' }}</dd></dl>
+      <h3 class="h6">Descrição do cidadão</h3><p style="white-space:pre-wrap;overflow-wrap:anywhere">{{ relato.descricao }}</p>
+    </div></section>
+    <section class="col-lg-5"><div class="card border-0 shadow-sm p-4">
+      <h2 class="h5">Atendimento</h2>
+      {% if relato.status == 'CONCLUIDO' %}<div class="alert alert-success">Concluído em {{ relato.concluido_em|saude_datetime }}. O histórico permanece disponível.</div>
+      {% elif can_write %}
+      <form method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"><input type="hidden" name="saude_csrf" value="{{ saude_csrf }}"><input type="hidden" name="versao" value="{{ relato.versao }}">
+        <label for="acao" class="form-label">O que deseja registrar?</label>
+        <select id="acao" name="acao" class="form-select mb-3" required>
+          <option value="">Escolha uma ação</option>
+          {% if (relato.status=='RECEBIDO' and can_manage) or (relato.status=='ENCAMINHADO_UVIS' and current_user.id == relato.uvis_usuario_id) %}<option value="ciencia">Registrar ciência do relato</option>{% endif %}
+          {% if can_manage and relato.status != 'RECEBIDO' %}<option value="encaminhar">Encaminhar / redirecionar à UVIS</option>{% endif %}
+          <option value="acompanhamento">Registrar acompanhamento</option>
+          {% if relato.status in ['EM_ANALISE','EM_ATENDIMENTO'] %}<option value="concluir">Concluir atendimento</option>{% endif %}
+          {% if current_user.tipo_usuario=='uvis' %}<option value="devolver">Devolver à COVISA para direcionamento</option>{% endif %}
+        </select>
+        {% if can_manage %}<label class="form-label" for="uvis">UVIS (para encaminhar)</label><select name="uvis_usuario_id" id="uvis" class="form-select mb-3"><option value="">Selecione a unidade</option>{% for unit in uvis_options %}<option value="{{ unit.id }}">{{ unit.nome_uvis }}</option>{% endfor %}</select>{% endif %}
+        <label for="observacao" class="form-label">Observação / encaminhamento</label><textarea id="observacao" name="observacao" class="form-control" rows="4" maxlength="2000">{{ request.form.get('observacao','') if error else '' }}</textarea>
+        <p class="small text-muted mt-2">Obrigatória para encaminhar, acompanhar, devolver ou concluir. Registre o destino e a providência adotada; não use a conclusão como confirmação de diagnóstico.</p>
+        <button class="btn btn-primary w-100">Registrar ação</button>
+      </form>
+      {% else %}<p>Acesso de consulta. Você não tem permissão para registrar ações.</p>{% endif %}
+    </div></section>
+  </div>
+  <section class="card border-0 shadow-sm p-4 mt-4"><h2 class="h5">Histórico do atendimento</h2>
+    {% for event in relato.eventos %}<article class="border-bottom py-3"><strong>{{ event.acao.replace('_',' ') }}</strong> · {{ status[event.status] }}<div class="small text-muted">{{ event.criado_em|saude_datetime }} (Brasília) · {{ event.responsavel }}{% if event.uvis %} · UVIS: {{ event.uvis.nome_uvis }}{% endif %}</div>{% if event.observacao %}<p class="mb-0 mt-2" style="white-space:pre-wrap;overflow-wrap:anywhere">{{ event.observacao }}</p>{% endif %}</article>{% endfor %}
+  </section>
+</div>
+{% endblock %}

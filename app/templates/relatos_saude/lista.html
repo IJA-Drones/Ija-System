@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h1 class="h2"><i class="bi bi-heart-pulse text-primary"></i> Suspeitas de adoecimento</h1>
+  <p class="text-muted">Relatos da população para triagem e acompanhamento. Não representam casos confirmados no SINAN.</p>
+  <div class="alert alert-info"><strong>{{ pending }} atendimento(s) em aberto</strong> neste recorte. Abra um relato para registrar ciência, encaminhar e acompanhar.</div>
+  <form method="get" class="card border-0 shadow-sm p-3 mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3"><label for="status" class="form-label">Situação</label><select name="status" id="status" class="form-select"><option value="">Todas</option>{% for key,label in status.items() %}<option value="{{ key }}" {% if selected==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label for="inicio" class="form-label">Recebido a partir de</label><input type="date" name="inicio" id="inicio" class="form-control" value="{{ request.args.get('inicio','') }}"></div>
+      <div class="col-md-3"><label for="fim" class="form-label">Recebido até</label><input type="date" name="fim" id="fim" class="form-control" value="{{ request.args.get('fim','') }}"></div>
+      <div class="col-md-3"><button class="btn btn-primary">Filtrar</button> <a href="{{ url_for('main.relatos_saude_listar') }}" class="btn btn-outline-secondary">Limpar</a></div>
+      {% if prefeituras %}<div class="col-md-6"><label class="form-label" for="prefeitura">Prefeitura</label><select class="form-select" name="prefeitura_id" id="prefeitura"><option value="">Todas no meu acesso</option>{% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if request.args.get('prefeitura_id') == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>{% endfor %}</select></div>{% endif %}
+    </div>
+  </form>
+  <div class="d-flex justify-content-between align-items-center mb-2"><span>{{ pagination.total }} relato(s) neste recorte</span>{% if can_export %}<a class="btn btn-outline-primary" href="{{ url_for('main.relatos_saude_pdf', **filters) }}">Baixar relatório PDF</a>{% endif %}</div>
+  <div class="table-responsive card border-0 shadow-sm"><table class="table table-hover align-middle mb-0"><thead><tr><th>Protocolo / recebido</th><th>Prefeitura / bairro</th><th>Situação</th><th>UVIS responsável</th><th></th></tr></thead><tbody>
+  {% for row in pagination.items %}<tr><td><strong>{{ row.protocolo }}</strong><br><small>{{ row.criado_em|saude_datetime }}</small></td><td>{{ row.prefeitura.nome }}<br><small>{{ row.bairro }}</small></td><td>{{ status[row.status] }}</td><td>{{ row.uvis.nome_uvis if row.uvis else 'Aguardando direcionamento da COVISA' }}</td><td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.relatos_saude_detalhe', relato_id=row.id) }}">Abrir relato</a></td></tr>
+  {% else %}<tr><td colspan="5" class="text-center py-5">Nenhum relato neste recorte.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <nav class="d-flex gap-3 mt-3" aria-label="Paginação">{% if pagination.has_prev %}<a href="{{ url_for('main.relatos_saude_listar', page=pagination.prev_num, **filters) }}">Anterior</a>{% endif %}<span>Página {{ pagination.page }} de {{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a href="{{ url_for('main.relatos_saude_listar', page=pagination.next_num, **filters) }}">Próxima</a>{% endif %}</nav>
+</div>
+{% endblock %}

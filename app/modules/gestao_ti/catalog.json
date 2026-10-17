@@ -131,6 +131,13 @@
           "Prévia dos indicadores epidemiológicos.",
           "bi-heart-pulse",
           "consultar editar"
+        ],
+        [
+          "relatos_saude",
+          "Relatos de saúde",
+          "Triagem municipal e encaminhamento de suspeitas de adoecimento à UVIS.",
+          "bi-heart-pulse",
+          "consultar atender exportar"
         ]
       ]
     },

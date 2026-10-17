@@ -1209,5 +1209,15 @@
   },
   "main.consultas_email": {
     "POST": "prefeitura.relatorios.exportar"
+  },
+  "main.relatos_saude_listar": {
+    "GET": "prefeitura.relatos_saude.consultar"
+  },
+  "main.relatos_saude_detalhe": {
+    "GET": "prefeitura.relatos_saude.consultar",
+    "POST": "prefeitura.relatos_saude.atender"
+  },
+  "main.relatos_saude_pdf": {
+    "GET": "prefeitura.relatos_saude.exportar"
   }
 }

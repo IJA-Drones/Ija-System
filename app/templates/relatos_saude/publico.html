@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block auth_content %}
+<div class="container" style="max-width:850px">
+  <a href="{{ url_for('main.portal_cidadao') }}" class="btn btn-link mb-3">← Portal do cidadão</a>
+  <div class="card shadow-sm border-0 rounded-4 p-4 p-md-5">
+    <span class="text-primary fw-bold mb-2"><i class="bi bi-heart-pulse"></i> CUIDADO COM A COMUNIDADE</span>
+    <h1 class="h2">Relatar suspeita de adoecimento</h1>
+    <p class="text-muted">Conte à vigilância municipal o que está acontecendo. A COVISA da prefeitura escolhida recebe seu relato e pode encaminhá-lo à UVIS responsável.</p>
+    <div class="alert alert-info">Este canal registra suspeitas para avaliação da vigilância. Não confirma diagnóstico, não substitui atendimento médico e não é monitorado como serviço de emergência. Se precisar de atendimento, procure um serviço de saúde.</div>
+    {% if errors %}<div class="alert alert-danger" role="alert"><strong>Confira os campos abaixo.</strong>{% for key,message in errors.items() %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+    <form method="post" id="health-report-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+      <input type="hidden" name="saude_csrf" value="{{ saude_csrf }}">
+      <input type="hidden" name="envio_id" value="{{ envio_id }}">
+      <div style="display:none" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+      <h2 class="h5 mt-3">1. Onde você mora</h2>
+      <label for="prefeitura_id" class="form-label">Prefeitura responsável *</label>
+      <select id="prefeitura_id" name="prefeitura_id" class="form-select mb-2" required>
+        <option value="">Selecione a prefeitura onde você mora</option>
+        {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if form.get('prefeitura_id') == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>{% endfor %}
+      </select>
+      <p class="small text-muted">Você não precisa saber qual é a UVIS. A COVISA fará esse encaminhamento.</p>
+      <div class="row g-3">
+        {% for key,label,limit,cols in [('logradouro','Rua / logradouro',150,9),('numero','Número (ou S/N)',20,3),('bairro','Bairro',100,12)] %}
+        <div class="col-md-{{ cols }}"><label class="form-label" for="{{ key }}">{{ label }} *</label><input id="{{ key }}" name="{{ key }}" class="form-control" maxlength="{{ limit }}" value="{{ form.get(key,'') }}" required></div>
+        {% endfor %}
+      </div>
+      <h2 class="h5 mt-4">2. Como podemos entrar em contato</h2>
+      <div class="row g-3">
+        <div class="col-md-7"><label class="form-label" for="nome">Seu nome *</label><input class="form-control" id="nome" name="nome" maxlength="150" autocomplete="name" value="{{ form.get('nome','') }}" required></div>
+        <div class="col-md-5"><label class="form-label" for="telefone">Telefone com DDD *</label><input class="form-control" id="telefone" name="telefone" type="tel" maxlength="30" autocomplete="tel" placeholder="(11) 99999-9999" value="{{ form.get('telefone','') }}" required></div>
+      </div>
+      <h2 class="h5 mt-4">3. O que está acontecendo</h2>
+      <label class="form-label" for="inicio_sintomas">Quando os sintomas começaram? (opcional)</label>
+      <input type="date" id="inicio_sintomas" name="inicio_sintomas" min="1900-01-01" max="{{ hoje }}" class="form-control mb-3" value="{{ form.get('inicio_sintomas','') }}">
+      <label class="form-label" for="descricao">Descreva sua suspeita e o que está sentindo *</label>
+      <textarea id="descricao" name="descricao" rows="5" maxlength="2000" class="form-control" aria-describedby="description-help" required>{{ form.get('descricao','') }}</textarea>
+      <p class="small text-muted mt-2" id="description-help">Até 2.000 caracteres. Não inclua CPF, documentos, exames nem dados pessoais de outras pessoas.</p>
+      <div class="rounded-3 border p-3 mt-4">
+        <strong>Como seu relato será usado</strong>
+        <p class="small mt-2">Nome, contato, endereço e informações relatadas serão usados pela COVISA, pela UVIS responsável e pelos gestores autorizados para triagem e acompanhamento. Os dados não serão exibidos publicamente.</p>
+        <label class="d-flex gap-2"><input type="checkbox" name="consentimento" value="1" class="form-check-input flex-shrink-0" {% if form.get('consentimento')=='1' %}checked{% endif %} required><span>Li e concordo com o uso das informações para esse atendimento. *</span></label>
+      </div>
+      <button class="btn btn-primary btn-lg mt-4" type="submit">Enviar relato à COVISA</button>
+      <p class="small text-muted mt-2 mb-0">Após o envio, guarde o protocolo. O contato será feito pelo telefone informado, conforme a avaliação da equipe.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}{{ self.auth_content() }}{% endblock %}

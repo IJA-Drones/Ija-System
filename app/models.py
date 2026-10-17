@@ -763,6 +763,49 @@ class Solicitacao(db.Model):
     )
 
 
+class RelatoSaude(db.Model):
+    """A self-reported illness suspicion; never a confirmed case or focus/OS."""
+    __tablename__ = 'relatos_saude'
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), index=True)
+    protocolo = db.Column(db.String(40), nullable=False, unique=True)
+    envio_id = db.Column(db.String(64), nullable=False, unique=True)
+    origem_hash = db.Column(db.String(64), nullable=False, index=True)
+    status = db.Column(db.String(30), nullable=False, default='RECEBIDO', index=True)
+    cidadao_nome = db.Column(db.String(150), nullable=False)
+    cidadao_telefone = db.Column(db.String(30), nullable=False)
+    logradouro = db.Column(db.String(150), nullable=False)
+    numero = db.Column(db.String(20), nullable=False)
+    bairro = db.Column(db.String(100), nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    inicio_sintomas = db.Column(db.Date)
+    consentimento = db.Column(db.Boolean, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    concluido_em = db.Column(db.DateTime)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    __mapper_args__ = {'version_id_col': versao}
+    prefeitura = db.relationship('Prefeitura')
+    uvis = db.relationship('Usuario', foreign_keys=[uvis_usuario_id])
+    eventos = db.relationship('RelatoSaudeEvento', back_populates='relato', order_by='RelatoSaudeEvento.id')
+
+
+class RelatoSaudeEvento(db.Model):
+    __tablename__ = 'relatos_saude_eventos'
+    id = db.Column(db.Integer, primary_key=True)
+    relato_id = db.Column(db.Integer, db.ForeignKey('relatos_saude.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    responsavel = db.Column(db.String(150), nullable=False)
+    acao = db.Column(db.String(30), nullable=False)
+    status = db.Column(db.String(30), nullable=False)
+    observacao = db.Column(db.Text)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    relato = db.relationship('RelatoSaude', back_populates='eventos')
+    uvis = db.relationship('Usuario', foreign_keys=[uvis_usuario_id])
+
+
 class Denuncia(db.Model):
     __tablename__ = "denuncias"
 
