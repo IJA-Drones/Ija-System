@@ -29,6 +29,7 @@ from app.models import (
     PilotoAgro,
     RdMapeamentoAgro,
 )
+from app.shared.file_recovery import save_file, remove_file
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -1848,7 +1849,7 @@ def save_contrato_payment_receipt(contrato: ContratoAgro, uploaded_file):
     else:
         folder = get_contrato_payment_receipt_folder()
         absolute_path = os.path.join(folder, stored_filename)
-        uploaded_file.save(absolute_path)
+        save_file(uploaded_file, absolute_path)
         stored_path = os.path.join("agro", "contratos", stored_filename).replace("\\", "/")
 
     if contrato.comprovante_pagamento_path:
@@ -1872,7 +1873,7 @@ def remove_contrato_payment_receipt(contrato: ContratoAgro, *, commit: bool = Fa
             absolute_path = os.path.join(get_upload_folder(), relative_path.replace("/", os.sep))
             if os.path.exists(absolute_path):
                 try:
-                    os.remove(absolute_path)
+                    remove_file(absolute_path)
                 except OSError:
                     current_app.logger.warning("Falha ao remover comprovante de pagamento do contrato agro %s", contrato.id)
 
@@ -1913,7 +1914,7 @@ def save_orcamento_attachment(orcamento: OrcamentoAgro, uploaded_file):
     stored_filename = f"orcamento_agro_{orcamento.id}_{uuid.uuid4().hex}.pdf"
     absolute_path = os.path.join(folder, stored_filename)
 
-    uploaded_file.save(absolute_path)
+    save_file(uploaded_file, absolute_path)
 
     if orcamento.anexo_path:
         remove_orcamento_attachment(orcamento, commit=False)
@@ -1929,7 +1930,7 @@ def remove_orcamento_attachment(orcamento: OrcamentoAgro, *, commit: bool = Fals
         absolute_path = os.path.join(get_upload_folder(), relative_path.replace("/", os.sep))
         if os.path.exists(absolute_path):
             try:
-                os.remove(absolute_path)
+                remove_file(absolute_path)
             except OSError:
                 current_app.logger.warning("Falha ao remover anexo do orcamento agro %s", orcamento.id)
 

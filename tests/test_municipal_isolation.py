@@ -343,6 +343,121 @@ def test_operational_uvis_credentials_are_scoped_before_any_change(municipal):
         save.assert_not_called()
 
 
+@pytest.mark.parametrize('tenant', [1, 2])
+def test_new_uvis_team_inherits_owner_scope_and_cannot_read_foreign_media(municipal, tenant):
+    from app.models import OrdemServico
+    from app.modules.piloto_os.service import get_os_principal_image_path_for_user
+    m = municipal
+    owner = m.login('uvis', tenant)
+    foreign = 3 - tenant
+    response = m.client.post('/uvis/equipes/nova', data={
+        'login_equipe': f'new-team-{tenant}', 'senha': 'Strong-Test-Password123!',
+        'senha2': 'Strong-Test-Password123!', 'prefeitura_id': foreign,
+        'equipe_uvis_uvis_usuario_id': m.users['uvis', foreign].id,
+    })
+    assert response.status_code == 302
+    account = Usuario.query.filter_by(login=f'new-team-{tenant}').one()
+    assert account.prefeitura_id == tenant
+    assert account.equipe_uvis_uvis_usuario_id == owner.id
+    assert account.regiao == owner.regiao
+    assert {r.id for r in apply_solicitacao_prefeitura_scope(Solicitacao.query, account)} == {m.requests[tenant].id}
+    for number in (1, 2):
+        db.session.add(OrdemServico(solicitacao_id=m.requests[number].id,
+            equipe_id=m.teams[number].id, imagem_principal=f'webdav://os/{number}/principal.jpg'))
+    db.session.commit()
+    assert get_os_principal_image_path_for_user(account, m.requests[tenant].id) == f'webdav://os/{tenant}/principal.jpg'
+    with pytest.raises(NotFound):
+        get_os_principal_image_path_for_user(account, m.requests[foreign].id)
+
+
+@pytest.mark.parametrize('operation', ['team', 'operational'])
+@pytest.mark.parametrize('invalid_owner', ['missing', 'inactive', 'wrong_role'])
+def test_uvis_account_services_reject_invalid_owner_before_writing(municipal, operation, invalid_owner):
+    from app.modules.uvis_equipes.service import create_team_account, upsert_operational_uvis_account
+    m = municipal
+    owner = m.users['uvis', 1]
+    if invalid_owner == 'missing':
+        owner.prefeitura_id = None
+    elif invalid_owner == 'inactive':
+        db.session.get(Prefeitura, 1).ativa = False
+    else:
+        owner = m.users['regional', 1]
+    db.session.commit()
+    before = Usuario.query.count()
+    with pytest.raises(ValueError, match='UVIS|prefeitura'):
+        if operation == 'team':
+            create_team_account(owner, 'Equipe teste', 'invalid-team', 'Strong-Test-Password123!')
+        else:
+            upsert_operational_uvis_account(owner, 'invalid-operational', 'Strong-Test-Password123!')
+    db.session.commit()
+    assert Usuario.query.count() == before
+
+
+def test_admin_gets_actionable_error_for_uvis_without_municipality(municipal):
+    m = municipal
+    m.login('dev')
+    owner = m.users['uvis', 1]
+    owner.prefeitura_id = None
+    db.session.commit()
+    response = m.client.post(f'/admin/uvis/{owner.id}/acesso-operacional', data={
+        'login_operacional': 'invalid-operational', 'senha': 'Strong-Test-Password123!',
+        'senha2': 'Strong-Test-Password123!'})
+    assert response.status_code == 302
+    assert Usuario.query.filter_by(login='invalid-operational').first() is None
+    with m.client.session_transaction() as session:
+        assert any('prefeitura' in message.lower() for _, message in session.get('_flashes', []))
+
+
+def test_operational_update_preserves_existing_credentials_when_owner_unlinked(municipal):
+    from app.modules.uvis_equipes.service import upsert_operational_uvis_account
+    m = municipal
+    owner = m.users['uvis', 1]
+    account = upsert_operational_uvis_account(owner, 'original-operational', 'Strong-Test-Password123!')
+    db.session.commit()
+    old_hash = account.senha_hash
+    owner.prefeitura_id = None
+    db.session.commit()
+    with pytest.raises(ValueError, match='prefeitura'):
+        upsert_operational_uvis_account(owner, 'changed-operational', 'Other-Password123!')
+    db.session.commit()
+    db.session.refresh(account)
+    assert account.prefeitura_id == 1
+    assert account.login == 'original-operational'
+    assert account.senha_hash == old_hash
+
+
+@pytest.mark.parametrize('endpoint,login_field', [
+    ('/uvis/equipes/nova', 'login_equipe'),
+    ('/uvis/acesso-operacional', 'login_operacional'),
+])
+def test_inactive_municipality_returns_warning_without_creating_account(municipal, endpoint, login_field):
+    m = municipal
+    m.login('uvis')
+    db.session.get(Prefeitura, 1).ativa = False
+    db.session.commit()
+    with patch('app.modules.uvis_equipes.routes.render_template', return_value='form preserved'):
+        response = m.client.post(endpoint, data={login_field: 'inactive-team',
+            'senha': 'Strong-Test-Password123!', 'senha2': 'Strong-Test-Password123!'})
+    assert response.status_code == 200
+    assert Usuario.query.filter_by(login='inactive-team').first() is None
+    with m.client.session_transaction() as session:
+        assert any('prefeitura ativa' in message for _, message in session.get('_flashes', []))
+
+
+@pytest.mark.parametrize('tenant', [1, 2])
+def test_operational_login_inherits_uvis_municipality_on_create_and_update(municipal, tenant):
+    m = municipal
+    owner = m.login('uvis', tenant)
+    for login in ('operational-new', 'operational-updated'):
+        response = m.client.post('/uvis/acesso-operacional', data={
+            'login_operacional': login, 'prefeitura_id': 3 - tenant,
+            'senha': 'Strong-Test-Password123!', 'senha2': 'Strong-Test-Password123!'})
+        assert response.status_code == 302
+        account = Usuario.query.filter_by(equipe_uvis_uvis_usuario_id=owner.id).one()
+        assert account.login == login
+        assert account.prefeitura_id == tenant
+
+
 def test_support_permissions_do_not_grant_foreign_uvis_selection(municipal):
     from app.modules.feedback.service import user_can_use_uvis
     m = municipal

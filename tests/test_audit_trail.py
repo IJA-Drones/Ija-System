@@ -311,7 +311,8 @@ def test_concurrent_delivery_respects_lease_and_recovers_expired_worker(app):
         db.session.commit()
     started,release=threading.Event(),threading.Event()
     results=[]
-    def upload(*args):
+    def upload(*args, recoverable=True):
+        assert recoverable is False
         started.set(); assert release.wait(5)
         return 'skybox://test'
     def worker():

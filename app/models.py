@@ -443,6 +443,17 @@ class AuditoriaUsuario(db.Model):
     arquivado_em = db.Column(db.DateTime, nullable=True, index=True)
 
 
+class AuditoriaSyslogEntrega(db.Model):
+    __tablename__ = 'auditoria_syslog_entregas'
+    auditoria_id = db.Column(db.Integer, db.ForeignKey('auditoria_usuarios.id', ondelete='CASCADE'), primary_key=True)
+    enviado_em = db.Column(db.DateTime, nullable=True)
+    tentativas = db.Column(db.Integer, nullable=False, default=0)
+    proxima_tentativa = db.Column(db.DateTime, nullable=False)
+    lease_token = db.Column(db.String(36), nullable=True)
+    lease_ate = db.Column(db.DateTime, nullable=True)
+    ultimo_erro = db.Column(db.String(200), nullable=True)
+
+
 class AuditoriaArquivo(db.Model):
     __tablename__ = 'auditoria_arquivos'
     id = db.Column(db.String(36), primary_key=True)
@@ -3348,3 +3359,22 @@ class EdicaoReserva(db.Model):
     expira_em = db.Column(db.DateTime, index=True)
     iniciado_em = db.Column(db.DateTime)
     geracao = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+
+
+class ArquivoOperacao(db.Model):
+    """Durable compensation journal; never stores credentials or file bytes."""
+    __tablename__ = 'arquivo_operacoes'
+    id = db.Column(db.String(36), primary_key=True)
+    backend = db.Column(db.String(12), nullable=False)
+    destino = db.Column(db.Text, nullable=False)
+    identidade = db.Column(db.String(255), nullable=False)
+    lock_key = db.Column(db.BigInteger, nullable=False)
+    aliases = db.Column(db.JSON, nullable=False)
+    acao = db.Column(db.String(10), nullable=False)
+    estado = db.Column(db.String(16), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False)
+    proxima_tentativa = db.Column(db.DateTime, nullable=False)
+    tentativas = db.Column(db.Integer, nullable=False)
+    ultimo_erro = db.Column(db.String(100))
+    concluido_em = db.Column(db.DateTime)
+    __table_args__ = (db.Index('ix_arquivo_operacoes_pendentes', 'estado', 'proxima_tentativa'),)

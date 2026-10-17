@@ -115,10 +115,15 @@ def trim_auditoria_usuarios(connection, max_records):
     old_ids = select(AuditoriaUsuario.id).order_by(
         AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc()
     ).offset(max_records).subquery()
+    conditions = [AuditoriaUsuario.id.in_(select(old_ids.c.id)), AuditoriaUsuario.arquivado_em.isnot(None)]
+    from flask import current_app
+    if current_app.config.get('AUDIT_SYSLOG_ENABLED', False):
+        from app.models import AuditoriaSyslogEntrega
+        # Skybox verification alone must not discard an enabled syslog backlog.
+        conditions.append(select(AuditoriaSyslogEntrega.auditoria_id).where(
+            AuditoriaSyslogEntrega.auditoria_id == AuditoriaUsuario.id,
+            AuditoriaSyslogEntrega.enviado_em.isnot(None)).exists())
     result = connection.execute(
-        delete(AuditoriaUsuario.__table__).where(
-            AuditoriaUsuario.id.in_(select(old_ids.c.id)),
-            AuditoriaUsuario.arquivado_em.isnot(None),
-        )
+        delete(AuditoriaUsuario.__table__).where(*conditions)
     )
     return result.rowcount or 0

@@ -8,6 +8,7 @@ from app.shared.password_policy import password_input
 from app.models import EquipeUvis, Solicitacao, Usuario
 from app.modules.uvis_equipes.service import (
     MAX_MEMBROS_EQUIPE_UVIS,
+    UvisMunicipalityError,
     assign_team_to_solicitacao,
     build_admin_uvis_teams_listing,
     build_uvis_teams_listing,
@@ -82,6 +83,9 @@ def register_routes(bp):
                 db.session.commit()
                 flash("Acesso operacional da UVIS salvo com sucesso.", "success")
                 return redirect(url_for("main.uvis_acesso_operacional"))
+            except UvisMunicipalityError as exc:
+                db.session.rollback()
+                flash(str(exc), "warning")
             except IntegrityError:
                 db.session.rollback()
                 errors["login_operacional"] = "Este login ja esta em uso. Escolha outro."
@@ -249,12 +253,14 @@ def register_routes(bp):
                 flash("Corrija os campos destacados.", "warning")
                 return render_template("uvis_equipe_criar.html", form=form, errors=errors)
 
-            create_team_account(current_user, nome_equipe, login_equipe, senha)
-
             try:
+                create_team_account(current_user, nome_equipe, login_equipe, senha)
                 db.session.commit()
                 flash("Equipe criada! Login da equipe definido com sucesso.", "success")
                 return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
+            except UvisMunicipalityError as exc:
+                db.session.rollback()
+                flash(str(exc), "warning")
             except IntegrityError:
                 db.session.rollback()
                 errors["login_equipe"] = "Este login ja esta em uso. Escolha outro."
@@ -402,6 +408,9 @@ def register_routes(bp):
             upsert_operational_uvis_account(uvis, login_operacional, senha)
             db.session.commit()
             flash(f"Acesso operacional de {uvis.nome_uvis} atualizado com sucesso.", "success")
+        except UvisMunicipalityError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
         except IntegrityError:
             db.session.rollback()
             flash("Este login ja esta em uso. Escolha outro.", "danger")
