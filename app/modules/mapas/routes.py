@@ -80,6 +80,34 @@ def register_routes(bp):
         )
         return jsonify(pontos)
 
+    @bp.get('/api/mapa-operacional', endpoint='mapa_operacional_dados')
+    @login_required
+    def mapa_operacional_dados():
+        from .operacional import points
+        try:
+            result=points(current_user,
+                uvis_id=_optional_integer_filter('uvis_id',minimum=1),
+                mes=_optional_integer_filter('mes',minimum=1,maximum=12),
+                ano=_optional_integer_filter('ano',minimum=1,maximum=9999),
+                larva_visualizada=request.args.get('larva_visualizada'),
+                visao=request.args.get('visao','aprovados'))
+            response=jsonify(result)
+            response.headers['Cache-Control']='private, no-store'
+            return response
+        except ValueError as exc:
+            return jsonify(message=str(exc)),400
+
+    @bp.get('/api/mapa-operacional/<int:sid>/historico', endpoint='mapa_operacional_historico')
+    @login_required
+    def mapa_operacional_historico(sid):
+        from .operacional import history
+        try:
+            response=jsonify(history(current_user,sid))
+            response.headers['Cache-Control']='private, no-store'
+            return response
+        except ValueError as exc:
+            return jsonify(message=str(exc)),400
+
     @bp.route("/mapa-relatorio", endpoint="mapa_relatorio")
     @login_required
     def mapa_relatorio():
