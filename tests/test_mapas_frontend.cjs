@@ -45,7 +45,7 @@ function element(value = '') {
   };
 }
 
-function harness({ uvis = true } = {}) {
+function harness({ uvis = true, operational = false } = {}) {
   const elements = Object.fromEntries([
     'uvisFilter', 'mesFilter', 'anoFilter', 'larvaFilter', 'focoFilter',
     'filterBadge', 'mapFeedback', 'count-total', 'legend-count',
@@ -57,6 +57,8 @@ function harness({ uvis = true } = {}) {
   Object.assign(elements.focoFilter, { value: 'todos' });
   if (!uvis) delete elements.uvisFilter;
 
+  if (operational) elements.visaoFilter = element("pendentes");
+  let operationalRows = [];
   const requests = [];
   const errors = [];
   const overlays = [];
@@ -69,7 +71,7 @@ function harness({ uvis = true } = {}) {
   const context = vm.createContext({
     URLSearchParams, AbortController, Map, Number, Date,
     console: { warn() {}, error(error) { errors.push(error); } },
-    window: {},
+    window: operational ? { mapOperational: { reset() { operationalRows=[]; }, render(rows) { operationalRows=rows; } } } : {},
     document: {
       readyState: 'complete',
       addEventListener() {},
@@ -104,6 +106,7 @@ function harness({ uvis = true } = {}) {
   vm.runInContext('mapHeat = testMaps[0]; mapArea = testMaps[1];', context);
   return {
     elements, requests, errors,
+    operationalRows() { return operationalRows; },
     update() { return vm.runInContext('atualizarMapas()', context); },
     url() { return new URL(vm.runInContext('heatmapDataUrl()', context), 'https://example.test'); },
     visiblePoints() {
@@ -131,7 +134,7 @@ function assertPoints(subject, count) {
   assert.deepEqual(subject.visiblePoints(), {
     heat: count, areas: count, circles: count,
     counter: String(count), legendCounter: String(count),
-    areaCounter: `${count} foco${count === 1 ? '' : 's'}`,
+    areaCounter: `${count} registro${count === 1 ? '' : 's'}`,
   });
 }
 
@@ -272,4 +275,25 @@ test('an invalid year aborts pending work and does not request unfiltered data',
   respond(subject.requests[0], [point()]);
   await pending;
   assertPoints(subject, 0);
+});
+
+
+test('operational view keeps missing coordinates in totals but not in map overlays', async () => {
+  const subject = harness({operational:true});
+  assert.equal(subject.url().pathname, '/api/mapa-operacional');
+  assert.equal(subject.url().searchParams.get('visao'), 'pendentes');
+  const pending=subject.update();
+  respond(subject.requests[0], {registros:[{...point(), id:1, situacao:'ATRASADO'}, {lat:null,lng:null,foco:'Piscina',id:2,situacao:'PENDENTE'}]});
+  await pending;
+  assertPoints(subject,1);
+  assert.equal(subject.operationalRows().length,2);
+  assert.equal(subject.errors.length,0);
+});
+
+test('operational focus filtering is shared by totals and both maps', async () => {
+  const subject=harness({operational:true});subject.elements.focoFilter.value='Piscina';
+  const pending=subject.update();
+  respond(subject.requests[0],{registros:[point(),point('Outros'),{lat:null,lng:null,foco:'Piscina'}]});
+  await pending;
+  assert.equal(subject.operationalRows().length,2);assertPoints(subject,1);
 });

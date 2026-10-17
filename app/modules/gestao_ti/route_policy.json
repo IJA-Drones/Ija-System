@@ -614,6 +614,8 @@
   "main.api_geocode": {
     "POST": "prefeitura.mapas.consultar"
   },
+  "main.mapa_operacional_dados": {"GET": "prefeitura.mapas.consultar"},
+  "main.mapa_operacional_historico": {"GET": "prefeitura.mapas.consultar"},
   "main.heatmap_data": {
     "GET": "prefeitura.mapas.consultar"
   },
