@@ -10,6 +10,7 @@ from app import db
 from app.clients.cep_client import CepLookupError, CepNotFoundError, lookup_cep
 from app.clients.google_maps_client import geocode_endereco_google, reverse_geocode_lat_lng_google_details
 from app.models import Denuncia, DenunciaAnexo, Prefeitura
+from app.shared.file_recovery import save_file
 from app.shared.skybox import SkyboxError, skybox_enabled, upload_file_to_skybox
 from app.shared.uploads import get_upload_folder
 
@@ -79,13 +80,16 @@ def criar_denuncia(form, files, *, ip_origem=None, user_agent=None):
         ip_origem=ip_origem,
         user_agent=user_agent,
     )
-    db.session.add(denuncia)
-    db.session.flush()
-
-    for arquivo in anexos:
-        denuncia.anexos.append(_save_denuncia_media(denuncia, arquivo))
-
-    db.session.commit()
+    try:
+        db.session.add(denuncia)
+        db.session.flush()
+        for arquivo in anexos:
+            denuncia.anexos.append(_save_denuncia_media(denuncia, arquivo))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        # File intents survive rollback and are reconciled against committed data.
+        raise
     return denuncia
 
 
@@ -223,7 +227,7 @@ def _save_denuncia_media(denuncia, arquivo):
             relative_dir = os.path.join("denuncias", str(denuncia.id), tipo_midia)
             upload_dir = os.path.join(get_upload_folder(), relative_dir)
             os.makedirs(upload_dir, exist_ok=True)
-            arquivo.save(os.path.join(upload_dir, stored_name))
+            save_file(arquivo, os.path.join(upload_dir, stored_name))
             arquivo_path = "/".join([relative_dir.replace(os.sep, "/"), stored_name])
     except SkyboxError:
         current_app.logger.exception("Falha ao enviar midia de denuncia para o Skybox.")

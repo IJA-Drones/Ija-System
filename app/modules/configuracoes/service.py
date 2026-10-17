@@ -120,7 +120,8 @@ def cleanup_image(path):
         if is_skybox_path(path):
             delete_skybox_file(path)
         else:
-            local_image_path(path).unlink(missing_ok=True)
+            from app.shared.file_recovery import remove_file
+            remove_file(local_image_path(path))
     except (SkyboxError, RequestException, OSError, ConfigValidationError):
         current_app.logger.exception("Não foi possível remover imagem de configuração substituída.")
 

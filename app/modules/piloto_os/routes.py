@@ -277,6 +277,9 @@ def _webdav_url_for_remote_path(remote_path):
 
 
 def _delete_webdav_file(value):
+    from app.shared.file_recovery import track
+    if track('webdav', _webdav_remote_path_from_marker(value), action='delete'):
+        return
     _base_url, auth = _webdav_config()
     remote_path = _webdav_remote_path_from_marker(value)
     response = requests.delete(
@@ -531,6 +534,8 @@ def _upload_request_stream_to_webdav(os_id, media_prefix):
             return int(content_length or 0)
 
     upload_body = SizedRequestStream() if content_length is not None else stream_chunks()
+    from app.shared.file_recovery import track
+    track('webdav', file_remote_path)
 
     try:
         response = requests.put(
@@ -1135,6 +1140,8 @@ def _run_video_upload_job(app, job_id):
                 def __len__(self):
                     return total_bytes
 
+            from app.shared.file_recovery import track
+            track('webdav', file_remote_path)
             response = requests.put(
                 file_url,
                 data=ProgressFileStream(),
@@ -1265,7 +1272,8 @@ def _delete_os_media_path(os_id, media_path):
     abs_path = os.path.abspath(os.path.join(static_root, str(media_path).replace("/", os.sep)))
     if os.path.commonpath([static_root, abs_path]) == static_root and os.path.isfile(abs_path):
         try:
-            os.remove(abs_path)
+            from app.shared.file_recovery import remove_file
+            remove_file(abs_path)
         except OSError:
             current_app.logger.info("Falha ignorada ao remover arquivo local da OS %s.", os_id, exc_info=True)
 

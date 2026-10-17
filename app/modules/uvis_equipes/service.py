@@ -5,14 +5,31 @@ from sqlalchemy import func
 
 from app.extensions import db
 from app.shared.password_policy import validate_password
-from app.models import EquipeUvis, Solicitacao, Usuario
-from app.shared.access import apply_prefeitura_scope, apply_regiao_scope
+from app.models import EquipeUvis, Prefeitura, Solicitacao, Usuario
+from app.shared.access import apply_prefeitura_scope, apply_regiao_scope, normalize_role
 
 
 MAX_MEMBROS_EQUIPE_UVIS = 5
 TEAM_ACCOUNT_TYPE = "equipe_uvis"
 OPERATIONAL_UVIS_ACCOUNT_NAME = "OPERACIONAL UVIS"
 LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+class UvisMunicipalityError(ValueError):
+    """The owning UVIS must be valid before creating or changing its login."""
+
+
+def _require_uvis_prefeitura(user):
+    if normalize_role(getattr(user, "tipo_usuario", None)) != "uvis" or not getattr(user, "id", None):
+        raise UvisMunicipalityError("O acesso da equipe deve estar vinculado a uma UVIS responsável.")
+    prefeitura_id = getattr(user, "prefeitura_id", None)
+    prefeitura = db.session.get(Prefeitura, prefeitura_id) if prefeitura_id is not None else None
+    if prefeitura is None or not prefeitura.ativa:
+        raise UvisMunicipalityError(
+            "A UVIS responsável precisa estar vinculada a uma prefeitura ativa. "
+            "Solicite ao administrador a correção do cadastro antes de salvar o acesso da equipe."
+        )
+    return prefeitura.id
 
 
 def next_team_slot(uvis_usuario_id: int, nome_equipe: str):
@@ -238,6 +255,7 @@ def suggested_team_login(nome_equipe: str) -> str:
 
 
 def create_team_account(user, nome_equipe: str, login_equipe: str, senha: str):
+    prefeitura_id = _require_uvis_prefeitura(user)
     usuario_equipe = Usuario(
         nome_uvis=nome_equipe,
         regiao=user.regiao,
@@ -245,6 +263,7 @@ def create_team_account(user, nome_equipe: str, login_equipe: str, senha: str):
         login=login_equipe,
         tipo_usuario=TEAM_ACCOUNT_TYPE,
         piloto_id=None,
+        prefeitura_id=prefeitura_id,
         equipe_uvis_uvis_usuario_id=user.id,
         equipe_uvis_nome=nome_equipe,
     )
@@ -254,6 +273,7 @@ def create_team_account(user, nome_equipe: str, login_equipe: str, senha: str):
 
 
 def upsert_operational_uvis_account(user, login_operacional: str, senha: str):
+    prefeitura_id = _require_uvis_prefeitura(user)
     account = get_operational_uvis_account(user.id)
     if account is None:
         account = Usuario(
@@ -263,7 +283,7 @@ def upsert_operational_uvis_account(user, login_operacional: str, senha: str):
             login=login_operacional,
             tipo_usuario=TEAM_ACCOUNT_TYPE,
             piloto_id=None,
-            prefeitura_id=getattr(user, "prefeitura_id", None),
+            prefeitura_id=prefeitura_id,
             equipe_uvis_uvis_usuario_id=user.id,
             equipe_uvis_nome=OPERATIONAL_UVIS_ACCOUNT_NAME,
         )
@@ -272,7 +292,7 @@ def upsert_operational_uvis_account(user, login_operacional: str, senha: str):
         account.nome_uvis = f"Operacional - {user.nome_uvis}"
         account.regiao = user.regiao
         account.codigo_setor = user.codigo_setor
-        account.prefeitura_id = getattr(user, "prefeitura_id", None)
+        account.prefeitura_id = prefeitura_id
         account.login = login_operacional
         account.equipe_uvis_nome = OPERATIONAL_UVIS_ACCOUNT_NAME
 

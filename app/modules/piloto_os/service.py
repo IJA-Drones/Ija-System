@@ -25,6 +25,7 @@ from app.models import (
     Usuario,
     Veiculos,
 )
+from app.shared.file_recovery import save_file, remove_file
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -1483,11 +1484,12 @@ def _validar_arquivo_video_os(arquivo):
     return ext
 
 
-def _upload_os_media_para_skybox(arquivo, os_id, nome, *, tipo="arquivo"):
+def _upload_os_media_para_skybox(arquivo, os_id, nome, *, tipo="arquivo", reference_aliases=()):
     try:
         return upload_file_to_skybox(
             arquivo,
             build_os_media_remote_path(os_id, nome),
+            reference_aliases=reference_aliases,
         )
     except SkyboxError as exc:
         raise PilotoOsError(
@@ -1510,10 +1512,11 @@ def _salvar_upload_os_imagem(arquivo, root_path, os_id, prefixo, *, usar_skybox=
 
     pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
     os.makedirs(pasta_destino, exist_ok=True)
-    arquivo.save(os.path.join(pasta_destino, nome))
+    save_file(arquivo, os.path.join(pasta_destino, nome))
 
     if copiar_skybox and skybox_enabled():
-        _upload_os_media_para_skybox(arquivo, os_id, nome, tipo="imagem")
+        _upload_os_media_para_skybox(arquivo, os_id, nome, tipo="imagem",
+            reference_aliases=(f"uploads/os/{os_id}/{nome}",))
 
     return f"uploads/os/{os_id}/{nome}"
 
@@ -1538,7 +1541,7 @@ def _salvar_upload_os_video(arquivo, root_path, os_id, prefixo):
 
     pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
     os.makedirs(pasta_destino, exist_ok=True)
-    arquivo.save(os.path.join(pasta_destino, nome))
+    save_file(arquivo, os.path.join(pasta_destino, nome))
     return f"uploads/os/{os_id}/{nome}"
 
 
@@ -1567,6 +1570,9 @@ def _webdav_remote_path_from_marker(value):
 
 
 def _delete_webdav_marker(value):
+    from app.shared.file_recovery import track
+    if track('webdav', _webdav_remote_path_from_marker(value), action='delete'):
+        return
     base_url = (_webdav_setting("WEBDAV_URL", "SKYBOX_WEBDAV_URL") or "").strip().rstrip("/")
     username = (_webdav_setting("WEBDAV_USER", "SKYBOX_USERNAME") or "").strip()
     password = _webdav_setting("WEBDAV_PASS", "SKYBOX_APP_PASSWORD") or ""
@@ -1609,7 +1615,7 @@ def _remover_upload_os_arquivo(root_path, rel_path):
         nome = partes[-1]
         if os_id and nome:
             try:
-                delete_skybox_file(build_os_media_remote_path(os_id, nome))
+                delete_skybox_file(build_os_media_remote_path(os_id, nome), reference_aliases=(rel_normalizado,))
             except SkyboxError:
                 pass
 
@@ -1619,7 +1625,7 @@ def _remover_upload_os_arquivo(root_path, rel_path):
         return
     if os.path.exists(abs_path) and os.path.isfile(abs_path):
         try:
-            os.remove(abs_path)
+            remove_file(abs_path)
         except OSError:
             pass
 

@@ -32,6 +32,7 @@ from app.models import (
     Usuario,
     Veiculos,
 )
+from app.shared.file_recovery import save_file
 from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
 from app.shared.vehicle_supervisor import supervisor_equipment_query
 from app.shared.query_filters import id_search_clause
@@ -1713,7 +1714,7 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa, *, copi
     pasta_base = os.path.join(root_path, "static", "uploads", "veiculos")
     pasta_destino = os.path.join(pasta_base, subpasta)
     os.makedirs(pasta_destino, exist_ok=True)
-    arquivo.save(os.path.join(pasta_destino, nome))
+    save_file(arquivo, os.path.join(pasta_destino, nome))
 
     return f"uploads/veiculos/{subpasta}/{nome}"
 

@@ -857,10 +857,12 @@ def _save_uploaded_agro_file(original_filename, file_bytes, subfolder, default_e
     os.makedirs(base_folder, exist_ok=True)
     name_root, extension = os.path.splitext(original_filename)
     safe_root = secure_filename(name_root) or fallback_name
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")
     short_hash = hashlib.sha256(file_bytes).hexdigest()[:10]
     stored_filename = f"{safe_root}_{stamp}_{short_hash}{extension or default_extension}"
     absolute_path = os.path.join(base_folder, stored_filename)
+    from app.shared.file_recovery import track
+    track("local", absolute_path)
     with open(absolute_path, "wb") as file_handle:
         file_handle.write(file_bytes)
     return stored_filename, os.path.join(subfolder, stored_filename).replace("\\", "/")

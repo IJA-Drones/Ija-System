@@ -14,6 +14,7 @@ from app.models import AuditoriaUsuario
 
 INTERNAL_TABLES = {
     'auditoria_usuarios', 'auditoria_arquivos', 'auditoria_instalacao',
+    'auditoria_syslog_entregas', 'arquivo_operacoes',
     'edicao_reservas', 'login_bloqueios', 'login_eventos', 'usuario_presencas', 'watchdog_deploy_events',
     'rastreamento_sincronizacao', 'rastreamento_posicoes', 'rastreamento_historicos',
 }
@@ -249,3 +250,5 @@ def register_audit(app):
 
     from app.modules.auditoria.archive import register_archive_worker
     register_archive_worker(app)
+    from app.modules.auditoria.syslog import register_syslog_worker
+    register_syslog_worker(app)

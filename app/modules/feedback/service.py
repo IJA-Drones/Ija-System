@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import FeedbackComentario, FeedbackComentarioAnexo, FeedbackTopico, Usuario
+from app.shared.file_recovery import save_file, remove_file
 from app.shared.access import (
     apply_prefeitura_scope,
     can_access_prefeitura,
@@ -438,7 +439,7 @@ def save_feedback_comment_attachments(comment, uploaded_files):
                 raise ValueError(f"Falha ao enviar imagem para o Skybox: {exc}") from exc
         else:
             absolute_path = os.path.join(upload_dir, unique_name)
-            uploaded_file.save(absolute_path)
+            save_file(uploaded_file, absolute_path)
             if tamanho_bytes is None:
                 try:
                     tamanho_bytes = os.path.getsize(absolute_path)
@@ -491,7 +492,7 @@ def remove_feedback_attachment_file(anexo):
 
     absolute_path = os.path.abspath(os.path.join(upload_root, relative_path))
     try:
-        os.remove(absolute_path)
+        remove_file(absolute_path)
     except FileNotFoundError:
         return
 

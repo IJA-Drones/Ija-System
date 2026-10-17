@@ -47,7 +47,7 @@ Aplicar a migração `b7f2c9d41e60`, após `a6e3f8129c40`, antes de iniciar a no
 
 A cobertura acima não significa que todos os cadastros do sistema, como financeiro, Agro e estoque, já tenham reserva de edição. Escritas SQL diretas e alterações em lote externas ao ORM não herdam a proteção: novas rotas precisam aplicar a mesma autorização, reserva e versionamento. Os caminhos existentes do escopo foram revisados; não se deve usar SQL direto para contorná-los.
 
-O controle protege a gravação no banco. Não transforma banco e Skybox numa única transação distribuída nem substitui a etapa de compensação de arquivos externos sob falhas, apontada no item 4.5.6.
+O controle protege a gravação no banco. Não transforma banco e Skybox numa única transação distribuída e trabalha em conjunto com a [compensação durável de arquivos externos](recuperacao-transacoes.md), implementada para o item 4.5.6.
 
 ## Validação
 

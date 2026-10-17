@@ -99,7 +99,7 @@ def deliver_batch():
         if hashlib.sha256(content).hexdigest() != row['sha256']:
             raise ValueError('Checksum local inválido.')
         marker = upload_file_to_skybox(FileStorage(stream=BytesIO(content), filename=row['id'] + '.jsonl',
-                                                   content_type='application/x-ndjson'), row['caminho'])
+                                                   content_type='application/x-ndjson'), row['caminho'], recoverable=False)
         remote = download_skybox_bytes(marker, max_bytes=max(MAX_BATCH_BYTES, len(content)))
         if hashlib.sha256(remote).hexdigest() != row['sha256']:
             raise ValueError('Checksum remoto divergente.')
