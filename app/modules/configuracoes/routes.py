@@ -9,12 +9,12 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from app.extensions import db
 from app.models import PrefeituraDocumentoConfig, PrefeituraDocumentoHistorico
-from app.shared.access import is_dev_user
 from app.shared.csrf_security import CSRF_SESSION_KEY
 from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
 from .service import (
     ConfigConflictError, ConfigValidationError, local_image_path, prefeitura_permitida,
     prefeituras_permitidas, require_access, save_config, snapshot,
+    can_view_all_settings, can_access_settings,
 )
 
 
@@ -43,6 +43,9 @@ def _require_document_schema():
 
 
 def register_routes(bp):
+    from app.modules.consultas.email_settings import register_routes as register_email_settings
+    register_email_settings(bp)
+
     @bp.after_request
     def documentos_config_no_store(response):
         if (request.endpoint or "").startswith("main.configuracoes") or response.mimetype == "application/pdf":
@@ -56,9 +59,10 @@ def register_routes(bp):
         require_access(current_user)
         _require_document_schema()
         prefeituras = prefeituras_permitidas(current_user).all()
-        if not is_dev_user(current_user) and prefeituras:
+        if not can_view_all_settings(current_user) and prefeituras:
             return redirect(url_for("main.configuracoes_documentos", prefeitura_id=prefeituras[0].id))
-        return render_template("configuracoes_documentos.html", prefeitura=None, prefeituras=prefeituras)
+        return render_template("configuracoes_documentos.html", prefeitura=None, prefeituras=prefeituras,
+            all_prefeituras=can_view_all_settings(current_user))
 
     @bp.route("/configuracoes/documentos/<int:prefeitura_id>", methods=["GET", "POST"], endpoint="configuracoes_documentos")
     @login_required
@@ -97,7 +101,9 @@ def register_routes(bp):
                     form[key] = int(value)
         return render_template(
             "configuracoes_documentos.html", prefeitura=prefeitura,
-            prefeituras=prefeituras_permitidas(current_user).all() if is_dev_user(current_user) else [],
+            prefeituras=prefeituras_permitidas(current_user).all() if can_view_all_settings(current_user) else [],
+            all_prefeituras=can_view_all_settings(current_user),
+            can_configurar_documentos=can_access_settings(current_user, write=True),
             config=config, form=form, erro=erro, config_csrf_token=_csrf_token(),
             historico=PrefeituraDocumentoHistorico.query.filter_by(prefeitura_id=prefeitura_id)
                 .order_by(PrefeituraDocumentoHistorico.id.desc()).limit(20).all(),

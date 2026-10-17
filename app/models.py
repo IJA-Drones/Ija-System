@@ -3378,3 +3378,36 @@ class ArquivoOperacao(db.Model):
     ultimo_erro = db.Column(db.String(100))
     concluido_em = db.Column(db.DateTime)
     __table_args__ = (db.Index('ix_arquivo_operacoes_pendentes', 'estado', 'proxima_tentativa'),)
+
+
+class ConsultaSalva(db.Model):
+    __tablename__ = 'consultas_salvas'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), index=True)
+    nome = db.Column(db.String(100), nullable=False)
+    definicao = db.Column(db.JSON, nullable=False)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    __mapper_args__ = {'version_id_col': versao}
+
+
+class PrefeituraEmailConfig(db.Model):
+    __tablename__ = 'prefeitura_email_config'
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), primary_key=True)
+    destinatario = db.Column(db.String(254), nullable=False)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    __mapper_args__ = {'version_id_col': versao}
+
+
+class ConsultaEmailEnvio(db.Model):
+    __tablename__ = 'consulta_email_envios'
+    id = db.Column(db.String(36), primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    destinatario = db.Column(db.String(254), nullable=False)
+    estado = db.Column(db.String(20), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))

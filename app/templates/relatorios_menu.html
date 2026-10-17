@@ -17,6 +17,10 @@
     </div>
   </div>
 
+  <div class="card p-3 mb-4 border-primary">
+    <h3 class="h5">Consultas personalizadas</h3><p>Escolha campos, crie fórmulas e salve critérios no seu catálogo. Veja o resultado em tabela, gráfico, mapa, PDF e Excel.</p>
+    <a class="btn btn-primary align-self-start" href="{{ url_for('main.consultas') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.consultas')) if central_ti_url_allowed is defined else true) else 'false' }}">Montar consulta</a>
+  </div>
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_solicitacoes') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_solicitacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">

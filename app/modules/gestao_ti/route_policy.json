@@ -1,4 +1,11 @@
 {
+  "main.configuracoes_email": {
+    "GET": "prefeitura.documentos.consultar",
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.consultas_email_destino": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
   "main.configuracoes": {
     "GET": "prefeitura.documentos.consultar"
   },
@@ -1181,5 +1188,24 @@
   },
   "main.password_policy_save": {
     "POST": "sistema.tecnico.operar"
+  },
+  "main.consultas": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_executar": {
+    "POST": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_catalogo": {
+    "GET": "prefeitura.relatorios.consultar",
+    "POST": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_excluir": {
+    "DELETE": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_exportar": {
+    "POST": "prefeitura.relatorios.exportar"
+  },
+  "main.consultas_email": {
+    "POST": "prefeitura.relatorios.exportar"
   }
 }
