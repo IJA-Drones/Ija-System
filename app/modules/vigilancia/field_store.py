@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
-from .field_models import CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao
+from .field_models import CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao, CampoOsReferencia
 from .service import CSV_COLUMNS, MAX_ROWS, PreviewValidationError, preview_csv
 from .domain import DEPOSIT_COLUMNS
 
@@ -64,18 +64,40 @@ class FieldStore:
         result.pop("original", None)
         return result
 
-    def prepare(self, content, *, prefeitura, actor, source, filename, demo):
+    @staticmethod
+    def _check_os(conn, os_id, prefeitura):
+        from app.models import Solicitacao
+        table = Solicitacao.__table__
+        if conn.scalar(sa.select(table.c.id).where(table.c.id == os_id, table.c.prefeitura_id == prefeitura)) is None:
+            raise FieldConflict("A OS não pertence à prefeitura do registro ou não está mais disponível.")
+
+    def prepare(self, content, *, prefeitura, actor, source, filename, demo, os_declaration=None, plan_reference=None):
         source = source.strip()
         if not source or len(source) > 120 or any(ord(c) < 32 for c in source):
             raise FieldStoreError("Informe uma fonte de até 120 caracteres.")
         report = preview_csv(content, prefeitura_id=prefeitura)
+        if os_declaration:
+            if demo or len(report["registros"]) != 1:
+                raise FieldConflict("O vínculo com OS exige uma visita individual com dados autorizados.")
+            report["vinculo_os"] = dict(os_declaration)
+        if plan_reference:
+            report["planejamento"] = dict(plan_reference)
         status = "VALIDADO" if report["status"] == "VALIDADO" and report["registros"] else "REJEITADO"
         table = CampoLote.__table__
         with self.connection(write_prefeitura=prefeitura) as conn:
+            from .planning import validate_visits
+            if status == "VALIDADO":
+                validate_visits(conn, report["registros"], prefeitura, demo, plan_reference, actor)
+            if os_declaration:
+                self._check_os(conn, os_declaration["id"], prefeitura)
             previous = conn.execute(sa.select(table).where(
                 table.c.prefeitura == prefeitura, table.c.demo == bool(demo), table.c.actor == actor,
                 table.c.sha256 == report["arquivo_sha256"], table.c.source == source)).mappings().first()
             if previous:
+                if previous["report"].get("vinculo_os") != report.get("vinculo_os"):
+                    raise FieldConflict("Esta visita já foi preparada com outra referência ou responsável. Revise o registro existente.")
+                if previous["report"].get("planejamento") != plan_reference:
+                    raise FieldConflict("Esta visita já foi preparada com outro vínculo de planejamento.")
                 return self._public(previous)
             count = conn.scalar(sa.select(sa.func.count()).select_from(table).where(
                 table.c.prefeitura == prefeitura, table.c.demo == bool(demo)))
@@ -85,6 +107,8 @@ class FieldStore:
             conn.execute(table.insert().values(id=batch_id, prefeitura=prefeitura, demo=bool(demo), actor=actor,
                          source=source, filename=filename, sha256=report["arquivo_sha256"], layout=report["layout"],
                          original=content, created=time.time(), status=status, report=report))
+            if os_declaration:
+                conn.execute(CampoOsReferencia.__table__.insert().values(batch_id=batch_id, solicitacao_id=os_declaration["id"]))
             return self._public(conn.execute(sa.select(table).where(table.c.id == batch_id)).mappings().one())
 
     def confirm(self, batch_id, *, prefeitura, actor):
@@ -100,9 +124,30 @@ class FieldStore:
             if batch["status"] != "VALIDADO":
                 raise FieldConflict("O lote contém inconsistências. Corrija o arquivo e valide novamente.")
             report = preview_csv(bytes(batch["original"]), prefeitura_id=prefeitura)
+            declaration = batch["report"].get("vinculo_os")
+            if declaration:
+                reference = conn.scalar(sa.select(CampoOsReferencia.solicitacao_id).where(CampoOsReferencia.batch_id == batch_id))
+                if reference != declaration["id"]:
+                    raise FieldConflict("A referência à OS mudou ou foi removida. Revise a origem antes de confirmar.")
+                self._check_os(conn, reference, prefeitura)
+                for record in report["registros"]:
+                    previous_os = conn.scalars(sa.select(CampoOsReferencia.solicitacao_id)
+                        .join(links, links.c.batch_id == CampoOsReferencia.batch_id)
+                        .join(lots, lots.c.id == links.c.batch_id)
+                        .where(links.c.prefeitura == prefeitura, links.c.demo == batch["demo"],
+                               links.c.origin == record["origem"], links.c.code == record["inspecao_codigo"],
+                               lots.c.status == "CONCLUIDO", CampoOsReferencia.solicitacao_id.is_not(None)))
+                    if any(value != reference for value in previous_os):
+                        raise FieldConflict("Esta inspeção já está vinculada a outra OS. Revise a referência e o código da visita.")
+                report["vinculo_os"] = declaration
             if report["status"] != "VALIDADO" or not report["registros"] or report["arquivo_sha256"] != batch["sha256"] or report["layout"] != batch["layout"]:
                 raise FieldConflict("O arquivo preservado não passou pela validação. Nenhum registro foi gravado.")
             demo = batch["demo"]
+            from .planning import validate_visits, link_visits
+            plan_reference = batch["report"].get("planejamento")
+            validate_visits(conn, report["registros"], prefeitura, demo, plan_reference, actor)
+            if plan_reference:
+                report["planejamento"] = plan_reference
             existing = list(conn.scalars(sa.select(inspections.c.payload).where(
                 inspections.c.prefeitura == prefeitura, inspections.c.demo == demo)))
             by_key = {(r["origem"], r["inspecao_codigo"]): r for r in existing}
@@ -141,6 +186,7 @@ class FieldStore:
             for table, values in ((properties, new_properties), (surveys, new_surveys), (inspections, new_inspections)):
                 if values:
                     conn.execute(table.insert(), values)
+            link_visits(conn, report["registros"], prefeitura, demo, plan_reference, actor)
             conn.execute(links.insert(), [dict(batch_id=batch_id, prefeitura=prefeitura, demo=demo,
                          origin=record["origem"], code=record["inspecao_codigo"], source_line=record["linha"])
                          for record in report["registros"]])

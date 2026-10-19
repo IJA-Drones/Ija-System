@@ -7,7 +7,7 @@
 {% block content %}
 <div class="vigilancia-preview-page py-4">
   <p><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a></p>
-  {% if field_mode %}<p><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if not batch or batch.demo else 'false') }}">Registrar visita e consultar indicadores</a></p>{% endif %}
+  {% if field_mode %}<p><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if not batch or batch.demo else 'false', os_id=batch.report.vinculo_os.id if batch and batch.report.get('vinculo_os') else none) }}">Registrar visita e consultar indicadores</a></p>{% endif %}
   <header class="vigilancia-preview-header">
     <div>
       <p class="vigilancia-preview-eyebrow">Vigilância de campo</p>

@@ -1,8 +1,7 @@
-"""Small, private SINAN store. Never uses the operational database connection pool.
+"""SQLite legado do SINAN, mantido para transferência e uso local explícito.
 
-One running import per shared store, short transactions, immutable snapshots and
-bounded storage. Deployments must mount SINAN_STORAGE_PATH on persistent local
-storage; this is a single-host worker, not a distributed queue.
+O padrão da aplicação usa DatabaseStore. Esta classe preserva o formato antigo
+e não usa o banco operacional; continua disponível com backend=sqlite.
 """
 
 import json

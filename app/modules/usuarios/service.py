@@ -2,7 +2,7 @@ from sqlalchemy import and_, func, or_
 from flask import current_app, has_app_context
 
 from app.extensions import db
-from app.models import Notificacao, Usuario, Pilotos
+from app.models import Notificacao, Usuario, Pilotos, Prefeitura
 from app.shared.access import (
     DEV_USER_TYPE,
     DIRECTOR_USER_TYPE,
@@ -33,6 +33,7 @@ ADMIN_USER_TYPES = (
     "covisa",
     "sup_veiculos",
     TI_MANAGER_USER_TYPE,
+    "agente_endemias",
 )
 LEGACY_COVISA_USER_TYPE = "visualizar"
 LEGACY_COVISA_REGIAO = "COVISA"
@@ -191,8 +192,10 @@ def validate_new_admin_user(
         errors["tipo_usuario"] = "Ative a Central de TI antes de criar esse perfil."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
-    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos"} and not prefeitura_id:
+    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos", "agente_endemias"} and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
+    if tipo_usuario == "agente_endemias" and prefeitura_id and not Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first():
+        errors["prefeitura_id"] = "Selecione uma prefeitura ativa para o agente."
     if not senha:
         errors["senha"] = "Informe uma senha."
     elif password_error := validate_password(senha):
@@ -229,8 +232,10 @@ def validate_edit_admin_user(
         errors["tipo_usuario"] = "A Central de TI está desativada."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
-    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos"} and not prefeitura_id:
+    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos", "agente_endemias"} and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
+    if tipo_usuario == "agente_endemias" and prefeitura_id and not Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first():
+        errors["prefeitura_id"] = "Selecione uma prefeitura ativa para o agente."
 
     if senha or senha2:
         if len(senha) < 4:

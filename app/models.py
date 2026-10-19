@@ -140,6 +140,7 @@ class Usuario(UserMixin, db.Model):
     TIPO_DEV = "dev"
     TIPO_ADMIN = "admin"
     TIPO_UVIS = "uvis"
+    TIPO_AGENTE_ENDEMIAS = "agente_endemias"
     TIPO_OPERARIO = "operario"
     TIPO_VISUALIZADOR = "visualizador"
     TIPO_REGIONAL = "regional"
@@ -3484,5 +3485,9 @@ class ConsultaEmailEnvio(db.Model):
 
 # Register the field domain for Alembic and isolated db.create_all() tests.
 from app.modules.vigilancia.field_models import (  # noqa: E402,F401
-    CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao,
+    CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao, CampoOsReferencia,
+)
+from app.modules.vigilancia.sinan_models import SinanJob, SinanCase  # noqa: E402,F401
+from app.modules.vigilancia.planning_models import (  # noqa: E402,F401
+    CampoQuarteirao, CampoPlano, CampoPlanoEstrato, CampoPlanoQuarteirao, CampoPlanoVisita,
 )

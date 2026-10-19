@@ -21,6 +21,13 @@ def token():
 
 
 def _store():
+    backend = current_app.config.get("SINAN_STORAGE_BACKEND", "auto")
+    if backend not in {"auto", "database", "sqlite"}:
+        raise StoreError("Configuração de armazenamento SINAN inválida.")
+    if backend == "database" or (backend == "auto" and "sqlalchemy" in current_app.extensions):
+        from app.extensions import db
+        from .sinan_database import DatabaseStore
+        return DatabaseStore(db.engine)
     try:
         return Store(current_app.config.get("SINAN_STORAGE_PATH") or Path(current_app.instance_path) / "sinan" / "sinan.sqlite")
     except OSError as exc:

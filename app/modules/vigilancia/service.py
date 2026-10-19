@@ -262,13 +262,13 @@ def _normalize_and_validate(data, linha, prefeitura_id):
     except ValueError:
         row.add_error("data_inspecao", "DATA_INVALIDA", "Informe uma data válida no formato AAAA-MM-DD.")
 
-    if data["situacao"] not in {"INSPECIONADO", "FECHADO", "RECUSADO"}:
-        row.add_error("situacao", "SITUACAO_INVALIDA", "Use INSPECIONADO, FECHADO ou RECUSADO.")
+    if data["situacao"] not in {"INSPECIONADO", "FECHADO", "RECUSADO", "NAO_INSPECIONADO"}:
+        row.add_error("situacao", "SITUACAO_INVALIDA", "Use INSPECIONADO, FECHADO, RECUSADO ou NAO_INSPECIONADO.")
     elif data["situacao"] == "INSPECIONADO":
         if data["positivo_aedes"] not in {"SIM", "NAO"}:
             row.add_error("positivo_aedes", "POSITIVIDADE_OBRIGATORIA", "Use SIM ou NAO para um imóvel inspecionado.")
     elif data["positivo_aedes"]:
-        row.add_error("positivo_aedes", "POSITIVIDADE_INCOMPATIVEL", "Deixe a positividade vazia em imóveis fechados ou recusados.")
+        row.add_error("positivo_aedes", "POSITIVIDADE_INCOMPATIVEL", "Deixe a positividade vazia quando o imóvel não foi inspecionado.")
 
     latitude, longitude = data["latitude"], data["longitude"]
     if bool(latitude) != bool(longitude):

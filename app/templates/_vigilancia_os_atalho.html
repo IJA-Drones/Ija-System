@@ -1,0 +1,3 @@
+{% if config.get('VIGILANCIA_IMPORT_ENABLED') and solicitacao.prefeitura_id and (central_ti_ui_guard(['main.vigilancia_campo'], is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin') if central_ti_ui_guard is defined else (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin')) %}
+<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=solicitacao.prefeitura_id, os_id=solicitacao.id, demo='false') }}">Registrar inspeção · Focal/LIRAa</a>
+{% endif %}

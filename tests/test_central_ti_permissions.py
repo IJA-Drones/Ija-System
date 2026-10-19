@@ -92,7 +92,7 @@ class CentralTiPermissionsTests(unittest.TestCase):
             source.assert_not_called()
 
     def test_sinan_import_and_export_require_their_own_permissions(self):
-        from app.modules.vigilancia.sinan_store import Store
+        from app.modules.vigilancia.sinan_workflow_routes import _store
         directory = tempfile.TemporaryDirectory(prefix='sinan-permissions-')
         self.addCleanup(directory.cleanup)
         self.app.config['SINAN_STORAGE_PATH'] = directory.name + '/sinan.sqlite'
@@ -115,7 +115,7 @@ class CentralTiPermissionsTests(unittest.TestCase):
             response = self.client.post(path, json=scope, headers=headers)
         self.assertEqual(response.status_code, 202, response.get_data(as_text=True))
         job_id = response.json['job']['id']
-        Store(self.app.config['SINAN_STORAGE_PATH']).finish(job_id, 'completed', {'total': 0, 'groups': []})
+        _store().finish(job_id, 'completed', {'total': 0, 'groups': []})
         self.assertEqual(self.client.get(f'{path}/{job_id}/exportar.csv').status_code, 403)
         self.configure('uvis', ['prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar', 'prefeitura.relatorios.consultar', 'prefeitura.relatorios.exportar'])
         self.assertEqual(self.client.get(f'{path}/{job_id}/exportar.csv').status_code, 200)

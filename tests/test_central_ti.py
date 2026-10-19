@@ -117,7 +117,7 @@ class CentralTiTests(unittest.TestCase):
             self.login(role)
             if role in {"dev", "gestor_ti"}:
                 data = self.editor_data()
-                self.assertEqual(len(data["states"]), 20)
+                self.assertEqual(len(data["states"]), len(CATALOG["profiles"]))
                 response = self.save([self.selection(role)])
                 self.assertEqual(response.status_code, 200)
             else:
@@ -163,7 +163,7 @@ class CentralTiTests(unittest.TestCase):
             self.assertFalse(state["configured"])
             self.assertEqual(state["permissions"], state["current_rules"]["permissions"])
         self.assertEqual(CentralTiSelecao.query.count(), 0)
-        self.assertEqual(CentralTiAuditoria.query.count(), 20)
+        self.assertEqual(CentralTiAuditoria.query.count(), len(CATALOG["profiles"]))
 
     def test_deliberately_clearing_seeded_profile_does_not_restore_defaults(self):
         seed_profiles(db.session.connection(), CATALOG["profiles"])
@@ -177,7 +177,7 @@ class CentralTiTests(unittest.TestCase):
         self.assertEqual(state["version"], 2)
         self.assertEqual(state["permissions"], [])
         self.assertIn("sistema.perfis.configurar", state["current_rules"]["permissions"])
-        self.assertEqual(CentralTiAuditoria.query.count(), 21)
+        self.assertEqual(CentralTiAuditoria.query.count(), len(CATALOG["profiles"]) + 1)
 
     def test_empty_authored_configuration_is_never_treated_as_a_seed(self):
         db.session.add(CentralTiPerfilConfiguracao(perfil_codigo="dev", versao=1, atualizado_por_id=None))

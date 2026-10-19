@@ -9,10 +9,11 @@
 {% block content %}
 {% set can_manage_media = central_ti_media_allowed(modo_visualizacao, solicitacao) if central_ti_media_allowed is defined else not modo_visualizacao %}
 <div class="container-fluid py-4 piloto-os-form-page" style="max-width: 1200px">
-  <div class="piloto-os-form-header mb-4">
+  <div class="piloto-os-form-header justify-content-between flex-wrap gap-3 mb-4">
     <h2 class="text-dark m-0">
       <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Formulário de Ordem de Serviço
     </h2>
+    {% include '_vigilancia_os_atalho.html' %}
   </div>
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">

@@ -52,6 +52,7 @@ SCREENS = {
 def _screens_for(user, key):
     role = profile_code(user)
     overrides = {
+        'agente_endemias': {'prefeitura.vigilancia': [('vigilancia_agente', 'Meus levantamentos')]},
         'piloto': {
             'prefeitura.os': [('piloto_os', 'Ordens de serviço'), ('piloto_os_historico', 'Histórico de OS')],
             'prefeitura.veiculos': [('piloto_veiculos', 'Veículos'), ('piloto_caixa_entrada', 'Alertas'), ('listar_veiculos', 'Frota')],

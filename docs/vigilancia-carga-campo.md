@@ -1,6 +1,6 @@
 # Carga persistida de Focal/LIRAa - primeira entrega A1
 
-Acesso em **Relatórios > Carga Focal e LIRAa**, `/vigilancia/importacoes`.
+Acesso em **Vigilância > Importação e validação**, `/vigilancia/importacoes`.
 Ativação independente da prévia por `VIGILANCIA_IMPORT_ENABLED=1`, desabilitada
 por padrão. Reinicie o backend após alterar código/configuração. A migração cria
 cinco tabelas de vigilância sem alterar as tabelas operacionais existentes.
@@ -17,17 +17,22 @@ As tabelas são `vigilancia_campo_lotes`, `vigilancia_campo_imoveis`,
 Os dados passam a fazer parte do backup desse PostgreSQL; a retenção e a
 restauração precisam ser conferidas no ambiente de implantação. Não há envio
 automático ao Skybox, fila distribuída ou sincronização com legados. O módulo
-SINAN mantém seu armazenamento anterior; esta alteração é exclusiva do campo.
+SINAN também passou a usar o banco do IJA na revisão posterior `c7f2a9d810e4`.
 
-### Aplicação da migração (pendente para 17/10/2026)
+### Aplicação da migração
 
-Por decisão do usuário, a alteração no banco Render ficou para amanhã. Esta
-entrega prepara código e migração, mas **não executa comandos no banco real**.
-Após confirmar o banco de destino e a revisão instalada, revisar a migração
-`a41c9e7f26b0` (anterior `d9e4f81b203a`) e aplicá-la pelo procedimento de
-[operação](operacao.md). Só então habilitar `VIGILANCIA_IMPORT_ENABLED=1` e
-reiniciar o serviço. A aplicação não cria tabelas automaticamente nas requisições;
-se a migração não foi aplicada, o módulo retorna uma mensagem controlada.
+A migração original `a41c9e7f26b0` (anterior `d9e4f81b203a`) cria as cinco
+tabelas de campo. A revisão `c7f2a9d810e4` adiciona o vínculo das visitas à OS
+e as tabelas SINAN. O procedimento de atualização e cópia do SQLite legado
+está no [guia de registro](vigilancia-registro-campo.md). Em 19/10/2026, a
+revisão nova foi instalada no Neon configurado neste projeto, com cópia dos
+dois lotes SINAN existentes e preservação da origem e de um backup privado.
+
+Em outros ambientes, conferir o banco de destino e a revisão instalada antes
+de aplicar as migrações pelo procedimento de [operação](operacao.md). Habilitar
+`VIGILANCIA_IMPORT_ENABLED=1` e reiniciar o serviço. A aplicação não cria tabelas
+automaticamente nas requisições; se a migração não foi aplicada, o módulo
+retorna uma mensagem controlada.
 
 O downgrade remove somente as cinco tabelas novas, incluindo seus dados de
 campo. Não é uma operação de recuperação de registros. Não o executar no banco
@@ -99,7 +104,9 @@ O [registro direto e a consulta consolidada](vigilancia-registro-campo.md)
 ampliam esta entrega com visitas digitadas na tela e contagens de recipientes
 positivos por categoria, preservadas no JSON da inspeção. A consulta consolida
 identidades confirmadas entre lotes, com filtros e índices preliminares.
-Cadastro individual de depósitos/amostras, planejamento e supervisão completos,
+O [planejamento inicial e acesso de agente](vigilancia-planejamento.md) acrescenta
+território, estratos, metas e quarteirões informados pela coordenação.
+Cadastro individual de depósitos/amostras e supervisão completos,
 mapa de IIP, integração epidemiológica, risco oficial e importação de layouts
 oficiais continuam como próximas etapas. Não há enriquecimento inventado de dados ausentes.
 

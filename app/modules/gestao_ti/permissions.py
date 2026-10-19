@@ -142,6 +142,9 @@ def route_options(endpoint, method="GET", args=None):
 
 
 def can_access_endpoint(user, endpoint, method="GET", args=None, legacy=True):
+    if profile_code(user) == "agente_endemias" and endpoint.startswith("main.") and endpoint not in {
+        "main.vigilancia_agente", "main.vigilancia", "main.inicio"}:
+        return False
     choices = active_configuration(user)
     if choices is None:
         return bool(legacy)

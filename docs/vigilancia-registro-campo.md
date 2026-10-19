@@ -1,10 +1,11 @@
 # Registro de visitas e consulta Focal/LIRAa
 
-Acesso: **Relatórios > Focal e LIRAa**, `/vigilancia/campo`. Usa a mesma
+Acesso: **Vigilância > Focal e LIRAa**, `/vigilancia/campo`. Usa a mesma
 ativação `VIGILANCIA_IMPORT_ENABLED=1` da carga de campo. O registro direto
 reaproveita as cinco tabelas já preparadas para o importador, sem nova coluna
 ou tabela para as contagens de recipientes: elas ficam no JSON da inspeção.
-Esta entrega não executa migrações no banco real nem habilita o módulo no `.env`.
+As rotas não criam tabelas automaticamente. A instalação e a transferência do
+armazenamento são feitas pelo procedimento de atualização descrito abaixo.
 
 ## Central de Vigilância
 
@@ -38,9 +39,63 @@ as configurações do ambiente.
    levantamento, estrato e intervalo de datas. Consultar até 100 visitas por
    página e exportar todo o recorte, respeitando o limite da base.
 
-O levantamento é identificado pelo código informado na visita; esta versão não
-cria um cadastro de planejamento com população de imóveis, cálculo de tamanho
-de amostra ou sorteio de quarteirões. Endereço detalhado, terreno baldio,
+## Reaproveitamento de OS
+
+O atalho **Registrar inspeção · Focal/LIRAa** no formulário da OS abre a visita
+com sua referência. Também é possível informar o número da solicitação/OS na
+tela de campo. São respeitados os acessos de prefeitura, região, UVIS e equipe
+do sistema, além da permissão de vigilância. O vínculo exige modo autorizado.
+
+Bairro, coordenadas e referência do responsável são reaproveitados; endereço,
+equipe, data da aplicação e observações de larva/criadouro aparecem para
+conferência. O código estável do imóvel, a data efetiva, a situação da inspeção,
+o levantamento, o estrato e o resultado não são deduzidos da OS. Uma OS pode
+abranger vários imóveis. Para LIRAa vinculado à OS, o responsável declara que
+o imóvel pertence à amostra; isso não substitui o planejamento amostral nem
+a identificação da espécie.
+
+A tabela `vigilancia_campo_os` guarda a referência à solicitação por lote. A
+declaração do responsável fica no relatório preservado do lote. O sistema não
+copia a OS para outro cadastro e não modifica seus dados operacionais. A
+referência é validada novamente na confirmação; mudança de prefeitura,
+remoção da OS ou referência conflitante a outra OS bloqueiam a publicação.
+
+A situação `NAO_INSPECIONADO` registra visita sem inspeção completa. Ela,
+assim como fechado e recusado, não recebe positividade e não entra no total
+de imóveis inspecionados. Registros antigos não são convertidos automaticamente.
+
+## SINAN no PostgreSQL
+
+O padrão `SINAN_STORAGE_BACKEND=database` usa `vigilancia_sinan_lotes` e
+`vigilancia_sinan_casos` no banco configurado pelo IJA. Mantém a privacidade
+por conta/prefeitura, a separação entre demonstração e dados autorizados, o
+limite de 100 registros por importação, a publicação transacional, o cancelamento
+e um único importador ativo por banco. Workers recebem o engine, sem depender
+do contexto HTTP. Uma falha de schema/conexão não desvia a gravação para SQLite.
+
+O caminho `SINAN_STORAGE_PATH` identifica a origem legada. A classe SQLite
+continua disponível com `SINAN_STORAGE_BACKEND=sqlite`, para uso local explícito.
+Antes da troca, interromper importações e parar os processos antigos. Executar:
+
+```sh
+.venv/bin/python -B scripts/upgrade_vigilancia_storage.py
+.venv/bin/python -B scripts/upgrade_vigilancia_storage.py --apply
+```
+
+O primeiro comando apenas confere o plano. O segundo instala exclusivamente a
+revisão aditiva `c7f2a9d810e4`, cria backup SQLite consistente e privado em
+`instance/sinan/backups`, preserva IDs, autores, filtros, estados, resumos e casos,
+e compara a cópia com a origem. A transferência é transacional e repetível:
+registros iguais são reutilizados e divergências bloqueiam sobrescritas. Nenhum
+arquivo de origem é excluído. Reiniciar a aplicação após a cópia. Backups e
+arquivos SQLite são ignorados pelo Git. Em outros servidores, transferir também
+os respectivos arquivos legados antes de reiniciar esses ambientes.
+
+O levantamento é identificado pelo código informado na visita. A evolução de
+[território e planejamento](vigilancia-planejamento.md) acrescenta cadastro do RG,
+estratos, metas, quarteirões selecionados e contas individuais de agente. A
+seleção é informada pela coordenação; não há cálculo de tamanho de amostra ou
+sorteio automático. Endereço detalhado, terreno baldio,
 amostras, tubitos, responsáveis técnicos, resultados de **Aedes albopictus** e
 supervisão completa do BCL permanecem como evolução. Não chamar a tela de
 reprodução integral ou substituta homologada do boletim oficial.

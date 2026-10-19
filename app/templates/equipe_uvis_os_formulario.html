@@ -12,6 +12,7 @@
     <h2 class="m-0 text-dark">
       <i class="bi bi-clipboard-check-fill me-2 text-primary"></i>OS da Equipe UVIS
     </h2>
+    {% include '_vigilancia_os_atalho.html' %}
     <a href="{{ url_voltar }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_voltar) if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i>Voltar
     </a>

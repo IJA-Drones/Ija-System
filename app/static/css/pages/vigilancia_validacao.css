@@ -53,6 +53,7 @@
 .vigilancia-preview-empty { color: var(--color-text-muted); padding: 1.25rem 0 .25rem; font-size: .85rem; }
 .vigilancia-campo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .vigilancia-campo-grid > div { min-width: 0; }
+.vigilancia-campo-grid .form-label { display: block; width: 100%; }
 .vigilancia-campo-align { display: flex; align-items: flex-end; }
 .vigilancia-campo-grid [hidden], #campo-form [hidden] { display: none !important; }
 

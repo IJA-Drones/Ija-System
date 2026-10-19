@@ -1,6 +1,6 @@
 # Consulta pública de arboviroses para a prova de conceito
 
-Acesso: **Relatórios → SINAN · Arboviroses**, em `/vigilancia/sinan`. A consulta exige administrador global/prefeitura ou a permissão `prefeitura.vigilancia.consultar` na Central de TI. `SINAN_ENABLED=1` habilita página e API; `0` desabilita ambas. Na mesma tela, **Consulta pública** mantém a paginação e **Dados salvos** reúne importações, exportação e mapa. Os filtros acima valem para ambas as abas.
+Acesso: **Vigilância → SINAN · Arboviroses**, em `/vigilancia/sinan`. A consulta exige administrador global/prefeitura ou a permissão `prefeitura.vigilancia.consultar` na Central de TI. `SINAN_ENABLED=1` habilita página e API; `0` desabilita ambas. Na mesma tela, **Consulta pública** mantém a paginação e **Dados salvos** reúne importações, exportação e mapa. Os filtros acima valem para ambas as abas.
 
 ## Importações e exportações
 
@@ -18,9 +18,11 @@ O modelo de São Paulo e Pesqueira contém dois casos **fictícios** identificad
 
 ### Armazenamento e operação
 
-`SINAN_IMPORT_ENABLED=1` habilita o fluxo; `0` mantém apenas a consulta. Não há migração no banco operacional. O módulo usa um SQLite dedicado (`instance/sinan/sinan.sqlite`, ou `SINAN_STORAGE_PATH`), com transações curtas, cache de 2 MiB, teto aproximado de 64 MiB e no máximo 1.000 lotes. A API persiste somente contagens agrupadas; o CSV persiste os campos normalizados do modelo. Os lotes ficam restritos à conta importadora, inclusive entre administradores. POST exige CSRF; importação/cancelamento usam `prefeitura.vigilancia.editar`, exportação usa `prefeitura.relatorios.exportar` com os pré-requisitos de consulta da Central de TI.
+`SINAN_IMPORT_ENABLED=1` habilita o fluxo; `0` mantém apenas a consulta. O padrão `SINAN_STORAGE_BACKEND=database` usa o PostgreSQL configurado para o IJA, nas tabelas `vigilancia_sinan_lotes` e `vigilancia_sinan_casos`, com transações curtas e no máximo 1.000 lotes. A API persiste somente contagens agrupadas; o CSV persiste os campos normalizados do modelo. Os lotes ficam restritos à conta importadora, inclusive entre administradores. POST exige CSRF; importação/cancelamento usam `prefeitura.vigilancia.editar`, exportação usa `prefeitura.relatorios.exportar` com os pré-requisitos de consulta da Central de TI.
 
-É uma implementação para um único host com armazenamento local persistente compartilhado pelos processos. Deploys com disco efêmero ou múltiplas instâncias precisam de armazenamento e fila adequados antes do uso. Reinícios não retomam cargas: trabalhos sem progresso por 90 segundos são marcados como interrompidos e precisam ser iniciados novamente. Exportações não mantêm transações abertas durante o download. Os limites reduzem consumo, mas não substituem avaliação de carga no ambiente de produção.
+O PostgreSQL coordena um único importador ativo entre processos por trava transacional e índice parcial único. Não há fila durável ou retomada de cargas após reinício: trabalhos sem progresso por 90 segundos são marcados como interrompidos e precisam ser iniciados novamente. Exportações não mantêm transações abertas durante o download. Os limites reduzem consumo, mas não substituem avaliação de carga no ambiente de produção.
+
+O SQLite legado (`instance/sinan/sinan.sqlite` ou `SINAN_STORAGE_PATH`) foi mantido para transferência e uso local explícito com `SINAN_STORAGE_BACKEND=sqlite`. A revisão `c7f2a9d810e4` cria as tabelas no PostgreSQL; o procedimento com backup e verificação dos dados está no [guia de registro de campo](vigilancia-registro-campo.md#sinan-no-postgresql). O caminho de armazenamento não provoca retorno automático ao SQLite se houver falha no PostgreSQL.
 
 ## Consulta e paginação
 

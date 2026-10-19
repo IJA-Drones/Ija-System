@@ -1,6 +1,6 @@
 """Entrada da vigilância: navegação autorizada, sem consultar as bases dos módulos."""
 
-from flask import abort, current_app, render_template, request
+from flask import abort, current_app, render_template, request, redirect, url_for
 from flask_login import current_user, login_required
 
 from app.modules.gestao_ti.permissions import can_access_endpoint, route_access
@@ -17,6 +17,8 @@ def register_routes(bp):
     @bp.get("/vigilancia", endpoint="vigilancia")
     @login_required
     def hub():
+        if current_user.tipo_usuario == "agente_endemias":
+            return redirect(url_for("main.vigilancia_agente"))
         legacy = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
         if not route_access(current_user, legacy):
             abort(403)

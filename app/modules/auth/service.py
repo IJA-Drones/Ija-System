@@ -62,6 +62,8 @@ def authenticate_piloto_agro(login_value, password, *, auth_session=None):
 
 
 def _legacy_redirect_endpoint(user):
+    if user.tipo_usuario == "agente_endemias":
+        return "main.vigilancia_agente"
     if is_dev_user(user):
         return "main.dev_dashboard"
     if user.tipo_usuario == "gestor_ti" and has_app_context() and current_app.config.get("CENTRAL_TI_ENABLED", False):

@@ -79,3 +79,12 @@ class CampoLoteInspecao(db.Model):
 
 
 FIELD_TABLES = [model.__table__ for model in (CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao)]
+
+
+class CampoOsReferencia(db.Model):
+    __tablename__ = "vigilancia_campo_os"
+    batch_id = db.Column(db.String(32), db.ForeignKey("vigilancia_campo_lotes.id", ondelete="CASCADE"), primary_key=True)
+    solicitacao_id = db.Column(db.Integer, db.ForeignKey("solicitacoes.id", ondelete="SET NULL"), index=True)
+
+
+FIELD_OS_TABLES = [CampoOsReferencia.__table__]

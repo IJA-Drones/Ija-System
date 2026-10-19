@@ -101,7 +101,9 @@
   <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if is_agro_context %}
+      {% if current_user.tipo_usuario == 'agente_endemias' %}
+        {% set navbar_home_endpoint = 'main.vigilancia_agente' %}
+      {% elif is_agro_context %}
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
       {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
         {% set navbar_home_endpoint = 'main.central_ti' %}
@@ -262,7 +264,10 @@
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
-        {% if is_agro_context %}
+        {% if current_user.tipo_usuario == 'agente_endemias' %}
+          {% set sidebar_dashboard_endpoint = 'main.vigilancia_agente' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.vigilancia_agente' %}
+        {% elif is_agro_context %}
           {% set sidebar_dashboard_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
           {% set sidebar_dashboard_active = request.endpoint == sidebar_dashboard_endpoint %}
         {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and request.endpoint == 'main.central_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
@@ -297,10 +302,10 @@
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
               href="{{ url_for(sidebar_dashboard_endpoint) }}"
              data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(sidebar_dashboard_endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
-              <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill') }} me-2"></i><span>{{ 'Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Empresas' if is_financeiro_context else 'Dashboard') }}</span>
+              <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill') }} me-2"></i><span>{{ 'Meus levantamentos' if current_user.tipo_usuario == 'agente_endemias' else ('Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Empresas' if is_financeiro_context else 'Dashboard')) }}</span>
             </a>
           </li>
-          {% if sidebar_dashboard_endpoint != 'main.central_ti' %}
+          {% if sidebar_dashboard_endpoint != 'main.central_ti' and current_user.tipo_usuario != 'agente_endemias' %}
           {% include '_configuracoes_nav.html' %}
           {% if is_financeiro_context %}
             {% if empresa_financeiro %}
@@ -759,7 +764,9 @@
           </li>
           {% endif %}
 
-          {% if (central_ti_ui_guard(['main.vigilancia'], (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) %}
+          {% if current_user.tipo_usuario == 'agente_endemias' %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.vigilancia_agente' %}active{% endif %}" href="{{ url_for('main.vigilancia_agente') }}"><i class="bi bi-person-badge me-2" aria-hidden="true"></i><span>Meus levantamentos</span></a></li>
+          {% elif (central_ti_ui_guard(['main.vigilancia'], (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint and request.endpoint.startswith('main.vigilancia') %}active{% endif %}"

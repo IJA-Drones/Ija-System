@@ -715,6 +715,17 @@
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
   },
+  "main.vigilancia_planejamento": {
+    "GET": "prefeitura.vigilancia.consultar",
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_planejamento_modelo": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_agente": {
+    "GET": "prefeitura.vigilancia.consultar",
+    "POST": "prefeitura.vigilancia.editar"
+  },
   "main.vigilancia_campo_export": {
     "GET": "prefeitura.relatorios.exportar"
   },

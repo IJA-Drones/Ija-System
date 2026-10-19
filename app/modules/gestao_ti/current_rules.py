@@ -218,5 +218,7 @@ def current_rules(profile_code):
         raise ValueError("Mapeamento atual contém opções ausentes no catálogo.")
     if role not in GLOBAL_ADMIN_USER_TYPES and any(code.startswith("prefeitura.") for code in permissions):
         notes["prefeitura"] = "O alcance depende de prefeitura, região, equipe e das regras de cada tela."
+    if role == "agente_endemias":
+        allow("prefeitura.vigilancia", "consultar editar")
     return {"areas": sorted({code.split(".")[0] for code in permissions}),
             "permissions": sorted(permissions), "notes": notes}

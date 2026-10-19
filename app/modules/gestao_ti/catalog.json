@@ -350,6 +350,14 @@
   ],
   "profiles": [
     {
+      "id": "agente_endemias",
+      "name": "Agente de Endemias",
+      "description": "Visitas nos quarteirões atribuídos ao agente",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-person-badge"
+    },
+    {
       "id": "prefeitura_admin",
       "name": "Admin Prefeitura",
       "description": "Administração municipal",

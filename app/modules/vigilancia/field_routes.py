@@ -21,6 +21,7 @@ from .service import CSV_COLUMNS, LAYOUT_VERSION, MAX_FILE_BYTES, PreviewValidat
 from .sample import build_sample_csv
 from .domain import DEPOSIT_TYPES
 from .field_capture import FieldInputError, capture_csv, parse_filters, consolidate, export_csv
+from . import os_capture
 
 
 class FieldBodyLimit:
@@ -29,7 +30,7 @@ class FieldBodyLimit:
 
     def __call__(self, environ, start_response):
         path = environ.get("PATH_INFO", "")
-        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path == "/vigilancia/campo"):
+        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path in {"/vigilancia/campo", "/vigilancia/planejamento", "/vigilancia/agente"}):
             limit = MAX_FILE_BYTES + 65536
             try:
                 length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -88,7 +89,7 @@ def register_routes(bp):
 
     @bp.after_request
     def field_no_cache(response):
-        if (request.endpoint or "").startswith(("main.vigilancia_import", "main.vigilancia_campo")):
+        if (request.endpoint or "").startswith(("main.vigilancia_import", "main.vigilancia_campo", "main.vigilancia_planejamento")):
             response.headers["Cache-Control"] = "private, no-store"
         return response
 
@@ -107,8 +108,28 @@ def register_routes(bp):
         report = None
         error, code, demo, page_number = None, 200, True, 1
         form = request.form.to_dict() if request.method == "POST" else {}
+        selected, os_context, plan_reference = None, None, None
         try:
             demo = data_mode(request.form if request.method == "POST" else request.args)
+            from .planning import PlanningStore, text
+            values = request.form if request.method == "POST" else request.args
+            plan_code, block_code = text(values, "plano", optional=True), text(values, "quarteirao", optional=True)
+            if plan_code or block_code:
+                if not plan_code or not block_code or prefeitura is None:
+                    raise FieldInputError("Informe levantamento e quarteirão da mesma prefeitura.")
+                plan_reference = {"plano": plan_code, "quarteirao": block_code}
+                planned = PlanningStore().visit_context(prefeitura, demo, plan_reference)
+                if request.method == "GET":
+                    form.update(planned)
+            selected = os_capture.selected_os(request.form if request.method == "POST" else request.args, prefeitura)
+            if selected:
+                if demo:
+                    raise FieldInputError("Para vincular uma OS, selecione dados autorizados da vigilância.")
+                os_context = os_capture.context(selected)
+                if request.method == "GET":
+                    form.update(os_capture.prefill(selected))
+                    if plan_reference:
+                        form.update(planned)
             filters = parse_filters(request.args)
             raw_page = request.args.get("pagina", "1")
             if len(raw_page) > 2 or not raw_page.isascii() or not raw_page.isdecimal() or not 1 <= int(raw_page) <= 50:
@@ -121,8 +142,11 @@ def register_routes(bp):
                 if not demo and request.form.get("autorizado") != "sim":
                     raise FieldInputError("Confirme a autorização para registrar dados reais.")
                 content = capture_csv(request.form, prefeitura=prefeitura)
+                declaration = os_capture.declaration(request.form, selected) if selected else None
                 batch = _store().prepare(content, prefeitura=prefeitura, actor=str(current_user.get_id()),
-                                         source="Registro direto de campo", filename="registro-campo.csv", demo=demo)
+                                         source=f"Registro de campo · OS #{selected.id}" if selected else "Registro direto de campo",
+                                         filename="registro-campo.csv", demo=demo, os_declaration=declaration,
+                                         plan_reference=plan_reference)
                 return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
             if prefeitura:
                 report = consolidate(_store().records(prefeitura, demo=demo), prefeitura=prefeitura, filters=filters)
@@ -130,6 +154,8 @@ def register_routes(bp):
             error, code = str(exc), exc.status_code
         except (FieldInputError, PreviewValidationError) as exc:
             error, code = str(exc), 400
+        except FieldConflict as exc:
+            error, code = str(exc), 409
         except FieldStoreError as exc:
             error, code = str(exc), 503
         query = {"prefeitura_id": prefeitura, "demo": "true" if demo else "false", **filters}
@@ -144,6 +170,8 @@ def register_routes(bp):
                                deposit_types=DEPOSIT_TYPES, preview_csrf_token=session[CSRF_SESSION_KEY],
                                can_write=can_access_endpoint(current_user, "main.vigilancia_campo", "POST", legacy=legacy),
                                can_export=can_access_endpoint(current_user, "main.vigilancia_campo_export", "GET", legacy=legacy),
+                               os_context=os_context,
+                               plan_reference=plan_reference,
                                new_inspection="VIS-" + uuid.uuid4().hex[:16]), code
 
     @bp.get("/vigilancia/campo/exportar.csv", endpoint="vigilancia_campo_export")
@@ -175,6 +203,10 @@ def register_routes(bp):
                 if request.method == "POST":
                     _validate_preview_csrf()
                     if request.form.get("acao") == "confirmar":
+                        pending = store.get(request.form.get("lote", ""), prefeitura)
+                        if pending and pending["report"].get("vinculo_os"):
+                            from werkzeug.datastructures import MultiDict
+                            os_capture.selected_os(MultiDict({"os_id": str(pending["report"]["vinculo_os"]["id"])}), prefeitura)
                         batch = store.confirm(request.form.get("lote", ""), prefeitura=prefeitura, actor=str(current_user.get_id()))
                         return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
                     if request.form.get("acao") != "preparar":
