@@ -766,7 +766,7 @@
 
           {% if current_user.tipo_usuario == 'agente_endemias' %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.vigilancia_agente' %}active{% endif %}" href="{{ url_for('main.vigilancia_agente') }}"><i class="bi bi-person-badge me-2" aria-hidden="true"></i><span>Meus levantamentos</span></a></li>
-          {% elif (central_ti_ui_guard(['main.vigilancia'], (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) %}
+          {% elif (central_ti_ui_guard(['main.vigilancia'], vigilancia_coordena_campo|default(false)) if central_ti_ui_guard is defined else vigilancia_coordena_campo|default(false)) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint and request.endpoint.startswith('main.vigilancia') %}active{% endif %}"

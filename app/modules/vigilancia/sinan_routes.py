@@ -7,7 +7,7 @@ from flask import abort, current_app, jsonify, render_template, request
 from flask_login import current_user
 
 from app.modules.gestao_ti.permissions import route_access
-from app.shared.access import is_admin_global_user, is_prefeitura_admin_user
+from .access import can_coordinate_field
 
 from . import sinan
 
@@ -23,7 +23,7 @@ def _access_required(view):
             if not is_api:
                 return current_app.login_manager.unauthorized()
             status, message = 401, "Autenticação necessária."
-        elif not route_access(current_user, is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)):
+        elif not route_access(current_user, can_coordinate_field(current_user)):
             status, message = 403, "Acesso restrito à administração responsável."
         if status:
             if is_api:

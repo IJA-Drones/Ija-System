@@ -3491,3 +3491,5 @@ from app.modules.vigilancia.sinan_models import SinanJob, SinanCase  # noqa: E40
 from app.modules.vigilancia.planning_models import (  # noqa: E402,F401
     CampoQuarteirao, CampoPlano, CampoPlanoEstrato, CampoPlanoQuarteirao, CampoPlanoVisita,
 )
+
+from app.modules.vigilancia.risk_models import RiscoAnalise  # noqa: E402,F401

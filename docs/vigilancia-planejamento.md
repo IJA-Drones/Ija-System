@@ -3,7 +3,26 @@
 Entrada da coordenação: **Vigilância → Focal e LIRAa → Planejar levantamento**,
 `/vigilancia/planejamento`. Usa a ativação `VIGILANCIA_IMPORT_ENABLED` e as
 permissões de consulta e edição de vigilância existentes. O perfil de agente
-possui uma área própria, descrita abaixo. Os acessos dos outros perfis são mantidos.
+possui uma área própria, descrita abaixo.
+
+A **COVISA de cada prefeitura** coordena o planejamento municipal: cadastra o
+território, define estratos, metas e quarteirões, atribui contas aos agentes e
+libera/encerra os levantamentos. Tanto o perfil `covisa` quanto a conta legada
+`visualizar` com região `COVISA` são reconhecidos. A conta precisa estar vinculada
+à prefeitura; parâmetros enviados pelo navegador não permitem mudar esse vínculo.
+Administradores globais e Admin Prefeitura mantêm o acesso de apoio existente.
+
+O acesso da COVISA é padrão quando não há configuração de TI substituindo o
+perfil. Uma configuração explícita da Central de TI continua válida, inclusive
+consulta sem edição e revogação de acesso. Nenhuma seleção salva é sobrescrita
+por esta atualização. O cadastro de contas de agente continua sob as regras
+de administração de usuários; atribuir um agente não concede esse poder.
+
+Em 19/10/2026, a coordenação por COVISA foi validada com os dois formatos de
+perfil, incluindo gravação via HTTP, liberação e atribuição de agente, bloqueio
+entre prefeituras, ausência de vínculo municipal e restrições explícitas de TI.
+A consulta somente de leitura no Neon confirmou que a COVISA usa a configuração
+padrão; não foi necessário alterar seleções salvas, contas ou schema do banco.
 
 ## Preparar e executar
 
@@ -30,6 +49,41 @@ possui uma área própria, descrita abaixo. Os acessos dos outros perfis são ma
 7. Acompanhar imóveis únicos inspecionados e com pendência por quarteirão.
    Essas contagens não representam resultados laboratoriais homologados.
    Encerrar o plano interrompe novas confirmações, inclusive de lotes pendentes.
+
+## Seleção de áreas no mapa
+
+No cadastro territorial, a coordenação pode seguir os três passos da tela:
+
+1. Buscar município, bairro ou endereço e aproximar o mapa do quarteirão.
+2. Clicar em **Desenhar área**, marcar ao menos três cantos e clicar em
+   **Concluir desenho**. **Desfazer ponto** corrige o último canto durante o
+   desenho; depois de concluir, os pontos podem ser arrastados para ajustar o
+   limite. **Cancelar alteração** recupera o contorno do cadastro carregado.
+3. Conferir código, bairro, área, quantidade de imóveis e referência. Marcar a
+   confirmação do contorno e **Salvar quarteirão**. Desenhar ou clicar no mapa
+   não grava dados automaticamente.
+
+Os contornos cadastrados aparecem em azul; o contorno em edição aparece em
+laranja. Clicar em uma área permite carregar seu cadastro. Em um levantamento
+em rascunho, **Usar no levantamento** seleciona o quarteirão no formulário de
+amostra. A coordenação ainda escolhe o estrato, a meta e o agente e salva essa
+atribuição. O desenho não calcula imóveis, não sorteia quarteirões e não decide
+a amostra. O código continua sendo o cadastro informado pela prefeitura.
+
+O contorno é opcional e fica em `CampoQuarteirao.geometria`, como GeoJSON
+`Polygon` com coordenadas `[longitude, latitude]`. O servidor valida o desenho,
+limita a 200 cantos e rejeita coordenadas inválidas, pontos repetidos e linhas
+cruzadas. Alterar ou remover um contorno existente exige confirmação e a versão
+atual do cadastro. A importação CSV territorial preserva os contornos existentes.
+Ao incluir um quarteirão no plano, sua geometria entra no retrato territorial
+preservado; editar o RG depois não modifica esse retrato.
+
+O mapa usa a configuração Google Maps já existente e o editor nativo de
+polígonos, sem depender de DrawingManager. Se o mapa não carregar, o cadastro
+por formulário continua disponível. A chave e as restrições de domínio foram
+mantidas. Em localhost, a chave atual é recusada pelo Google; a conferência do
+serviço real precisa ocorrer em um domínio autorizado. Não há mapa simulado
+como alternativa na aplicação entregue.
 
 ## Conta individual do agente
 
@@ -101,6 +155,23 @@ aplicação local reiniciada. Conferência somente de leitura confirmou as cinco
 tabelas novas vazias e zero contas do tipo `agente_endemias`. Nenhum cadastro
 de demonstração foi inserido no schema operacional.
 
+A revisão seguinte, `e91c7b4a203d`, acrescenta somente a coluna JSON opcional
+`geometria` em `vigilancia_campo_quarteiroes`. Para um banco já na revisão
+`d8a31e62bc09`, conferir e aplicar com:
+
+```sh
+.venv/bin/python -B scripts/upgrade_geometria_liraa.py
+.venv/bin/python -B scripts/upgrade_geometria_liraa.py --apply
+```
+
+O comando sem `--apply` é somente de leitura; a aplicação da coluna e a
+atualização da revisão ocorrem na mesma transação. Nenhuma área, conta ou
+inspeção de demonstração é criada por essa migração.
+
+Em 19/10/2026, essa revisão foi aplicada no Neon. A conferência de leitura
+confirmou `e91c7b4a203d`, a coluna JSON anulável, as cinco tabelas de
+planejamento ainda vazias e nenhuma conta `agente_endemias` criada.
+
 Validação: 171 testes automatizados e 505 subtestes; fluxo completo em navegador
 com dados locais fictícios, desktop/celular e tema escuro; sete verificações em
 schema temporário PostgreSQL, removido ao final, incluindo migração/modelos,
@@ -108,10 +179,22 @@ atribuição individual, confirmação, contagem e bloqueio após encerramento.
 Após acrescentar o bloqueio de campos repetidos no formulário do agente, os 15
 testes de planejamento, cadastro e acesso individual foram executados novamente.
 
+A seleção no mapa foi validada separadamente com 141 testes Python e 459
+subtestes, dois testes JavaScript e nove verificações em schema PostgreSQL
+temporário, removido ao final. O fluxo de navegador usou dados fictícios e um
+adaptador de mapa exclusivo do teste, identificado como **MAPA SIMULADO · TESTE
+LOCAL**: busca, desenho, confirmação, persistência, reabertura, seleção para a
+amostra, arraste dos pontos com nova confirmação, desfazer, cancelamento,
+remoção com confirmação, cadastro por formulário com mapa indisponível,
+celular sem transbordamento horizontal e tema escuro. Isso não atesta o
+funcionamento do Google Maps real no domínio de produção.
+
 Esta entrega cobre cadastro territorial, planejamento informado e distribuição
 individual inicial. Permanecem: sorteio nativo validado, cadastro completo de
 imóveis/endereço, coleta/laboratório com resultados pendentes e outras espécies,
-retificações de planos liberados, mapa por estrato e relatórios oficiais.
+retificações de planos liberados e boletins oficiais. O [painel de
+resultados](vigilancia-resultados-poc.md) usa os contornos históricos para
+mapear os índices por estrato/área e oferece gráficos e relatórios de consulta.
 
 Também permanecem os limites do armazenamento de campo: um lote por visita,
 200 lotes por prefeitura/modo e base combinada de 1 MiB/5.000 inspeções.

@@ -1,0 +1,26 @@
+.territorio-mapa { margin: 1.5rem 0; min-width: 0; }
+.territorio-mapa h3 { margin: 0 0 .4rem; }
+.territorio-mapa-passos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; padding: 0; gap: 1rem; margin: 1.25rem 0; }
+.territorio-mapa-passos li { display: flex; align-items: flex-start; gap: .7rem; background: var(--color-bg-body); border-radius: var(--radius-md); padding: 1rem; }
+.territorio-mapa-passos li > span { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; flex: 0 0 1.7rem; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-text-main); font-size: .85rem; font-weight: 600; }
+.territorio-mapa-passos strong { display: block; font-size: .83rem; }
+.territorio-mapa-passos small { display: block; margin-top: .25rem; color: var(--color-text-muted); font-size: .76rem; line-height: 1.5; }
+.territorio-mapa-busca { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .7rem; }
+.territorio-mapa-busca label { flex: 1 1 240px; margin: 0; }
+.territorio-mapa-busca .btn { margin-bottom: .15rem; }
+.territorio-mapa-canvas { height: 440px; width: 100%; border: 1px solid var(--color-accent-soft); background: var(--color-bg-body); border-radius: var(--radius-md); overflow: hidden; }
+.territorio-mapa-feedback { border-left: 3px solid var(--color-accent); background: var(--color-accent-soft); padding: .75rem 1rem; margin: 1rem 0; font-size: .82rem; line-height: 1.6; }
+.territorio-mapa-ferramentas { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+.territorio-mapa-info { color: #1d3557; max-width: 260px; font-size: .85rem; line-height: 1.5; }
+.territorio-mapa-info p { margin: .4rem 0; }
+.territorio-mapa-info button { margin: .5rem .4rem 0 0; }
+.territorio-mapa-confirmacao { background: var(--color-accent-soft); padding: 1rem; margin-top: 1rem; border-radius: var(--radius-md); font-size: .85rem; }
+.territorio-mapa-confirmacao[hidden] { display: none !important; }
+.territorio-mapa-resumo { color: var(--color-text-muted); font-size: .8rem; margin-bottom: 1rem; }
+@media (max-width: 767px) {
+  .territorio-mapa-passos { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+  .territorio-mapa-passos li { padding: .75rem; }
+  .territorio-mapa-canvas { height: 340px; }
+  .territorio-mapa-busca .btn { flex: 1 1 100%; }
+  .territorio-mapa-ferramentas .btn { flex: 1 1 calc(50% - .65rem); }
+}

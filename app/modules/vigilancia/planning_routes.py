@@ -5,14 +5,16 @@ import io
 
 from flask import abort, redirect, render_template, request, session, url_for, Response
 from flask_login import current_user
+from app.models import Prefeitura
 
 from app.modules.gestao_ti.permissions import can_access_endpoint
-from app.shared.access import is_admin_global_user, is_prefeitura_admin_user
+from app.shared.access import is_admin_global_user
 from app.shared.csrf_security import CSRF_SESSION_KEY
 from .field_routes import _access, _scope
 from .routes import _ensure_preview_csrf_token, _validate_preview_csrf, _uploaded_csv, _RequestError
 from .field_store import FieldConflict, FieldStoreError
 from .planning import PlanningStore, text, RG_COLUMNS, PLAN_COLUMNS
+from .access import can_coordinate_field
 
 
 def register_routes(bp):
@@ -23,7 +25,7 @@ def register_routes(bp):
         _ensure_preview_csrf_token()
         values = request.form if request.method == "POST" else request.args
         demo, code, error, status, overview = True, "", None, 200, {}
-        legacy = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
+        legacy = can_coordinate_field(current_user)
         try:
             supplied = values.getlist("demo")
             if len(supplied) > 1 or (request.method == "POST" and not supplied) or (supplied and supplied[0] not in {"true", "false"}):
@@ -39,8 +41,11 @@ def register_routes(bp):
                 action = text(values, "acao")
                 content = _uploaded_csv() if action in {"importar_territorio", "importar_plano"} else None
                 code = PlanningStore().mutate(prefeitura, demo, str(current_user.get_id()), action, values, content)
+                block = text(values, "quarteirao", optional=True) if action == "territorio" else ""
+                if action == "territorio":
+                    code = text(values, "retorno_plano", optional=True)
                 return redirect(url_for("main.vigilancia_planejamento", prefeitura_id=prefeitura,
-                                        demo="true" if demo else "false", plano=code), code=303)
+                                        demo="true" if demo else "false", plano=code, territorio=block), code=303)
             if prefeitura:
                 overview = PlanningStore().overview(prefeitura, demo, code)
                 if code and not overview["plano"]:
@@ -56,10 +61,17 @@ def register_routes(bp):
                 overview = PlanningStore().overview(prefeitura, demo, code)
             except FieldStoreError:
                 pass
+        registered = Prefeitura.query.filter_by(id=prefeitura).first() if prefeitura else None
+        map_data = [{name: row.get(name) for name in ("code", "bairro", "area", "imoveis", "referencia", "geometria", "atualizado_em")}
+                    for row in overview.get("territorio", [])]
+        for item in map_data:
+            item["versao"] = str(item.pop("atualizado_em"))
         return render_template("vigilancia_planejamento.html", prefeitura_id=prefeitura,
             municipio_editavel=is_admin_global_user(current_user), demo=demo,
             preview_csrf_token=session[CSRF_SESSION_KEY], erro=error, overview=overview,
-            form=values, can_write=can_access_endpoint(current_user, "main.vigilancia_planejamento", "POST", legacy=legacy)), status
+            form=values, map_data=map_data, prefeitura_nome=registered.nome if registered else "",
+            territory_form=values if request.method == "POST" and values.get("acao") == "territorio" else {},
+            can_write=can_access_endpoint(current_user, "main.vigilancia_planejamento", "POST", legacy=legacy)), status
 
     @bp.get("/vigilancia/planejamento/modelo/<kind>.csv", endpoint="vigilancia_planejamento_modelo")
     @_access

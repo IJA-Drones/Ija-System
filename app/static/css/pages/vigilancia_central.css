@@ -7,7 +7,7 @@
 .vigilancia-central-eyebrow { color: var(--color-text-muted); font-size: .82rem; margin: 0 0 .45rem; }
 .vigilancia-central-header h1 { font-size: clamp(1.6rem, 3vw, 2rem); margin: 0 0 .65rem; }
 .vigilancia-central-header > p:last-child { color: var(--color-text-muted); margin: 0; line-height: 1.6; }
-.vigilancia-central-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.vigilancia-central-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .vigilancia-central-module { display: flex; flex-direction: column; min-width: 0; padding: 1.5rem; border: 1px solid var(--color-accent-soft); border-radius: var(--radius-lg); background: var(--color-bg-white); }
 .vigilancia-central-module-top { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; }
 .vigilancia-central-icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-md); background: var(--color-accent-soft); color: var(--color-accent); font-size: 1.3rem; }

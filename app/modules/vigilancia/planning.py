@@ -10,6 +10,7 @@ import sqlalchemy as sa
 from .field_models import CampoLevantamento, CampoInspecao
 from .field_store import FieldStore, FieldConflict
 from .planning_models import CampoQuarteirao, CampoPlano, CampoPlanoEstrato, CampoPlanoQuarteirao, CampoPlanoVisita
+from .geometry import validate_polygon
 
 RG_COLUMNS = ("quarteirao", "bairro", "area", "imoveis", "referencia")
 PLAN_COLUMNS = ("estrato", "imoveis_estrato", "meta_estrato", "criterio", "quarteirao", "meta_quarteirao", "agente_id")
@@ -202,7 +203,17 @@ class PlanningStore(FieldStore):
                 imoveis=number(values, "imoveis"), referencia=text(values, "referencia", 200),
                 atualizado_por=actor, atualizado_em=time.time())
             where = (*scoped(table, prefeitura, demo), table.c.code == code)
-            if rows(conn, table, prefeitura, demo, table.c.code == code):
+            previous = rows(conn, table, prefeitura, demo, table.c.code == code)
+            action = text(values, "geometria_acao", 20, optional=True) or "manter"
+            if action not in {"manter", "substituir", "remover"}:
+                raise FieldConflict("Ação de desenho inválida.")
+            if action != "manter":
+                if text(values, "geometria_confirmada", 3, optional=True) != "sim":
+                    raise FieldConflict("Confira e confirme a alteração da área antes de salvar.")
+                if previous and text(values, "territorio_versao", 40, optional=True) != str(previous[0]["atualizado_em"]):
+                    raise FieldConflict("O território foi atualizado. Carregue novamente o cadastro no mapa antes de alterar a área.")
+                item["geometria"] = validate_polygon(text(values, "geometria", 32768)) if action == "substituir" else None
+            if previous:
                 conn.execute(table.update().where(*where).values(**item))
             else:
                 conn.execute(table.insert().values(prefeitura=prefeitura, demo=demo, code=code, **item))
@@ -227,6 +238,8 @@ class PlanningStore(FieldStore):
         if agent and agent not in {row["id"] for row in available_agents(conn, prefeitura)}:
             raise FieldConflict("A conta atribuída deve ser uma conta de campo da mesma prefeitura.")
         snapshot = {name: territory[0][name] for name in ("bairro", "area", "imoveis", "referencia")}
+        if territory[0].get("geometria"):
+            snapshot["geometria"] = territory[0]["geometria"]
         return dict(quarteirao=code, estrato=text(values, "estrato"), meta=target, agente_id=agent, territorio=snapshot)
 
     @staticmethod

@@ -13,7 +13,7 @@ from werkzeug.wsgi import LimitedStream
 
 from app.models import Prefeitura
 from app.modules.gestao_ti.permissions import can_access_endpoint, route_access
-from app.shared.access import is_admin_global_user, is_prefeitura_admin_user
+from app.shared.access import is_admin_global_user
 from app.shared.csrf_security import CSRF_SESSION_KEY
 from .field_store import FieldConflict, FieldStore, FieldStoreError
 from .routes import _RequestError, _positive_id, _ensure_preview_csrf_token, _validate_preview_csrf, _uploaded_csv
@@ -22,6 +22,7 @@ from .sample import build_sample_csv
 from .domain import DEPOSIT_TYPES
 from .field_capture import FieldInputError, capture_csv, parse_filters, consolidate, export_csv
 from . import os_capture
+from .access import can_coordinate_field
 
 
 class FieldBodyLimit:
@@ -30,7 +31,7 @@ class FieldBodyLimit:
 
     def __call__(self, environ, start_response):
         path = environ.get("PATH_INFO", "")
-        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path in {"/vigilancia/campo", "/vigilancia/planejamento", "/vigilancia/agente"}):
+        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path in {"/vigilancia/campo", "/vigilancia/planejamento", "/vigilancia/agente", "/vigilancia/risco"}):
             limit = MAX_FILE_BYTES + 65536
             try:
                 length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -50,7 +51,7 @@ def _access(view):
             abort(404)
         if not current_user.is_authenticated:
             return current_app.login_manager.unauthorized()
-        legacy = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
+        legacy = can_coordinate_field(current_user)
         if not can_access_endpoint(current_user, "main.vigilancia_importacoes", "GET", legacy=legacy) or not route_access(current_user, legacy):
             abort(403)
         return view(*args, **kwargs)
@@ -162,7 +163,7 @@ def register_routes(bp):
         rows = report["registros"] if report else []
         last_page = max(1, (len(rows) + 99) // 100)
         page_number = min(page_number, last_page)
-        legacy = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
+        legacy = can_coordinate_field(current_user)
         return render_template("vigilancia_campo.html", prefeitura_id=prefeitura,
                                municipio_editavel=is_admin_global_user(current_user), demo=demo,
                                form=form, filters=filters, report=report, rows=rows[(page_number-1)*100:page_number*100],

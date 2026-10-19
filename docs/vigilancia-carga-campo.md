@@ -106,8 +106,10 @@ positivos por categoria, preservadas no JSON da inspeção. A consulta consolida
 identidades confirmadas entre lotes, com filtros e índices preliminares.
 O [planejamento inicial e acesso de agente](vigilancia-planejamento.md) acrescenta
 território, estratos, metas e quarteirões informados pela coordenação.
-Cadastro individual de depósitos/amostras e supervisão completos,
-mapa de IIP, integração epidemiológica, risco oficial e importação de layouts
+O [painel de resultados](vigilancia-resultados-poc.md) acrescenta gráficos,
+mapa de IIP por estrato/área e comparação com um lote SINAN do mesmo acesso,
+mediante relação explícita entre prefeitura e IBGE. Cadastro individual de
+depósitos/amostras, supervisão completa, risco oficial e importação de layouts
 oficiais continuam como próximas etapas. Não há enriquecimento inventado de dados ausentes.
 
 ## Validação isolada

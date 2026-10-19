@@ -11,7 +11,7 @@ from tests.test_vigilancia_field_routes import client, login
 def test_hub_requires_authenticated_authorized_user(client):
     assert client.get('/vigilancia').status_code == 302
     login(client, 'uvis')
-    assert client.get('/vigilancia').status_code == 403
+    assert client.get('/vigilancia').status_code == 503
     login(client)
     response = client.get('/vigilancia')
     assert response.status_code == 200
@@ -39,7 +39,7 @@ def test_disabled_modules_have_no_unavailable_links(client):
                                      VIGILANCIA_PREVIEW_ENABLED=False)
     response = client.get('/vigilancia')
     assert response.status_code == 200
-    assert response.text.count('Aguardando ativação neste ambiente') == 3
+    assert response.text.count('Aguardando ativação neste ambiente') == 5
     for path in ('/vigilancia/sinan', '/vigilancia/campo', '/vigilancia/importacoes', '/vigilancia/validacao'):
         assert f'href="{path}"' not in response.text
 

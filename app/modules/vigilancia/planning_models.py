@@ -12,6 +12,7 @@ class CampoQuarteirao(db.Model):
     area = db.Column(db.String(80), nullable=False)
     imoveis = db.Column(db.Integer, nullable=False)
     referencia = db.Column(db.String(200), nullable=False)
+    geometria = db.Column(db.JSON, nullable=True)
     atualizado_por = db.Column(db.String(80), nullable=False)
     atualizado_em = db.Column(db.Float, nullable=False)
     __table_args__ = (db.CheckConstraint("imoveis > 0", name="ck_campo_quarteirao_imoveis"),)

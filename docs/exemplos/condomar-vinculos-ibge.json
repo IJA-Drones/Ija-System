@@ -1,0 +1,95 @@
+{
+  "orientacao": "Preencher prefeitura_id a partir do cadastro do banco da POC. Nao aplicar como configuracao antes da conferencia.",
+  "municipios": [
+    {
+      "municipio": "Alagoinha",
+      "uf": "PE",
+      "ibge": "2600609",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Arcoverde",
+      "uf": "PE",
+      "ibge": "2601201",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Belo Jardim",
+      "uf": "PE",
+      "ibge": "2601706",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Brejo da Madre de Deus",
+      "uf": "PE",
+      "ibge": "2602605",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Buíque",
+      "uf": "PE",
+      "ibge": "2602803",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Jataúba",
+      "uf": "PE",
+      "ibge": "2608008",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Pedra",
+      "uf": "PE",
+      "ibge": "2610806",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Pesqueira",
+      "uf": "PE",
+      "ibge": "2610905",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Poção",
+      "uf": "PE",
+      "ibge": "2611200",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Sanharó",
+      "uf": "PE",
+      "ibge": "2612406",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "São Caitano (São Caetano)",
+      "uf": "PE",
+      "ibge": "2613107",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Sertânia",
+      "uf": "PE",
+      "ibge": "2614105",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Tamandaré",
+      "uf": "PE",
+      "ibge": "2614857",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Tupanatinga",
+      "uf": "PE",
+      "ibge": "2615805",
+      "prefeitura_id": null
+    },
+    {
+      "municipio": "Venturosa",
+      "uf": "PE",
+      "ibge": "2616001",
+      "prefeitura_id": null
+    }
+  ]
+}

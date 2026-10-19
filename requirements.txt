@@ -138,3 +138,4 @@ Werkzeug==3.0.1
 whitenoise==6.11.0
 wrapt==2.1.2
 zopfli==0.4.1
+shapely==2.1.2

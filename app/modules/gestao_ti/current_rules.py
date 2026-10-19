@@ -140,7 +140,7 @@ def current_rules(profile_code):
                 allow("prefeitura.denuncias", "atribuir")
             if role == "uvis":
                 allow("prefeitura.denuncias", "converter")
-        if is_admin_global_user(user) or is_prefeitura_admin_user(user):
+        if is_admin_global_user(user) or is_prefeitura_admin_user(user) or is_covisa_user(user):
             allow("prefeitura.vigilancia", "consultar editar")
 
         if can_access_agro_panel(user):

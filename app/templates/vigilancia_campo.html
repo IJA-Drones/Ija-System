@@ -8,7 +8,7 @@
   <p><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a></p>
   <header class="vigilancia-preview-header">
     <div><p class="vigilancia-preview-eyebrow">Vigilância de campo</p><h1>Focal e LIRAa</h1><p class="vigilancia-preview-muted">Registre visitas e consulte os indicadores por levantamento.</p></div>
-    <div class="vigilancia-preview-actions"><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Planejar levantamento</a><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id) }}">Importar arquivo e consultar lotes</a></div>
+    <div class="vigilancia-preview-actions"><a class="btn btn-primary" href="{{ url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Resultados, gráficos e mapa</a><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Planejar levantamento</a><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id) }}">Importar arquivo e consultar lotes</a></div>
   </header>
   <div class="vigilancia-preview-notice"><p>Resultados preliminares das visitas confirmadas no recorte escolhido. O planejamento da amostra e a identificação das espécies devem ser conferidos pela vigilância responsável.</p></div>
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}

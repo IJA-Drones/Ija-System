@@ -120,6 +120,12 @@ class Store:
             row = db.execute("SELECT * FROM jobs WHERE id=? AND owner=?", (job_id, owner)).fetchone()
         return self._public(row) if row else None
 
+    def published(self, owner, *, ibge, year, disease, demo):
+        with self.connection() as db:
+            rows = db.execute("SELECT * FROM jobs WHERE owner=? AND ibge=? AND year=? AND disease=? AND demo=? AND status IN ('completed','partial') ORDER BY created DESC, id DESC LIMIT 20",
+                              (owner, ibge, year, disease, int(demo))).fetchall()
+        return [self._public(row) for row in rows]
+
     def stopped(self, job_id):
         with self.connection() as db:
             row = db.execute("SELECT status, cancel FROM jobs WHERE id=?", (job_id,)).fetchone()

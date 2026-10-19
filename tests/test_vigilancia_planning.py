@@ -29,6 +29,10 @@ def planned(client):
         db.session.add_all([
             Usuario(id=701, nome_uvis='Agente municipal', login='agente-local', senha_hash='unused', tipo_usuario='agente_endemias', prefeitura_id=7),
             Usuario(id=702, nome_uvis='Outro agente', login='agente-outro', senha_hash='unused', tipo_usuario='agente_endemias', prefeitura_id=7),
+            Usuario(id=703, nome_uvis='Coordenação Sete', login='covisa-sete', senha_hash='unused', tipo_usuario='visualizar', regiao='COVISA', prefeitura_id=7),
+            Usuario(id=704, nome_uvis='Coordenação Oito', login='covisa-oito', senha_hash='unused', tipo_usuario='covisa', prefeitura_id=8),
+            Usuario(id=705, nome_uvis='Visualizador comum', login='visualizador-local', senha_hash='unused', tipo_usuario='visualizar', regiao='Outra', prefeitura_id=7),
+            Usuario(id=706, nome_uvis='COVISA sem município', login='covisa-sem-municipio', senha_hash='unused', tipo_usuario='covisa'),
             Usuario(id=801, nome_uvis='Outro município', login='outro-local', senha_hash='unused', tipo_usuario='uvis', prefeitura_id=8)])
         db.session.commit()
         planning = PlanningStore(db.engine)
@@ -178,6 +182,9 @@ def test_migration_matches_models_and_preserves_existing_survey(planned):
     spec = importlib.util.spec_from_file_location('planning_migration', root/'migrations/versions/d8a31e62bc09_planejamento_liraa.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    geometry_spec = importlib.util.spec_from_file_location('geometry_migration', root/'migrations/versions/e91c7b4a203d_geometria_territorio_liraa.py')
+    geometry_migration = importlib.util.module_from_spec(geometry_spec)
+    geometry_spec.loader.exec_module(geometry_migration)
     with planning.engine.begin() as conn:
         for table in reversed(PLANNING_TABLES):
             table.drop(conn)
@@ -185,11 +192,13 @@ def test_migration_matches_models_and_preserves_existing_survey(planned):
         context = MigrationContext.configure(conn)
         with Operations.context(context):
             module.upgrade()
+            geometry_migration.upgrade()
         present = set(sa.inspect(conn).get_table_names())
         context = MigrationContext.configure(conn, opts={
             'include_object': lambda obj, name, kind, reflected, target: kind != 'table' or name in present})
         assert compare_metadata(context, db.metadata) == []
         with Operations.context(context):
+            geometry_migration.downgrade()
             module.downgrade()
         assert conn.scalar(sa.select(CampoLevantamento.code)) == 'LEGADO'
     stream = io.StringIO()
@@ -272,3 +281,62 @@ def test_agent_rejects_ambiguous_repeated_fields(planned):
         ('amostra_liraa','sim'), ('_csrf_token',token(client)), ('imovel_codigo','IM-01'), ('imovel_codigo','IM-02')]))
     assert response.status_code == 400 and 'único valor' in response.text
     assert planning.history(7) == []
+
+
+def test_covisa_coordinates_own_municipality_through_http(planned):
+    client, planning = planned
+    login(client, '703')
+    page = client.get('/vigilancia')
+    assert page.status_code == 200 and 'Acessar Focal e LIRAa' in page.text
+    # SINAN integra a coordenação; a prévia técnica mantém a regra anterior.
+    assert 'Acessar SINAN' in page.text and 'Validar sem gravar dados' not in page.text
+    page = client.get('/vigilancia/planejamento')
+    assert page.status_code == 200 and 'Criar rascunho' in page.text
+    assert client.get('/vigilancia/campo').status_code == 200
+    def post(action, **values):
+        response = client.post('/vigilancia/planejamento', data=dict(
+            acao=action, demo='true', _csrf_token=token(client), **values))
+        assert response.status_code == 303, response.text
+    post('territorio', quarteirao='Q-01', bairro='Bairro Sete', area='A-01', imoveis='100', referencia='RG municipal')
+    post('criar', plano='L-COVISA', titulo='Levantamento da COVISA', inicio='2026-10-19', fim='2026-10-23', responsavel='Coordenação municipal', fonte='Plano municipal')
+    post('estrato', plano='L-COVISA', versao='1', estrato='E-01', imoveis_estrato='1000', meta_estrato='20', criterio='Área contínua')
+    post('quarteirao', plano='L-COVISA', versao='2', estrato='E-01', quarteirao='Q-01', meta_quarteirao='20', agente_id='701')
+    post('liberar', plano='L-COVISA', versao='3', amostra_validada='sim')
+    plan = planning.overview(7, True, 'L-COVISA')['plano']
+    assert plan['status'] == 'LIBERADO' and all(event['autor'] == '703' for event in plan['historico'])
+    login(client, '701')
+    assert 'Registrar em Q-01' in client.get('/vigilancia/agente?demo=true').text
+    login(client, '704')
+    assert client.get('/vigilancia/planejamento').status_code == 200
+    assert client.get('/vigilancia/planejamento?plano=L-COVISA').status_code == 404
+    assert client.get('/vigilancia/planejamento?prefeitura_id=7').status_code == 403
+    assert client.get('/vigilancia/campo?prefeitura_id=7').status_code == 403
+    assert client.get('/vigilancia/importacoes?prefeitura_id=7').status_code == 403
+    assert client.post('/vigilancia/planejamento', data=dict(acao='encerrar', plano='L-COVISA', versao='4',
+        demo='true', prefeitura_id='7', _csrf_token=token(client))).status_code == 403
+    assert planning.overview(7, True, 'L-COVISA')['plano']['status'] == 'LIBERADO'
+    assert planning.overview(8, True)['territorio'] == []
+
+
+@pytest.mark.parametrize('user', ['705', '706'])
+def test_other_visualizer_or_covisa_without_municipality_cannot_coordinate(planned, user):
+    client, planning = planned
+    login(client, user)
+    assert client.get('/vigilancia').status_code == 403
+    assert client.get('/vigilancia/planejamento').status_code == 403
+    assert client.get('/vigilancia/campo').status_code == 403
+
+
+def test_covisa_explicit_ti_revocation_and_read_only_are_preserved(planned):
+    from app.modules.gestao_ti.current_rules import current_rules
+    client, planning = planned
+    login(client, '703')
+    assert {'prefeitura.vigilancia.consultar', 'prefeitura.vigilancia.editar'} <= set(current_rules('covisa')['permissions'])
+    choices = frozenset({'area:prefeitura', 'prefeitura.vigilancia.consultar'})
+    with patch('app.modules.gestao_ti.permissions.active_configuration', return_value=choices):
+        page = client.get('/vigilancia/planejamento')
+        assert page.status_code == 200 and 'Criar rascunho' not in page.text
+        assert client.post('/vigilancia/planejamento', data=dict(acao='criar', demo='true', _csrf_token=token(client))).status_code == 403
+    with patch('app.modules.gestao_ti.permissions.active_configuration', return_value=frozenset()):
+        assert client.get('/vigilancia').status_code == 403
+        assert client.get('/vigilancia/planejamento').status_code == 403

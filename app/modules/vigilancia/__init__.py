@@ -8,6 +8,7 @@ def register_routes(bp):
     from .hub_routes import register_routes as register_hub_routes
     from .planning_routes import register_routes as register_planning_routes
     from .agent_routes import register_routes as register_agent_routes
+    from .results_routes import register_routes as register_results_routes
 
     register_http_routes(bp)
     register_sinan_routes(bp)
@@ -15,6 +16,9 @@ def register_routes(bp):
     register_hub_routes(bp)
     register_planning_routes(bp)
     register_agent_routes(bp)
+    register_results_routes(bp)
+    from .risk_routes import register_routes as register_risk_routes
+    register_risk_routes(bp)
 
 
 __all__ = ["register_routes"]

@@ -5,9 +5,14 @@ from flask_login import current_user, login_required
 
 from app.modules.gestao_ti.permissions import can_access_endpoint, route_access
 from app.shared.access import is_admin_global_user, is_prefeitura_admin_user
+from .access import can_coordinate_field
 
 
 def register_routes(bp):
+    @bp.app_context_processor
+    def field_coordination_navigation():
+        return {"vigilancia_coordena_campo": can_coordinate_field(current_user)}
+
     @bp.after_request
     def vigilancia_hub_no_cache(response):
         if request.endpoint == "main.vigilancia":
@@ -19,12 +24,13 @@ def register_routes(bp):
     def hub():
         if current_user.tipo_usuario == "agente_endemias":
             return redirect(url_for("main.vigilancia_agente"))
-        legacy = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
+        legacy = can_coordinate_field(current_user)
+        administration = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
         if not route_access(current_user, legacy):
             abort(403)
 
-        def allowed(endpoint):
-            return can_access_endpoint(current_user, endpoint, "GET", legacy=legacy)
+        def allowed(endpoint, default=legacy):
+            return can_access_endpoint(current_user, endpoint, "GET", legacy=default)
 
         cards = []
         if allowed("main.vigilancia_sinan"):
@@ -45,8 +51,26 @@ def register_routes(bp):
                 "endpoint": "main.vigilancia_campo" if current_app.config.get("VIGILANCIA_IMPORT_ENABLED", False) else None,
                 "action": "Acessar Focal e LIRAa", "secondary": None,
             })
+        if allowed("main.vigilancia_resultados"):
+            cards.append({
+                "id": "resultados", "eyebrow": "Análise territorial", "title": "Resultados da vigilância",
+                "icon": "bi-map",
+                "description": "Compare os índices LIRAa, os recipientes e as ações de campo. "
+                               "Consulte gráficos, mapas e os lotes SINAN do seu acesso.",
+                "endpoint": "main.vigilancia_resultados" if current_app.config.get("VIGILANCIA_IMPORT_ENABLED", False) else None,
+                "action": "Consultar resultados", "secondary": None,
+            })
+        if legacy and allowed("main.vigilancia_risco"):
+            cards.append({
+                "id": "risco", "eyebrow": "Prioridade territorial", "title": "Mapa de risco",
+                "icon": "bi-layers",
+                "description": "Identifique hotspots de dengue por ano e a recorrência histórica "
+                               "por bairro ou área, com referência no método do Ministério da Saúde.",
+                "endpoint": "main.vigilancia_risco" if current_app.config.get("VIGILANCIA_IMPORT_ENABLED", False) else None,
+                "action": "Consultar mapa de risco", "secondary": None,
+            })
         can_import = allowed("main.vigilancia_importacoes")
-        can_preview = allowed("main.vigilancia_validacao")
+        can_preview = allowed("main.vigilancia_validacao", administration)
         if can_import or can_preview:
             import_enabled = can_import and current_app.config.get("VIGILANCIA_IMPORT_ENABLED", False)
             preview_enabled = can_preview and current_app.config.get("VIGILANCIA_PREVIEW_ENABLED", False)

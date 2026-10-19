@@ -1,8 +1,11 @@
 """Reaproveita uma OS autorizada; nunca deduz inspeção ou positividade."""
 
+import unicodedata
+
 from flask import abort
 from flask_login import current_user
 
+from app.models import Solicitacao
 from app.shared.retorno_ciclo import get_accessible_solicitacao_for_retorno_ciclo
 from .field_capture import FieldInputError
 from .routes import _positive_id
@@ -20,6 +23,47 @@ def selected_os(values, prefeitura):
     if record is None or record.prefeitura_id != prefeitura:
         abort(404, description="OS indisponível para esta conta e prefeitura.")
     return record
+
+
+def selected_agent_address(values, prefeitura, *, bairro):
+    """Retorna apenas referência de endereço de uma OS da mesma prefeitura.
+
+    A OS não vira inspeção, resultado entomológico nem vínculo persistente.
+    """
+    supplied = values.getlist("os_id")
+    if not supplied or supplied == [""]:
+        return None
+    if len(supplied) != 1 or _positive_id(supplied[0]) is None:
+        raise FieldInputError("Informe um único número válido de OS.")
+    if prefeitura is None:
+        raise FieldInputError("Selecione a prefeitura da OS.")
+
+    columns = (Solicitacao.id, Solicitacao.protocolo, Solicitacao.logradouro,
+               Solicitacao.numero, Solicitacao.complemento, Solicitacao.bairro,
+               Solicitacao.cidade, Solicitacao.uf, Solicitacao.latitude,
+               Solicitacao.longitude)
+    row = (Solicitacao.query.with_entities(*columns)
+           .filter(Solicitacao.id == int(supplied[0]), Solicitacao.prefeitura_id == prefeitura)
+           .first())
+    if row is None:
+        abort(404, description="OS indisponível para esta conta, prefeitura e área atribuída.")
+
+    values_by_name = dict(zip((column.key for column in columns), row))
+    normalize = lambda value: "".join(char for char in unicodedata.normalize("NFD", str(value or "").casefold())
+                                      if unicodedata.category(char) != "Mn").strip()
+    if normalize(values_by_name.get("bairro")) != normalize(bairro):
+        abort(404, description="OS indisponível para esta conta, prefeitura e área atribuída.")
+    address = ", ".join(str(value) for value in (
+        values_by_name.get("logradouro"), values_by_name.get("numero"),
+        values_by_name.get("complemento"), values_by_name.get("bairro"),
+        values_by_name.get("cidade"), values_by_name.get("uf")) if value)
+    return {
+        "id": values_by_name["id"],
+        "protocolo": values_by_name.get("protocolo"),
+        "endereco": address,
+        "latitude": values_by_name.get("latitude") or "",
+        "longitude": values_by_name.get("longitude") or "",
+    }
 
 
 def context(record):

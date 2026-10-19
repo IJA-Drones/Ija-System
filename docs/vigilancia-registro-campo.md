@@ -15,6 +15,10 @@ somente um atalho para essa central. As telas dos módulos oferecem retorno à
 central, e os perfis delegados precisam de `prefeitura.vigilancia.consultar`,
 sem depender da permissão para relatórios gerais.
 
+O [painel de resultados](vigilancia-resultados-poc.md) reúne gráficos de
+IIP/Breteau/ITR, mapas, comparação com SINAN e exportação dos índices. A COVISA
+municipal também acessa o SINAN pela central, respeitando as regras de TI.
+
 A central não consulta as bases de campo nem do SINAN e abre antes da migração
 de campo. Os links de módulos desativados por configuração são substituídos
 pela indicação de que aguardam ativação. Ela não executa migrações nem altera

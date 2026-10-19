@@ -14,6 +14,7 @@ from .field_capture import capture_csv, FieldInputError
 from .field_store import FieldConflict, FieldStoreError
 from .routes import _ensure_preview_csrf_token, _validate_preview_csrf, _RequestError
 from .domain import DEPOSIT_TYPES
+from . import os_capture
 
 
 def is_agent():
@@ -44,7 +45,7 @@ def register_routes(bp):
         _ensure_preview_csrf_token()
         values = request.form if request.method == "POST" else request.args
         demo, error, status = False, None, 200
-        blocks, selected, batch, form = [], None, None, {}
+        blocks, selected, batch, form, os_reference = [], None, None, {}, None
         store = PlanningStore()
         can_write = can_access_endpoint(current_user, "main.vigilancia_agente", "POST", legacy=True)
         try:
@@ -58,6 +59,25 @@ def register_routes(bp):
                 selected = next((row for row in blocks if row["plano"] == plan and row["quarteirao"] == block), None)
                 if selected is None:
                     abort(404)
+            if request.method == "GET":
+                os_ids = values.getlist("os_id")
+                use_location = values.getlist("usar_localizacao")
+                if len(use_location) > 1 or (use_location and use_location[0] not in {"true", "false"}):
+                    raise FieldConflict("Confirme uma única opção para usar o endereço da OS.")
+                if os_ids and os_ids != [""]:
+                    if not selected:
+                        raise FieldConflict("Selecione um quarteirão atribuído antes de consultar uma OS.")
+                    if demo:
+                        raise FieldConflict("A consulta de OS só está disponível para dados autorizados.")
+                    os_reference = os_capture.selected_agent_address(values, prefeitura,
+                        bairro=selected["territorio"]["bairro"])
+                    if use_location == ["true"]:
+                        if not os_reference["latitude"] or not os_reference["longitude"]:
+                            raise FieldConflict("Esta OS não possui as duas coordenadas necessárias para preencher a localização.")
+                        form.update(latitude=os_reference["latitude"], longitude=os_reference["longitude"],
+                                    os_mesmo_endereco="sim")
+                elif use_location == ["true"]:
+                    raise FieldConflict("Consulte uma OS antes de usar seu endereço.")
             if request.method == "POST":
                 _validate_preview_csrf()
                 action = text(values, "acao")
@@ -75,6 +95,16 @@ def register_routes(bp):
                         raise FieldConflict("Informe um único valor por campo da visita.")
                     # O território é obtido do plano, nunca de campos ocultos enviados pelo navegador.
                     form = request.form.to_dict()
+                    os_reference = os_capture.selected_agent_address(request.form, prefeitura,
+                        bairro=selected["territorio"]["bairro"])
+                    same_address = request.form.getlist("os_mesmo_endereco")
+                    if same_address not in ([], ["sim"]):
+                        raise FieldConflict("Confirme se a OS corresponde ao mesmo endereço.")
+                    if same_address == ["sim"] and (not os_reference or demo):
+                        raise FieldConflict("Consulte uma OS da mesma prefeitura para usar seu endereço.")
+                    if same_address == ["sim"] and not form.get("latitude") and not form.get("longitude"):
+                        if os_reference["latitude"] and os_reference["longitude"]:
+                            form.update(latitude=os_reference["latitude"], longitude=os_reference["longitude"])
                     form.update(origem="LIRAA", levantamento_codigo=selected["plano"], estrato_codigo=selected["estrato"],
                                 area_codigo=selected["territorio"]["area"], bairro=selected["territorio"]["bairro"])
                     content = capture_csv(form, prefeitura=prefeitura)
@@ -96,5 +126,6 @@ def register_routes(bp):
             error, status = str(exc), 503
         response = render_template("vigilancia_agente.html", blocks=blocks, selected=selected, batch=batch,
             form=form, demo=demo, erro=error, can_write=can_write, deposit_types=DEPOSIT_TYPES,
+            os_reference=os_reference, os_id_value=values.get("os_id", ""),
             preview_csrf_token=session[CSRF_SESSION_KEY], new_inspection="VIS-" + uuid.uuid4().hex[:16])
         return response, status, {"Cache-Control": "private, no-store"}

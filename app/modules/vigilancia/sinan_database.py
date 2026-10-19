@@ -86,6 +86,17 @@ class DatabaseStore:
         with self.connection() as conn:
             return self._public(conn.execute(sa.select(table).where(table.c.id == job_id, table.c.owner == owner)).mappings().first())
 
+    def published(self, owner, *, ibge, year, disease, demo):
+        """Leitura de snapshots para o painel; não expira nem inicia importações."""
+        table = SinanJob.__table__
+        with self.connection() as conn:
+            rows = conn.execute(sa.select(table).where(
+                table.c.owner == owner, table.c.ibge == ibge, table.c.year == year,
+                table.c.disease == disease, table.c.demo == demo,
+                table.c.status.in_(("completed", "partial")))
+                .order_by(table.c.created.desc(), table.c.id.desc()).limit(20)).mappings()
+            return [self._public(row) for row in rows]
+
     def stopped(self, job_id):
         table = SinanJob.__table__
         with self.connection() as conn:

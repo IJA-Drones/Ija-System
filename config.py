@@ -56,6 +56,8 @@ class Config:
     SINAN_STORAGE_BACKEND = os.getenv("SINAN_STORAGE_BACKEND", "database").strip().lower()
     # Legacy SQLite path, preserved for transfer or explicit local use.
     SINAN_STORAGE_PATH = os.getenv("SINAN_STORAGE_PATH", "")
+    # Relação explícita Prefeitura.id -> IBGE; nunca inferida por nome/endereço.
+    VIGILANCIA_MUNICIPIOS_IBGE = os.getenv("VIGILANCIA_MUNICIPIOS_IBGE", "{}")
     # Activation is explicit per environment; neutral profiles retain legacy rules.
     CENTRAL_TI_ENABLED = os.getenv("CENTRAL_TI_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
 
