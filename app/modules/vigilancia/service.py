@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
 
-from .domain import CSV_COLUMNS, LAYOUT_VERSION, MAX_PREFEITURA_ID, ImovelVigilancia, InspecaoCampo
+from .domain import CSV_COLUMNS, DEPOSIT_COLUMNS, DEPOSIT_TYPES, LAYOUT_VERSION, MAX_PREFEITURA_ID, ImovelVigilancia, InspecaoCampo
 
 
 MAX_FILE_BYTES = 1024 * 1024
@@ -164,7 +164,9 @@ def _read_rows(text, prefeitura_id):
     if len(set(header)) != len(header):
         raise PreviewValidationError("O cabeçalho contém colunas repetidas.", codigo="COLUNA_REPETIDA", linha=1)
     missing = [name for name in CSV_COLUMNS if name not in header]
-    extra = [name for name in header if name not in CSV_COLUMNS]
+    extra = [name for name in header if name not in (*CSV_COLUMNS, *DEPOSIT_COLUMNS)]
+    if any(name in header for name in DEPOSIT_COLUMNS):
+        missing += [name for name in DEPOSIT_COLUMNS if name not in header]
     if missing or extra:
         # Nomes desconhecidos do arquivo não são reproduzidos na mensagem.
         details = []
@@ -194,7 +196,7 @@ def _read_rows(text, prefeitura_id):
             raise PreviewValidationError("O arquivo excede o limite de 5.000 registros.", codigo="MUITAS_LINHAS")
         if len(values) != len(header):
             raise PreviewValidationError(
-                f"A linha {start_line} deve conter exatamente 13 valores, conforme o cabeçalho.",
+                f"A linha {start_line} deve conter exatamente {len(header)} valores, conforme o cabeçalho.",
                 codigo="QUANTIDADE_COLUNAS_INVALIDA", linha=start_line,
             )
         data = {name: value.strip() for name, value in zip(header, values)}
@@ -283,7 +285,8 @@ def _normalize_and_validate(data, linha, prefeitura_id):
             row.add_error(name, "COORDENADA_INVALIDA", "Informe uma coordenada finita dentro do intervalo geográfico válido.")
         else:
             data[name] = number
-    row.signature = tuple(data[name] for name in CSV_COLUMNS)
+    _validate_deposits(row)
+    row.signature = tuple(data.get(name) for name in (*CSV_COLUMNS, *DEPOSIT_COLUMNS))
     if not row.errors:
         row.imovel = ImovelVigilancia(
             prefeitura_id=prefeitura_id,
@@ -305,6 +308,26 @@ def _normalize_and_validate(data, linha, prefeitura_id):
             estrato_codigo=data["estrato_codigo"],
         )
     return row
+
+
+def _validate_deposits(row):
+    data = row.data
+    if not any(data.get(name, "") for name in DEPOSIT_COLUMNS):
+        for name in DEPOSIT_COLUMNS:
+            data.pop(name, None)
+        return
+    for name in DEPOSIT_COLUMNS:
+        value = str(data.get(name, ""))
+        if not re.fullmatch(r"[0-9]{1,5}", value) or int(value) > 10000:
+            row.add_error(name, "DEPOSITOS_INVALIDOS", "Informe todas as categorias com inteiros de 0 a 10.000; use zero onde nenhum recipiente foi positivo.")
+        else:
+            data[name] = int(value)
+    if any(error["codigo"] == "DEPOSITOS_INVALIDOS" for error in row.errors):
+        return
+    if data["situacao"] != "INSPECIONADO":
+        row.add_error("depositos", "DEPOSITOS_SEM_INSPECAO", "Deixe os recipientes positivos vazios em imóveis fechados ou recusados.")
+    elif (sum(data[name] for name in DEPOSIT_COLUMNS) > 0) != (data["positivo_aedes"] == "SIM"):
+        row.add_error("depositos", "DEPOSITOS_DIVERGENTES", "Os recipientes positivos devem corresponder ao resultado identificado para Aedes aegypti no imóvel.")
 
 
 def _validate_inspection_identities(rows, prefeitura_id):
@@ -361,9 +384,10 @@ def _build_indicators(rows, *, has_errors):
     for row in rows:
         inspection = row.inspecao
         if inspection.origem == "LIRAA":
-            groups[(inspection.levantamento_codigo, inspection.estrato_codigo, row.imovel.area_codigo)].append(inspection)
+            groups[(inspection.levantamento_codigo, inspection.estrato_codigo, row.imovel.area_codigo)].append(row)
     indicators = []
-    for key, group in sorted(groups.items()):
+    for key, group_rows in sorted(groups.items()):
+        group = [row.inspecao for row in group_rows]
         inspected = {item.imovel_codigo for item in group if item.situacao == "INSPECIONADO"}
         positive = {item.imovel_codigo for item in group if item.situacao == "INSPECIONADO" and item.positivo_aedes}
         last_inspected, last_pending = {}, {}
@@ -393,5 +417,28 @@ def _build_indicators(rows, *, has_errors):
             "iip": None if unavailable else round(100 * len(positive) / len(inspected), 2),
             "status": "INDISPONIVEL" if unavailable else "PREVIA",
             "motivo": reason,
+            **_deposit_indicators(group_rows, has_errors=has_errors),
         })
     return indicators
+
+
+def _deposit_indicators(rows, *, has_errors):
+    inspected = [row.data for row in rows if row.data["situacao"] == "INSPECIONADO"]
+    reason = None
+    if has_errors or not inspected:
+        reason = "Não há dados válidos suficientes para os índices de recipientes."
+    elif len({row["imovel_codigo"] for row in inspected}) != len(inspected):
+        reason = "Há mais de uma inspeção do mesmo imóvel neste levantamento; revise as visitas antes de consolidar os recipientes."
+    elif any(any(name not in row for name in DEPOSIT_COLUMNS) for row in inspected):
+        reason = "Faltam contagens de recipientes positivos em uma ou mais inspeções. Ausência não é zero."
+    counts = {code: sum(row["depositos_" + code] for row in inspected) for code, _ in DEPOSIT_TYPES} if reason is None else {}
+    total = sum(counts.values()) if reason is None else None
+    return {
+        "ib": round(100 * total / len(inspected), 2) if reason is None else None,
+        "depositos_positivos": total,
+        "recipientes": [{"codigo": code.upper(), "descricao": label,
+                         "positivos": counts.get(code),
+                         "itr": round(100 * counts[code] / total, 2) if total else None}
+                        for code, label in DEPOSIT_TYPES],
+        "motivo_depositos": reason or ("Nenhum recipiente positivo; o ITR não possui denominador." if not total else "Índices preliminares, sujeitos à validação do levantamento."),
+    }

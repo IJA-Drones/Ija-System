@@ -1,6 +1,12 @@
 <div class="edit-control alert alert-info border shadow-sm mb-3" role="region" aria-label="Proteção de edição"
      data-edit-key="{{ edit_key }}" data-edit-api="{{ edit_api }}">
-  <strong class="d-block mb-1">Edição protegida</strong>
+  <div class="edit-heading">
+    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+    <div>
+      <strong class="edit-title d-block">Consulta protegida</strong>
+      <small>Registro #{{ edit_key.split(':')[-1] }}</small>
+    </div>
+  </div>
   <p class="edit-message mb-2" role="status" aria-live="polite">Você está consultando este registro. Clique em Iniciar edição para reservar e alterar os dados.</p>
   <div class="d-flex gap-2 flex-wrap">
     <button type="button" class="btn btn-primary btn-sm edit-start">Iniciar edição</button>

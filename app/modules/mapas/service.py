@@ -39,12 +39,16 @@ def _normalized_larva_answer(column):
     return func.upper(answer)
 
 
-def build_heatmap_query(user, *, uvis_id=None, mes=None, ano=None, larva_visualizada=None):
-    query = Solicitacao.query.filter(
-        Solicitacao.latitude.isnot(None),
-        Solicitacao.longitude.isnot(None),
-        Solicitacao.status.in_(VISIBLE_MAP_STATUSES),
-    )
+def build_heatmap_query(user, *, uvis_id=None, mes=None, ano=None, larva_visualizada=None, visao="aprovados", com_coordenadas=True):
+    if visao not in {"aprovados", "todos", "pendentes", "retornos"}:
+        raise ValueError("Visão operacional inválida.")
+    query = Solicitacao.query
+    if com_coordenadas:
+        query = query.filter(Solicitacao.latitude.isnot(None), Solicitacao.longitude.isnot(None))
+    if visao == "aprovados":
+        query = query.filter(Solicitacao.status.in_(VISIBLE_MAP_STATUSES))
+    if visao == "retornos":
+        query = query.filter(Solicitacao.origem_retorno_id.isnot(None))
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_solicitacao_regiao_scope(query, user)
 

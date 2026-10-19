@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Contatos das prefeituras | Portal do Cidadão{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal-contatos.css') }}">{% endblock %}
+{% macro directory_content() %}
+<main class="municipal-directory container py-4">
+  <a class="btn btn-outline-primary mb-4" href="{{ url_for('main.portal_cidadao') }}">← Portal do Cidadão</a>
+  <header class="directory-hero mb-4"><span class="small fw-bold text-uppercase">Perto de você</span><h1>Contatos das prefeituras</h1><p>Encontre os canais de atendimento publicados pela gestão do seu município.</p></header>
+  {% if not directory.disponivel %}<div class="alert alert-warning" role="status">Os contatos estão temporariamente indisponíveis. Tente novamente mais tarde.</div>{% else %}
+  <form class="card p-3 mb-4" method="get"><label class="form-label fw-bold" for="prefeitura">Qual prefeitura você procura?</label><div class="d-flex gap-2 flex-wrap"><select class="form-select" id="prefeitura" name="prefeitura" style="flex:1;min-width:180px"><option value="">Todas as prefeituras</option>{% for city in directory.prefeituras %}<option value="{{ city.id }}" {% if selected == city.id|string %}selected{% endif %}>{{ city.nome }}</option>{% endfor %}</select><button class="btn btn-primary">Buscar</button></div></form>
+  <div class="row g-4">
+  {% set ns = namespace(count=0) %}
+  {% for city in directory.prefeituras if not selected or selected == city.id|string %}{% set ns.count=ns.count+1 %}
+    <div class="col-lg-6"><article class="card contact-card h-100 p-4" id="prefeitura-{{ city.id }}"><h2 class="h4">{{ city.nome }}</h2>
+      {% if city.publicado %}
+      <p class="small text-muted">Informações publicadas pela gestão municipal · Atualizado em {{ city.atualizado_em }} (Brasília).</p>
+      <div class="d-flex flex-wrap gap-2 my-2">
+        {% if city.telefone %}<a class="btn btn-outline-primary" href="tel:+{{ city.telefone }}"><i class="bi bi-telephone" aria-hidden="true"></i> {{ city.telefone_exibicao }}</a>{% endif %}
+        {% if city.whatsapp %}<a class="btn btn-outline-success" href="{{ city.whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i> WhatsApp {{ city.whatsapp_exibicao }}</a>{% endif %}
+        {% if city.instagram %}<a class="btn btn-outline-primary" href="{{ city.instagram_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-instagram" aria-hidden="true"></i> @{{ city.instagram }}</a>{% endif %}
+        {% if city.email %}<a class="btn btn-outline-primary text-break" href="{{ city.email_url }}"><i class="bi bi-envelope" aria-hidden="true"></i> {{ city.email }}</a>{% endif %}
+      </div>
+      {% if city.horario %}<h3 class="h6 mt-3">Horário de atendimento</h3><p class="contact-text">{{ city.horario }}</p>{% endif %}
+      {% if city.servicos %}<h3 class="h6 mt-2">Serviços e orientações</h3><p class="contact-text">{{ city.servicos }}</p>{% endif %}
+      {% else %}<p class="text-muted my-3">Esta prefeitura ainda não publicou seus canais de atendimento neste portal.</p>{% endif %}
+    </article></div>
+  {% endfor %}
+  {% if not ns.count %}<div class="col-12"><div class="alert alert-info">Nenhuma prefeitura encontrada. Selecione outra opção.</div></div>{% endif %}
+  </div>
+  <p class="text-muted mt-4">Os links abrem o aplicativo ou site do canal escolhido. A disponibilidade e os prazos de resposta dependem de cada prefeitura.</p>
+  {% endif %}
+</main>
+{% endmacro %}
+{% block content %}{{ directory_content() }}{% endblock %}
+{% block auth_content %}{{ directory_content() }}{% endblock %}

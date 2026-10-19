@@ -96,12 +96,33 @@ class DocumentSettingsTests(unittest.TestCase):
     def test_anonymous_and_other_roles_are_denied(self):
         self.client = self.app.test_client()
         self.assertEqual(self.client.get("/configuracoes").status_code, 302)
-        for key in range(6, 11):
+        for key in (6, 8, 9, 10):
             self.login(key)
             for path in ("/configuracoes", "/configuracoes/documentos/1", "/configuracoes/documentos/1/imagem"):
                 with self.subTest(key=key, path=path):
                     self.assertEqual(self.client.get(path).status_code, 403)
             self.assertEqual(self.save().status_code, 403)
+
+    def test_director_can_view_all_settings_but_cannot_write(self):
+        self.login(7)
+        page = self.client.get('/configuracoes')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('Prefeitura Alfa', page.text)
+        self.assertIn('Prefeitura Beta', page.text)
+        for city in (1, 2):
+            page = self.client.get(f'/configuracoes/documentos/{city}')
+            self.assertEqual(page.status_code, 200)
+            self.assertIn('Acesso de consulta', page.text)
+            self.assertNotIn('>Salvar configurações</button>', page.text)
+            self.assertEqual(self.save(city=city).status_code, 403)
+            page = self.client.get(f'/configuracoes/email/{city}')
+            self.assertEqual(page.status_code, 200)
+            self.assertIn('readonly', page.text)
+            self.assertNotIn('>Salvar e-mail</button>', page.text)
+            self.assertEqual(self.client.post(f'/configuracoes/email/{city}', data={
+                '_csrf_token':'test-csrf-token', 'versao':'0', 'destinatario':'test@example.org',
+            }).status_code, 403)
+        self.assertIn('href="/configuracoes"', self.client.get('/relatorios').text)
 
     def test_missing_document_tables_only_disable_the_new_settings(self):
         with self.app.app_context():
@@ -148,7 +169,7 @@ class DocumentSettingsTests(unittest.TestCase):
             self.assertEqual(PrefeituraDocumentoConfig.query.count(), 2)
             self.assertEqual({h.usuario_id for h in PrefeituraDocumentoHistorico.query.all()}, {3})
 
-    def test_navigation_only_for_covisa_and_dev(self):
+    def test_navigation_for_covisa_dev_and_director(self):
         with self.app.test_request_context("/configuracoes"):
             for key in range(1, 11):
                 user = db.session.get(Usuario, key)
@@ -156,7 +177,7 @@ class DocumentSettingsTests(unittest.TestCase):
                 # Same helpers supplied to the actual base template.
                 html = render_template("_configuracoes_nav.html", is_covisa_user=service.is_covisa_user,
                                        is_dev_user=service.is_dev_user)
-                self.assertEqual('href="/configuracoes"' in html, key in (1, 2, 3, 4, 5))
+                self.assertEqual('href="/configuracoes"' in html, key in (1, 2, 3, 4, 5, 7))
 
     def test_csrf_and_scope_tampering(self):
         for global_csrf in (False, True):

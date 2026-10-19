@@ -21,6 +21,7 @@ from app.modules.configuracoes import register_routes as register_configuracoes_
 from app.modules.dashboard import register_routes as register_dashboard_routes
 from app.modules.dev_dashboard import register_routes as register_dev_dashboard_routes
 from app.modules.dji_flight_logs import register_routes as register_dji_flight_logs_routes
+from app.modules.relatos_saude import register_routes as register_relatos_saude_routes
 from app.modules.denuncias import register_routes as register_denuncias_routes
 from app.modules.drones_import import register_routes as register_drones_import_routes
 from app.modules.equipamentos import register_routes as register_equipamentos_routes
@@ -38,6 +39,7 @@ from app.modules.piloto_os import register_routes as register_piloto_os_routes
 from app.modules.pilotos import register_routes as register_pilotos_routes
 from app.modules.portal_cidadao import register_routes as register_portal_cidadao_routes
 from app.modules.relatorios import register_routes as register_relatorios_routes
+from app.modules.consultas import register_routes as register_consultas_routes
 from app.modules.solicitacoes import register_routes as register_solicitacoes_routes
 from app.modules.uvis_equipes import register_routes as register_uvis_equipes_routes
 from app.modules.usuarios import register_routes as register_usuarios_routes
@@ -71,6 +73,7 @@ register_dashboard_routes(bp)
 register_dev_dashboard_routes(bp)
 register_dji_flight_logs_routes(bp)
 register_denuncias_routes(bp)
+register_relatos_saude_routes(bp)
 register_drones_import_routes(bp)
 register_equipamentos_routes(bp)
 register_equipe_uvis_dashboard_routes(bp)
@@ -87,6 +90,7 @@ register_piloto_os_routes(bp)
 register_pilotos_routes(bp)
 register_portal_cidadao_routes(bp)
 register_relatorios_routes(bp)
+register_consultas_routes(bp)
 register_solicitacoes_routes(bp)
 register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)

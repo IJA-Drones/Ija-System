@@ -1,7 +1,7 @@
-{% set documentos_legacy_access = is_covisa_user(current_user) or is_dev_user(current_user) %}
+{% set documentos_legacy_access = is_covisa_user(current_user) or is_dev_user(current_user) or current_user.tipo_usuario == 'diretor' %}
 {% if current_user.is_authenticated and not is_financeiro_context|default(false) and not is_agro_context|default(false) and (central_ti_ui_guard(['main.configuracoes'], documentos_legacy_access) if central_ti_ui_guard is defined else documentos_legacy_access) %}
 <li class="nav-item">
-  <a class="nav-link {% if request.endpoint in ['main.configuracoes', 'main.configuracoes_documentos'] %}active{% endif %}"
+  <a class="nav-link {% if request.endpoint in ['main.configuracoes', 'main.configuracoes_documentos', 'main.configuracoes_email', 'main.configuracoes_contatos'] %}active{% endif %}"
      href="{{ url_for('main.configuracoes') }}"
      data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.configuracoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
     <i class="bi bi-gear-fill me-2"></i><span>Configurações</span>

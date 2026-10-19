@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
 from app.modules.piloto_os.exporters import build_admin_os_excel_v2_export, build_admin_os_pdf_v2_export
+from app.shared.file_recovery import save_file
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -1095,7 +1096,7 @@ def save_admin_attachment(pedido, uploaded_file):
     upload_folder = get_upload_folder()
     file_path = os.path.join(upload_folder, unique_name)
 
-    uploaded_file.save(file_path)
+    save_file(uploaded_file, file_path)
 
     pedido.anexo_path = f"upload-files/{unique_name}"
     pedido.anexo_nome = original_filename

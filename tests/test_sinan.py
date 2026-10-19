@@ -131,7 +131,7 @@ def app():
         FileSystemLoader("app/templates"),
     ])
     bp = Blueprint("main", __name__)
-    bp.add_url_rule("/relatorios", endpoint="relatorios", view_func=lambda: "Relatórios")
+    bp.add_url_rule("/vigilancia", endpoint="vigilancia", view_func=lambda: "Central de Vigilância")
     sinan_routes.register_routes(bp)
     app.register_blueprint(bp)
     return app

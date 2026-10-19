@@ -86,6 +86,15 @@
             </select>
           </div>
 
+          <div class="col-md-4 col-lg-2">
+            <label for="visaoFilter" class="small text-muted mb-1 fw-bold">Visão operacional</label>
+            <select id="visaoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+              <option value="aprovados">Aprovados e concluídos</option>
+              <option value="todos">Todas as solicitações</option>
+              <option value="pendentes">Pendentes e atrasados</option>
+              <option value="retornos">Retornos vinculados</option>
+            </select>
+          </div>
           <div class="col-md-4 col-lg-2 d-flex gap-2">
             <button type="button" onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
               <i class="bi bi-funnel me-1"></i> Filtrar
@@ -93,12 +102,13 @@
           </div>
         </div>
         <p id="mapScopeNote" class="small text-muted mt-3 mb-0">
-          Registros aprovados e concluídos por data de agendamento. “Sim” mostra solicitações com larva visualizada na OS de piloto ou da equipe UVIS; não confirma casos de dengue.
+          Registros por data de agendamento e visão selecionada. “Sim” mostra larva visualizada na OS de piloto ou da equipe UVIS; não confirma casos de dengue. O calor representa concentração de registros, não risco epidemiológico.
         </p>
       </div>
     </div>
   </div>
 
+  <div id="mapOperationalSummary" class="row g-2 mb-3" aria-live="polite"></div>
   <div id="mapFeedback" class="alert alert-info py-2 small d-none" role="status" aria-live="polite"></div>
 
   <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
@@ -190,10 +200,22 @@
     </div>
   </div>
 
+  <section class="card p-3 mt-4" aria-labelledby="mapRequestsTitle">
+    <h3 id="mapRequestsTitle" class="h5">Solicitações deste recorte</h3>
+    <p class="small text-muted">A situação é a atual, para o período agendado selecionado. Pendências incluem solicitações em análise ou sem fechamento registrado. Retornos são atendimentos vinculados à solicitação de origem. A contagem considera solicitações, não focos únicos.</p>
+    <p class="small text-muted">Na aba Áreas, clique em um ponto para abrir o histórico. Cor: tipo de foco. Borda laranja: pendente ou atrasado. Essas cores não classificam risco.</p>
+    <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Solicitação</th><th>Agendamento</th><th>Foco / bairro</th><th>Situação atual</th><th>No mapa</th><th>Histórico</th></tr></thead><tbody id="mapRequestRows"></tbody></table></div>
+    <div class="d-flex gap-2 align-items-center"><button type="button" id="mapPrev" class="btn btn-outline-primary btn-sm" disabled>Anterior</button><span id="mapPageLabel"></span><button type="button" id="mapNext" class="btn btn-outline-primary btn-sm" disabled>Próxima</button></div>
+  </section>
+  <section id="mapFocusHistory" class="card p-3 mt-4 d-none" aria-labelledby="mapHistoryTitle" tabindex="-1">
+    <div class="d-flex justify-content-between"><h3 id="mapHistoryTitle" class="h5">Histórico do foco</h3><button id="mapHistoryClose" class="btn btn-outline-secondary btn-sm" type="button">Fechar</button></div>
+    <div id="mapHistoryBody" aria-live="polite"></div>
+  </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/mapa-operacional.js') }}"></script>
 <script>
   let mapHeat, mapArea, mapLogistics, heatmap;
   let markers = [];
@@ -272,6 +294,7 @@
     const ativo = foco !== "todos"
       || Boolean(document.getElementById("uvisFilter")?.value)
       || Boolean(document.getElementById("larvaFilter").value)
+      || (document.getElementById("visaoFilter")?.value || "aprovados") !== "aprovados"
       || document.getElementById("mesFilter").value !== String(MES_RELATORIO_ATUAL)
       || document.getElementById("anoFilter").value !== String(ANO_RELATORIO_ATUAL);
     badge.classList.toggle("d-none", !ativo);
@@ -293,6 +316,7 @@
     markers = [];
     circles = [];
     pontosAtuais = [];
+    window.mapOperational?.reset();
     atualizarIndicadoresBI(0);
     atualizarLegendaCategorias([]);
   }
@@ -307,7 +331,6 @@
       mostrarFeedbackMapa("Informe um ano válido entre 1 e 9999.", true);
       return;
     }
-    if (!mapHeat && !mapArea) return;
 
     mapasAbortController = new AbortController();
     const focoFiltro = document.getElementById("focoFilter").value;
@@ -315,8 +338,12 @@
 
     try {
       const response = await fetch(heatmapDataUrl(), { signal: mapasAbortController.signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      let pontos = await response.json();
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({}));
+        throw new Error(failure.message || `HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      let pontos = Array.isArray(payload) ? payload : payload.registros;
       if (sequence !== mapasRequestSequence) return;
       if (!Array.isArray(pontos)) throw new Error("Resposta inválida do mapa");
 
@@ -325,6 +352,8 @@
         pontos = pontos.filter(ponto => normalizarFoco(ponto.foco) === alvo);
       }
 
+      window.mapOperational?.render(pontos);
+      pontos = pontos.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
       pontosAtuais = pontos;
       renderizarDadosCalor(pontos, focoFiltro);
       renderizarDadosOperacionais(pontos);
@@ -334,7 +363,7 @@
     } catch (error) {
       if (sequence !== mapasRequestSequence || error.name === "AbortError") return;
       limparDadosMapas();
-      mostrarFeedbackMapa("Não foi possível carregar o mapa. Tente novamente em Filtrar.", true);
+      mostrarFeedbackMapa("Não foi possível carregar o mapa. " + error.message + ". Tente novamente em Filtrar.", true);
       console.error(error);
     }
   }
@@ -449,7 +478,7 @@
       return a.label.localeCompare(b.label, "pt-BR");
     });
 
-    total.textContent = `${pontos.length} foco${pontos.length === 1 ? "" : "s"}`;
+    total.textContent = `${pontos.length} registro${pontos.length === 1 ? "" : "s"}`;
 
     if (!items.length) {
       list.innerHTML = `<div class="legend-item is-active mb-0"><span class="legend-label">Sem focos no filtro atual</span></div>`;
@@ -617,6 +646,8 @@
       ano: document.getElementById("anoFilter").value,
       larva_visualizada: document.getElementById("larvaFilter").value,
     });
+    const view = document.getElementById("visaoFilter");
+    if (view) { params.set('visao', view.value); return `/api/mapa-operacional?${params.toString()}`; }
     return `/api/heatmap-data?${params.toString()}`;
   }
 
@@ -715,9 +746,10 @@
           fillColor: cor,
           fillOpacity: 1,
           strokeWeight: 1.5,
-          strokeColor: "#ffffff"
+          strokeColor: ["PENDENTE", "ATRASADO"].includes(p.situacao) ? "#b45309" : "#ffffff"
         }
       });
+      if (p.id && marker.addListener) marker.addListener("click", () => window.mapOperational?.history(p.id));
       markers.push(marker);
 
       const circle = new google.maps.Circle({

@@ -61,6 +61,9 @@ def create_app():
 
     register_audit(app)
 
+    from app.shared.file_recovery import register_file_recovery
+    register_file_recovery(app)
+
     from app.shared.password_expiration import register_password_expiration
 
     register_password_expiration(app)

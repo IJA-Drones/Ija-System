@@ -587,11 +587,14 @@ def delete_kml_route(route_id):
     for linked_order in linked_orders:
         linked_order.dji_kml_route_id = None
 
+    from app.shared.file_recovery import enabled, remove_file
+    if stored_path and enabled():
+        remove_file(os.path.join(get_upload_folder(), stored_path))
     db.session.delete(route)
     db.session.commit()
 
     file_removed = False
-    if stored_path:
+    if stored_path and not enabled():
         absolute_path = os.path.join(get_upload_folder(), stored_path)
         if os.path.exists(absolute_path):
             try:
@@ -1697,11 +1700,13 @@ def _save_uploaded_excel(original_filename, file_bytes):
 
     name_root, extension = os.path.splitext(original_filename)
     safe_root = secure_filename(name_root) or "dji_flight_logs"
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")
     short_hash = hashlib.sha256(file_bytes).hexdigest()[:10]
     stored_filename = f"{safe_root}_{stamp}_{short_hash}{extension or '.xlsx'}"
     absolute_path = os.path.join(base_folder, stored_filename)
 
+    from app.shared.file_recovery import track
+    track("local", absolute_path)
     with open(absolute_path, "wb") as file_handle:
         file_handle.write(file_bytes)
 
@@ -1715,11 +1720,13 @@ def _save_uploaded_kml(original_filename, file_bytes):
 
     name_root, extension = os.path.splitext(original_filename)
     safe_root = secure_filename(name_root) or "dji_flight_route"
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")
     short_hash = hashlib.sha256(file_bytes).hexdigest()[:10]
     stored_filename = f"{safe_root}_{stamp}_{short_hash}{extension or '.kml'}"
     absolute_path = os.path.join(base_folder, stored_filename)
 
+    from app.shared.file_recovery import track
+    track("local", absolute_path)
     with open(absolute_path, "wb") as file_handle:
         file_handle.write(file_bytes)
 

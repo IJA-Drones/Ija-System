@@ -58,7 +58,9 @@ def test_postgresql_sql_creates_only_field_tables_with_bytea_and_json():
     assert 'REFERENCES prefeituras' in sql
     config=Config()
     config.set_main_option('script_location',str(ROOT/'migrations'))
-    assert ScriptDirectory.from_config(config).get_heads()==['a41c9e7f26b0']
+    scripts = ScriptDirectory.from_config(config)
+    assert scripts.get_heads() == ['b6e9d2a4f017']
+    assert set(scripts.get_revision('b6e9d2a4f017').down_revision) == {'a41c9e7f26b0', 'd82b46fa910c'}
 
 
 def test_missing_migration_returns_controlled_error_without_creating_tables(tmp_path):

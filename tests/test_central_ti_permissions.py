@@ -64,6 +64,20 @@ class CentralTiPermissionsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'rota sem permissão'):
             validate_route_policy(self.app)
 
+    def test_vigilancia_hub_does_not_require_general_reports_permission(self):
+        from app.modules.gestao_ti.navigation import area_home_endpoint
+        self.configure('uvis', ['prefeitura.vigilancia.consultar'])
+        self.login('uvis')
+        self.app.config.update(VIGILANCIA_IMPORT_ENABLED=True, VIGILANCIA_PREVIEW_ENABLED=True)
+        response = self.client.get('/vigilancia')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('<span>Vigilância</span>', response.text)
+        self.assertEqual(response.text.count('class="vigilancia-central-module"'), 3)
+        self.assertEqual(self.client.get('/relatorios').status_code, 403)
+        self.assertEqual(area_home_endpoint(self.users['uvis'], 'prefeitura'), 'main.vigilancia')
+        self.configure('uvis', [])
+        self.assertEqual(self.client.get('/vigilancia').status_code, 403)
+
     def test_sinan_consult_permission_grants_and_revokes_page_and_api(self):
         self.configure('uvis', ['prefeitura.vigilancia.consultar'])
         self.login('uvis')

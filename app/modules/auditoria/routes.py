@@ -6,6 +6,7 @@ from app.modules.auditoria.service import build_auditoria_filters, build_auditor
 from app.shared.access import is_dev_user
 from app.models import AuditoriaArquivo, Prefeitura
 from app.modules.auditoria.archive import archive_status
+from app.modules.auditoria.syslog import syslog_status
 from app.shared.skybox import build_skybox_marker, stream_skybox_file, SkyboxError
 
 
@@ -48,6 +49,7 @@ def register_routes(bp):
             pagination_args=_query_args_without_page(),
             prefeituras=Prefeitura.query.order_by(Prefeitura.nome).all(),
             skybox=archive_status(),
+            syslog=syslog_status(),
             retention=current_app.config.get('AUDIT_RETENTION_MAX_RECORDS', 15000),
         )
 

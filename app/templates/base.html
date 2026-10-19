@@ -79,6 +79,9 @@
     <script src="{{ url_for('static', filename='js/permission-controls.js', v='20261009a') }}" defer></script>
     {% endif %}
     {% block extra_styles %}{% endblock %}
+    {% if edit_control_enabled|default(false) %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/edit-control.css', v='20261017a') }}">
+    {% endif %}
 
     <script>
       (function () {
@@ -309,6 +312,13 @@
             {% include '_financeiro_menu.html' %}
             {% endif %}
           {% else %}
+          {% if can_access_relatos_saude is defined and can_access_relatos_saude(current_user) %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint in ['main.relatos_saude_listar','main.relatos_saude_detalhe'] %}active{% endif %}" href="{{ url_for('main.relatos_saude_listar') }}">
+              <i class="bi bi-heart-pulse me-2"></i><span>Suspeitas de adoecimento</span>
+            </a>
+          </li>
+          {% endif %}
           {% set can_report_bugs_user = current_user.tipo_usuario == 'regional' or (current_user.tipo_usuario == 'visualizar' and (current_user.regiao or '')|upper == 'COVISA') %}
           {% if (central_ti_ui_guard(['main.bug_report_novo', 'main.bugs_listar'], can_report_bugs_user) if central_ti_ui_guard is defined else (can_report_bugs_user)) %}
           <li class="nav-item">
@@ -745,6 +755,17 @@
               href="{{ url_for('main.relatorios_coleta_imagens') }}"
              data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_coleta_imagens')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-images me-2"></i><span>Coleta de Imagens</span>
+            </a>
+          </li>
+          {% endif %}
+
+          {% if (central_ti_ui_guard(['main.vigilancia'], (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint and request.endpoint.startswith('main.vigilancia') %}active{% endif %}"
+              href="{{ url_for('main.vigilancia') }}"
+              data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia')) if central_ti_url_allowed is defined else true) else 'false' }}">
+              <i class="bi bi-shield-check me-2" aria-hidden="true"></i><span>Vigilância</span>
             </a>
           </li>
           {% endif %}
@@ -1793,7 +1814,7 @@
     <script src="{{ url_for('static', filename='js/session-security.js', v='20261007a') }}" defer></script>
     {% endif %}
     {% if edit_control_enabled|default(false) %}
-    <script src="{{ url_for('static', filename='js/edit-control.js', v='20261015b') }}"></script>
+    <script src="{{ url_for('static', filename='js/edit-control.js', v='20261017a') }}"></script>
     {% endif %}
     {% block scripts %}{% endblock %}
   </body>

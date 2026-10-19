@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
+from app.shared.file_recovery import save_file, remove_file
 from app.shared.password_policy import password_input, validate_password
 from app.models import (
     BancoAgro,
@@ -3416,11 +3417,11 @@ def _save_os_agro_attachment(ordem_servico, uploaded_file):
         raise ValueError("O relatorio final da OS Agro deve ser um arquivo PDF.")
 
     folder = get_os_agro_attachment_folder()
-    stored_filename = f"os_agro_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    stored_filename = f"os_agro_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}.pdf"
     absolute_path = os.path.join(folder, stored_filename)
 
     previous_relative_path = (ordem_servico.relatorio_pdf_path or "").strip()
-    uploaded_file.save(absolute_path)
+    save_file(uploaded_file, absolute_path)
 
     ordem_servico.relatorio_pdf_path = os.path.join("agro", "os", stored_filename).replace("\\", "/")
     ordem_servico.relatorio_pdf_nome = original_filename
@@ -3437,7 +3438,7 @@ def _remove_os_agro_uploaded_file(relative_path, *, keep_relative_path=None):
     absolute_path = os.path.join(get_os_agro_attachment_folder(), os.path.basename(relative_path))
     if os.path.exists(absolute_path):
         try:
-            os.remove(absolute_path)
+            remove_file(absolute_path)
         except OSError:
             pass
 
@@ -3464,11 +3465,11 @@ def _save_os_agro_map_image(ordem_servico, uploaded_file):
         raise ValueError("A imagem do mapa da OS Agro precisa ser PNG ou JPG.")
 
     folder = get_os_agro_attachment_folder()
-    stored_filename = f"os_agro_mapa_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{extension}"
+    stored_filename = f"os_agro_mapa_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{extension}"
     absolute_path = os.path.join(folder, stored_filename)
 
     previous_relative_path = (ordem_servico.mapa_aplicacao_path or "").strip()
-    uploaded_file.save(absolute_path)
+    save_file(uploaded_file, absolute_path)
 
     ordem_servico.mapa_aplicacao_path = os.path.join("agro", "os", stored_filename).replace("\\", "/")
     ordem_servico.mapa_aplicacao_nome = original_filename

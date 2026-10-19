@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_central.css') }}">{% endblock %}
+{% block content %}
+<main class="vigilancia-central-page py-4">
+  <header class="vigilancia-central-header">
+    <p class="vigilancia-central-eyebrow">Vigilância em saúde</p>
+    <h1>Central de Vigilância</h1>
+    <p>Notificações, ações de campo e dados dos levantamentos em um só lugar.</p>
+  </header>
+  <div class="vigilancia-central-grid">
+    {% for card in vigilancia_cards %}
+    <article class="vigilancia-central-module" aria-labelledby="vigilancia-title-{{ card.id }}">
+      <div class="vigilancia-central-module-top"><span class="vigilancia-central-icon"><i class="bi {{ card.icon }}" aria-hidden="true"></i></span><span class="vigilancia-central-category">{{ card.eyebrow }}</span></div>
+      <h2 id="vigilancia-title-{{ card.id }}">{{ card.title }}</h2>
+      <p class="vigilancia-central-description">{{ card.description }}</p>
+      <div class="vigilancia-central-module-actions">
+        {% if card.endpoint %}
+        <a class="btn btn-primary" href="{{ url_for(card.endpoint) }}">{{ card.action }} <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
+        {% if card.secondary %}<a class="vigilancia-central-secondary" href="{{ url_for(card.secondary) }}">Validar sem gravar dados</a>{% endif %}
+        {% else %}<span class="vigilancia-central-unavailable">Aguardando ativação neste ambiente</span>{% endif %}
+      </div>
+    </article>
+    {% else %}<p>Nenhum módulo de vigilância está disponível para o seu acesso.</p>{% endfor %}
+  </div>
+</main>
+{% endblock %}

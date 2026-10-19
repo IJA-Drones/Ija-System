@@ -26,5 +26,8 @@
   "main.central_ti": "public, personal or separately protected endpoint",
   "main.central_ti_salvar": "public, personal or separately protected endpoint",
   "main.api_cep": "public, personal or separately protected endpoint",
-  "main.api_cep_by_address": "public, personal or separately protected endpoint"
+  "main.api_cep_by_address": "public, personal or separately protected endpoint",
+  "main.portal_relato_saude": "Public form with session CSRF, idempotency and submission quota",
+  "main.portal_relato_saude_recibo": "Public receipt restricted to the submitting session, without health data",
+  "main.portal_contatos": "Public municipal directory: active municipalities and explicitly published fields only"
 }

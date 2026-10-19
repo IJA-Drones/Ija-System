@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Contatos públicos | IJA System{% endblock %}
+{% block content %}
+<main class="container py-4" style="max-width:1100px">
+  <a class="btn btn-outline-secondary mb-3" href="{{ url_for('main.configuracoes_documentos', prefeitura_id=prefeitura.id) }}">Voltar às configurações</a>
+  <header class="mb-4"><span class="text-primary small fw-bold text-uppercase">Configurações da prefeitura</span>
+    <h1 class="h3 mt-2">Contatos públicos</h1><p class="text-muted">Mantenha os canais de atendimento do Portal do Cidadão e da Azul em um só lugar.</p></header>
+  <div class="alert alert-info"><strong>{{ prefeitura.nome }}</strong> · Esta configuração pertence a esta prefeitura.</div>
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  {% if not can_write %}<div class="alert alert-info">Acesso de consulta. A COVISA responsável e o DEV podem alterar estes dados.</div>{% endif %}
+  <form method="post" class="card shadow-sm p-4 mb-4">
+    <input type="hidden" name="_csrf_token" value="{{ config_csrf_token }}"><input type="hidden" name="versao" value="{{ setting.versao if setting else 0 }}">
+    <fieldset {% if not can_write %}disabled{% endif %}>
+      <legend class="h5">Canais para a população</legend>
+      <p class="text-muted">Informe somente contatos institucionais autorizados para divulgação pública. Não cadastre senhas ou contatos pessoais.</p>
+      <div class="row g-3">
+      {% for field,label,placeholder,kind,limit in [('telefone','Telefone com DDD','(11) 3000-0000','tel',25),('whatsapp','WhatsApp com DDD','(11) 99999-0000','tel',25),('instagram','Instagram','@prefeitura ou https://www.instagram.com/perfil/','text',254),('email','E-mail público de atendimento','atendimento@prefeitura.gov.br','email',254)] %}
+        <div class="col-md-6"><label class="form-label fw-semibold" for="{{ field }}">{{ label }}</label><input id="{{ field }}" name="{{ field }}" type="{{ kind }}" maxlength="{{ limit }}" value="{{ values[field] }}" placeholder="{{ placeholder }}" class="form-control"></div>
+      {% endfor %}
+        <div class="col-12"><label class="form-label fw-semibold" for="horario">Horário de atendimento</label><input id="horario" name="horario" maxlength="300" value="{{ values.horario }}" class="form-control" placeholder="Segunda a sexta, das 8h às 17h"></div>
+        <div class="col-12"><label class="form-label fw-semibold" for="servicos">Serviços e orientações</label><textarea id="servicos" name="servicos" maxlength="1500" rows="4" class="form-control" aria-describedby="servicos-help">{{ values.servicos }}</textarea><div id="servicos-help" class="form-text">Até 1.500 caracteres. Explique quais serviços estes canais atendem. Não inclua dados individuais de cidadãos.</div></div>
+      </div>
+      <div class="rounded border p-3 mt-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="publicado" name="publicado" value="1" {% if values.publicado %}checked{% endif %}><label class="form-check-label fw-bold" for="publicado">Publicar no Portal do Cidadão e disponibilizar para a Azul</label></div>
+        <p class="text-muted small mb-0 mt-2">Ao ativar e salvar, os dados acima ficam públicos. Desative e salve para retirá-los da página e das próximas consultas da Azul. Mensagens já respondidas não são apagadas.</p></div>
+      {% if can_write %}<button class="btn btn-primary mt-4" type="submit">Salvar contatos</button>{% endif %}
+    </fieldset>
+  </form>
+  <div class="d-flex flex-wrap gap-2 mb-4"><a class="btn btn-outline-primary" target="_blank" rel="noopener" href="{{ url_for('main.portal_contatos', prefeitura=prefeitura.id) }}">Ver página pública</a><a class="btn btn-outline-secondary" href="{{ url_for('main.configuracoes_email', prefeitura_id=prefeitura.id) }}">E-mail dos relatórios</a></div>
+  <p class="text-muted">O e-mail público é independente do destinatário dos relatórios. Os botões abrem o canal escolhido; o cadastro não ativa recebimento de mensagens do WhatsApp ou Instagram dentro do sistema.</p>
+  <section class="card p-4"><h2 class="h5">Últimas alterações</h2><p class="text-muted small">Histórico das últimas 10 alterações. Horários em UTC.</p><ul class="mb-0">
+    {% for item in history %}<li>{{ item.criado_em.strftime('%d/%m/%Y %H:%M') }} · {{ 'Publicado' if item.depois.publicado else 'Não publicado' }} · Responsável interno #{{ item.usuario_id }}</li>{% else %}<li>Nenhuma alteração registrada.</li>{% endfor %}
+  </ul></section>
+</main>
+{% endblock %}

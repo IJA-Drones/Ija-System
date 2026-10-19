@@ -13,6 +13,8 @@
       <span>Participação cidadão</span>
     </a>
     <div class="portal-cidadao-nav-links">
+      <a href="{{ url_for('main.portal_relato_saude') }}">Suspeita de adoecimento</a>
+      <a href="{{ url_for('main.portal_contatos') }}">Contatos das prefeituras</a>
       <a href="#boletim-saude">Boletim de saúde</a>
       <a href="#como-funciona">Atendimento</a>
       <a class="portal-cidadao-nav-report" href="#portal-relato">
@@ -33,6 +35,9 @@
         Seu relato ajuda a Prefeitura a organizar a resposta e as ações de controle.
       </p>
       <div class="portal-cidadao-hero-actions">
+        <a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">
+          <i class="bi bi-heart-pulse" aria-hidden="true"></i> Relatar suspeita de adoecimento
+        </a>
         <a class="btn btn-success portal-cidadao-primary-action" href="#portal-relato">
           <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
           Registrar um relato

@@ -3,6 +3,7 @@
 from functools import wraps
 from io import BytesIO
 from datetime import datetime, timezone
+import uuid
 
 from flask import Response, abort, current_app, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user
@@ -18,6 +19,8 @@ from .field_store import FieldConflict, FieldStore, FieldStoreError
 from .routes import _RequestError, _positive_id, _ensure_preview_csrf_token, _validate_preview_csrf, _uploaded_csv
 from .service import CSV_COLUMNS, LAYOUT_VERSION, MAX_FILE_BYTES, PreviewValidationError
 from .sample import build_sample_csv
+from .domain import DEPOSIT_TYPES
+from .field_capture import FieldInputError, capture_csv, parse_filters, consolidate, export_csv
 
 
 class FieldBodyLimit:
@@ -25,7 +28,8 @@ class FieldBodyLimit:
         self.app = app
 
     def __call__(self, environ, start_response):
-        if environ.get("REQUEST_METHOD") == "POST" and environ.get("PATH_INFO", "").startswith("/vigilancia/importacoes"):
+        path = environ.get("PATH_INFO", "")
+        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path == "/vigilancia/campo"):
             limit = MAX_FILE_BYTES + 65536
             try:
                 length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -84,9 +88,80 @@ def register_routes(bp):
 
     @bp.after_request
     def field_no_cache(response):
-        if (request.endpoint or "").startswith("main.vigilancia_import"):
+        if (request.endpoint or "").startswith(("main.vigilancia_import", "main.vigilancia_campo")):
             response.headers["Cache-Control"] = "private, no-store"
         return response
+
+    def data_mode(values):
+        supplied = values.getlist("demo")
+        if len(supplied) > 1 or (not supplied and request.method == "POST") or (supplied and supplied[0] not in {"true", "false"}):
+            raise FieldInputError("Selecione dados demonstrativos ou autorizados.")
+        return not supplied or supplied[0] == "true"
+
+    @bp.route("/vigilancia/campo", methods=["GET", "POST"], endpoint="vigilancia_campo")
+    @_access
+    def field_capture():
+        prefeitura = _scope()
+        _ensure_preview_csrf_token()
+        filters = {key: "" for key in ("origem", "levantamento", "estrato", "inicio", "fim")}
+        report = None
+        error, code, demo, page_number = None, 200, True, 1
+        form = request.form.to_dict() if request.method == "POST" else {}
+        try:
+            demo = data_mode(request.form if request.method == "POST" else request.args)
+            filters = parse_filters(request.args)
+            raw_page = request.args.get("pagina", "1")
+            if len(raw_page) > 2 or not raw_page.isascii() or not raw_page.isdecimal() or not 1 <= int(raw_page) <= 50:
+                raise FieldInputError("Página inválida.")
+            page_number = int(raw_page)
+            if request.method == "POST":
+                if prefeitura is None:
+                    raise FieldInputError("Selecione uma prefeitura cadastrada.")
+                _validate_preview_csrf()
+                if not demo and request.form.get("autorizado") != "sim":
+                    raise FieldInputError("Confirme a autorização para registrar dados reais.")
+                content = capture_csv(request.form, prefeitura=prefeitura)
+                batch = _store().prepare(content, prefeitura=prefeitura, actor=str(current_user.get_id()),
+                                         source="Registro direto de campo", filename="registro-campo.csv", demo=demo)
+                return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
+            if prefeitura:
+                report = consolidate(_store().records(prefeitura, demo=demo), prefeitura=prefeitura, filters=filters)
+        except _RequestError as exc:
+            error, code = str(exc), exc.status_code
+        except (FieldInputError, PreviewValidationError) as exc:
+            error, code = str(exc), 400
+        except FieldStoreError as exc:
+            error, code = str(exc), 503
+        query = {"prefeitura_id": prefeitura, "demo": "true" if demo else "false", **filters}
+        rows = report["registros"] if report else []
+        last_page = max(1, (len(rows) + 99) // 100)
+        page_number = min(page_number, last_page)
+        legacy = is_admin_global_user(current_user) or is_prefeitura_admin_user(current_user)
+        return render_template("vigilancia_campo.html", prefeitura_id=prefeitura,
+                               municipio_editavel=is_admin_global_user(current_user), demo=demo,
+                               form=form, filters=filters, report=report, rows=rows[(page_number-1)*100:page_number*100],
+                               page_number=page_number, last_page=last_page, erro=error, query=query,
+                               deposit_types=DEPOSIT_TYPES, preview_csrf_token=session[CSRF_SESSION_KEY],
+                               can_write=can_access_endpoint(current_user, "main.vigilancia_campo", "POST", legacy=legacy),
+                               can_export=can_access_endpoint(current_user, "main.vigilancia_campo_export", "GET", legacy=legacy),
+                               new_inspection="VIS-" + uuid.uuid4().hex[:16]), code
+
+    @bp.get("/vigilancia/campo/exportar.csv", endpoint="vigilancia_campo_export")
+    @_access
+    def field_export():
+        prefeitura = _scope()
+        if prefeitura is None:
+            abort(400)
+        try:
+            demo = data_mode(request.args)
+            filters = parse_filters(request.args)
+            report = consolidate(_store().records(prefeitura, demo=demo), prefeitura=prefeitura, filters=filters)
+        except (FieldInputError, PreviewValidationError) as exc:
+            abort(400, description=str(exc))
+        except FieldStoreError as exc:
+            abort(503, description=str(exc))
+        return send_file(BytesIO(export_csv(report["registros"])), mimetype="text/csv",
+                         as_attachment=True, download_name=f"campo-{'demonstracao' if demo else 'autorizado'}-{prefeitura}.csv", max_age=0)
 
     @bp.route("/vigilancia/importacoes", methods=["GET", "POST"], endpoint="vigilancia_importacoes")
     @_access

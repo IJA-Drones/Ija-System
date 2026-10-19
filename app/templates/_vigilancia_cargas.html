@@ -34,7 +34,8 @@
     <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
     <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
     <input type="hidden" name="lote" value="{{ batch.id }}">
-    <button type="submit" name="acao" value="confirmar" class="btn btn-primary">Confirmar carga validada</button>
+    <input type="hidden" name="acao" value="confirmar">
+    <button type="submit" class="btn btn-primary">Confirmar carga validada</button>
   </form>
   {% elif batch.status == 'REJEITADO' %}<p>Este lote não pode ser confirmado. Corrija o arquivo e envie novamente.</p>{% endif %}
   <p class="mt-3"><a href="{{ url_for('main.vigilancia_import_origem', batch_id=batch.id, prefeitura_id=prefeitura_id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_import_origem', batch_id=batch.id, prefeitura_id=prefeitura_id)) if central_ti_url_allowed is defined else true) else 'false' }}">Baixar CSV original preservado</a></p>

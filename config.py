@@ -34,6 +34,13 @@ class Config:
     SKYBOX_WEBDAV_URL = os.environ.get("SKYBOX_WEBDAV_URL")
     SKYBOX_USERNAME = os.environ.get("SKYBOX_USERNAME")
     SKYBOX_APP_PASSWORD = os.environ.get("SKYBOX_APP_PASSWORD")
+    # Set a stable ID only when workers really share the same persistent disk.
+    FILE_RECOVERY_LOCAL_NODE_ID = os.getenv("FILE_RECOVERY_LOCAL_NODE_ID", "")
+    REPORT_SMTP_HOST = os.getenv("REPORT_SMTP_HOST", "")
+    REPORT_SMTP_PORT = int(os.getenv("REPORT_SMTP_PORT", "587"))
+    REPORT_SMTP_FROM = os.getenv("REPORT_SMTP_FROM", "")
+    REPORT_SMTP_USERNAME = os.getenv("REPORT_SMTP_USERNAME", "")
+    REPORT_SMTP_PASSWORD = os.getenv("REPORT_SMTP_PASSWORD", "")
     SKYBOX_BASE_DIR = os.environ.get("SKYBOX_BASE_DIR", "dados ordens de serviço")
     CORREIOS_API_TOKEN = os.environ.get("CORREIOS_API_TOKEN")
     CORREIOS_CEP_TOKEN = os.environ.get("CORREIOS_CEP_TOKEN")
@@ -115,5 +122,13 @@ class Config:
     AUDIT_SKYBOX_ENABLED = os.getenv("AUDIT_SKYBOX_ENABLED", "1").lower() in {"1", "true", "yes", "on"}
     AUDIT_SKYBOX_NAMESPACE = os.getenv("AUDIT_SKYBOX_NAMESPACE", "")
     AUDIT_SKYBOX_INTERVAL_SECONDS = int(os.getenv("AUDIT_SKYBOX_INTERVAL_SECONDS", "60"))
+    AUDIT_SYSLOG_ENABLED = os.getenv('AUDIT_SYSLOG_ENABLED', '0').lower() in {'1', 'true', 'yes', 'on'}
+    AUDIT_SYSLOG_HOST = os.getenv('AUDIT_SYSLOG_HOST', '')
+    AUDIT_SYSLOG_PORT = int(os.getenv('AUDIT_SYSLOG_PORT', '6514'))
+    AUDIT_SYSLOG_TRANSPORT = os.getenv('AUDIT_SYSLOG_TRANSPORT', 'tls')
+    AUDIT_SYSLOG_CA_FILE = os.getenv('AUDIT_SYSLOG_CA_FILE', '')
+    AUDIT_SYSLOG_CERT_FILE = os.getenv('AUDIT_SYSLOG_CERT_FILE', '')
+    AUDIT_SYSLOG_KEY_FILE = os.getenv('AUDIT_SYSLOG_KEY_FILE', '')
+    AUDIT_SYSLOG_INTERVAL_SECONDS = int(os.getenv('AUDIT_SYSLOG_INTERVAL_SECONDS', '5'))
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False

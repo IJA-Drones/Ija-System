@@ -223,7 +223,7 @@ def app(tmp_path):
     manager.user_loader(User)
     app.jinja_loader = ChoiceLoader([DictLoader({"base.html": "{% block content %}{% endblock %}"}), FileSystemLoader("app/templates")])
     bp = Blueprint("main", __name__)
-    bp.add_url_rule("/relatorios", endpoint="relatorios", view_func=lambda: "ok")
+    bp.add_url_rule("/vigilancia", endpoint="vigilancia", view_func=lambda: "ok")
     sinan_routes.register_routes(bp)
     app.register_blueprint(bp)
     return app

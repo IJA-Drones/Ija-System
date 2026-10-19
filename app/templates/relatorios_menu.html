@@ -17,6 +17,10 @@
     </div>
   </div>
 
+  <div class="card p-3 mb-4 border-primary">
+    <h3 class="h5">Consultas personalizadas</h3><p>Escolha campos, crie fórmulas e salve critérios no seu catálogo. Veja o resultado em tabela, gráfico, mapa, PDF e Excel.</p>
+    <a class="btn btn-primary align-self-start" href="{{ url_for('main.consultas') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.consultas')) if central_ti_url_allowed is defined else true) else 'false' }}">Montar consulta</a>
+  </div>
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_solicitacoes') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.relatorios_solicitacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -119,50 +123,19 @@
       </a>
     </div>
     {% endif %}
-    {% if config.get('SINAN_ENABLED', true) and (central_ti_ui_guard(['main.vigilancia_sinan'], (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (config.get('SINAN_ENABLED', true) and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin'))) %}
+    {% if (central_ti_ui_guard(['main.vigilancia'], (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin')) %}
     <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.vigilancia_sinan') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_sinan')) if central_ti_url_allowed is defined else true) else 'false' }}">
+      <a href="{{ url_for('main.vigilancia') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 relatorios-menu-card">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Vigilância · Dados públicos</h6>
-              <h3 class="mb-0 text-dark fw-bold">SINAN · Arboviroses</h3>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Vigilância em saúde</h6>
+              <h3 class="mb-0 text-dark fw-bold">Central de Vigilância</h3>
             </div>
-            <i class="bi bi-activity fs-1 text-primary opacity-75" aria-hidden="true"></i>
+            <i class="bi bi-shield-check fs-1 text-primary opacity-75" aria-hidden="true"></i>
           </div>
-          <p class="text-muted small mt-3 mb-2">Dengue, zika e chikungunya no CONDOMAR e em São Paulo capital.</p>
-          <div class="d-flex align-items-center text-primary small fw-bold"><span>Consultar notificações</span><i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></div>
-        </div>
-      </a>
-    </div>
-    {% endif %}
-    {% if config.get('VIGILANCIA_IMPORT_ENABLED') and (central_ti_ui_guard(['main.vigilancia_importacoes'], (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin')) if central_ti_ui_guard is defined else (config.get('VIGILANCIA_IMPORT_ENABLED') and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin'))) %}
-    <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.vigilancia_importacoes') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_importacoes')) if central_ti_url_allowed is defined else true) else 'false' }}">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 relatorios-menu-card">
-          <h6 class="mb-1 text-muted fw-bold text-uppercase">Vigilância de campo</h6>
-          <h3 class="mb-0 text-dark fw-bold">Carga Focal e LIRAa</h3>
-          <p class="text-muted small mt-3 mb-2">Validar, confirmar e consultar lotes, imóveis e inspeções.</p>
-          <span class="text-primary small fw-bold">Abrir importações</span>
-        </div>
-      </a>
-    </div>
-    {% endif %}
-    {% if config.get('VIGILANCIA_PREVIEW_ENABLED') and (is_admin_global_user(current_user) or current_user.tipo_usuario == 'prefeitura_admin') %}
-    <div class="col-md-6 col-xl-4">
-      <a href="{{ url_for('main.vigilancia_validacao') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_validacao')) if central_ti_url_allowed is defined else true) else 'false' }}">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 relatorios-menu-card">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Vigilância · Prévia</h6>
-              <h3 class="mb-0 text-dark fw-bold">Validação de Focal e LIRAa</h3>
-            </div>
-            <i class="bi bi-file-earmark-check fs-1 text-primary opacity-75" aria-hidden="true"></i>
-          </div>
-          <p class="text-muted small mt-3 mb-2">Conferir um CSV e seus indicadores preliminares.</p>
-          <div class="d-flex align-items-center text-primary small fw-bold">
-            <span>Abrir prévia de validação</span><i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
-          </div>
+          <p class="text-muted small mt-3 mb-2">SINAN, Focal e LIRAa e importação e validação de arquivos.</p>
+          <div class="d-flex align-items-center text-primary small fw-bold"><span>Acessar vigilância</span><i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></div>
         </div>
       </a>
     </div>

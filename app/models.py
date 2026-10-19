@@ -443,6 +443,17 @@ class AuditoriaUsuario(db.Model):
     arquivado_em = db.Column(db.DateTime, nullable=True, index=True)
 
 
+class AuditoriaSyslogEntrega(db.Model):
+    __tablename__ = 'auditoria_syslog_entregas'
+    auditoria_id = db.Column(db.Integer, db.ForeignKey('auditoria_usuarios.id', ondelete='CASCADE'), primary_key=True)
+    enviado_em = db.Column(db.DateTime, nullable=True)
+    tentativas = db.Column(db.Integer, nullable=False, default=0)
+    proxima_tentativa = db.Column(db.DateTime, nullable=False)
+    lease_token = db.Column(db.String(36), nullable=True)
+    lease_ate = db.Column(db.DateTime, nullable=True)
+    ultimo_erro = db.Column(db.String(200), nullable=True)
+
+
 class AuditoriaArquivo(db.Model):
     __tablename__ = 'auditoria_arquivos'
     id = db.Column(db.String(36), primary_key=True)
@@ -750,6 +761,49 @@ class Solicitacao(db.Model):
         db.Index("ix_solicitacao_piloto_data", "piloto_id", "data_criacao"),
         db.Index("ix_solicitacao_agenda", "data_agendamento", "hora_agendamento"),
     )
+
+
+class RelatoSaude(db.Model):
+    """A self-reported illness suspicion; never a confirmed case or focus/OS."""
+    __tablename__ = 'relatos_saude'
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), index=True)
+    protocolo = db.Column(db.String(40), nullable=False, unique=True)
+    envio_id = db.Column(db.String(64), nullable=False, unique=True)
+    origem_hash = db.Column(db.String(64), nullable=False, index=True)
+    status = db.Column(db.String(30), nullable=False, default='RECEBIDO', index=True)
+    cidadao_nome = db.Column(db.String(150), nullable=False)
+    cidadao_telefone = db.Column(db.String(30), nullable=False)
+    logradouro = db.Column(db.String(150), nullable=False)
+    numero = db.Column(db.String(20), nullable=False)
+    bairro = db.Column(db.String(100), nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    inicio_sintomas = db.Column(db.Date)
+    consentimento = db.Column(db.Boolean, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    concluido_em = db.Column(db.DateTime)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    __mapper_args__ = {'version_id_col': versao}
+    prefeitura = db.relationship('Prefeitura')
+    uvis = db.relationship('Usuario', foreign_keys=[uvis_usuario_id])
+    eventos = db.relationship('RelatoSaudeEvento', back_populates='relato', order_by='RelatoSaudeEvento.id')
+
+
+class RelatoSaudeEvento(db.Model):
+    __tablename__ = 'relatos_saude_eventos'
+    id = db.Column(db.Integer, primary_key=True)
+    relato_id = db.Column(db.Integer, db.ForeignKey('relatos_saude.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    responsavel = db.Column(db.String(150), nullable=False)
+    acao = db.Column(db.String(30), nullable=False)
+    status = db.Column(db.String(30), nullable=False)
+    observacao = db.Column(db.Text)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    relato = db.relationship('RelatoSaude', back_populates='eventos')
+    uvis = db.relationship('Usuario', foreign_keys=[uvis_usuario_id])
 
 
 class Denuncia(db.Model):
@@ -3348,6 +3402,84 @@ class EdicaoReserva(db.Model):
     expira_em = db.Column(db.DateTime, index=True)
     iniciado_em = db.Column(db.DateTime)
     geracao = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+
+
+class ArquivoOperacao(db.Model):
+    """Durable compensation journal; never stores credentials or file bytes."""
+    __tablename__ = 'arquivo_operacoes'
+    id = db.Column(db.String(36), primary_key=True)
+    backend = db.Column(db.String(12), nullable=False)
+    destino = db.Column(db.Text, nullable=False)
+    identidade = db.Column(db.String(255), nullable=False)
+    lock_key = db.Column(db.BigInteger, nullable=False)
+    aliases = db.Column(db.JSON, nullable=False)
+    acao = db.Column(db.String(10), nullable=False)
+    estado = db.Column(db.String(16), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False)
+    proxima_tentativa = db.Column(db.DateTime, nullable=False)
+    tentativas = db.Column(db.Integer, nullable=False)
+    ultimo_erro = db.Column(db.String(100))
+    concluido_em = db.Column(db.DateTime)
+    __table_args__ = (db.Index('ix_arquivo_operacoes_pendentes', 'estado', 'proxima_tentativa'),)
+
+
+class ConsultaSalva(db.Model):
+    __tablename__ = 'consultas_salvas'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), index=True)
+    nome = db.Column(db.String(100), nullable=False)
+    definicao = db.Column(db.JSON, nullable=False)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    __mapper_args__ = {'version_id_col': versao}
+
+
+class PrefeituraContatoPublico(db.Model):
+    __tablename__ = 'prefeitura_contatos_publicos'
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), primary_key=True)
+    publicado = db.Column(db.Boolean, nullable=False, default=False)
+    telefone = db.Column(db.String(20), nullable=False, default='')
+    whatsapp = db.Column(db.String(20), nullable=False, default='')
+    instagram = db.Column(db.String(30), nullable=False, default='')
+    email = db.Column(db.String(254), nullable=False, default='')
+    horario = db.Column(db.String(300), nullable=False, default='')
+    servicos = db.Column(db.String(1500), nullable=False, default='')
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    __mapper_args__ = {'version_id_col': versao}
+
+
+class PrefeituraContatoHistorico(db.Model):
+    __tablename__ = 'prefeitura_contatos_historico'
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    antes = db.Column(db.JSON, nullable=False)
+    depois = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
+
+class PrefeituraEmailConfig(db.Model):
+    __tablename__ = 'prefeitura_email_config'
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), primary_key=True)
+    destinatario = db.Column(db.String(254), nullable=False)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    __mapper_args__ = {'version_id_col': versao}
+
+
+class ConsultaEmailEnvio(db.Model):
+    __tablename__ = 'consulta_email_envios'
+    id = db.Column(db.String(36), primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey('prefeituras.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    destinatario = db.Column(db.String(254), nullable=False)
+    estado = db.Column(db.String(20), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 # Register the field domain for Alembic and isolated db.create_all() tests.

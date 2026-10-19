@@ -14,11 +14,12 @@ SCREENS = {
  'prefeitura.checklists': [('admin_checklists_semanais','Checklists semanais')],
  'prefeitura.relatorios': [('relatorios','Relatórios')],
  'prefeitura.mapas': [('mapa_relatorio','Mapas'),('agenda','Agenda'),('consultar_endereco_geolocalizacao','Geolocalização')],
+ 'prefeitura.relatos_saude': [('relatos_saude_listar','Relatos de saúde')],
  'prefeitura.denuncias': [('denuncias_listar','Denúncias')],
  'prefeitura.prefeituras': [('admin_prefeituras','Prefeituras'),('admin_prefeitura_nova','Cadastrar prefeitura')],
  'prefeitura.documentos': [('configuracoes','Documentos da prefeitura')],
  'prefeitura.voos': [('relatorios_dji_logs','Logs de voo DJI')],
- 'prefeitura.vigilancia': [('vigilancia_sinan','SINAN · Arboviroses'),('vigilancia_importacoes','Carga Focal/LIRAa'),('vigilancia_validacao','Validação Focal/LIRAa')],
+ 'prefeitura.vigilancia': [('vigilancia','Central de Vigilância')],
  'agro.clientes': [('agro_clientes_menu','Visão geral'),('agro_clientes_listar','Clientes'),('agro_fornecedores_listar','Fornecedores'),('agro_cliente_novo','Cadastrar cliente'),('agro_fornecedor_novo','Cadastrar fornecedor')],
  'agro.comercial': [('agro_orcamentos_listar','Orçamentos'),('agro_orcamento_novo','Novo orçamento')],
  'agro.contratos': [('agro_contratos_listar','Contratos'),('agro_contratos_template','Template de contrato')],
@@ -84,7 +85,7 @@ def first_allowed_screen_endpoint(user, area=None):
             endpoint = 'main.' + screen
             if endpoint == 'main.vigilancia_validacao' and not current_app.config.get('VIGILANCIA_PREVIEW_ENABLED'):
                 continue
-            if endpoint == 'main.vigilancia_importacoes' and not current_app.config.get('VIGILANCIA_IMPORT_ENABLED'):
+            if endpoint in {'main.vigilancia_importacoes', 'main.vigilancia_campo'} and not current_app.config.get('VIGILANCIA_IMPORT_ENABLED'):
                 continue
             if endpoint == 'main.vigilancia_sinan' and not current_app.config.get('SINAN_ENABLED', True):
                 continue

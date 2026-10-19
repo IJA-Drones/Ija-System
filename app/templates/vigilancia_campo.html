@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% macro input(name, label, kind='text', required=true, value='', max_length=80) %}
+<div><label class="form-label" for="campo-{{ name }}">{{ label }}</label><input class="form-control" id="campo-{{ name }}" name="{{ name }}" type="{{ kind }}" {% if required %}required{% endif %} maxlength="{{ max_length }}" {% if kind == 'number' %}step="any"{% endif %} value="{{ form.get(name, value) }}"></div>
+{% endmacro %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">{% endblock %}
+{% block content %}
+<main class="vigilancia-preview-page py-4">
+  <p><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a></p>
+  <header class="vigilancia-preview-header">
+    <div><p class="vigilancia-preview-eyebrow">Vigilância de campo</p><h1>Focal e LIRAa</h1><p class="vigilancia-preview-muted">Registre visitas e consulte os indicadores por levantamento.</p></div>
+    <a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id) }}">Importar arquivo e consultar lotes</a>
+  </header>
+  <div class="vigilancia-preview-notice"><p>Resultados preliminares das visitas confirmadas no recorte escolhido. O planejamento da amostra e a identificação das espécies devem ser conferidos pela vigilância responsável.</p></div>
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  <section class="vigilancia-preview-panel" aria-labelledby="escopo-heading">
+    <h2 id="escopo-heading">Prefeitura e origem dos dados</h2>
+    <form method="get" action="{{ url_for('main.vigilancia_campo') }}" class="vigilancia-campo-grid">
+      <div><label class="form-label" for="escopo-prefeitura">Código da prefeitura cadastrada</label><input class="form-control" id="escopo-prefeitura" name="prefeitura_id" type="number" min="1" max="2147483647" required value="{{ prefeitura_id or '' }}" {% if not municipio_editavel %}readonly{% endif %}></div>
+      <div><label class="form-label" for="escopo-demo">Origem dos dados</label><select class="form-select" id="escopo-demo" name="demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
+      <div class="vigilancia-campo-align"><button class="btn btn-primary" type="submit">Consultar</button></div>
+    </form>
+  </section>
+  {% if prefeitura_id and can_write %}
+  <section class="vigilancia-preview-panel" aria-labelledby="registro-heading">
+    <h2 id="registro-heading">Registrar visita</h2>
+    <p class="vigilancia-preview-help mb-3">Preencha a visita e revise os dados antes de confirmar a gravação. Para imóveis inspecionados, informe o resultado já identificado para Aedes aegypti.</p>
+    <form method="post" action="{{ url_for('main.vigilancia_campo') }}" id="campo-form" data-ti-allowed="true">
+      <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}">
+      <div class="vigilancia-campo-grid">
+        <div><label class="form-label" for="campo-origem">Atividade</label><select class="form-select" name="origem" id="campo-origem"><option value="LIRAA" {% if form.get('origem', 'LIRAA') == 'LIRAA' %}selected{% endif %}>LIRAa</option><option value="FOCAL" {% if form.get('origem') == 'FOCAL' %}selected{% endif %}>Tratamento focal</option></select></div>
+        <div data-liraa-only>{{ input('levantamento_codigo', 'Código do levantamento') }}</div>
+        <div data-liraa-only>{{ input('estrato_codigo', 'Código do estrato') }}</div>
+        {{ input('imovel_codigo', 'Código do imóvel') }}
+        {{ input('inspecao_codigo', 'Código da visita', value=new_inspection) }}
+        {{ input('data_inspecao', 'Data da visita', kind='date') }}
+        {{ input('area_codigo', 'Código da área') }}
+        {{ input('bairro', 'Bairro', max_length=120) }}
+        <div><label class="form-label" for="campo-situacao">Situação do imóvel</label><select class="form-select" id="campo-situacao" name="situacao">{% for value, label in [('INSPECIONADO', 'Inspecionado / trabalhado'), ('FECHADO', 'Fechado'), ('RECUSADO', 'Recusado')] %}<option value="{{ value }}" {% if form.get('situacao', 'INSPECIONADO') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div data-inspecionado-only><label class="form-label" for="campo-positivo">Positivo para Aedes aegypti?</label><select class="form-select" id="campo-positivo" name="positivo_aedes" required><option value="">Selecione o resultado identificado</option><option value="SIM" {% if form.get('positivo_aedes') == 'SIM' %}selected{% endif %}>Sim</option><option value="NAO" {% if form.get('positivo_aedes') == 'NAO' %}selected{% endif %}>Não</option></select><p class="vigilancia-preview-help">Larva observada sem identificação da espécie não basta para preencher este resultado.</p></div>
+        {{ input('latitude', 'Latitude (opcional)', kind='number', required=false) }}
+        {{ input('longitude', 'Longitude (opcional)', kind='number', required=false) }}
+      </div>
+      <p class="vigilancia-preview-help">Mantenha o código do imóvel nas próximas visitas. Latitude e longitude devem ser informadas juntas.</p>
+      <details class="vigilancia-preview-layout" data-inspecionado-only><summary>Recipientes positivos por categoria (opcional)</summary>
+        <p class="vigilancia-preview-help">Conte recipientes positivos para Aedes aegypti, não larvas. Se informar uma categoria, preencha as sete; use zero onde não houve positivo. Deixe todas vazias se a contagem não estiver disponível.</p>
+        <div class="vigilancia-campo-grid mt-3">{% for code, label in deposit_types %}<div><label class="form-label" for="deposito-{{ code }}">{{ label }}</label><input class="form-control" id="deposito-{{ code }}" name="depositos_{{ code }}" type="number" min="0" max="10000" step="1" value="{{ form.get('depositos_' + code, '') }}"></div>{% endfor %}</div>
+      </details>
+      {% if not demo %}<p class="mt-3"><label><input type="checkbox" name="autorizado" value="sim" required {% if form.get('autorizado') == 'sim' %}checked{% endif %}> Confirmo a autorização para registrar estes dados reais.</label></p>{% endif %}
+      <div class="vigilancia-preview-actions"><button class="btn btn-primary" type="submit">Revisar registro antes de gravar</button></div>
+    </form>
+  </section>
+  {% elif not prefeitura_id %}<p class="vigilancia-preview-empty">Selecione uma prefeitura cadastrada para registrar visitas e consultar seus resultados.</p>{% endif %}
+  {% if prefeitura_id %}
+  <section class="vigilancia-preview-panel" aria-labelledby="resultados-heading">
+    <div class="vigilancia-preview-section-header"><h2 id="resultados-heading">Registros e indicadores</h2><span class="vigilancia-preview-tag">{{ 'Demonstração' if demo else 'Dados autorizados' }}</span></div>
+    <form method="get" action="{{ url_for('main.vigilancia_campo') }}" class="vigilancia-campo-grid">
+      <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}">
+      <div><label class="form-label" for="filtro-origem">Atividade</label><select class="form-select" id="filtro-origem" name="origem">{% for value, label in [('', 'Todas'), ('LIRAA', 'LIRAa'), ('FOCAL', 'Tratamento focal')] %}<option value="{{ value }}" {% if filters.origem == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      {% for name, label, kind in [('levantamento', 'Levantamento', 'text'), ('estrato', 'Estrato', 'text'), ('inicio', 'Data inicial', 'date'), ('fim', 'Data final', 'date')] %}<div><label class="form-label" for="filtro-{{ name }}">{{ label }}</label><input class="form-control" id="filtro-{{ name }}" name="{{ name }}" type="{{ kind }}" maxlength="80" value="{{ filters[name] }}"></div>{% endfor %}
+      <div class="vigilancia-campo-align"><button class="btn btn-outline-primary" type="submit">Aplicar filtros</button></div>
+    </form>
+    {% if report %}
+    <dl class="vigilancia-preview-metrics mt-4"><div><dt>Visitas no recorte</dt><dd>{{ report.resumo.inspecoes }}</dd></div><div><dt>Imóveis únicos</dt><dd>{{ report.resumo.imoveis }}</dd></div><div><dt>Grupos LIRAa</dt><dd>{{ report.indicadores|length }}</dd></div><div><dt>Visitas sem coordenadas</dt><dd>{{ report.resumo.sem_coordenadas }}</dd></div></dl>
+    <p class="vigilancia-preview-help">Inspeções confirmadas, sem contar novamente registros reutilizados em outros lotes. O filtro por data pode mostrar apenas parte de um levantamento.</p>
+    {% if report.indicadores %}
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Indicadores dos levantamentos"><table class="table vigilancia-preview-table"><thead><tr><th>Levantamento / estrato</th><th>Área</th><th>Inspecionados</th><th>Positivos</th><th>Pendentes</th><th>IIP preliminar</th><th>Breteau preliminar</th></tr></thead><tbody>{% for item in report.indicadores %}<tr><td>{{ item.levantamento_codigo }}<br>{{ item.estrato_codigo }}</td><td>{{ item.area_codigo }}</td><td>{{ item.imoveis_inspecionados }}</td><td>{{ item.imoveis_positivos }}</td><td>{{ item.imoveis_pendentes }}</td><td>{{ ('%.2f'|format(item.iip)|replace('.', ',')) + '%' if item.iip is not none else 'Indisponível' }}</td><td>{{ '%.2f'|format(item.ib)|replace('.', ',') if item.ib is not none else 'Indisponível' }}</td></tr>{% endfor %}</tbody></table></div>
+    <p class="vigilancia-preview-help">IIP = 100 × imóveis positivos ÷ imóveis inspecionados. Breteau = 100 × recipientes positivos ÷ imóveis inspecionados. Focal e visitas fechadas ou recusadas não entram nos denominadores.</p>
+    {% include '_vigilancia_recipientes.html' %}
+    {% endif %}
+    {% if rows %}
+    <div class="vigilancia-preview-actions">{% if can_export %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo_export', **query) }}">Exportar CSV do recorte</a>{% endif %}</div>
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Visitas registradas"><table class="table vigilancia-preview-table"><thead><tr><th>Data</th><th>Atividade</th><th>Visita / imóvel</th><th>Área / bairro</th><th>Situação</th><th>Positivo Aedes</th><th>Coordenadas</th></tr></thead><tbody>{% for item in rows %}<tr><td>{{ item.data_inspecao }}</td><td>{{ item.origem }}</td><td>{{ item.inspecao_codigo }}<br>{{ item.imovel_codigo }}</td><td>{{ item.area_codigo }}<br>{{ item.bairro }}</td><td>{{ item.situacao }}</td><td>{{ item.positivo_aedes or 'Não avaliado' }}</td><td>{{ (item.latitude|string) + ', ' + (item.longitude|string) if item.latitude is not none else 'Não informadas' }}</td></tr>{% endfor %}</tbody></table></div>
+    <nav class="vigilancia-preview-actions" aria-label="Paginação dos registros">{% if page_number > 1 %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', **dict(query, pagina=page_number-1)) }}">Anterior</a>{% endif %}<span>Página {{ page_number }} de {{ last_page }} · até 100 visitas por página</span>{% if page_number < last_page %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', **dict(query, pagina=page_number+1)) }}">Próxima</a>{% endif %}</nav>
+    <p class="vigilancia-preview-help">O CSV considera todo o recorte, até 5.000 inspeções. Códigos que poderiam ser interpretados como fórmulas recebem um apóstrofo de proteção.</p>
+    {% else %}<p class="vigilancia-preview-empty">Nenhuma visita confirmada neste recorte.</p>{% endif %}
+    {% endif %}
+  </section>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-campo.js') }}" defer></script>{% endblock %}

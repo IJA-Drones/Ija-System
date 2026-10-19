@@ -95,9 +95,13 @@ lock. Os registros são inseridos em blocos na mesma transação. Falhas desfaze
 carga inteira. Os limites são próprios do importador de campo e não mudam os 100
 registros por importação do SINAN.
 
-Depósitos estruturados, agregação territorial entre lotes, mapa de IIP,
-integração epidemiológica, risco oficial e importação de layouts oficiais
-continuam como próximas etapas. Não há enriquecimento inventado de dados ausentes.
+O [registro direto e a consulta consolidada](vigilancia-registro-campo.md)
+ampliam esta entrega com visitas digitadas na tela e contagens de recipientes
+positivos por categoria, preservadas no JSON da inspeção. A consulta consolida
+identidades confirmadas entre lotes, com filtros e índices preliminares.
+Cadastro individual de depósitos/amostras, planejamento e supervisão completos,
+mapa de IIP, integração epidemiológica, risco oficial e importação de layouts
+oficiais continuam como próximas etapas. Não há enriquecimento inventado de dados ausentes.
 
 ## Validação isolada
 

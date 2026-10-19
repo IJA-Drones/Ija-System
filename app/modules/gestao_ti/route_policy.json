@@ -1,4 +1,15 @@
 {
+  "main.configuracoes_contatos": {
+    "GET": "prefeitura.documentos.consultar",
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.configuracoes_email": {
+    "GET": "prefeitura.documentos.consultar",
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.consultas_email_destino": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
   "main.configuracoes": {
     "GET": "prefeitura.documentos.consultar"
   },
@@ -607,6 +618,8 @@
   "main.api_geocode": {
     "POST": "prefeitura.mapas.consultar"
   },
+  "main.mapa_operacional_dados": {"GET": "prefeitura.mapas.consultar"},
+  "main.mapa_operacional_historico": {"GET": "prefeitura.mapas.consultar"},
   "main.heatmap_data": {
     "GET": "prefeitura.mapas.consultar"
   },
@@ -676,6 +689,9 @@
   "main.vigilancia_sinan": {
     "GET": "prefeitura.vigilancia.consultar"
   },
+  "main.vigilancia": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
   "main.vigilancia_sinan_api": {
     "GET": "prefeitura.vigilancia.consultar"
   },
@@ -694,6 +710,13 @@
   "main.vigilancia_importacoes": {
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_campo": {
+    "GET": "prefeitura.vigilancia.consultar",
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_campo_export": {
+    "GET": "prefeitura.relatorios.exportar"
   },
   "main.vigilancia_import_origem": {
     "GET": "prefeitura.relatorios.exportar"
@@ -1191,5 +1214,34 @@
   },
   "main.password_policy_save": {
     "POST": "sistema.tecnico.operar"
+  },
+  "main.consultas": {
+    "GET": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_executar": {
+    "POST": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_catalogo": {
+    "GET": "prefeitura.relatorios.consultar",
+    "POST": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_excluir": {
+    "DELETE": "prefeitura.relatorios.consultar"
+  },
+  "main.consultas_exportar": {
+    "POST": "prefeitura.relatorios.exportar"
+  },
+  "main.consultas_email": {
+    "POST": "prefeitura.relatorios.exportar"
+  },
+  "main.relatos_saude_listar": {
+    "GET": "prefeitura.relatos_saude.consultar"
+  },
+  "main.relatos_saude_detalhe": {
+    "GET": "prefeitura.relatos_saude.consultar",
+    "POST": "prefeitura.relatos_saude.atender"
+  },
+  "main.relatos_saude_pdf": {
+    "GET": "prefeitura.relatos_saude.exportar"
   }
 }

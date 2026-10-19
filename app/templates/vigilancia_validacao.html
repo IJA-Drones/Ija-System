@@ -6,6 +6,8 @@
 
 {% block content %}
 <div class="vigilancia-preview-page py-4">
+  <p><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a></p>
+  {% if field_mode %}<p><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if not batch or batch.demo else 'false') }}">Registrar visita e consultar indicadores</a></p>{% endif %}
   <header class="vigilancia-preview-header">
     <div>
       <p class="vigilancia-preview-eyebrow">Vigilância de campo</p>
@@ -118,6 +120,7 @@
       </table>
     </div>
     {% else %}<p class="vigilancia-preview-empty">Nenhum levantamento LIRAa válido neste arquivo.</p>{% endif %}
+    {% include '_vigilancia_recipientes.html' %}
     <p class="vigilancia-preview-help">Fórmula preliminar: 100 × imóveis positivos ÷ imóveis inspecionados. O resultado não valida a amostragem nem substitui a homologação técnica.</p>
   </section>
 

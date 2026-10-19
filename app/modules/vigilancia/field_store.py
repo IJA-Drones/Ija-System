@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
 from .field_models import CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao
 from .service import CSV_COLUMNS, MAX_ROWS, PreviewValidationError, preview_csv
+from .domain import DEPOSIT_COLUMNS
 
 
 class FieldStoreError(ValueError):
@@ -25,9 +26,10 @@ class FieldConflict(FieldStoreError):
 def _csv(records):
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, delimiter=";")
-    writer.writerow(CSV_COLUMNS)
+    columns = (*CSV_COLUMNS, *DEPOSIT_COLUMNS) if any(name in row for row in records for name in DEPOSIT_COLUMNS) else CSV_COLUMNS
+    writer.writerow(columns)
     for record in records:
-        writer.writerow([record[key] if record[key] is not None else "" for key in CSV_COLUMNS])
+        writer.writerow([record.get(key) if record.get(key) is not None else "" for key in columns])
     return stream.getvalue().encode("utf-8")
 
 
@@ -106,7 +108,7 @@ class FieldStore:
             by_key = {(r["origem"], r["inspecao_codigo"]): r for r in existing}
             new = []
             for record in report["registros"]:
-                data = {key: record[key] for key in CSV_COLUMNS}
+                data = {key: record[key] for key in (*CSV_COLUMNS, *DEPOSIT_COLUMNS) if key in record}
                 previous = by_key.get((data["origem"], data["inspecao_codigo"]))
                 if previous is not None and previous != data:
                     raise FieldConflict(f"A inspeção {data['inspecao_codigo']} ({data['origem']}) diverge de uma carga anterior. Revise a origem; nenhum registro foi gravado.")
@@ -165,3 +167,14 @@ class FieldStore:
         with self.connection() as conn:
             content = conn.scalar(sa.select(table.c.original).where(table.c.id == batch_id, table.c.prefeitura == prefeitura))
             return bytes(content) if content is not None else None
+
+    def records(self, prefeitura, *, demo):
+        """Consulta as identidades publicadas, sem multiplicar por lotes reutilizados."""
+        table = CampoInspecao.__table__
+        with self.connection() as conn:
+            rows = list(conn.scalars(sa.select(table.c.payload).where(
+                table.c.prefeitura == prefeitura, table.c.demo == demo
+            ).order_by(table.c.origin, table.c.code).limit(MAX_ROWS + 1)))
+        if len(rows) > MAX_ROWS:
+            raise FieldStoreError("A consulta excedeu 5.000 inspeções. Solicite revisão do limite da base de campo.")
+        return rows

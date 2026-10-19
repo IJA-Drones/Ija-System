@@ -65,6 +65,20 @@
     {% if skybox.ultimo_envio %}<small>Último envio verificado: {{ brazil_datetime(skybox.ultimo_envio).strftime('%d/%m/%Y às %H:%M:%S') }}.</small>{% endif %}
   </div>
 
+  {% if syslog is defined %}
+  <div class="alert {{ 'alert-warning' if syslog.habilitado and (syslog.erro_configuracao or syslog.falhas) else 'alert-info' }}" role="status">
+    <strong>Envio remoto por syslog</strong>
+    {% if not syslog.habilitado %}
+      <p class="mb-0">Desativado. Configure um coletor para ativar este envio. O arquivamento no Skybox continua independente.</p>
+    {% else %}
+      <p class="mb-1">{{ syslog.pendentes }} evento(s) pendente(s) · {{ syslog.falhas }} envio(s) aguardando nova tentativa após falha.</p>
+      {% if syslog.erro_configuracao %}<p class="mb-1">A configuração do destino está incompleta ou inválida. Os eventos pendentes serão preservados.</p>{% endif %}
+      <p class="mb-0">A transmissão não confirma o armazenamento no coletor. Confira o recebimento no destino.</p>
+      {% if syslog.ultima_transmissao %}<small>Última transmissão: {{ brazil_datetime(syslog.ultima_transmissao).strftime('%d/%m/%Y às %H:%M:%S') }}.</small>{% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="auditoria-stats mb-4">
     <div class="card auditoria-stat-card">
       <div class="card-body">

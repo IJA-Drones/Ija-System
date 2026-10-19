@@ -1,0 +1,27 @@
+.vigilancia-central-page {
+  max-width: 1200px;
+  margin-inline: auto;
+  color: var(--color-text-main);
+}
+.vigilancia-central-header { margin-bottom: 1.75rem; }
+.vigilancia-central-eyebrow { color: var(--color-text-muted); font-size: .82rem; margin: 0 0 .45rem; }
+.vigilancia-central-header h1 { font-size: clamp(1.6rem, 3vw, 2rem); margin: 0 0 .65rem; }
+.vigilancia-central-header > p:last-child { color: var(--color-text-muted); margin: 0; line-height: 1.6; }
+.vigilancia-central-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.vigilancia-central-module { display: flex; flex-direction: column; min-width: 0; padding: 1.5rem; border: 1px solid var(--color-accent-soft); border-radius: var(--radius-lg); background: var(--color-bg-white); }
+.vigilancia-central-module-top { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; }
+.vigilancia-central-icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-md); background: var(--color-accent-soft); color: var(--color-accent); font-size: 1.3rem; }
+.vigilancia-central-category { color: var(--color-text-muted); font-size: .76rem; }
+.vigilancia-central-module h2 { font-size: 1.25rem; margin: 0 0 .85rem; line-height: 1.4; }
+.vigilancia-central-description { color: var(--color-text-muted); font-size: .9rem; line-height: 1.75; margin: 0 0 1.75rem; }
+.vigilancia-central-module-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .85rem; margin-top: auto; }
+.vigilancia-central-module-actions .btn { white-space: normal; text-align: left; }
+.vigilancia-central-secondary { color: var(--color-accent); font-size: .82rem; }
+.vigilancia-central-unavailable { color: var(--color-text-muted); font-size: .84rem; padding-block: .65rem; }
+@media (max-width: 1100px) {
+  .vigilancia-central-grid { grid-template-columns: minmax(0, 1fr); }
+  .vigilancia-central-description { margin-bottom: 1.25rem; }
+}
+@media (max-width: 767px) {
+  .vigilancia-central-module { padding: 1.25rem; }
+}

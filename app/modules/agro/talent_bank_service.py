@@ -106,6 +106,8 @@ def build_dropbox_resume_path(original_name, prefeitura_id=None):
 
 
 def upload_resume_to_dropbox(file_bytes, dropbox_path):
+    from app.shared.file_recovery import track
+    track("dropbox", dropbox_path)
     metadata = _dropbox_client().files_upload(
         file_bytes,
         dropbox_path,
@@ -126,6 +128,9 @@ def download_resume_from_dropbox(dropbox_path):
 
 def delete_resume_from_dropbox(dropbox_path):
     if not dropbox_path:
+        return
+    from app.shared.file_recovery import track
+    if track("dropbox", dropbox_path, action="delete"):
         return
     try:
         _dropbox_client().files_delete_v2(dropbox_path)

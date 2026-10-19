@@ -130,11 +130,14 @@ def remote_path_from_marker(value):
     return _clean_remote_path(value[len(SKYBOX_MARKER_PREFIX):])
 
 
-def upload_file_to_skybox(file_storage, remote_path):
+def upload_file_to_skybox(file_storage, remote_path, *, recoverable=True, reference_aliases=()):
     if not skybox_enabled():
         raise SkyboxError("Skybox nao esta configurado.")
 
     remote_path = _clean_remote_path(remote_path)
+    if recoverable:
+        from app.shared.file_recovery import track
+        track('skybox', remote_path, aliases=reference_aliases)
     _ensure_parent_collections(remote_path)
 
     stream = file_storage.stream
@@ -177,7 +180,10 @@ def _stream_content_length(stream):
         return None
 
 
-def delete_skybox_file(value):
+def delete_skybox_file(value, *, reference_aliases=()):
+    from app.shared.file_recovery import track
+    if track('skybox', remote_path_from_marker(value), action='delete', aliases=reference_aliases):
+        return
     if not skybox_enabled():
         return
 

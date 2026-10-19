@@ -1,0 +1,9 @@
+{% for item in (report if report is defined and report else result).indicadores if item.get('recipientes') %}
+<details class="vigilancia-preview-layout"><summary>Recipientes positivos e ITR · {{ item.levantamento_codigo }} / {{ item.estrato_codigo }} / {{ item.area_codigo }}</summary>
+  <p class="vigilancia-preview-help">{{ item.motivo_depositos }} O ITR é a proporção de cada categoria entre os recipientes positivos para Aedes aegypti.</p>
+  {% if item.depositos_positivos is not none %}
+  <p class="vigilancia-preview-help">{{ item.depositos_positivos }} recipientes positivos · Breteau preliminar: {{ '%.2f'|format(item.ib)|replace('.', ',') }} por 100 imóveis inspecionados.</p>
+  <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Distribuição dos recipientes positivos"><table class="table vigilancia-preview-table"><thead><tr><th>Categoria</th><th>Recipientes positivos</th><th>ITR preliminar</th></tr></thead><tbody>{% for recipiente in item.recipientes %}<tr><td>{{ recipiente.descricao }}</td><td>{{ recipiente.positivos }}</td><td>{{ ('%.2f'|format(recipiente.itr)|replace('.', ',')) + '%' if recipiente.itr is not none else 'Sem denominador' }}</td></tr>{% endfor %}</tbody></table></div>
+  {% endif %}
+</details>
+{% endfor %}
