@@ -125,9 +125,11 @@
   }
   layer.addEventListener("change", draw);
   area.addEventListener("change", draw);
-  document.getElementById("portal-risco-modo").addEventListener("change", () => {
-    document.getElementById("portal-risco-levantamento").value = "";
-  });
+  for (const id of ["portal-risco-modo", "portal-risco-municipio", "portal-risco-regiao"]) {
+    document.getElementById(id).addEventListener("change", () => {
+      document.getElementById("portal-risco-levantamento").value = "";
+    });
+  }
   if (features.length) area.value = "0";
   draw();
 })();

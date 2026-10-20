@@ -335,6 +335,8 @@ def test_covisa_coordinates_own_municipality_through_http(planned):
         response = client.post('/vigilancia/planejamento', data=dict(
             acao=action, demo='true', _csrf_token=token(client), **values))
         assert response.status_code == 303, response.text
+        # O destino explícito substitui o fragmento do formulário anterior.
+        assert response.location.endswith('#territorio' if action == 'territorio' else '#amostra')
     post('territorio', quarteirao='Q-01', bairro='Bairro Sete', area='A-01', imoveis='100', referencia='RG municipal')
     post('criar', plano='L-COVISA', titulo='Levantamento da COVISA', inicio='2026-10-19', fim='2026-10-23', responsavel='Coordenação municipal', fonte='Plano municipal')
     post('estrato', plano='L-COVISA', versao='1', estrato='E-01', imoveis_estrato='1000', meta_estrato='20', criterio='Área contínua')

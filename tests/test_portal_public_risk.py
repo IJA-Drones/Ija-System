@@ -173,6 +173,11 @@ def test_condomar_filter_applies_to_infodengue_and_keeps_regional_navigation(pub
         response = browser.get("/portal-cidadao?regiao=condomar&municipio=2601201")
     assert alert.call_args.kwargs["config"]["INFODENGUE_GEOCODE"] == "2601201"
     assert payload(response)["municipio"]["name"] == "Arcoverde"
+    map_form = response.text.split('class="portal-cidadao-risk-controls portal-cidadao-risk-filters"', 1)[1].split("</form>", 1)[0]
+    assert 'id="portal-risco-regiao" name="regiao"' in map_form
+    assert 'id="portal-risco-municipio" name="municipio"' in map_form
+    assert '<option value="2610905"' in map_form
+    assert map_form.count('<optgroup label="CONDOMAR') == 1
     assert '<option value="3550308"' not in response.text
     assert "boletim-dengue?municipio=2601201&amp;regiao=condomar" in response.text
     with patch("app.modules.portal_cidadao.routes.get_infodengue_report", return_value=None) as source:
@@ -180,6 +185,24 @@ def test_condomar_filter_applies_to_infodengue_and_keeps_regional_navigation(pub
     assert source.call_args.kwargs["config"]["INFODENGUE_GEOCODE"] == "2610905"
     assert source.call_args.kwargs["disease"] == "zika" and source.call_args.kwargs["year"] == 2025
     assert 'value="3550308"' not in response.text and "regiao=condomar" in response.text
+
+
+def test_public_map_can_switch_from_default_sao_paulo_to_saved_municipal_data(public_app):
+    app = public_app
+    app.config.update(INFODENGUE_GEOCODE="3550308", INFODENGUE_CITY="São Paulo")
+    store, batch = field(app)
+    store.confirm(batch["id"], prefeitura=7, actor="50")
+    browser = app.test_client()
+    initial = browser.get("/portal-cidadao?demo=true")
+    assert payload(initial)["municipio"]["ibge"] == "3550308"
+    map_form = initial.text.split('class="portal-cidadao-risk-controls portal-cidadao-risk-filters"', 1)[1].split("</form>", 1)[0]
+    assert '<option value="2610905"' in map_form
+    with patch("app.modules.portal_cidadao.routes.get_infodengue_alert", return_value=None) as alert:
+        selected = payload(browser.get("/portal-cidadao?regiao=condomar&municipio=2610905&demo=true&levantamento="))
+    assert selected["municipio"]["name"] == "Pesqueira"
+    assert selected["limite"]["properties"]["codigo"] == "2610905"
+    assert selected["liraa"]["visitas"] == 20
+    assert alert.call_args.kwargs["config"]["INFODENGUE_GEOCODE"] == "2610905"
 
 
 @pytest.mark.parametrize("query", ["demo=true&demo=false", "demo=1", "doenca=outra", "ano_sinan=9999", "inicio=2026-10-21&fim=2026-10-20", "regiao=outra"])

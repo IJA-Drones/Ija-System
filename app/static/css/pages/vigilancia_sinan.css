@@ -26,7 +26,14 @@
 .sinan-details summary { color: var(--color-primary-dark); font-size: .88rem; font-weight: 600; cursor: pointer; }
 .sinan-page .pagination .page-link:disabled { cursor: default; }
 .sinan-import-limit { padding: 12px 14px; border-radius: 10px; background: var(--color-accent-soft); font-size: .83rem; }
-.sinan-page .nav-pills .nav-link { border-radius: 10px; }
+.sinan-page h1 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 600; }
+.sinan-page .nav-pills { border-bottom: 1px solid var(--color-accent-soft); gap: 1.75rem !important; }
+.sinan-page .nav-pills .nav-link { min-height: 44px; padding: .65rem 0; border-radius: 0; border-bottom: 3px solid transparent; color: var(--color-text-muted); font-size: .85rem; }
+.sinan-page .nav-pills .nav-link.active { background: transparent; color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.sinan-import-source { max-width: 420px; }
+.sinan-import-history { border-top: 1px solid var(--color-accent-soft); margin-top: 1.5rem; padding-top: 1.25rem; }
+.sinan-page .sinan-import-limit { background: none; padding: 0; margin-top: 1rem; color: var(--color-text-muted); }
+#sinan-clear { order: 2; }
 .sinan-workflow .table td, .sinan-workflow .table th { white-space: nowrap; }
 #sinan-map { height: 380px; width: 100%; border-radius: 12px; background: var(--color-accent-soft); }
 .sinan-map-filter { width: auto; max-width: 100%; }

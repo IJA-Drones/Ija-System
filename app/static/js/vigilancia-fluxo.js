@@ -5,6 +5,7 @@
   const panels = [...root.querySelectorAll("[data-vigilancia-panel]")];
   const links = [...root.querySelectorAll("[data-vigilancia-target]")];
   if (!panels.length || !links.length) return;
+  root.dataset.vigilanciaEnhanced = "true";
   function targetFor(hash) {
     let element;
     try { element = document.getElementById(decodeURIComponent(hash.replace(/^#/, ""))); } catch (_) { return null; }

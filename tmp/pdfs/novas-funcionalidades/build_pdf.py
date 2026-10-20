@@ -85,6 +85,9 @@ def bullet(title,body,y,num=None,x=M,width=CW):
 
 
 def heading(kicker,title,subtitle='',source=''):
+    key='p'+str(C.getPageNumber())
+    C.bookmarkPage(key)
+    C.addOutlineEntry(title,key,level=0)
     C.setFillColor(white);C.rect(0,0,W,H,fill=1,stroke=0)
     C.setFillColor(TEAL);C.rect(0,H-8,W,8,fill=1,stroke=0)
     label('IJA SYSTEM / GUIA FUNCIONAL',M,H-38)
@@ -109,7 +112,8 @@ def end():
 
 def table(headers,rows,y,widths=None,fs=9.5):
     widths=widths or [CW/len(headers)]*len(headers)
-    head_height=30
+    header_style=ParagraphStyle('header',fontName='Bold',fontSize=9,leading=12)
+    head_height=max(30,max(Paragraph(text,header_style).wrap(w-24,10000)[1] for text,w in zip(headers,widths))+16)
     box(M,y,CW,head_height,NAVY,r=5)
     x=M
     for name,w in zip(headers,widths):
@@ -156,6 +160,8 @@ def picture(file,x,y,width,maxheight=None):
     return y-height,width,height
 
 # 01 - cover
+C.bookmarkPage('p1')
+C.addOutlineEntry('Capa','p1',level=0)
 C.setFillColor(LIGHT);C.rect(0,0,W,H,fill=1,stroke=0)
 C.setFillColor(white);C.rect(0,H-100,W,100,fill=1,stroke=0)
 label('IJA SYSTEM',M,H-46,BLUE)
@@ -193,6 +199,8 @@ for title,pages in [('Consulta e dados salvos do SINAN','03-04'),('Planejamento,
     C.setStrokeColor(LINE);C.line(M,Y-25,W-M,Y-25)
     p(title,M,Y,CW-65,size=10.2,leading=14)
     C.setFillColor(TEAL);C.setFont('Bold',10);C.drawRightString(W-M,Y-11,pages)
+    destination=int(pages.split('-')[0])
+    C.linkRect('',f'p{destination}',(M,Y-25,W-M,Y+3),relative=0,thickness=0)
     Y-=39
 end()
 
@@ -229,10 +237,10 @@ end()
 
 # 06 - field
 Y=heading('02 / LIRAa E FOCAL','Registrar e confirmar uma visita','Os registros só entram na base confirmada depois da revisão e da confirmação do lote.','S2, S3')
-Y=bullet('O agente acessa a própria área','No login principal, a conta Agente de Endemias entra em Meus levantamentos. São mostrados seus quarteirões de planos liberados, dentro da prefeitura e do modo de dados autorizados para a conta.',Y,1)
+Y=bullet('O agente acessa a própria área','No login principal, a conta Agente de Endemias entra em Meus levantamentos. São mostrados seus quarteirões de planos liberados, dentro da prefeitura da conta e com separação entre demonstração e dados autorizados.',Y,1)
 Y=bullet('Informe os dados efetivos do campo','Registre códigos estáveis de imóvel e inspeção, data e situação da visita. No LIRAa, o contexto de levantamento, estrato, bairro e área vem do plano; a participação na amostra precisa ser declarada.',Y,2)
 Y=bullet('Registre somente o resultado identificado','Imóvel inspecionado recebe positividade identificada para Aedes aegypti. Quando fornecidas, as sete contagens de recipientes positivos devem ser completas e coerentes com o resultado. Fechado, recusado e não inspecionado ficam sem positividade.',Y,3)
-Y=bullet('Revise antes de gravar','O sistema prepara uma prévia e valida conflitos, vínculo e período. A confirmação publica a visita na base de campo. Reenvios idênticos são reaproveitados para evitar duplicidade.',Y,4)
+Y=bullet('Revise antes de gravar','O sistema prepara uma prévia e valida conflitos, vínculo e período. A confirmação efetiva a gravação da visita na base de campo. Reenvios idênticos são reaproveitados para evitar duplicidade.',Y,4)
 Y=note('Como uma OS pode ajudar','Na área da coordenação, uma OS acessível pode fornecer uma referência para conferência. O imóvel, a data da inspeção, a amostra e o resultado precisam ser confirmados. O registro não deduz uma inspeção LIRAa apenas porque existe uma OS.',Y)
 Y=p('Responsabilidade individual',M,Y,CW,size=14,leading=19,bold=True,color=NAVY)-7
 p('Cada confirmação conserva a autoria da conta. O agente não recebe acesso geral ao planejamento, ao SINAN, às OS ou aos registros de outra conta.',M,Y,CW,size=10.1,leading=15)
@@ -303,7 +311,7 @@ Y=table(['Perfil / acesso','Papel no fluxo'],[
     ('<b>População</b>','Consultar somente publicações aprovadas e mídias selecionadas para acesso público.')],Y,[145,CW-145],9.2)
 Y=p('Condições para colocar em uso',M,Y,CW,size=15,leading=20,bold=True,color=NAVY)-12
 Y=bullet('Ações realizadas','Implementado e demonstrado localmente. O ambiente real ainda precisa receber a migração preparada e a ativação do módulo, com revisão dos acessos. Para vídeo, o servidor precisa do FFmpeg configurado.',Y)
-Y=bullet('Campo, mapas e SINAN','Conferir schema, configuração dos módulos e vínculo prefeitura/IBGE do ambiente. O Google Maps precisa de chave e domínio autorizados. Arquivos municipais devem seguir os modelos e ser validados pela equipe.',Y)
+Y=bullet('Campo, mapas e SINAN','Conferir a estrutura do banco, a configuração dos módulos e vínculo prefeitura/IBGE do ambiente. O Google Maps precisa de chave e domínio autorizados. Arquivos municipais devem seguir os modelos e ser validados pela equipe.',Y)
 Y=bullet('Volume e arquivos','SINAN: até 100 registros por importação. Publicações: até cinco mídias selecionadas; imagens até 10 MiB e MP4 até 50 MiB. O fluxo atual de campo tem limites próprios de lotes e tamanho da base, que exigem revisão antes de campanhas de grande volume.',Y)
 Y=note('Interface em evolução','O design de SINAN e LIRAa está em finalização. Ações realizadas foi conferido no Chrome em larguras de 320, 390, 430 e 1440 px, nos temas claro e escuro. Isso não equivale a um aceite final de todos os módulos em aparelhos físicos.',Y,AMBER,GOLD)
 end()

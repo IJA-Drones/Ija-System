@@ -2,23 +2,22 @@
 {% macro input(name, label, kind='text', required=true, value='', max_length=80) %}
 <div><label class="form-label" for="campo-{{ name }}">{{ label }}</label><input class="form-control" id="campo-{{ name }}" name="{{ name }}" type="{{ kind }}" {% if required %}required{% endif %} maxlength="{{ max_length }}" {% if kind == 'number' %}step="any"{% endif %} value="{{ form.get(name, value) }}"></div>
 {% endmacro %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-1') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
 {% block content %}
 <main class="vigilancia-preview-page py-4" data-vigilancia-view data-vigilancia-default="{{ 'registro-visita' if can_write else 'resultados-campo' }}">
   {% include '_vigilancia_navegacao.html' %}
   <header class="vigilancia-preview-header">
     <div><h1>Focal e LIRAa</h1><p class="vigilancia-preview-muted">Registre visitas e consulte os indicadores por levantamento.</p></div>
-<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Importar arquivo</a>
+<div class="vigilancia-preview-actions">{% if prefeitura_id %}<a class="btn btn-outline-primary" href="#resultados-campo" data-vigilancia-target="resultados-campo">Visitas registradas</a>{% endif %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Importar visitas</a></div>
   </header>
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
-  <details class="liraa-scope-compact" {% if not prefeitura_id %}open{% endif %}><summary>Prefeitura e origem dos dados</summary>
+  <section class="liraa-scope-bar" aria-label="Prefeitura e origem dos dados">
     <form method="get" action="{{ url_for('main.vigilancia_campo') }}" class="vigilancia-campo-grid">
       {% include '_vigilancia_prefeitura_filter.html' %}
-      <div><label class="form-label" for="escopo-demo">Origem dos dados</label><select class="form-select" id="escopo-demo" name="demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
+      <div><label class="form-label" for="escopo-demo">Dados</label><select class="form-select" id="escopo-demo" name="demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
       <div class="vigilancia-campo-align"><button class="btn btn-primary" type="submit">Consultar</button></div>
     </form>
-  </details>
-  {% if prefeitura_id %}<nav class="liraa-section-menu" aria-label="Trabalho de campo">{% if can_write %}<a href="#registro-visita" data-vigilancia-target="registro-visita" aria-controls="registro-visita">Registrar visita</a>{% endif %}<a href="#resultados-campo" data-vigilancia-target="resultados-campo" aria-controls="resultados-campo">Visitas registradas</a></nav>{% endif %}
+  </section>
   {% if prefeitura_id and can_write %}
   <div id="registro-visita" data-vigilancia-panel>
   <details class="vigilancia-preview-panel" {% if os_context %}open{% endif %}><summary id="os-heading">Referência de endereço por OS · opcional</summary>
@@ -78,7 +77,7 @@
   {% elif not prefeitura_id %}<p class="vigilancia-preview-empty">Selecione uma prefeitura cadastrada para registrar visitas e consultar seus resultados.</p>{% endif %}
   {% if prefeitura_id %}
   <section class="vigilancia-preview-panel" id="resultados-campo" data-vigilancia-panel aria-labelledby="resultados-heading">
-    <div class="vigilancia-preview-section-header"><h2 id="resultados-heading">Registros e indicadores</h2><span class="vigilancia-preview-tag">{{ 'Demonstração' if demo else 'Dados autorizados' }}</span></div>
+    <div class="vigilancia-preview-section-header"><h2 id="resultados-heading">Visitas registradas</h2>{% if can_write %}<a class="btn btn-primary" href="#registro-visita" data-vigilancia-target="registro-visita">Registrar visita</a>{% endif %}</div>
     <form method="get" action="{{ url_for('main.vigilancia_campo', _anchor='resultados-campo') }}" class="vigilancia-campo-grid">
       <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}">
       <div><label class="form-label" for="filtro-origem">Atividade</label><select class="form-select" id="filtro-origem" name="origem">{% for value, label in [('', 'Todas'), ('LIRAA', 'LIRAa'), ('FOCAL', 'Tratamento focal')] %}<option value="{{ value }}" {% if filters.origem == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
@@ -104,4 +103,4 @@
   {% endif %}
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-fluxo.js', v='20261020-1') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia-campo.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-fluxo.js', v='20261020-3') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia-campo.js') }}" defer></script>{% endblock %}

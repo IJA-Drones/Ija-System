@@ -21,6 +21,20 @@
   municipality?.addEventListener("change", updateSampleLink);
   updateSampleLink();
 
+  const mode = document.getElementById("campo-demo");
+  const authorization = document.getElementById("campo-autorizacao");
+  const authorized = document.getElementById("campo-autorizado");
+  if (mode && authorization && authorized) {
+    const updateAuthorization = () => {
+      const required = mode.value === "false";
+      authorization.hidden = !required;
+      authorized.required = required;
+      if (!required) authorized.checked = false;
+    };
+    mode.addEventListener("change", updateAuthorization);
+    updateAuthorization();
+  }
+
   const reportButton = document.getElementById("download-report");
   reportButton?.addEventListener("click", () => {
     const report = document.getElementById("preview-report");

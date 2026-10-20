@@ -57,9 +57,11 @@ test('empty sources are described as unavailable and do not become zero risk', (
   assert.doesNotMatch(ui.get('risco-detalhe').text(), /0 registros/);
 });
 
-test('switching demo mode resets the previous survey before submitting', () => {
-  const ui = browser();
-  ui.get('portal-risco-levantamento').value = 'L-POC';
-  ui.get('portal-risco-modo').change('false');
-  assert.equal(ui.get('portal-risco-levantamento').value, '');
-});
+for (const [id, value] of [['portal-risco-modo', 'false'], ['portal-risco-municipio', '2600609'], ['portal-risco-regiao', 'condomar']]) {
+  test(`switching ${id} clears the previous city's survey before submitting`, () => {
+    const ui = browser();
+    ui.get('portal-risco-levantamento').value = 'L-POC';
+    ui.get(id).change(value);
+    assert.equal(ui.get('portal-risco-levantamento').value, '');
+  });
+}

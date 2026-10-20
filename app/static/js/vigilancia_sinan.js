@@ -104,7 +104,7 @@
     element('submit').disabled = running;
     element('spinner').hidden = !running;
     element('search-icon').hidden = running;
-    element('submit-label').textContent = running ? 'Consultando...' : 'Consultar';
+    element('submit-label').textContent = running ? 'Consultando...' : 'Consultar Ministério da Saúde';
     element('cancel').hidden = !running;
     element('retry').hidden = !run || Boolean(run.data) || !['error', 'cancelled'].includes(run.phase);
     element('form').setAttribute('aria-busy', String(running));

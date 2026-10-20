@@ -1,29 +1,3 @@
-<section class="vigilancia-preview-panel" aria-labelledby="historico-cargas">
-  <h2 id="historico-cargas">Histórico de cargas</h2>
-  {% if municipio_editavel %}
-  <form method="get" action="{{ url_for('main.vigilancia_importacoes') }}" class="mb-3">
-    <label for="historico-prefeitura" class="form-label">Prefeitura</label>
-    <select class="form-select" id="historico-prefeitura" name="prefeitura_id" required>
-      <option value="">Selecione uma prefeitura</option>
-      {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
-    </select>
-    <button class="btn btn-outline-primary btn-sm" type="submit">Consultar histórico</button>
-  </form>
-  {% endif %}
-  <p class="vigilancia-preview-help">Últimos 20 lotes · até 1 MiB e 5.000 linhas por arquivo.</p>
-  {% if history %}
-  <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Lotes de campo">
-    <table class="table vigilancia-preview-table">
-      <thead><tr><th>Arquivo / fonte</th><th>Origem</th><th>Situação</th><th>Novas / reutilizadas</th><th>Consulta</th></tr></thead>
-      <tbody>{% for item in history %}<tr>
-        <td>{{ item.filename }}<br>{{ item.source }}<br><small>{{ field_datetime(item.created) }}</small></td><td>{{ 'Demonstração' if item.demo else 'Dados autorizados' }}</td>
-        <td>{{ item.status }}</td><td>{{ item.inserted }} / {{ item.reused }}</td>
-        <td><a href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, lote=item.id) }}">Abrir lote</a></td>
-      </tr>{% endfor %}</tbody>
-    </table>
-  </div>
-  {% else %}<p>Nenhuma carga para exibir neste recorte.</p>{% endif %}
-</section>
 {% if batch %}
 <section class="vigilancia-preview-panel" aria-labelledby="lote-selecionado">
   <h2 id="lote-selecionado">Lote selecionado: {{ batch.status }}</h2>

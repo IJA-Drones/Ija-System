@@ -3,14 +3,14 @@
 {% macro bar(label, value, maximum=100, unit='') %}
 <div class="resultado-barra"><div><span>{{ label }}</span><strong>{{ number(value, unit) }}</strong></div><div class="resultado-trilho" aria-hidden="true"><span style="width:{{ 100 * value / maximum if value is not none and maximum > 0 else 0 }}%"></span></div></div>
 {% endmacro %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_resultados.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_mapa_territorial.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-1') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_resultados.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_mapa_territorial.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
 {% block content %}
 <main class="vigilancia-preview-page resultados-page py-4">
   {% include '_vigilancia_navegacao.html' %}
-  <header class="vigilancia-preview-header"><div><h1>Resultados da vigilância</h1><p class="vigilancia-preview-muted">Índices, gráficos e comparação com o SINAN.</p></div><a class="btn btn-outline-primary resultado-navegacao" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Registrar visitas</a></header>
+  <header class="vigilancia-preview-header"><div><h1>Resultados da vigilância</h1><p class="vigilancia-preview-muted">Índices, gráficos e comparação com o SINAN.</p></div><a class="btn btn-outline-primary resultado-navegacao" href="{{ url_for('main.vigilancia_risco', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', levantamento=filters.levantamento, inicio=filters.inicio, fim=filters.fim) }}">Mapa de risco</a></header>
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
-  <details class="vigilancia-preview-panel resultado-filtros" {% if not prefeitura_id or not report or not report.resumo.inspecoes %}open{% endif %}><summary id="filtros-heading">Filtros · {{ filters.get('levantamento') or 'todos os levantamentos' }}</summary>
-    <form method="get" id="resultados-filtros" class="mt-3">
+  <section class="vigilancia-preview-panel resultado-filtros" aria-label="Filtros dos resultados">
+    <form method="get" id="resultados-filtros">
       <div class="vigilancia-campo-grid">
         {% include '_vigilancia_prefeitura_filter.html' %}
         <label class="form-label">Origem dos dados<select class="form-select" name="demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração — dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></label>
@@ -38,7 +38,7 @@
       <div class="vigilancia-preview-actions"><button class="btn btn-primary">Aplicar filtros e atualizar resultados</button><a class="btn btn-outline-secondary" href="{{ url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Limpar filtros</a></div>
     </form>
   <details class="vigilancia-preview-layout mb-3"><summary>Recorte aplicado</summary>  <p class="vigilancia-preview-help">Levantamento: {{ filters.levantamento or 'todos' }} · Estrato: {{ filters.estrato or 'todos' }} · Área: {{ filters.area or 'todas' }} · Bairro: {{ filters.bairro or 'todos' }} · Inspeções: {{ filters.inicio or 'início da base' }} até {{ filters.fim or 'fim da base' }}. O filtro de levantamento/estrato se aplica ao LIRAa; Focal segue território e datas.</p></details>
-  </details>
+  </section>
   {% if report %}
   <div class="resultado-contexto"><div><strong>{{ prefeitura_nome }}</strong><p>{{ 'Demonstração · dados fictícios' if demo else 'Dados autorizados da vigilância' }} · Atualizado em {{ generated_at.strftime('%d/%m/%Y %H:%M') }} · horário de Brasília</p></div><span class="vigilancia-preview-tag">Indicadores preliminares</span></div>
 

@@ -11,6 +11,10 @@ const {chromium}=require('/Users/pedrohenriquevb/.cache/codex-runtimes/codex-pri
  await page.locator('.acoes-editor-grid').screenshot({path:root+'/editor.png'});
  await context.clearCookies();
  await page.goto('http://127.0.0.1:5037/portal-cidadao/acoes/'+ids.published,{waitUntil:'networkidle'});
+ await page.locator('video').evaluate(v=>{v.muted=true;return v.play()});
+ await page.waitForFunction(()=>document.querySelector('video').currentTime>.4);
+ await page.locator('video').evaluate(v=>v.pause());
+ await page.waitForTimeout(350);
  await page.locator('.acoes-article').screenshot({path:root+'/publicacao.png'});
  await page.locator('.acoes-panel').filter({has:page.locator('[data-copy-link]')}).screenshot({path:root+'/compartilhar.png'});
  await page.goto('http://127.0.0.1:5037/portal-cidadao/acoes?demo=true',{waitUntil:'networkidle'});

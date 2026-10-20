@@ -2,7 +2,7 @@
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_chatbot.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261020-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261020-4') }}">
 {% endblock %}
 
 {% block auth_content %}
@@ -416,5 +416,5 @@
 <script src="{{ url_for('static', filename='js/portal-chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-report.js') }}"></script>
-{% if public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261020-1') }}" defer></script>{% endif %}
+{% if public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261020-2') }}" defer></script>{% endif %}
 {% endblock %}
