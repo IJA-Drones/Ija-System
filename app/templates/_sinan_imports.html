@@ -12,9 +12,10 @@
         {% if central_ti_url_allowed is not defined or central_ti_url_allowed(url_for('main.vigilancia_sinan_import'), 'POST') %}
         <button type="button" class="btn btn-sm btn-primary" id="sinan-import-api"><i class="bi bi-download me-1" aria-hidden="true"></i>Importar da API</button>
         {% endif %}
+        {% if central_ti_url_allowed is not defined or central_ti_url_allowed(url_for('main.vigilancia_sinan_cases_import'), 'POST') %}<button type="button" class="btn btn-sm btn-outline-primary" id="sinan-open-upload">Importar CSV</button>{% endif %}
       </div>
     </div>
-    <p class="sinan-import-limit"><strong>Máximo de 100 registros por importação.</strong> Uma carga por vez. O lote pode representar apenas parte dos dados do município.</p>
+    <p class="sinan-import-limit"><strong>Até 100 registros por lote.</strong> O recorte pode ser parcial.</p>
     <div id="sinan-import-status" class="small mb-3" role="status" aria-live="polite"></div>
     <div class="table-responsive"><table class="table table-hover align-middle mb-0">
       <thead><tr><th>Importação</th><th>Origem</th><th>Situação</th><th>Registros</th><th><span class="visually-hidden">Ações</span></th></tr></thead>
@@ -46,16 +47,15 @@
         <p id="sinan-map-legend" class="small text-muted mt-2 mb-0" hidden>Suspeito: laranja · Confirmado: vermelho · Descartado: verde · Não informado: cinza.</p>
       </div>
     </section>
-    <details class="sinan-details mt-4">
+    <details class="sinan-details mt-4" id="sinan-upload-details">
       <summary>Importar CSV com coordenadas</summary>
       <form id="sinan-case-form" class="form-no-loading mt-3">
-        <p class="small text-muted">Até 100 casos e 1 MiB, no modelo UTF-8 abaixo. Use os mesmos filtros acima. Não inclua nomes ou documentos.</p>
+        <p class="small text-muted">CSV UTF-8 · até 100 casos e 1 MiB · mesmos filtros acima · sem nomes ou documentos.</p>
         <div class="row g-2 align-items-end">
           <div class="col-md-6"><label class="small" for="sinan-case-file">Arquivo CSV</label><input type="file" accept=".csv,text/csv" class="form-control form-control-sm" id="sinan-case-file" required></div>
           <div class="col-md-6"><label class="small" for="sinan-case-mode">Origem dos dados</label><select id="sinan-case-mode" class="form-select form-select-sm"><option value="true">Demonstração — dados fictícios</option><option value="false">Arquivo autorizado da vigilância</option></select></div>
           <div class="col-12" id="sinan-case-authorization" hidden><label class="small"><input type="checkbox" id="sinan-case-authorized" class="form-check-input me-1">Tenho autorização para importar este arquivo. Os lotes ficam restritos ao meu acesso.</label></div>
           <div class="col-12 d-flex flex-wrap justify-content-end gap-2 mt-3">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="sinan-sample-cases">Baixar modelo de demonstração</button>
             {% if central_ti_url_allowed is not defined or central_ti_url_allowed(url_for('main.vigilancia_sinan_cases_import'), 'POST') %}
             <button type="submit" class="btn btn-primary btn-sm" id="sinan-import-cases">Importar arquivo</button>
             {% endif %}
@@ -65,7 +65,7 @@
     </details>
     <details class="sinan-details mt-3">
       <summary>Limites e origem</summary>
-      <p class="small text-muted mt-2 mb-0">A API é lida de 10 em 10, até 100 registros ou 2 minutos, mais a requisição em curso (timeout de leitura de 45 segundos). Cancelar aguarda essa requisição terminar. Não há continuação automática: uma nova importação começa no início do filtro e não é somada à anterior. O histórico mostra até 10 lotes, preservando o último concluído da API. Falhas mantêm os lotes anteriores. O mapa municipal representa o local da notificação; os pontos do CSV usam as coordenadas informadas, sem validação de endereço. O modelo de São Paulo e Pesqueira inclui dois casos fictícios; os demais municípios recebem um modelo vazio. Arquivos acima de 100 casos devem ser divididos e são visualizados em lotes separados.</p>
+      <p class="small text-muted mt-2 mb-0">A API é lida de 10 em 10, até 100 registros ou 2 minutos, mais a requisição em curso (timeout de leitura de 45 segundos). Cancelar aguarda essa requisição terminar. Não há continuação automática: uma nova importação começa no início do filtro e não é somada à anterior. O histórico mostra até 10 lotes, preservando o último concluído da API. Falhas mantêm os lotes anteriores. O mapa municipal representa o local da notificação; os pontos do CSV usam as coordenadas informadas, sem validação de endereço. Arquivos acima de 100 casos devem ser divididos e são visualizados em lotes separados.</p>
     </details>
   </div>
 </section>

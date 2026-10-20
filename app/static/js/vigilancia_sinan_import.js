@@ -252,7 +252,12 @@
     begin(panel.dataset.casesUrl, { method: 'POST', body });
   });
   el('case-mode').addEventListener('change', () => { el('case-authorization').hidden = el('case-mode').value !== 'false'; el('case-authorized').checked = false; });
-  el('sample-cases').addEventListener('click', () => download(`${panel.dataset.sampleUrl}?${new URLSearchParams(scope())}`, 'sinan-modelo-DEMONSTRACAO.csv'));
+  el('open-upload')?.addEventListener('click', () => {
+    const details = el('upload-details');
+    details.open = true;
+    details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el('case-file').focus({ preventScroll: true });
+  });
   el('export-job').addEventListener('click', () => { if (eligible(selected)) download(`${panel.dataset.url}/${selected.id}/exportar.csv`, `sinan-${selected.disease}-${selected.ibge}-${selected.year}-${selected.status}${selected.demo ? '-DEMONSTRACAO' : ''}.csv`); });
   el('cancel-job').addEventListener('click', async () => {
     if (!selected || selected.status !== 'running') return;

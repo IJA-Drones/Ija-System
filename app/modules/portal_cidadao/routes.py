@@ -16,7 +16,7 @@ from app.models import Prefeitura
 from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.portal_cidadao.chatbot import chat_token, reply
 from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
-from app.modules.portal_cidadao.public_risk import get_public_risk_demo
+from app.modules.portal_cidadao.public_risk import get_public_risk_report
 from app.modules.portal_cidadao.municipalities import public_health_municipality
 
 
@@ -34,6 +34,8 @@ def register_routes(bp):
     @bp.route("/portal-cidadao", methods=["GET"], endpoint="portal_cidadao")
     def portal_cidadao():
         municipality, municipalities, health_config = public_health_municipality(current_app.config, request.args)
+        public_risk_report = get_public_risk_report(current_app.config, municipality, request.args, logger=current_app.logger)
+        region_query = {"regiao": "condomar"} if request.args.get("regiao") == "condomar" else {}
         response = current_app.make_response(render_template(
             "portal_cidadao.html",
             prefeituras=list_public_prefeituras(),
@@ -46,8 +48,12 @@ def register_routes(bp):
             portal_city=municipality["name"],
             municipality_options=municipalities,
             selected_municipality=municipality,
-            report_url=url_for("main.portal_cidadao_boletim_dengue", municipio=municipality["ibge"]),
-            public_risk_report=get_public_risk_demo(),
+            selected_region=request.args.get("regiao", "todos"),
+            report_url=url_for("main.portal_cidadao_boletim_dengue", municipio=municipality["ibge"],
+                               **region_query, **({"demo": "true"} if public_risk_report and public_risk_report["demo"] else {})),
+            public_risk_report=public_risk_report,
+            risk_diseases=INFODENGUE_DISEASE_LABELS,
+            risk_years=list(range(date.today().year, 2014, -1)),
         ))
         response.headers["Cache-Control"] = "private, no-store"
         return response
@@ -80,7 +86,10 @@ def register_routes(bp):
             available_years=list(range(current_year, max(2009, current_year - 5), -1)),
             municipality_options=municipalities,
             selected_municipality=municipality,
-            portal_url=url_for("main.portal_cidadao", municipio=municipality["ibge"]),
+            selected_region=request.args.get("regiao", "todos"),
+            portal_url=url_for("main.portal_cidadao", municipio=municipality["ibge"],
+                **({"regiao": "condomar"} if request.args.get("regiao") == "condomar" else {}),
+                **({"demo": "true"} if request.args.get("demo") == "true" else {})),
         )
 
     @bp.route("/portal-cidadao/denuncias", methods=["POST"], endpoint="portal_cidadao_denuncias_criar")

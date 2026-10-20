@@ -1,0 +1,20 @@
+const fs=require('fs');
+const {chromium}=require('/Users/pedrohenriquevb/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async()=>{
+ const root='/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/tmp/pdfs/novas-funcionalidades';
+ const ids=JSON.parse(fs.readFileSync('/private/tmp/ija-acoes-publicas-qa/demo-ids.json'));
+ const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+ const context=await browser.newContext({viewport:{width:1440,height:1700},deviceScaleFactor:1.5});
+ const page=await context.newPage();
+ await page.goto('http://127.0.0.1:5037/demo/login',{waitUntil:'networkidle'});
+ await page.goto('http://127.0.0.1:5037/acoes-realizadas/'+ids.draft,{waitUntil:'networkidle'});
+ await page.locator('.acoes-editor-grid').screenshot({path:root+'/editor.png'});
+ await context.clearCookies();
+ await page.goto('http://127.0.0.1:5037/portal-cidadao/acoes/'+ids.published,{waitUntil:'networkidle'});
+ await page.locator('.acoes-article').screenshot({path:root+'/publicacao.png'});
+ await page.locator('.acoes-panel').filter({has:page.locator('[data-copy-link]')}).screenshot({path:root+'/compartilhar.png'});
+ await page.goto('http://127.0.0.1:5037/portal-cidadao/acoes?demo=true',{waitUntil:'networkidle'});
+ await page.locator('.acoes-public-card').first().screenshot({path:root+'/cartao-publico.png'});
+ console.log('Capturas concluídas: editor, publicação, compartilhamento e cartão público.');
+ await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

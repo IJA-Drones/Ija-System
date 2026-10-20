@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_central.css') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_central.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-1') }}">{% endblock %}
 {% block content %}
 <main class="vigilancia-central-page py-4">
   <header class="vigilancia-central-header">
     <p class="vigilancia-central-eyebrow">Vigilância em saúde</p>
     <h1>Central de Vigilância</h1>
-    <p>Notificações, ações de campo e dados dos levantamentos em um só lugar.</p>
+    <p>Consulte as notificações, organize o campo e acompanhe os resultados.</p>
   </header>
   <div class="vigilancia-central-grid">
     {% for card in vigilancia_cards %}
@@ -15,7 +15,7 @@
       <p class="vigilancia-central-description">{{ card.description }}</p>
       <div class="vigilancia-central-module-actions">
         {% if card.endpoint %}
-        <a class="btn btn-primary" href="{{ url_for(card.endpoint) }}">{{ card.action }} <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
+        {% if card.id == 'campo' and can_plan %}<a class="btn btn-primary" href="{{ url_for('main.vigilancia_planejamento') }}">Planejar levantamento <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a><a class="vigilancia-central-secondary" href="{{ url_for(card.endpoint) }}">{{ card.action }}</a>{% else %}<a class="btn btn-primary" href="{{ url_for(card.endpoint) }}">{{ card.action }} <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>{% endif %}
         {% if card.secondary %}<a class="vigilancia-central-secondary" href="{{ url_for(card.secondary) }}">Validar sem gravar dados</a>{% endif %}
         {% else %}<span class="vigilancia-central-unavailable">Aguardando ativação neste ambiente</span>{% endif %}
       </div>

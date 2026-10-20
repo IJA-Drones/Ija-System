@@ -1,4 +1,15 @@
 {
+  "main.acoes_listar": {"GET": "prefeitura.acoes_publicas.consultar"},
+  "main.acoes_nova": {"GET": "prefeitura.acoes_publicas.criar", "POST": "prefeitura.acoes_publicas.criar"},
+  "main.acoes_editar": {"GET": "prefeitura.acoes_publicas.consultar", "POST": "prefeitura.acoes_publicas.editar"},
+  "main.acoes_revisar": {"POST": "prefeitura.acoes_publicas.editar"},
+  "main.acoes_rascunho": {"POST": "prefeitura.acoes_publicas.editar"},
+  "main.acoes_publicar": {"POST": "prefeitura.acoes_publicas.publicar"},
+  "main.acoes_retirar": {"POST": "prefeitura.acoes_publicas.publicar"},
+  "main.acoes_midias_adicionar": {"POST": "prefeitura.acoes_publicas.editar"},
+  "main.acoes_midias_remover": {"POST": "prefeitura.acoes_publicas.editar"},
+  "main.acoes_midia": {"GET": "prefeitura.acoes_publicas.consultar"},
+  "main.acoes_previa": {"GET": "prefeitura.acoes_publicas.consultar"},
   "main.configuracoes_contatos": {
     "GET": "prefeitura.documentos.consultar",
     "POST": "prefeitura.documentos.configurar"

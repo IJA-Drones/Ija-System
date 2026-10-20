@@ -1,0 +1,51 @@
+{% set risk = public_risk_report %}
+<section class="portal-cidadao-section portal-cidadao-risk-section" id="mapa-risco" aria-labelledby="portal-risco-title">
+  <div class="portal-cidadao-section-heading">
+    <div>
+      <span class="portal-cidadao-eyebrow"><i class="bi bi-map" aria-hidden="true"></i> Vigilância territorial</span>
+      <h2 id="portal-risco-title">Mapa de risco e vigilância · {{ risk.municipio.name }}</h2>
+      <p>LIRAa, SINAN e ações focais do município selecionado, com fontes e períodos separados.</p>
+    </div>
+    <span class="portal-cidadao-status-pill{% if risk.demo %} portal-cidadao-demo-pill{% endif %}">{{ 'Demonstração · dados fictícios' if risk.demo else 'Informações municipais agregadas' }}</span>
+  </div>
+  {% if risk.demo %}
+  <div class="portal-cidadao-risk-notice" role="note"><strong>Os limites municipais são reais. Os registros de vigilância exibidos neste mapa são fictícios.</strong><span>Esta demonstração consulta as cargas e visitas salvas no modo demo. O boletim InfoDengue acima continua identificado como fonte pública.</span></div>
+  {% endif %}
+  <form class="portal-cidadao-risk-controls portal-cidadao-risk-filters" method="get" action="{{ url_for('main.portal_cidadao', _anchor='mapa-risco') }}">
+    <input type="hidden" name="municipio" value="{{ risk.municipio.ibge }}">
+    <input type="hidden" name="regiao" value="{{ selected_region }}">
+    <label class="form-label" for="portal-risco-modo">Dados do mapa<select class="form-select" id="portal-risco-modo" name="demo"><option value="false" {% if not risk.demo %}selected{% endif %}>Vigilância municipal</option><option value="true" {% if risk.demo %}selected{% endif %}>Demonstração · dados fictícios</option></select></label>
+    <label class="form-label" for="portal-risco-levantamento">Levantamento LIRAa<select class="form-select" id="portal-risco-levantamento" name="levantamento"><option value="">Mais recente disponível</option>{% for code in risk.levantamentos %}<option value="{{ code }}" {% if risk.filtros.levantamento == code %}selected{% endif %}>{{ code }}</option>{% endfor %}</select></label>
+    <label class="form-label" for="portal-risco-doenca">Doença no SINAN<select class="form-select" id="portal-risco-doenca" name="doenca">{% for value, label in risk_diseases.items() %}<option value="{{ value }}" {% if risk.filtros.doenca == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label class="form-label" for="portal-risco-ano">Ano do SINAN<select class="form-select" id="portal-risco-ano" name="ano_sinan">{% for year in risk_years %}<option value="{{ year }}" {% if risk.filtros.ano_sinan == year %}selected{% endif %}>{{ year }}</option>{% endfor %}</select></label>
+    <button class="btn btn-success" type="submit">Atualizar mapa</button>
+  </form>
+  {% for warning in risk.avisos %}<p class="portal-cidadao-risk-caption" role="note">{{ warning }}</p>{% endfor %}
+  <div class="portal-cidadao-risk-panel">
+    <div class="portal-cidadao-risk-controls">
+      <label class="form-label" for="portal-risco-camada">Informação no mapa<select class="form-select" id="portal-risco-camada"><option value="liraa">LIRAa · índice de infestação predial</option><option value="sinan">SINAN · registros por município</option><option value="focal">Focal · visitas confirmadas</option></select></label>
+      <label class="form-label" for="portal-risco-area">Consultar área<select class="form-select" id="portal-risco-area"><option value="municipio">{{ risk.municipio.name }} · resumo municipal</option>{% for feature in risk.geografia.features %}<option value="{{ loop.index0 }}">Estrato {{ feature.properties.estrato_codigo }} · área {{ feature.properties.area_codigo }}</option>{% endfor %}</select></label>
+    </div>
+    <div class="portal-cidadao-risk-map-grid">
+      <div class="portal-cidadao-risk-map-wrap">
+        <svg id="risco-svg" viewBox="0 0 900 570" role="group" aria-label="Mapa público de vigilância de {{ risk.municipio.name }}. Contornos agregados, sem localização individual de casos ou imóveis."></svg>
+        <p class="portal-cidadao-risk-caption" id="portal-risco-status" role="status"></p>
+        <p class="portal-cidadao-risk-caption">Limites municipais simplificados do <a href="https://servicodados.ibge.gov.br/api/docs/malhas?versao=3" target="_blank" rel="noopener">IBGE</a>. O IIP representa a área amostrada e não é aplicado a todo o município.</p>
+      </div>
+      <aside class="portal-cidadao-risk-detail" aria-live="polite"><h3>Informação da área</h3><div id="risco-detalhe"></div></aside>
+    </div>
+    <div class="risco-legenda" id="risco-legenda" aria-label="Legenda do mapa"></div>
+    <p class="portal-cidadao-risk-caption">IIP = 100 × imóveis positivos ÷ imóveis inspecionados. A cor indica o índice observado; não representa previsão de epidemia.</p>
+  </div>
+  <div class="portal-cidadao-risk-sources">
+    <article class="portal-cidadao-risk-detail"><h3>LIRAa · áreas amostradas</h3>
+      {% if risk.liraa.disponivel %}<p>{{ risk.liraa.visitas }} visitas confirmadas · {{ risk.liraa.inicio }} a {{ risk.liraa.fim }}.</p>{% for item in risk.liraa.indicadores %}<p><strong>Estrato {{ item.estrato_codigo }} / área {{ item.area_codigo }}</strong><br>{{ item.imoveis_inspecionados }} inspecionados · {{ item.imoveis_positivos }} positivos · {{ item.imoveis_pendentes }} pendentes<br>IIP: {{ ('%.2f'|format(item.iip)|replace('.', ',')) ~ '%' if item.iip is not none else 'Indisponível' }}</p>{% endfor %}{% else %}<p>Nenhum levantamento confirmado neste município e modo de dados. Ausência de dados não significa ausência de focos.</p>{% endif %}
+    </article>
+    <article class="portal-cidadao-risk-detail"><h3>SINAN · {{ risk_diseases[risk.filtros.doenca] }} / {{ risk.filtros.ano_sinan }}</h3>
+      {% if risk.sinan %}<p>{{ risk.sinan.total }} registros no snapshot {{ 'parcial' if risk.sinan.parcial else 'concluído' }} mais recente.</p><p>{{ risk.sinan.origem }} · agregado municipal.</p>{% for item in risk.sinan.classificacoes %}<p>{{ item.rotulo }}: {{ item.total }}</p>{% endfor %}<p>Um único snapshot por município, doença, ano e modo. Lotes não são somados; o recorte importado pode não representar toda a base municipal.</p>{% else %}<p>Nenhum snapshot SINAN disponível para este município, doença, ano e modo de dados.</p>{% endif %}
+    </article>
+    <article class="portal-cidadao-risk-detail"><h3>Focal · atividade de campo</h3>{% if risk.focal.disponivel %}<p>{{ risk.focal.visitas }} visitas confirmadas · {{ risk.focal.inspecionados }} inspeções realizadas.</p><p>{{ risk.focal.inicio }} a {{ risk.focal.fim }}.</p>{% else %}<p>Nenhuma visita focal confirmada neste recorte.</p>{% endif %}<p>Visitas de campo não são casos de doença nem substituem o levantamento LIRAa.</p></article>
+  </div>
+  <div class="portal-cidadao-risk-footer"><div><strong>Relatos de adoecimento são confidenciais</strong><p>Suspeitas enviadas por cidadãos são encaminhadas à vigilância. Não são publicadas neste mapa nem tratadas como casos confirmados do SINAN. Nomes, endereços e localizações individuais permanecem restritos.</p></div><a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">Relatar suspeita de adoecimento <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
+  <script type="application/json" id="portal-risco-data">{{ risk|tojson }}</script>
+</section>

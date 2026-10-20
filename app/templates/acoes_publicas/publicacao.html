@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ conteudo.titulo }} | {{ acao.prefeitura.nome }}{% endblock %}
+{% block meta %}{% if not preview %}
+<meta name="description" content="{{ conteudo.descricao|truncate(180,true) }}"><meta property="og:type" content="article"><meta property="og:title" content="{{ conteudo.titulo }}"><meta property="og:description" content="{{ conteudo.descricao|truncate(180,true) }}"><meta property="og:url" content="{{ url_for('main.portal_acao',identifier=acao.id,_external=true) }}">{% set images=conteudo.midias|selectattr('mime','equalto','image/jpeg')|list %}{% if images %}<meta property="og:image" content="{{ url_for('main.portal_acao_midia',identifier=acao.id,media_id=images[0].id,_external=true) }}">{% endif %}
+{% else %}<meta name="robots" content="noindex,nofollow">{% endif %}{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/acoes-publicas.css') }}">{% endblock %}
+{% macro page() %}
+<main class="acoes-page acoes-public-page py-4">
+  <a class="acoes-back" href="{{ url_for('main.acoes_editar',identifier=acao.id) if preview else url_for('main.portal_acoes',demo='true' if conteudo.demo else 'false',prefeitura_id=acao.prefeitura_id) }}">← {{ 'Voltar ao editor' if preview else 'Ações realizadas' }}</a>
+  {% if preview %}<div class="alert alert-warning"><strong>Prévia privada.</strong> Confira exatamente o texto e as mídias que serão divulgados.</div>{% endif %}
+  {% if conteudo.demo %}<div class="alert alert-info"><strong>Demonstração — dados fictícios.</strong> Esta publicação não comprova uma ação municipal real.</div>{% endif %}
+  <article class="acoes-panel acoes-article"><header><span class="acoes-eyebrow">{{ acao.prefeitura.nome }}</span><h1>{{ conteudo.titulo }}</h1><p>{{ types[conteudo.tipo] }}{% if conteudo.bairro %} · {{ conteudo.bairro }}{% endif %}</p><p class="acoes-muted">Atividade realizada de {{ conteudo.inicio|acao_data }} a {{ conteudo.fim|acao_data }}</p></header><div class="acoes-description">{{ conteudo.descricao }}</div>
+    <div class="acoes-gallery">{% for item in conteudo.midias %}{% set media_url=url_for('main.acoes_midia' if preview else 'main.portal_acao_midia',identifier=acao.id,media_id=item.id) %}<figure>{% if item.mime.startswith('video/') %}<video controls playsinline preload="metadata" src="{{ media_url }}"></video>{% else %}<a href="{{ media_url }}" target="_blank" rel="noopener"><img loading="lazy" src="{{ media_url }}" alt="{{ item.legenda or 'Registro autorizado da atividade' }}"></a>{% endif %}{% if item.legenda %}<figcaption>{{ item.legenda }}</figcaption>{% endif %}</figure>{% endfor %}</div>
+  </article>
+  {% if not preview %}{% set permalink=url_for('main.portal_acao',identifier=acao.id,_external=true) %}
+  <section class="acoes-panel" aria-labelledby="acoes-compartilhar"><h2 id="acoes-compartilhar">Compartilhe esta ação</h2><p>Divulgue o endereço da publicação pelo aplicativo de sua preferência.</p><label class="form-label" for="acao-public-link">Endereço público</label><input class="form-control" id="acao-public-link" readonly value="{{ permalink }}"><div class="acoes-actions"><button type="button" class="btn btn-primary" data-copy-link>Copiar link</button><button type="button" class="btn btn-outline-primary" data-share-link data-title="{{ conteudo.titulo }}" hidden>Compartilhar</button><a class="btn btn-outline-success" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">WhatsApp</a><a class="btn btn-outline-primary" href="{{ facebook_url }}" target="_blank" rel="noopener noreferrer">Facebook</a></div><p data-share-status class="acoes-muted mt-3" role="status" aria-live="polite"></p></section>
+  <p class="acoes-muted">Conteúdo divulgado pela gestão municipal. Publicação atualizada em {{ acao.publicado_em|acao_hora }}.</p>{% endif %}
+</main>
+{% endmacro %}
+{% block content %}{{ page() }}{% endblock %}
+{% block auth_content %}{{ page() }}{% endblock %}
+{% block scripts %}{% if not preview %}<script src="{{ url_for('static',filename='js/acoes-publicas.js') }}" defer></script>{% endif %}{% endblock %}

@@ -2,10 +2,11 @@
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">
-{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-1') }}">{% endblock %}
 
 {% block content %}
 <div class="vigilancia-preview-page py-4">
+  {% include '_vigilancia_navegacao.html' %}
   <p><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a></p>
   {% if field_mode %}<p><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if not batch or batch.demo else 'false', os_id=batch.report.vinculo_os.id if batch and batch.report.get('vinculo_os') else none) }}">Registrar visita e consultar indicadores</a></p>{% endif %}
   <header class="vigilancia-preview-header">
@@ -52,7 +53,7 @@
             <option value="">Selecione uma prefeitura</option>
             {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
           </select>
-          <p class="vigilancia-preview-help" id="prefeitura-help">O campo <code>municipio_id</code> do CSV deve usar o ID interno da prefeitura selecionada. O modelo de exemplo já utiliza esse ID.</p>
+          <p class="vigilancia-preview-help" id="prefeitura-help"><code>municipio_id</code> deve coincidir com a prefeitura selecionada.</p>
           {% else %}
           <label for="prefeitura-id" class="form-label">Código da prefeitura</label>
           <input class="form-control" type="number" id="prefeitura-id" name="prefeitura_id" min="1" step="1" required
@@ -69,11 +70,7 @@
       </div>
       <div class="vigilancia-preview-actions">
         <button class="btn btn-primary" type="submit"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Validar arquivo</button>
-        <a class="btn btn-outline-primary {% if not prefeitura_id %}disabled{% endif %}" id="sample-download"
-          href="{% if prefeitura_id %}{{ url_for(sample_endpoint, prefeitura_id=prefeitura_id) }}{% else %}#{% endif %}"
-          data-sample-url="{{ url_for(sample_endpoint) }}" {% if not prefeitura_id %}aria-disabled="true" tabindex="-1"{% endif %}>
-          <i class="bi bi-download me-2" aria-hidden="true"></i>Baixar exemplo sintético
-        </a>
+
       </div>
     </form>
     <details class="vigilancia-preview-layout">

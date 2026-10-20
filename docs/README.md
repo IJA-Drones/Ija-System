@@ -31,6 +31,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 | Endereços e voos | [Bloqueio por endereço resolvido](relatorio-bloqueio-novas-solicitacoes-endereco-resolvido.md), [Place ID e vínculo de KML](relatorio-melhoria-place-id-vinculo-kml-os.md) |
 | Arquivos | [Streaming WebDAV](relatorio-upload-stream-webdav.md) |
 | Vigilância | [Carga persistida Focal/LIRAa](vigilancia-carga-campo.md), [prévia CSV](vigilancia-validacao-inicial.md), [SINAN](sinan-consulta-publica.md) |
+| Divulgação municipal | [Ações realizadas: revisão, publicação e retirada](acoes-publicas.md) |
 | Acesso | [Sessões, senhas e CSRF](seguranca-sessoes-senhas.md), [proteção de login](protecao-login.md), [validade das senhas pelo DEV](expiracao-senhas.md) |
 | Suporte | [Reporte de bugs](notion_reporte_bugs.md) |
 | Interface | [Refatoração visual e dark mode](relatorio-refatoracao-visual-css-dark-mode.md), [checkpoint CSS](refatoracao_css_para_arrumar_darkmode.md) |

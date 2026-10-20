@@ -1,6 +1,7 @@
 {
   "labels": {
     "consultar": "Consultar",
+    "publicar": "Publicar e retirar divulgação",
     "criar": "Cadastrar",
     "editar": "Editar",
     "excluir": "Excluir",
@@ -27,6 +28,13 @@
       "icon": "bi-buildings",
       "description": "Solicitações, equipes e operação municipal.",
       "modules": [
+        [
+          "acoes_publicas",
+          "Ações realizadas",
+          "Rascunhos, revisão e divulgação de ações municipais.",
+          "bi-megaphone",
+          "consultar criar editar publicar"
+        ],
         [
           "solicitacoes",
           "Solicitações",

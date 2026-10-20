@@ -20,6 +20,7 @@ SCREENS = {
  'prefeitura.documentos': [('configuracoes','Documentos da prefeitura')],
  'prefeitura.voos': [('relatorios_dji_logs','Logs de voo DJI')],
  'prefeitura.vigilancia': [('vigilancia','Central de Vigilância')],
+ 'prefeitura.acoes_publicas': [('acoes_listar','Ações realizadas'),('acoes_nova','Preparar divulgação')],
  'agro.clientes': [('agro_clientes_menu','Visão geral'),('agro_clientes_listar','Clientes'),('agro_fornecedores_listar','Fornecedores'),('agro_cliente_novo','Cadastrar cliente'),('agro_fornecedor_novo','Cadastrar fornecedor')],
  'agro.comercial': [('agro_orcamentos_listar','Orçamentos'),('agro_orcamento_novo','Novo orçamento')],
  'agro.contratos': [('agro_contratos_listar','Contratos'),('agro_contratos_template','Template de contrato')],
@@ -89,6 +90,8 @@ def first_allowed_screen_endpoint(user, area=None):
             if endpoint in {'main.vigilancia_importacoes', 'main.vigilancia_campo'} and not current_app.config.get('VIGILANCIA_IMPORT_ENABLED'):
                 continue
             if endpoint == 'main.vigilancia_sinan' and not current_app.config.get('SINAN_ENABLED', True):
+                continue
+            if endpoint.startswith('main.acoes_') and not current_app.config.get('ACOES_PUBLICAS_ENABLED', False):
                 continue
             if can_access_endpoint(user, endpoint) and any(
                 not rule.arguments for rule in current_app.url_map.iter_rules(endpoint)

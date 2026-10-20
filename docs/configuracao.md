@@ -120,6 +120,7 @@ Referências: [autenticação](https://docs.redgps.com/books/webservice/page/met
 | `VIDEO_BACKGROUND_UPLOAD_WORKERS` | `2` | Threads por processo para jobs de vídeo; inteiro positivo. |
 | `VIDEO_CONVERSION_TIMEOUT_SECONDS` | `7200` | Limite para conversão. |
 | `FFMPEG_PATH` | Procura `ffmpeg` no PATH | Caminho alternativo do executável. `ffprobe` é procurado no PATH. |
+| `ACOES_PUBLICAS_ENABLED` | `0` | Habilita o editor e a consulta pública de ações após a migração `a73e5c9b204f`. Consulte [o fluxo e as permissões](acoes-publicas.md). |
 
 Fontes: [skybox.py](../app/shared/skybox.py), [rotas de OS](../app/modules/piloto_os/routes.py). Não assuma que os timeouts WebDAV de OS configuram todos os consumidores Skybox. Os arquivos locais são resolvidos em `upload-files/`; não existe variável `UPLOAD_FOLDER` lida pelo [helper atual](../app/shared/uploads.py).
 

@@ -65,8 +65,8 @@ def test_real_csv_import_confirmation_and_risk_map_share_the_persisted_records(p
     assert confirm(client, batch['id']).status_code == 303
     response = client.get('/vigilancia/risco')
     assert response.status_code == 200 and '25,00%' in response.text
-    assert 'Somente cargas confirmadas' in response.text
-    assert 'Baixar CSV de demonstração com coordenadas' in response.text
+    assert 'Somente visitas confirmadas' in response.text
+    assert 'Baixar CSV de demonstração com coordenadas' not in response.text
     data = map_data(response)
     assert len(data['pontos']) == 20 and data['ibge'] == '2610905'
     assert data['levantamento'] == 'DEMO-MAPA-2610905-20261020'

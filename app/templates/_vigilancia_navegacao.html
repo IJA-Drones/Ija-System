@@ -1,0 +1,17 @@
+{% set endpoint = request.endpoint or '' %}
+{% set current = 'sinan' if 'sinan' in endpoint else 'resultados' if 'resultados' in endpoint else 'risco' if 'risco' in endpoint else 'campo' if endpoint != 'main.vigilancia' else '' %}
+{% set scope_id = prefeitura_id|default(vigilancia_context_prefeitura, true) %}
+{% set mode = 'true' if demo|default(request.args.get('demo', 'true') == 'true') else 'false' %}
+{% set survey = plan.code if plan is defined and plan else plan_reference.plano if plan_reference is defined and plan_reference else filters.get('levantamento', '') if filters is defined else field_filters.get('levantamento', '') if field_filters is defined else '' %}
+{% if vigilancia_navigation %}
+<div class="vigilancia-workspace" aria-label="Navegação da vigilância">
+  <div class="vigilancia-workspace-context"><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-grid" aria-hidden="true"></i> Central de Vigilância</a><div><span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ prefeitura_nome|default('Prefeitura da conta' if scope_id else 'Selecione a prefeitura na tela', true) }}</span>{% if current != 'sinan' %}<span class="vigilancia-workspace-mode{% if mode == 'true' %} demo{% endif %}">{{ 'Demonstração · dados fictícios' if mode == 'true' else 'Vigilância · dados autorizados' }}</span>{% endif %}</div></div>
+  <nav class="vigilancia-workspace-tabs" aria-label="Áreas da vigilância">
+    {% for item in vigilancia_navigation %}
+    {% set params = dict(prefeitura_id=scope_id, demo=mode) %}
+    {% if item.key == 'sinan' %}{% set params = dict(params, ibge=vigilancia_context_ibge) %}{% elif item.key in ['resultados', 'risco'] and survey %}{% set params = dict(params, levantamento=survey) %}{% endif %}
+    <a href="{{ url_for(item.endpoint, **params) }}" {% if current == item.key %}aria-current="page"{% endif %}><i class="bi {{ item.icon }}" aria-hidden="true"></i><span>{{ item.label }}</span></a>
+    {% endfor %}
+  </nav>
+</div>
+{% endif %}

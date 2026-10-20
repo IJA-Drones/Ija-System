@@ -10,7 +10,7 @@
     <button class="btn btn-outline-primary btn-sm" type="submit">Consultar histórico</button>
   </form>
   {% endif %}
-  <p class="vigilancia-preview-help">Últimos 20 lotes da prefeitura selecionada. Até 1 MiB e 5.000 linhas por arquivo. Nesta etapa, a base combinada também está limitada a 1 MiB/5.000 inspeções e 200 lotes por prefeitura e tipo de dado.</p>
+  <p class="vigilancia-preview-help">Últimos 20 lotes · até 1 MiB e 5.000 linhas por arquivo.</p>
   {% if history %}
   <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Lotes de campo">
     <table class="table vigilancia-preview-table">
@@ -30,7 +30,7 @@
   <p>{{ batch.filename }} · {{ batch.source }} · {{ 'Demonstração - dados fictícios' if batch.demo else 'Dados autorizados' }}</p>
   {% if batch.report.get('planejamento') %}<p>Planejamento {{ batch.report.planejamento.plano }} · Quarteirão {{ batch.report.planejamento.quarteirao }}</p><a href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if batch.demo else 'false', plano=batch.report.planejamento.plano) }}#amostra">Acompanhar levantamento</a>{% endif %}
   {% if batch.report.get('vinculo_os') %}<p>OS de origem: #{{ batch.report.vinculo_os.id }} · Responsável pela inspeção: {{ batch.report.vinculo_os.responsavel }}{% if batch.report.vinculo_os.amostra_declarada %} · Participação na amostra LIRAa declarada pelo responsável.{% endif %}</p>{% endif %}
-  <p class="vigilancia-preview-help">Identificação: {{ batch.id }} · Autor: {{ batch.actor }} · Layout: {{ batch.layout }}<br>Preparado em {{ field_datetime(batch.created) }}{% if batch.confirmed %} · Confirmado em {{ field_datetime(batch.confirmed) }}{% endif %}<br>SHA-256: {{ batch.sha256 }}</p>
+  <details class="vigilancia-preview-layout"><summary>Identificação e rastreabilidade</summary>  <p class="vigilancia-preview-help">Identificação: {{ batch.id }} · Autor: {{ batch.actor }} · Layout: {{ batch.layout }}<br>Preparado em {{ field_datetime(batch.created) }}{% if batch.confirmed %} · Confirmado em {{ field_datetime(batch.confirmed) }}{% endif %}<br>SHA-256: {{ batch.sha256 }}</p></details>
   {% if batch.status == 'CONCLUIDO' %}
   <p role="status">Carga concluída: {{ batch.inserted }} inspeções novas e {{ batch.reused }} já existentes. Os registros abaixo e o IIP representam somente este lote; não são o consolidado municipal.</p>
   {% elif batch.status == 'VALIDADO' and batch.actor == current_user.get_id()|string %}
