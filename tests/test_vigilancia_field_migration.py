@@ -59,7 +59,7 @@ def test_postgresql_sql_creates_only_field_tables_with_bytea_and_json():
     config=Config()
     config.set_main_option('script_location',str(ROOT/'migrations'))
     scripts = ScriptDirectory.from_config(config)
-    assert scripts.get_heads() == ['e91c7b4a203d']
+    assert scripts.get_heads() == ['f2a6d9c1074e']
     assert set(scripts.get_revision('b6e9d2a4f017').down_revision) == {'a41c9e7f26b0', 'd82b46fa910c'}
 
 
