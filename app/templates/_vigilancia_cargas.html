@@ -2,8 +2,11 @@
   <h2 id="historico-cargas">Histórico de cargas</h2>
   {% if municipio_editavel %}
   <form method="get" action="{{ url_for('main.vigilancia_importacoes') }}" class="mb-3">
-    <label for="historico-prefeitura">Código da prefeitura cadastrada</label>
-    <input id="historico-prefeitura" type="number" min="1" name="prefeitura_id" required value="{{ prefeitura_id or '' }}">
+    <label for="historico-prefeitura" class="form-label">Prefeitura</label>
+    <select class="form-select" id="historico-prefeitura" name="prefeitura_id" required>
+      <option value="">Selecione uma prefeitura</option>
+      {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
+    </select>
     <button class="btn btn-outline-primary btn-sm" type="submit">Consultar histórico</button>
   </form>
   {% endif %}

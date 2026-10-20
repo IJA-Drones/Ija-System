@@ -6,13 +6,14 @@
   }));
   const dataNode = document.getElementById("risco-data");
   if (!dataNode) return;
-  const {report, google: configured} = JSON.parse(dataNode.textContent);
+  const {report, contexto, google: configured} = JSON.parse(dataNode.textContent);
   const svg = document.getElementById("risco-svg"), view = document.getElementById("risco-visao"), area = document.getElementById("risco-area");
   const ns = "http://www.w3.org/2000/svg", colors = {hotspot:"#dc2626",coldspot:"#2563eb",nao_significativo:"#e2e8f0",nao_avaliado:"#64748b"};
   const labels = {hotspot:"Hotspot · concentração alta",coldspot:"Coldspot · concentração baixa",nao_significativo:"Não significativo",nao_avaliado:"Não avaliado"};
   const features = report.geografia.features;
   const parts = geometry => geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
-  const points = features.flatMap(f => parts(f.geometry).flat(2));
+  const background = (contexto || report.contexto)?.features || [];
+  const points = (background.length ? background : features).flatMap(f => parts(f.geometry).flat(2));
   const minX=Math.min(...points.map(p=>p[0])), maxX=Math.max(...points.map(p=>p[0]));
   const minY=Math.min(...points.map(p=>p[1])), maxY=Math.max(...points.map(p=>p[1]));
   const cos=Math.cos((minY+maxY)/2*Math.PI/180), scale=Math.min(820/((maxX-minX)*cos),490/(maxY-minY));
@@ -42,6 +43,12 @@
     for(const [key,list] of googleShapes) list.forEach(p=>p.setOptions({strokeWeight:key===code?4:1.5}));
   }
   function select(code) { area.value=code; selectedDetails(); }
+  for(const feature of background) {
+    const path=document.createElementNS(ns,"path");
+    path.setAttribute("d",parts(feature.geometry).flatMap(polygon=>polygon.map(ring=>ring.map((p,i)=>`${i?"L":"M"}${xy(p).map(v=>v.toFixed(2)).join(",")}`).join(" ")+" Z")).join(" "));
+    path.setAttribute("fill-rule","evenodd"); path.setAttribute("fill","#f1f5f9"); path.setAttribute("stroke","#cbd5e1"); path.setAttribute("stroke-width",".6");
+    path.setAttribute("aria-hidden","true"); path.style.pointerEvents="none"; svg.append(path);
+  }
   for(const feature of features) {
     const code=feature.properties.codigo, path=document.createElementNS(ns,"path");
     const d=parts(feature.geometry).flatMap(polygon=>polygon.map(ring=>ring.map((p,i)=>`${i?"L":"M"}${xy(p).map(v=>v.toFixed(2)).join(",")}`).join(" ")+" Z")).join(" ");
@@ -50,7 +57,7 @@
     path.addEventListener("keydown",event=>{if(event.key==="Enter" || event.key===" "){event.preventDefault();select(code);}});
     svg.append(path); shapes.set(code,path);
     // Códigos na grade de demonstração e territórios pequenos; o seletor mantém os nomes acessíveis.
-    if(features.length<=35) {
+    if(features.length<=35 && !background.length) {
       const ring=parts(feature.geometry)[0][0], projected=ring.slice(0,-1).map(xy);
       const text=document.createElementNS(ns,"text"); text.setAttribute("x",numberPlain(projected.map(p=>p[0]))); text.setAttribute("y",numberPlain(projected.map(p=>p[1]))); text.setAttribute("text-anchor","middle"); text.textContent=code; svg.append(text);
     }

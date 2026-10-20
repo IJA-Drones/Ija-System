@@ -289,35 +289,44 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
         if reference:
             raise FieldConflict("Instale a migração do planejamento antes de vincular visitas.")
         return
+    # Consulte cada contexto uma vez por lote, inclusive planos inexistentes.
+    # O cache é local à chamada: a confirmação consulta novamente sob o lock.
+    codes = {record["levantamento_codigo"] for record in records if record["origem"] == "LIRAA"}
+    plans = {plan["code"]: plan for plan in rows(
+        conn, CampoPlano.__table__, prefeitura, demo, CampoPlano.code.in_(codes)
+    )} if codes else {}
+    block, agent_checked = None, False
     for record in records:
         if record["origem"] != "LIRAA":
             if reference:
                 raise FieldConflict("A visita de um planejamento deve ser LIRAa.")
             continue
         code = record["levantamento_codigo"]
-        plan = rows(conn, CampoPlano.__table__, prefeitura, demo, CampoPlano.code == code)
+        plan = plans.get(code)
         if not plan and not reference:
             continue  # Registros legados continuam disponíveis.
-        if not plan or plan[0]["status"] != "LIBERADO":
+        if not plan or plan["status"] != "LIBERADO":
             raise FieldConflict("O levantamento precisa estar liberado para receber visitas planejadas.")
         if not reference or reference.get("plano") != code:
             raise FieldConflict("Abra a visita pelo quarteirão no planejamento deste levantamento.")
-        blocks = rows(conn, CampoPlanoQuarteirao.__table__, prefeitura, demo,
-            CampoPlanoQuarteirao.plano == code, CampoPlanoQuarteirao.quarteirao == reference.get("quarteirao"))
-        if not blocks or blocks[0]["estrato"] != record["estrato_codigo"]:
+        if block is None:
+            blocks = rows(conn, CampoPlanoQuarteirao.__table__, prefeitura, demo,
+                CampoPlanoQuarteirao.plano == code, CampoPlanoQuarteirao.quarteirao == reference.get("quarteirao"))
+            block = blocks[0] if blocks else None
+        if block is None or block["estrato"] != record["estrato_codigo"]:
             raise FieldConflict("O quarteirão ou estrato não pertence à amostra planejada.")
-        block = blocks[0]
-        if reference.get("agente_id") is not None:
+        if reference.get("agente_id") is not None and not agent_checked:
             from app.models import Usuario
             agent_id = reference["agente_id"]
             if str(agent_id) != str(actor) or block["agente_id"] != agent_id or conn.scalar(sa.select(Usuario.id)
                 .where(Usuario.id == agent_id, Usuario.prefeitura_id == prefeitura,
                        Usuario.tipo_usuario == "agente_endemias")) is None:
                 raise FieldConflict("O quarteirão não está atribuído a este agente nesta prefeitura.")
+            agent_checked = True
         if any(record[key] != block["territorio"][column] for key, column in (("bairro", "bairro"), ("area_codigo", "area"))):
             raise FieldConflict("A área e o bairro devem corresponder ao quarteirão planejado.")
         inspected = date.fromisoformat(record["data_inspecao"])
-        if not plan[0]["inicio"] <= inspected <= plan[0]["fim"]:
+        if not plan["inicio"] <= inspected <= plan["fim"]:
             raise FieldConflict("A data da visita está fora do período do levantamento.")
 
 

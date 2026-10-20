@@ -57,7 +57,8 @@ def test_covisa_default_navigation_and_planning_use_own_municipality():
         assert 'Acessar Focal e LIRAa' in page.text
         page = setup.client.get('/vigilancia/planejamento')
         assert page.status_code == 200 and 'Criar rascunho' in page.text
-        assert 'Código da prefeitura cadastrada' in page.text and 'readonly' in page.text
+        assert 'id="escopo-prefeitura" value="Município de teste" readonly' in page.text
+        assert f'name="prefeitura_id" value="{prefeitura.id}"' in page.text
         from app.shared.csrf_security import CSRF_SESSION_KEY
         with setup.client.session_transaction() as session:
             csrf = session[CSRF_SESSION_KEY]

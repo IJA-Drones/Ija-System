@@ -7,14 +7,14 @@
 {% block auth_content %}
 <main class="portal-cidadao-page portal-cidadao-report-page">
   <nav class="portal-cidadao-nav" aria-label="Navegação do boletim">
-    <a class="portal-cidadao-nav-brand" href="{{ url_for('main.portal_cidadao') }}#portal-inicio" aria-label="Voltar ao Portal do cidadão">
+    <a class="portal-cidadao-nav-brand" href="{{ portal_url }}#portal-inicio" aria-label="Voltar ao Portal do cidadão">
       <i class="bi bi-people" aria-hidden="true"></i>
       <span>Participação cidadã</span>
     </a>
     <div class="portal-cidadao-nav-links">
-      <a href="{{ url_for('main.portal_cidadao') }}#boletim-saude">Boletim de saúde</a>
-      <a href="{{ url_for('main.portal_cidadao') }}#portal-relato">Enviar relato</a>
-      <a class="portal-cidadao-nav-report" href="{{ url_for('main.portal_cidadao') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Portal</a>
+      <a href="{{ portal_url }}#boletim-saude">Boletim de saúde</a>
+      <a href="{{ portal_url }}#portal-relato">Enviar relato</a>
+      <a class="portal-cidadao-nav-report" href="{{ portal_url }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(portal_url) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Portal</a>
     </div>
   </nav>
 
@@ -22,9 +22,15 @@
     <div>
       <span class="portal-cidadao-eyebrow"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Relatório epidemiológico</span>
       <h1>Boletim de arboviroses</h1>
-      <p>Dados semanais do InfoDengue para acompanhar o cenário da cidade e apoiar a prevenção.</p>
+      <p>Dados semanais do InfoDengue para {{ selected_municipality.name }}{% if selected_municipality.uf %}/{{ selected_municipality.uf }}{% endif %}. Selecione município, doença e ano para consultar outro recorte.</p>
     </div>
     <form class="portal-cidadao-report-filter" method="get" action="{{ url_for('main.portal_cidadao_boletim_dengue') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao_boletim_dengue'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+      <label class="portal-cidadao-municipality-choice">
+        <span>Município</span>
+        <select class="form-select" name="municipio">
+          {% include '_portal_health_municipality_options.html' %}
+        </select>
+      </label>
       <label>
         <span>Doença</span>
         <select class="form-select" name="doenca">
@@ -109,7 +115,7 @@
         <strong>{{ report.summary.peak_week_label }}</strong>
         <small>{{ report.summary.peak_estimated_cases }} casos estimados</small>
       </article>
-      <a class="btn btn-success" href="{{ url_for('main.portal_cidadao') }}#portal-relato">Registrar um relato <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      <a class="btn btn-success" href="{{ portal_url }}#portal-relato">Registrar um relato <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </aside>
   </section>
 
@@ -153,14 +159,14 @@
   <section class="portal-cidadao-report-empty">
     <i class="bi bi-cloud-slash" aria-hidden="true"></i>
     <h2>Não foi possível carregar o relatório agora</h2>
-    <p>O portal continua disponível para envio de relatos. Tente novamente mais tarde ou consulte a fonte oficial do InfoDengue.</p>
-    <a class="btn btn-success" href="{{ url_for('main.portal_cidadao') }}#portal-relato">Registrar um relato</a>
+    <p>Os dados de {{ selected_municipality.name }} para {{ disease_options[selected_disease] }} em {{ selected_year }} não estão disponíveis neste momento. Tente novamente mais tarde ou selecione outro recorte. Ausência de dados não significa ausência de casos.</p>
+    <a class="btn btn-success" href="{{ portal_url }}#portal-relato">Registrar um relato</a>
   </section>
   {% endif %}
 
   <footer class="portal-cidadao-footer">
     <span><i class="bi bi-patch-check" aria-hidden="true"></i> Dados públicos do InfoDengue</span>
-    <a href="{{ url_for('main.portal_cidadao') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao')) if central_ti_url_allowed is defined else true) else 'false' }}">Voltar ao Portal do Cidadão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+    <a href="{{ portal_url }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(portal_url) if central_ti_url_allowed is defined else true) else 'false' }}">Voltar ao Portal do Cidadão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
   </footer>
 </main>
 {% endblock auth_content %}

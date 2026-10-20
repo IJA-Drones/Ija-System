@@ -5,12 +5,10 @@ import io
 
 from flask import abort, redirect, render_template, request, session, url_for, Response
 from flask_login import current_user
-from app.models import Prefeitura
 
 from app.modules.gestao_ti.permissions import can_access_endpoint
-from app.shared.access import is_admin_global_user
 from app.shared.csrf_security import CSRF_SESSION_KEY
-from .field_routes import _access, _scope
+from .field_routes import _access, _scope, _municipality_filter_context
 from .routes import _ensure_preview_csrf_token, _validate_preview_csrf, _uploaded_csv, _RequestError
 from .field_store import FieldConflict, FieldStoreError
 from .planning import PlanningStore, text, RG_COLUMNS, PLAN_COLUMNS
@@ -61,15 +59,14 @@ def register_routes(bp):
                 overview = PlanningStore().overview(prefeitura, demo, code)
             except FieldStoreError:
                 pass
-        registered = Prefeitura.query.filter_by(id=prefeitura).first() if prefeitura else None
         map_data = [{name: row.get(name) for name in ("code", "bairro", "area", "imoveis", "referencia", "geometria", "atualizado_em")}
                     for row in overview.get("territorio", [])]
         for item in map_data:
             item["versao"] = str(item.pop("atualizado_em"))
         return render_template("vigilancia_planejamento.html", prefeitura_id=prefeitura,
-            municipio_editavel=is_admin_global_user(current_user), demo=demo,
+            **_municipality_filter_context(prefeitura), demo=demo,
             preview_csrf_token=session[CSRF_SESSION_KEY], erro=error, overview=overview,
-            form=values, map_data=map_data, prefeitura_nome=registered.nome if registered else "",
+            form=values, map_data=map_data,
             territory_form=values if request.method == "POST" and values.get("acao") == "territorio" else {},
             can_write=can_access_endpoint(current_user, "main.vigilancia_planejamento", "POST", legacy=legacy)), status
 

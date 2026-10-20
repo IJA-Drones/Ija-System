@@ -46,11 +46,20 @@
       {% endif %}
       <div class="vigilancia-preview-form-grid">
         <div>
+          {% if field_mode and municipio_editavel %}
+          <label for="prefeitura-id" class="form-label">Prefeitura do arquivo</label>
+          <select class="form-select" id="prefeitura-id" name="prefeitura_id" required aria-describedby="prefeitura-help">
+            <option value="">Selecione uma prefeitura</option>
+            {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
+          </select>
+          <p class="vigilancia-preview-help" id="prefeitura-help">O campo <code>municipio_id</code> do CSV deve usar o ID interno da prefeitura selecionada. O modelo de exemplo já utiliza esse ID.</p>
+          {% else %}
           <label for="prefeitura-id" class="form-label">Código da prefeitura</label>
           <input class="form-control" type="number" id="prefeitura-id" name="prefeitura_id" min="1" step="1" required
             value="{{ prefeitura_id if prefeitura_id is not none else '' }}" {% if not municipio_editavel %}readonly{% endif %}
             aria-describedby="prefeitura-help">
           <p class="vigilancia-preview-help" id="prefeitura-help">Deve coincidir com <code>municipio_id</code> no CSV.</p>
+          {% endif %}
         </div>
         <div>
           <label for="arquivo-csv" class="form-label">Arquivo CSV</label>

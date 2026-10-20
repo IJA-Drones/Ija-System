@@ -83,6 +83,22 @@ def _store():
     return FieldStore()
 
 
+def _municipality_filter_context(prefeitura):
+    editable = is_admin_global_user(current_user)
+    try:
+        choices = Prefeitura.query.order_by(Prefeitura.nome).all() if editable else []
+        selected = next((item for item in choices if item.id == prefeitura), None) if editable else (
+            Prefeitura.query.filter_by(id=prefeitura).first() if prefeitura else None
+        )
+    except SQLAlchemyError:
+        abort(503, description="Não foi possível consultar as prefeituras cadastradas.")
+    return {
+        "municipio_editavel": editable,
+        "prefeituras": choices,
+        "prefeitura_nome": selected.nome if selected else "",
+    }
+
+
 def register_routes(bp):
     @bp.record_once
     def install_field_body_limit(state):
@@ -165,7 +181,7 @@ def register_routes(bp):
         page_number = min(page_number, last_page)
         legacy = can_coordinate_field(current_user)
         return render_template("vigilancia_campo.html", prefeitura_id=prefeitura,
-                               municipio_editavel=is_admin_global_user(current_user), demo=demo,
+                               **_municipality_filter_context(prefeitura), demo=demo,
                                form=form, filters=filters, report=report, rows=rows[(page_number-1)*100:page_number*100],
                                page_number=page_number, last_page=last_page, erro=error, query=query,
                                deposit_types=DEPOSIT_TYPES, preview_csrf_token=session[CSRF_SESSION_KEY],
@@ -244,7 +260,7 @@ def register_routes(bp):
                 pass
         return render_template("vigilancia_validacao.html", field_mode=True, batch=batch, history=history,
                                result=batch["report"] if batch else None, erro=error,
-                               prefeitura_id=prefeitura, municipio_editavel=is_admin_global_user(current_user),
+                               prefeitura_id=prefeitura, **_municipality_filter_context(prefeitura),
                                layout_version=LAYOUT_VERSION, csv_columns=CSV_COLUMNS,
                                max_file_bytes=MAX_FILE_BYTES, preview_csrf_token=session[CSRF_SESSION_KEY],
                                field_datetime=lambda value: datetime.fromtimestamp(value, timezone.utc).strftime("%d/%m/%Y %H:%M UTC")), code

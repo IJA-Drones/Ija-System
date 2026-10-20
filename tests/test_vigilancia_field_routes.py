@@ -138,6 +138,19 @@ def test_global_requires_existing_scope_and_municipal_cannot_override_sample(cli
     assert client.get('/vigilancia/importacoes/modelo.csv').data==build_sample_csv(7)
 
 
+def test_import_filters_list_real_prefeituras_and_keep_sample_ids(client):
+    login(client, 'global')
+    response = client.get('/vigilancia/importacoes?prefeitura_id=7')
+    assert response.status_code == 200
+    assert '<select class="form-select" id="historico-prefeitura" name="prefeitura_id" required>' in response.text
+    assert '<select class="form-select" id="prefeitura-id" name="prefeitura_id" required' in response.text
+    assert '<option value="7" selected>Sete</option>' in response.text
+    assert '>Oito</option>' in response.text
+    assert 'municipio_id' in response.text
+    assert client.get('/vigilancia/importacoes?prefeitura_id=2').status_code == 400
+    assert client.get('/vigilancia/importacoes/modelo.csv?prefeitura_id=7').data == build_sample_csv(7)
+
+
 def test_invalid_and_authorized_mode_and_xss(client):
     login(client)
     client.get('/vigilancia/importacoes')

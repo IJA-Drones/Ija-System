@@ -7,16 +7,16 @@ from zoneinfo import ZoneInfo
 from flask import Response, abort, current_app, render_template, request
 from flask_login import current_user
 
-from app.models import Prefeitura
 from app.modules.gestao_ti.permissions import can_access_endpoint
 from .access import can_coordinate_field
 from .field_capture import FieldInputError
-from .field_routes import _access, _scope
+from .field_routes import _access, _scope, _municipality_filter_context
 from .field_store import FieldStoreError
 from .results import ResultsStore, filters_from, indicators_csv, municipality_ibge, schematic, sinan_filters, sinan_snapshot
 from .service import PreviewValidationError
 from .sinan_store import StoreError
 from . import sinan
+from .territory import pernambuco_context
 
 
 def _mode():
@@ -81,12 +81,13 @@ def register_routes(bp):
         except FieldStoreError as exc:
             error, status, report = str(exc), 503, None
         legacy = can_coordinate_field(current_user)
-        registered = Prefeitura.query.filter_by(id=prefeitura).first() if prefeitura else None
+        ibge = municipality_ibge(current_app.config.get("VIGILANCIA_MUNICIPIOS_IBGE", {}), prefeitura)
         return render_template("vigilancia_resultados.html", prefeitura_id=prefeitura,
-            prefeitura_nome=registered.nome if registered else "", demo=demo, report=report,
+            **_municipality_filter_context(prefeitura), demo=demo, report=report,
             filters=filters, sinan_data=sinan_data, sinan_filters=selected_sinan, diseases=sinan.DISEASES,
             query={"prefeitura_id": prefeitura, "demo": "true" if demo else "false", **filters},
             erro=error, generated_at=datetime.now(ZoneInfo("America/Sao_Paulo")),
+            territorial_context=pernambuco_context(ibge), territorial_ibge=ibge,
             can_export=can_access_endpoint(current_user, "main.vigilancia_resultados_export", "GET", legacy=legacy),
             contornos=schematic(report["geografia"]) if report else []), status
 

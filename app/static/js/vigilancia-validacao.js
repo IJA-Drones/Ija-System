@@ -18,6 +18,7 @@
     }
   };
   municipality?.addEventListener("input", updateSampleLink);
+  municipality?.addEventListener("change", updateSampleLink);
   updateSampleLink();
 
   const reportButton = document.getElementById("download-report");

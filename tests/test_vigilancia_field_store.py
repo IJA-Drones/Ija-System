@@ -79,6 +79,25 @@ def test_repeated_file_and_repeated_confirmation_are_idempotent(store):
     assert counts(store) == (5,5,1,5)
 
 
+def test_preparing_and_opening_reports_do_not_download_the_preserved_csv(store):
+    statements = []
+
+    def capture_queries(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    sa.event.listen(store.engine, 'before_cursor_execute', capture_queries)
+    try:
+        batch = prepare(store)
+        assert 'original' not in store.get(batch['id'], 7)
+        assert prepare(store)['id'] == batch['id']
+    finally:
+        sa.event.remove(store.engine, 'before_cursor_execute', capture_queries)
+    selects = [sql for sql in statements if sql.lstrip().upper().startswith('SELECT')]
+    assert selects
+    assert all('vigilancia_campo_lotes.original' not in sql for sql in selects)
+    assert store.original(batch['id'], 7) == build_sample_csv(7)
+
+
 def test_another_actor_and_reformatted_file_reuse_inspections(store):
     confirm(store,prepare(store))
     batch=prepare(store,csv_rows(rows()),actor="2")

@@ -1,0 +1,14 @@
+<div>
+  <label class="form-label" for="escopo-prefeitura">Prefeitura</label>
+  {% if municipio_editavel %}
+  <select class="form-select" id="escopo-prefeitura" name="prefeitura_id" required>
+    <option value="">Selecione uma prefeitura</option>
+    {% for prefeitura in prefeituras %}
+    <option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>
+    {% endfor %}
+  </select>
+  {% else %}
+  <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
+  <input class="form-control" id="escopo-prefeitura" value="{{ prefeitura_nome }}" readonly>
+  {% endif %}
+</div>

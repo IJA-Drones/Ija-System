@@ -13,7 +13,7 @@ from alembic.autogenerate import compare_metadata
 
 from app.extensions import db
 from app.models import Usuario
-from app.modules.vigilancia.planning import PlanningStore, PLAN_COLUMNS
+from app.modules.vigilancia.planning import PlanningStore, PLAN_COLUMNS, validate_visits
 from app.modules.vigilancia.planning_models import PLANNING_TABLES, CampoPlanoVisita
 from app.modules.vigilancia.field_models import CampoLevantamento
 from app.modules.vigilancia.field_capture import capture_csv
@@ -104,6 +104,44 @@ def test_plan_cannot_be_bypassed_with_legacy_csv_or_changed_after_release(planne
         change(planning, 'estrato', estrato='E-02', imoveis_estrato='100', meta_estrato='20', criterio='teste')
     assert planning.overview(8, True, 'L-2026-01')['plano'] is None
     assert planning.overview(7, False, 'L-2026-01')['plano'] is None
+
+
+@pytest.mark.parametrize('use_plan', [False, True])
+def test_visit_validation_does_not_query_the_database_for_each_csv_row(planned, use_plan):
+    _, planning = planned
+    reference = None
+    if use_plan:
+        create(planning)
+        change(planning, 'liberar', amostra_validada='sim')
+        reference = {'plano': 'L-2026-01', 'quarteirao': 'Q-01', 'agente_id': 701}
+    values = record(estrato_codigo='E-01')
+    statements = []
+
+    def count_queries(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    sa.event.listen(planning.engine, 'before_cursor_execute', count_queries)
+    try:
+        with planning.connection() as conn:
+            validate_visits(conn, [values], 7, True, reference, '701')
+            single_count = len(statements)
+            statements.clear()
+            visits = [values | {'imovel_codigo': f'IM-{i}', 'inspecao_codigo': f'VIS-{i}'} for i in range(500)]
+            validate_visits(conn, visits, 7, True, reference, '701')
+            assert len(statements) <= single_count + 1
+    finally:
+        sa.event.remove(planning.engine, 'before_cursor_execute', count_queries)
+
+
+@pytest.mark.parametrize('bad', [{'data_inspecao': '2026-10-18'}, {'bairro': 'Outra área'}, {'estrato_codigo': 'E-02'}])
+def test_bulk_validation_still_checks_each_visit_after_reusing_the_plan(planned, bad):
+    _, planning = planned
+    create(planning)
+    change(planning, 'liberar', amostra_validada='sim')
+    values = record(estrato_codigo='E-01')
+    reference = {'plano': 'L-2026-01', 'quarteirao': 'Q-01', 'agente_id': 701}
+    with planning.connection() as conn, pytest.raises(FieldConflict):
+        validate_visits(conn, [values, values | bad], 7, True, reference, '701')
 
 
 def test_pending_batch_revalidates_after_plan_closure(planned):

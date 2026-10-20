@@ -956,6 +956,14 @@ body:has(.portal-cidadao-page) { height: auto; min-height: 100vh; overflow: visi
 .portal-cidadao-report-hero .portal-cidadao-eyebrow { color: #9ef4ff; }
 .portal-cidadao-report-filter { flex-wrap: wrap; align-items: flex-end; background: var(--color-bg-white); }
 .portal-cidadao-report-filter label { min-width: 100px; }
+.portal-cidadao-report-filter .portal-cidadao-municipality-choice { flex: 2 1 220px; min-width: 0; max-width: 340px; }
+.portal-cidadao-municipality-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin-bottom: 20px; padding: 18px; border: 1px solid var(--portal-line); border-radius: 20px; background: var(--color-bg-white); }
+.portal-cidadao-municipality-filter label { display: grid; gap: 7px; flex: 1 1 240px; min-width: 0; max-width: 440px; color: var(--portal-ink); font-size: .8rem; font-weight: 700; }
+.portal-cidadao-municipality-filter .form-select { min-height: 46px; color: var(--portal-ink); background-color: var(--color-bg-surface); border-color: var(--portal-line); border-radius: 12px; }
+.portal-cidadao-municipality-filter .btn { min-height: 46px; }
+.portal-cidadao-municipality-filter p { flex-basis: 100%; margin: 0; color: var(--portal-muted); font-size: .8rem; }
+.portal-cidadao-municipality-filter .form-select,
+.portal-cidadao-report-filter .form-select { width: 100%; max-width: 100%; min-width: 0; }
 .portal-cidadao-report-summary article,
 .portal-cidadao-report-insights article,
 .portal-cidadao-report-chart { box-shadow: var(--shadow-md); }
@@ -986,6 +994,9 @@ body.dark-mode .portal-cidadao-week-track i[data-alert-level="4"] { background: 
 @media (max-width: 720px) {
   .portal-cidadao-report-hero h1 { font-size: 1.9rem; }
   .portal-cidadao-report-filter { flex-direction: column; align-items: stretch; }
+  .portal-cidadao-report-filter .portal-cidadao-municipality-choice { flex: initial; max-width: none; }
+  .portal-cidadao-municipality-filter { flex-direction: column; align-items: stretch; }
+  .portal-cidadao-municipality-filter label { flex: initial; max-width: none; }
   .portal-cidadao-report-summary { grid-template-columns: 1fr; }
   .portal-cidadao-report-chart { padding: 16px; }
   .portal-cidadao-report-panel-heading { flex-direction: column; align-items: flex-start; }

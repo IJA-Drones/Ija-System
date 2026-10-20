@@ -15,7 +15,7 @@
   <section class="vigilancia-preview-panel" aria-labelledby="escopo-heading">
     <h2 id="escopo-heading">Prefeitura e origem dos dados</h2>
     <form method="get" action="{{ url_for('main.vigilancia_campo') }}" class="vigilancia-campo-grid">
-      <div><label class="form-label" for="escopo-prefeitura">Código da prefeitura cadastrada</label><input class="form-control" id="escopo-prefeitura" name="prefeitura_id" type="number" min="1" max="2147483647" required value="{{ prefeitura_id or '' }}" {% if not municipio_editavel %}readonly{% endif %}></div>
+      {% include '_vigilancia_prefeitura_filter.html' %}
       <div><label class="form-label" for="escopo-demo">Origem dos dados</label><select class="form-select" id="escopo-demo" name="demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
       <div class="vigilancia-campo-align"><button class="btn btn-primary" type="submit">Consultar</button></div>
     </form>

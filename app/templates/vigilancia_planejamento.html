@@ -7,7 +7,7 @@
 {% if plan %}<input type="hidden" name="plano" value="{{ plan.code }}"><input type="hidden" name="versao" value="{{ plan.versao }}">{% endif %}
 {% if not demo %}<label class="d-block mb-3"><input type="checkbox" name="autorizado" value="sim" required> Confirmo a autorização para gravar estes dados reais.</label>{% endif %}
 {% endmacro %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_planejamento.css') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_planejamento.css', v='20261020-2') }}">{% endblock %}
 {% block content %}
 {% set plan = overview.get('plano') %}
 <main class="vigilancia-preview-page py-4">
@@ -16,7 +16,7 @@
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
   <section class="vigilancia-preview-panel" aria-labelledby="escopo-heading"><h2 id="escopo-heading">Prefeitura e origem dos dados</h2>
     <form method="get" class="vigilancia-campo-grid">
-      {{ control('prefeitura_id', 'Código da prefeitura cadastrada', 'number', prefeitura_id or '', readonly=not municipio_editavel) }}
+      {% include '_vigilancia_prefeitura_filter.html' %}
       <div><label class="form-label" for="planejamento-demo">Origem dos dados</label><select class="form-select" name="demo" id="planejamento-demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração — dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
       <div class="vigilancia-campo-align"><button class="btn btn-primary">Consultar planejamento</button></div>
     </form>
@@ -68,4 +68,4 @@
   {% endif %}
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-planejamento-mapa.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-planejamento-mapa.js', v='20261020-2') }}" defer></script>{% endblock %}

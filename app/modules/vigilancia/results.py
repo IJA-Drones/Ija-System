@@ -59,8 +59,12 @@ class ResultsStore(FieldStore):
         with self.connection() as conn:
             return [dict(row) for row in conn.execute(query).mappings()]
 
-    def report(self, prefeitura, demo, filters):
+    def report(self, prefeitura, demo, filters, *, auto_single_survey=False):
         all_records = self.records(prefeitura, demo=demo)
+        surveys = sorted({row["levantamento_codigo"] for row in all_records if row["origem"] == "LIRAA"})
+        filters = dict(filters)
+        if auto_single_survey and not filters["levantamento"] and len(surveys) == 1:
+            filters["levantamento"] = surveys[0]
         chosen = [row for row in all_records if
                   (not filters["area"] or row["area_codigo"] == filters["area"]) and
                   (not filters["bairro"] or row["bairro"] == filters["bairro"]) and
@@ -69,7 +73,8 @@ class ResultsStore(FieldStore):
                       (not filters["estrato"] or row["estrato_codigo"] == filters["estrato"])))]
         # Focal não tem levantamento/estrato: o recorte comum é território e data.
         report = consolidate(chosen, prefeitura=prefeitura, filters={**filters, "levantamento": "", "estrato": ""})
-        report["levantamentos"] = sorted({row["levantamento_codigo"] for row in all_records if row["origem"] == "LIRAA"})
+        report["levantamentos"] = surveys
+        report["filtros"] = filters
         report["bairros"] = sorted({row["bairro"] for row in all_records})
         report["areas"] = sorted({row["area_codigo"] for row in all_records})
         report["atividades"] = dict(Counter(row["origem"] for row in report["registros"]))
@@ -100,6 +105,7 @@ class ResultsStore(FieldStore):
         report["geografia"] = geometry
         report["avisos"] = warnings
         report["pontos"] = [{"latitude": row["latitude"], "longitude": row["longitude"],
+            "inspecao_codigo": row["inspecao_codigo"], "imovel_codigo": row["imovel_codigo"],
             "origem": row["origem"], "situacao": row["situacao"], "positivo_aedes": row["positivo_aedes"],
             "data_inspecao": row["data_inspecao"], "bairro": row["bairro"],
             "levantamento": row["levantamento_codigo"], "estrato": row["estrato_codigo"]}
