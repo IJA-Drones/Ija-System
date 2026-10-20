@@ -136,8 +136,16 @@ class PortalHealthPageTests(unittest.TestCase):
         bp = Blueprint("main", __name__)
         register_routes(bp)
         bp.add_url_rule("/", endpoint="dashboard", view_func=lambda: "")
+        bp.add_url_rule("/portal-cidadao/relato-saude", endpoint="portal_relato_saude", view_func=lambda: "")
+        bp.add_url_rule("/portal-cidadao/contatos", endpoint="portal_contatos", view_func=lambda: "")
         self.app.register_blueprint(bp)
         self.app.add_url_rule("/login", endpoint="auth.login", view_func=lambda: "")
+
+    @staticmethod
+    def demo_risk_report():
+        from app.modules.portal_cidadao.public_risk import get_public_risk_demo
+
+        return get_public_risk_demo()
 
     def render_page(self, available):
         alert = health_news._build_infodengue_alert(
@@ -149,6 +157,9 @@ class PortalHealthPageTests(unittest.TestCase):
         ), patch(
             "app.modules.portal_cidadao.routes.get_portal_health_news",
             return_value=list(health_news.OFFICIAL_FALLBACK_LINKS),
+        ), patch(
+            "app.modules.portal_cidadao.routes.get_public_risk_demo",
+            return_value=self.demo_risk_report(),
         ):
             page = self.app.test_client().get("/portal-cidadao")
         self.assertEqual(page.status_code, 200)
@@ -158,7 +169,7 @@ class PortalHealthPageTests(unittest.TestCase):
         html = self.render_page(True)
         links = PageLinks()
         links.feed(html)
-        for target in ("portal-inicio", "boletim-saude", "como-funciona", "portal-relato"):
+        for target in ("portal-inicio", "boletim-saude", "mapa-risco", "como-funciona", "portal-relato"):
             self.assertIn(target, links.ids)
             self.assertIn(target, links.anchors)
         for text in ("Dengue em São Paulo", "260,0", "2,13", "0,0%", "Ver relatório completo", "Consultar dados no InfoDengue", "portalCidadaoForm"):
@@ -166,6 +177,11 @@ class PortalHealthPageTests(unittest.TestCase):
         self.assertEqual(html.count('id="portal-dengue-title"'), 1)
         self.assertEqual(html.count("Casos notificados"), 1)
         self.assertIn('href="/portal-cidadao/boletim-dengue"', html)
+        self.assertIn('href="#mapa-risco"', html)
+        self.assertIn("Como o mapa de risco pode orientar a prevenção", html)
+        self.assertIn("Este mapa não representa bairros de nenhuma prefeitura nem risco epidemiológico real.", html)
+        self.assertIn("Relatar suspeita de adoecimento", html)
+        self.assertIn('id="risco-data"', html)
 
     def test_public_page_keeps_form_news_and_source_links_when_api_fails(self):
         html = self.render_page(False)
@@ -175,6 +191,23 @@ class PortalHealthPageTests(unittest.TestCase):
         self.assertIn(health_data.HEALTH_REPORT_URL, html)
         self.assertIn(health_data.INFO_DENGUE_SOURCE_URL, html)
         self.assertNotIn("portal-cidadao-health-metrics", html)
+
+
+class PublicRiskDemoTests(unittest.TestCase):
+    def test_portal_demo_map_uses_only_fictional_areas_and_years(self):
+        from app.modules.portal_cidadao.public_risk import get_public_risk_demo
+
+        get_public_risk_demo.cache_clear()
+        self.addCleanup(get_public_risk_demo.cache_clear)
+        report = get_public_risk_demo()
+
+        self.assertEqual(report["status"], "CALCULADO")
+        self.assertEqual(len(report["geografia"]["features"]), 25)
+        self.assertEqual(len(report["anos"]), 5)
+        self.assertTrue(all(
+            feature["properties"]["nome"].startswith("Área fictícia ")
+            for feature in report["geografia"]["features"]
+        ))
 
 
 if __name__ == "__main__":

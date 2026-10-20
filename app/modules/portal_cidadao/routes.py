@@ -16,6 +16,7 @@ from app.models import Prefeitura
 from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.portal_cidadao.chatbot import chat_token, reply
 from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
+from app.modules.portal_cidadao.public_risk import get_public_risk_demo
 
 
 def list_public_prefeituras():
@@ -41,6 +42,7 @@ def register_routes(bp):
             health_news=get_portal_health_news(logger=current_app.logger),
             infodengue_alert=get_infodengue_alert(config=current_app.config, logger=current_app.logger),
             portal_city=current_app.config.get("INFODENGUE_CITY") or "São Paulo",
+            public_risk_report=get_public_risk_demo(),
         ))
         response.headers["Cache-Control"] = "private, no-store"
         return response

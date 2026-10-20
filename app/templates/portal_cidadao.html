@@ -16,6 +16,7 @@
       <a href="{{ url_for('main.portal_relato_saude') }}">Suspeita de adoecimento</a>
       <a href="{{ url_for('main.portal_contatos') }}">Contatos das prefeituras</a>
       <a href="#boletim-saude">Boletim de saúde</a>
+      <a href="#mapa-risco">Mapa de risco</a>
       <a href="#como-funciona">Atendimento</a>
       <a class="portal-cidadao-nav-report" href="#portal-relato">
         <i class="bi bi-plus-circle" aria-hidden="true"></i> Enviar relato
@@ -157,6 +158,68 @@
       </aside>
     </div>
   </section>
+
+  {% if public_risk_report %}
+  <section class="portal-cidadao-section portal-cidadao-risk-section" id="mapa-risco" aria-labelledby="portal-risco-title">
+    <div class="portal-cidadao-section-heading">
+      <div>
+        <span class="portal-cidadao-eyebrow"><i class="bi bi-map" aria-hidden="true"></i> Vigilância territorial</span>
+        <h2 id="portal-risco-title">Como o mapa de risco pode orientar a prevenção</h2>
+        <p>Explore um exemplo de concentração e recorrência de casos por área.</p>
+      </div>
+      <span class="portal-cidadao-status-pill portal-cidadao-demo-pill"><i class="bi bi-info-circle" aria-hidden="true"></i> Demonstração fictícia</span>
+    </div>
+
+    <div class="portal-cidadao-risk-notice" role="note">
+      <strong>Este mapa não representa bairros de nenhuma prefeitura nem risco epidemiológico real.</strong>
+      <span>São 25 áreas e cinco anos de dados inventados, calculados pelo método exploratório Gi*. A análise não é homologada pelo Ministério da Saúde e não prevê surtos.</span>
+    </div>
+
+    <div class="portal-cidadao-risk-panel">
+      <div class="portal-cidadao-risk-controls">
+        <label class="form-label" for="risco-visao">Visualização
+          <select class="form-select" id="risco-visao">
+            <option value="recorrencia">Recorrência histórica</option>
+            {% for year in public_risk_report.anos if public_risk_report.status == 'CALCULADO' %}
+            <option value="{{ year }}">Hotspots em {{ year }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="form-label" for="risco-area">Consultar área
+          <select class="form-select" id="risco-area">
+            {% for feature in public_risk_report.geografia.features %}
+            <option value="{{ feature.properties.codigo }}">{{ feature.properties.nome }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div class="portal-cidadao-risk-map-grid">
+        <div class="portal-cidadao-risk-map-wrap">
+          <svg id="risco-svg" viewBox="0 0 900 570" role="group" aria-label="Mapa fictício de áreas para demonstração. Selecione uma área para consultar os resultados."></svg>
+          <p class="portal-cidadao-risk-caption">Áreas esquemáticas sem nomes ou limites de bairros reais. Selecione uma área para ver os valores.</p>
+        </div>
+        <aside class="portal-cidadao-risk-detail" aria-live="polite">
+          <h3>Resultado da área</h3>
+          <div id="risco-detalhe"></div>
+        </aside>
+      </div>
+      <div class="risco-legenda" id="risco-legenda" aria-label="Legenda do mapa"></div>
+      <p class="portal-cidadao-risk-caption" id="risco-interpretacao"></p>
+    </div>
+
+    <div class="portal-cidadao-risk-footer">
+      <div>
+        <strong>Relatos de adoecimento são confidenciais</strong>
+        <p>O boletim acima usa indicadores públicos agregados. Suspeitas enviadas por cidadãos são encaminhadas à vigilância e não são publicadas no mapa nem tratadas como casos confirmados do SINAN.</p>
+      </div>
+      <a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">Relatar suspeita de adoecimento <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+
+    <details id="risco-google-details" hidden><p id="risco-google-status"></p><div id="risco-google"></div></details>
+    <script type="application/json" id="risco-data">{{ {'report': public_risk_report, 'google': false}|tojson }}</script>
+  </section>
+  {% endif %}
 
   <section class="portal-cidadao-section" id="portal-relato" aria-labelledby="portal-relato-title">
     <div class="portal-cidadao-section-heading">
@@ -393,4 +456,5 @@
 <script src="{{ url_for('static', filename='js/portal-chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-report.js') }}"></script>
+{% if public_risk_report %}<script src="{{ url_for('static', filename='js/vigilancia-risco.js') }}" defer></script>{% endif %}
 {% endblock %}

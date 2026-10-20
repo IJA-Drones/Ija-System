@@ -73,6 +73,23 @@ Use uma denúncia fictícia para verificar registro, protocolo, erro de CPF/tele
 
 Fontes: [rotas públicas](../../app/modules/portal_cidadao/routes.py), [validações do registro](../../app/modules/portal_cidadao/service.py), [rotas de triagem](../../app/modules/denuncias/routes.py), [permissões e encaminhamento](../../app/modules/denuncias/service.py), [modelos](../../app/models.py), [testes de triagem](../../tests/test_denuncias_triagem.py).
 
+## Painel público de vigilância (20/10/2026)
+
+O portal público reúne o boletim agregado do InfoDengue, o canal de relato de
+focos/suspeita de adoecimento e uma visualização demonstrativa do mapa Gi* de
+risco. A visualização pública usa 25 áreas esquemáticas e cinco anos inteiramente
+fictícios gerados pelo mesmo cálculo exploratório; não representa bairros de
+nenhum município nem um risco real. A análise Gi* não é homologada pelo
+Ministério da Saúde e não prevê surtos.
+
+O painel não consulta nem publica linhas de `RelatoSaude`, denúncias, nomes,
+endereços, fotos ou pontos de cidadãos. A suspeita enviada continua restrita ao
+fluxo autenticado da vigilância; o boletim público tem sua própria fonte e não
+converte relatos em casos SINAN. A amostra do mapa é calculada em memória e não
+cria registros ou altera o banco. Esta entrega não adiciona colunas, modelos ou
+migrações. Uma futura publicação de análises municipais reais precisa de um
+processo explícito de revisão e autorização antes de expor qualquer recorte.
+
 ## Assistente de IA do portal
 
 O botão **Ajuda com IA**, em `/portal-cidadao`, orienta sobre o formulário, a

@@ -64,6 +64,37 @@
 .portal-cidadao-nav-links a:hover { background: rgba(10, 168, 195, .06); }
 .portal-cidadao-nav-links .portal-cidadao-nav-report { color: var(--portal-cyan-dark); background: rgba(10, 168, 195, .10); }
 
+.portal-cidadao-demo-pill { color: #7c2d12 !important; background: #fff7ed !important; }
+.portal-cidadao-risk-notice { display: grid; gap: 5px; margin: 18px 0; padding: 16px 18px; border: 1px solid #fdba74; border-radius: 16px; color: #7c2d12; background: #fff7ed; line-height: 1.55; }
+.portal-cidadao-risk-notice span { font-size: .9rem; }
+.portal-cidadao-risk-panel { padding: clamp(16px, 2.5vw, 28px); border: 1px solid var(--portal-line); border-radius: 24px; background: var(--color-bg-white); box-shadow: var(--shadow-sm); }
+.portal-cidadao-risk-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 720px; margin-bottom: 18px; }
+.portal-cidadao-risk-controls label { margin: 0; font-size: .82rem; font-weight: 750; }
+.portal-cidadao-risk-controls select { margin-top: 6px; }
+.portal-cidadao-risk-map-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(230px, .7fr); gap: 18px; align-items: start; }
+.portal-cidadao-risk-map-wrap { min-width: 0; padding: 10px; border: 1px solid var(--portal-line); border-radius: 18px; background: var(--color-bg-body); }
+.portal-cidadao-risk-map-wrap #risco-svg { display: block; width: 100%; height: auto; min-height: 250px; background: transparent; border-radius: 12px; }
+.portal-cidadao-risk-map-wrap #risco-svg path { cursor: pointer; stroke: #475569; stroke-width: 1.4; vector-effect: non-scaling-stroke; transition: fill .15s; }
+.portal-cidadao-risk-map-wrap #risco-svg path:hover, .portal-cidadao-risk-map-wrap #risco-svg path:focus, .portal-cidadao-risk-map-wrap #risco-svg path[data-selected="true"] { stroke: #0f172a; stroke-width: 3.5; outline: none; }
+.portal-cidadao-risk-map-wrap #risco-svg text { fill: #0f172a; font-size: 12px; font-weight: 600; pointer-events: none; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.portal-cidadao-risk-detail { min-width: 0; padding: 18px; border-radius: 18px; color: var(--portal-ink); background: var(--color-bg-body); overflow-wrap: anywhere; }
+.portal-cidadao-risk-detail h3, .portal-cidadao-risk-detail #risco-detalhe h3 { margin: 0 0 12px; font-size: 1.05rem; }
+.portal-cidadao-risk-detail #risco-detalhe p { margin: 8px 0; color: var(--portal-muted); font-size: .86rem; }
+.portal-cidadao-risk-caption { margin: 10px 2px 0; color: var(--portal-muted); font-size: .82rem; line-height: 1.5; }
+.portal-cidadao-risk-panel .risco-legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin: 16px 0 0; color: var(--portal-muted); font-size: .82rem; }
+.portal-cidadao-risk-panel .risco-legenda span { display: inline-flex; align-items: center; gap: .4rem; }
+.portal-cidadao-risk-panel .risco-legenda i { width: 18px; height: 18px; border: 1px solid #64748b; border-radius: 3px; }
+.portal-cidadao-risk-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 18px; padding: 20px; border: 1px solid var(--portal-line); border-radius: 18px; background: var(--color-bg-white); }
+.portal-cidadao-risk-footer > div { min-width: 0; }
+.portal-cidadao-risk-footer p { margin: 6px 0 0; color: var(--portal-muted); font-size: .88rem; line-height: 1.55; }
+.portal-cidadao-risk-footer .btn { flex: 0 0 auto; }
+
+@media (max-width: 760px) {
+  .portal-cidadao-risk-controls, .portal-cidadao-risk-map-grid { grid-template-columns: minmax(0, 1fr); }
+  .portal-cidadao-risk-footer { align-items: stretch; flex-direction: column; }
+  .portal-cidadao-risk-footer .btn { width: 100%; min-height: 46px; }
+}
+
 .portal-cidadao-hero {
   position: relative;
   display: grid;
