@@ -85,6 +85,17 @@
       <span class="portal-cidadao-status-pill"><i class="bi bi-patch-check" aria-hidden="true"></i> Fontes públicas oficiais</span>
     </div>
 
+    <form class="portal-cidadao-municipality-filter" method="get" action="{{ url_for('main.portal_cidadao', _anchor='boletim-saude') }}">
+      <label for="portal-boletim-municipio">
+        <span>Município do boletim</span>
+        <select class="form-select" name="municipio" id="portal-boletim-municipio">
+          {% include '_portal_health_municipality_options.html' %}
+        </select>
+      </label>
+      <button class="btn btn-success" type="submit">Consultar município</button>
+      <p>Escolha a cidade para consultar os indicadores e as fontes de saúde da região.</p>
+    </form>
+
     <article class="portal-cidadao-dengue-card" aria-labelledby="portal-dengue-title">
       <div class="portal-cidadao-dengue-heading">
         <div>
@@ -117,7 +128,7 @@
       {% endif %}
 
       <div class="portal-cidadao-dengue-actions">
-        <a class="btn btn-success" href="{{ url_for('main.portal_cidadao_boletim_dengue') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao_boletim_dengue')) if central_ti_url_allowed is defined else true) else 'false' }}">
+        <a class="btn btn-success" href="{{ report_url }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(report_url) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-bar-chart-line" aria-hidden="true"></i> Ver relatório completo
           <i class="bi bi-arrow-right" aria-hidden="true"></i>
         </a>
@@ -171,8 +182,8 @@
     </div>
 
     <div class="portal-cidadao-risk-notice" role="note">
-      <strong>Este mapa não representa bairros de nenhuma prefeitura nem risco epidemiológico real.</strong>
-      <span>São 25 áreas e cinco anos de dados inventados, calculados pelo método exploratório Gi*. A análise não é homologada pelo Ministério da Saúde e não prevê surtos.</span>
+      <strong>Os limites municipais são reais. Os casos e os resultados desta demonstração são fictícios.</strong>
+      <span>São 15 municípios do CONDOMAR com malha pública do IBGE e cinco anos de casos inventados, calculados pelo mesmo método exploratório Gi* usado na análise dos arquivos importados. O filtro de município do boletim não altera esta demonstração.</span>
     </div>
 
     <div class="portal-cidadao-risk-panel">
@@ -196,8 +207,8 @@
 
       <div class="portal-cidadao-risk-map-grid">
         <div class="portal-cidadao-risk-map-wrap">
-          <svg id="risco-svg" viewBox="0 0 900 570" role="group" aria-label="Mapa fictício de áreas para demonstração. Selecione uma área para consultar os resultados."></svg>
-          <p class="portal-cidadao-risk-caption">Áreas esquemáticas sem nomes ou limites de bairros reais. Selecione uma área para ver os valores.</p>
+          <svg id="risco-svg" viewBox="0 0 900 570" role="group" aria-label="Limites municipais reais de Pernambuco, com casos fictícios para demonstração. Selecione um município para consultar os resultados."></svg>
+          <p class="portal-cidadao-risk-caption">Pernambuco continental · malha simplificada do <a href="https://servicodados.ibge.gov.br/api/docs/malhas?versao=3" target="_blank" rel="noopener">IBGE</a> · sem divulgação de casos reais.</p>
         </div>
         <aside class="portal-cidadao-risk-detail" aria-live="polite">
           <h3>Resultado da área</h3>

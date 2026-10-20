@@ -76,7 +76,8 @@
     state.listeners.forEach(listener => listener.remove());
     state.listeners = [];
     if (state.polygon) state.polygon.setMap(null);
-    state.polygon = new root.google.maps.Polygon({ map: state.map, paths: points, editable, clickable: false,
+    // Keep a first ring even before the first click; paths: [] has no getPath().
+    state.polygon = new root.google.maps.Polygon({ map: state.map, paths: [points], editable, clickable: false,
       strokeColor: "#d97706", strokeOpacity: 1, strokeWeight: 3, fillColor: "#f59e0b", fillOpacity: .22, zIndex: 5 });
     if (config.editavel) for (const event of ["insert_at", "set_at", "remove_at"]) state.listeners.push(state.polygon.getPath().addListener(event, changed));
   }
@@ -86,21 +87,32 @@
     points.forEach(point => bounds.extend(point));
     state.map.fitBounds(bounds, 40);
   }
+  const unavailableRecordMessage = item => `Quarteirão ${item.code} carregado. O mapa está indisponível neste momento. Você pode editar os dados abaixo; o contorno existente será mantido.`;
   function loadRecord(item) {
-    if (!form) { fit(pointsFromPolygon(item.geometria)); return; }
-    if (state.dirty && !root.confirm("Há um desenho ainda não salvo. Carregar outro cadastro e descartar essa alteração?")) return;
+    if (!form) {
+      if (state.ready) fit(pointsFromPolygon(item.geometria));
+      else message("O mapa está indisponível neste momento. O cadastro do quarteirão permanece disponível na tabela.");
+      return true;
+    }
+    if (state.dirty && !root.confirm("Há um desenho ainda não salvo. Carregar outro cadastro e descartar essa alteração?")) return false;
     state.loaded = item;
     state.drawing = false;
     state.dirty = false;
     for (const [name, key] of Object.entries({ quarteirao: "code", bairro: "bairro", area: "area", imoveis: "imoveis", referencia: "referencia", territorio_versao: "versao" })) field(name).value = item[key] ?? "";
     confirmChange("manter");
     field("geometria").value = "";
-    setPolygon(pointsFromPolygon(item.geometria), !!item.geometria);
-    if (item.geometria) fit(pointsFromPolygon(item.geometria));
     byId("cadastro").open = true;
-    byId("mapa-resumo").textContent = item.geometria ? `Quarteirão ${item.code} carregado. Arraste os pontos para ajustar ou mantenha o limite salvo.` : `Quarteirão ${item.code} carregado. Localize-o e clique em “Desenhar área” para definir seu limite.`;
-    message(item.geometria ? `Área ${item.code} selecionada. O desenho salvo está destacado em laranja.` : `O quarteirão ${item.code} ainda não possui contorno. Você pode delimitá-lo no mapa.`);
+    if (state.ready) {
+      setPolygon(pointsFromPolygon(item.geometria), !!item.geometria);
+      if (item.geometria) fit(pointsFromPolygon(item.geometria));
+      byId("mapa-resumo").textContent = item.geometria ? `Quarteirão ${item.code} carregado. Arraste os pontos para ajustar ou mantenha o limite salvo.` : `Quarteirão ${item.code} carregado. Localize-o e clique em “Desenhar área” para definir seu limite.`;
+      message(item.geometria ? `Área ${item.code} selecionada. O desenho salvo está destacado em laranja.` : `O quarteirão ${item.code} ainda não possui contorno. Você pode delimitá-lo no mapa.`);
+    } else {
+      byId("mapa-resumo").textContent = unavailableRecordMessage(item);
+      message("Cadastro carregado. Para localizar ou desenhar a área, é necessário que o Google Maps esteja disponível.");
+    }
     controls();
+    return true;
   }
   function chooseSample(item) {
     const select = document.getElementById("amostra-quarteirao");
@@ -128,6 +140,7 @@
   function unavailable() {
     state.ready = false; state.drawing = false;
     for (const id of ["buscar", "enquadrar", "desenhar", "desfazer", "concluir", "restaurar", "remover"]) allow(id, false);
+    if (state.loaded && form) byId("mapa-resumo").textContent = unavailableRecordMessage(state.loaded);
     message("O mapa não pôde ser carregado. Recarregue a página; se o problema continuar, informe o administrador. Você pode continuar usando o cadastro por formulário.");
   }
   async function search() {
@@ -215,11 +228,7 @@
           }
         });
       }
-      document.querySelectorAll("[data-territorio-code]").forEach(button => button.addEventListener("click", () => {
-        const item = config.registros.find(row => row.code === button.dataset.territorioCode);
-        if (item) { loadRecord(item); byId("mapa").scrollIntoView({ behavior: "smooth", block: "start" }); }
-      }));
-      const initial = config.registros.find(item => item.code === config.inicial);
+      const initial = state.loaded || config.registros.find(item => item.code === config.inicial);
       if (initial && !field("geometria_acao")?.value.match(/substituir|remover/)) loadRecord(initial);
       else if (form && field("geometria_acao").value === "substituir" && field("geometria").value) {
         try { setPolygon(pointsFromPolygon(JSON.parse(field("geometria").value)), true); fit(currentPoints()); changed(); } catch (_error) { message("Revise o desenho informado antes de tentar salvar novamente."); }
@@ -227,6 +236,14 @@
       controls();
     } catch (_error) { unavailable(); }
   }
+  // Loading a registered block must work even if Maps has not loaded or was denied.
+  document.querySelectorAll("[data-territorio-code]").forEach(button => button.addEventListener("click", () => {
+    const item = config.registros.find(row => row.code === button.dataset.territorioCode);
+    if (item && loadRecord(item)) {
+      const target = state.ready || !form ? byId("mapa") : byId("cadastro");
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }));
   document.addEventListener("googlemaps:ready", initialize);
   document.addEventListener("googlemaps:auth-failed", unavailable);
   if (root.__GOOGLE_MAPS_AUTH_FAILED__ || !config.configurado) unavailable(); else initialize();

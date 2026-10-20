@@ -1,7 +1,7 @@
 import re
 from datetime import date
 
-from flask import current_app, jsonify, render_template, request
+from flask import current_app, jsonify, render_template, request, url_for
 
 from app.clients.cep_client import CepLookupError, CepNotFoundError, lookup_cep
 from app.clients.google_maps_client import reverse_geocode_lat_lng_google_details
@@ -17,6 +17,7 @@ from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.portal_cidadao.chatbot import chat_token, reply
 from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
 from app.modules.portal_cidadao.public_risk import get_public_risk_demo
+from app.modules.portal_cidadao.municipalities import public_health_municipality
 
 
 def list_public_prefeituras():
@@ -32,6 +33,7 @@ def register_routes(bp):
 
     @bp.route("/portal-cidadao", methods=["GET"], endpoint="portal_cidadao")
     def portal_cidadao():
+        municipality, municipalities, health_config = public_health_municipality(current_app.config, request.args)
         response = current_app.make_response(render_template(
             "portal_cidadao.html",
             prefeituras=list_public_prefeituras(),
@@ -39,9 +41,12 @@ def register_routes(bp):
             oceano_azul_summary=OCEANO_AZUL_SUMMARY,
             oceano_azul_url=OCEANO_AZUL_URL,
             focus_catalog=build_public_focus_catalog(),
-            health_news=get_portal_health_news(logger=current_app.logger),
-            infodengue_alert=get_infodengue_alert(config=current_app.config, logger=current_app.logger),
-            portal_city=current_app.config.get("INFODENGUE_CITY") or "São Paulo",
+            health_news=get_portal_health_news(logger=current_app.logger, uf=municipality["uf"]),
+            infodengue_alert=get_infodengue_alert(config=health_config, logger=current_app.logger),
+            portal_city=municipality["name"],
+            municipality_options=municipalities,
+            selected_municipality=municipality,
+            report_url=url_for("main.portal_cidadao_boletim_dengue", municipio=municipality["ibge"]),
             public_risk_report=get_public_risk_demo(),
         ))
         response.headers["Cache-Control"] = "private, no-store"
@@ -49,6 +54,7 @@ def register_routes(bp):
 
     @bp.route("/portal-cidadao/boletim-dengue", methods=["GET"], endpoint="portal_cidadao_boletim_dengue")
     def portal_cidadao_boletim_dengue():
+        municipality, municipalities, health_config = public_health_municipality(current_app.config, request.args)
         current_year = int(date.today().isocalendar().year)
         selected_disease = (request.args.get("doenca") or current_app.config.get("INFODENGUE_DISEASE") or "dengue").strip().lower()
         if selected_disease not in INFODENGUE_DISEASE_LABELS:
@@ -63,7 +69,7 @@ def register_routes(bp):
         return render_template(
             "portal_cidadao_boletim_dengue.html",
             report=get_infodengue_report(
-                config=current_app.config,
+                config=health_config,
                 disease=selected_disease,
                 year=selected_year,
                 logger=current_app.logger,
@@ -72,6 +78,9 @@ def register_routes(bp):
             selected_disease=selected_disease,
             selected_year=selected_year,
             available_years=list(range(current_year, max(2009, current_year - 5), -1)),
+            municipality_options=municipalities,
+            selected_municipality=municipality,
+            portal_url=url_for("main.portal_cidadao", municipio=municipality["ibge"]),
         )
 
     @bp.route("/portal-cidadao/denuncias", methods=["POST"], endpoint="portal_cidadao_denuncias_criar")

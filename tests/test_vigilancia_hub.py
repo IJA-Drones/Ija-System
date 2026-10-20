@@ -11,7 +11,7 @@ from tests.test_vigilancia_field_routes import client, login
 def test_hub_requires_authenticated_authorized_user(client):
     assert client.get('/vigilancia').status_code == 302
     login(client, 'uvis')
-    assert client.get('/vigilancia').status_code == 503
+    assert client.get('/vigilancia').status_code == 403
     login(client)
     response = client.get('/vigilancia')
     assert response.status_code == 200

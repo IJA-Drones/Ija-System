@@ -1,0 +1,9 @@
+{% for group_name, municipalities in [('CONDOMAR · Pernambuco', municipality_options|selectattr('region', 'equalto', 'condomar')|list), ('Outros municípios', municipality_options|rejectattr('region', 'equalto', 'condomar')|list)] %}
+{% if municipalities %}
+<optgroup label="{{ group_name }}">
+  {% for municipality in municipalities %}
+  <option value="{{ municipality.ibge }}" {% if municipality.ibge == selected_municipality.ibge %}selected{% endif %}>{{ municipality.name }}{% if municipality.uf %}/{{ municipality.uf }}{% endif %}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}
+{% endfor %}

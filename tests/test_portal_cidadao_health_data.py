@@ -7,9 +7,12 @@ from unittest.mock import Mock, patch
 import requests
 from flask import Blueprint, Flask
 from flask_login import LoginManager
+from werkzeug.datastructures import MultiDict
+from werkzeug.exceptions import BadRequest
 
 from app.modules.portal_cidadao import health_data, health_news
 from app.modules.portal_cidadao.routes import register_routes
+from app.modules.portal_cidadao.municipalities import public_health_municipality
 
 
 def weekly_record(**overrides):
@@ -126,6 +129,89 @@ class PageLinks(HTMLParser):
             self.anchors.add(attrs["href"][1:])
 
 
+class PublicHealthMunicipalityTests(unittest.TestCase):
+    def test_all_condomar_municipalities_are_available_without_database_mapping(self):
+        selected, options, config = public_health_municipality({}, MultiDict({"municipio": "2610905"}))
+        self.assertEqual(len([item for item in options if item["region"] == "condomar"]), 15)
+        self.assertEqual(selected["name"], "Pesqueira")
+        self.assertEqual(config["INFODENGUE_GEOCODE"], "2610905")
+        self.assertEqual(config["INFODENGUE_CITY"], "Pesqueira")
+        self.assertNotIn("DATABASE_URL", config)
+
+    def test_default_municipality_can_be_changed_by_public_filter(self):
+        config = {"INFODENGUE_GEOCODE": "2610905", "INFODENGUE_CITY": "Pesqueira"}
+        self.assertEqual(public_health_municipality(config, MultiDict())[0]["ibge"], "2610905")
+        selected = public_health_municipality(config, MultiDict({"municipio": "2601201"}))[0]
+        self.assertEqual(selected["name"], "Arcoverde")
+        self.assertEqual(config["INFODENGUE_GEOCODE"], "2610905")
+
+    def test_unknown_and_ambiguous_municipalities_are_rejected(self):
+        for args in (MultiDict({"municipio": "9999999"}), MultiDict([("municipio", "2610905"), ("municipio", "2601201")])):
+            with self.subTest(args=args), self.assertRaises(BadRequest):
+                public_health_municipality({}, args)
+
+    def test_existing_configured_municipality_outside_catalog_is_preserved(self):
+        selected, options, _ = public_health_municipality(
+            {"INFODENGUE_GEOCODE": "2611606", "INFODENGUE_CITY": "Recife"}, MultiDict(),
+        )
+        self.assertEqual(selected["name"], "Recife")
+        self.assertEqual(selected["uf"], "PE")
+        self.assertEqual(len(options), 17)
+
+
+class InfoDengueMunicipalCacheTests(unittest.TestCase):
+    def setUp(self):
+        health_news.clear_health_news_cache()
+        self.addCleanup(health_news.clear_health_news_cache)
+        self.configs = [
+            {"INFODENGUE_GEOCODE": "2610905", "INFODENGUE_CITY": "Pesqueira"},
+            {"INFODENGUE_GEOCODE": "2601201", "INFODENGUE_CITY": "Arcoverde"},
+        ]
+
+    @staticmethod
+    def api_response(cases):
+        response = Mock()
+        response.json.return_value = [weekly_record(casos=cases)]
+        return response
+
+    def test_alert_cache_never_reuses_another_city_and_preserves_cache_hits(self):
+        with patch.object(health_news.requests, "get", side_effect=[self.api_response(7), self.api_response(19)]) as get:
+            first = health_news.get_infodengue_alert(self.configs[0])
+            second = health_news.get_infodengue_alert(self.configs[1])
+            again = health_news.get_infodengue_alert(self.configs[0])
+        self.assertEqual((first["city"], first["cases"]), ("Pesqueira", "7"))
+        self.assertEqual((second["city"], second["cases"]), ("Arcoverde", "19"))
+        self.assertEqual(again, first)
+        self.assertEqual([call.kwargs["params"]["geocode"] for call in get.call_args_list], ["2610905", "2601201"])
+
+    def test_report_cache_is_separate_for_city_disease_and_year(self):
+        with patch.object(health_news.requests, "get", side_effect=[self.api_response(7), self.api_response(19), self.api_response(3)]) as get:
+            first = health_news.get_infodengue_report(self.configs[0], disease="dengue", year=date.today().year)
+            second = health_news.get_infodengue_report(self.configs[1], disease="dengue", year=date.today().year)
+            third = health_news.get_infodengue_report(self.configs[1], disease="zika", year=date.today().year)
+            self.assertEqual(health_news.get_infodengue_report(self.configs[0], disease="dengue", year=date.today().year), first)
+        self.assertEqual(first["city"], "Pesqueira")
+        self.assertEqual(second["city"], "Arcoverde")
+        self.assertEqual(third["disease_label"], "Zika")
+        self.assertEqual(first["summary"]["total_cases"], "7")
+        self.assertEqual(second["summary"]["total_cases"], "19")
+        self.assertEqual(get.call_count, 3)
+
+    def test_unavailable_city_does_not_receive_previous_city_data_or_repeat_failure(self):
+        with patch.object(health_news.requests, "get", side_effect=[self.api_response(7), requests.Timeout("offline")]) as get:
+            self.assertIsNotNone(health_news.get_infodengue_alert(self.configs[0]))
+            self.assertIsNone(health_news.get_infodengue_alert(self.configs[1]))
+            self.assertIsNone(health_news.get_infodengue_alert(self.configs[1]))
+        self.assertEqual(get.call_count, 2)
+
+    def test_pernambuco_publications_use_state_sources_instead_of_sao_paulo_feed(self):
+        with patch.object(health_news.requests, "get") as get:
+            items = health_news.get_portal_health_news(uf="PE")
+        get.assert_not_called()
+        self.assertTrue(any("saude.pe.gov.br" in item["url"] for item in items))
+        self.assertFalse(any("sp.gov.br" in item["url"] for item in items))
+
+
 class PortalHealthPageTests(unittest.TestCase):
     def setUp(self):
         root = Path(__file__).resolve().parents[1] / "app"
@@ -176,10 +262,10 @@ class PortalHealthPageTests(unittest.TestCase):
             self.assertIn(text, html)
         self.assertEqual(html.count('id="portal-dengue-title"'), 1)
         self.assertEqual(html.count("Casos notificados"), 1)
-        self.assertIn('href="/portal-cidadao/boletim-dengue"', html)
+        self.assertIn('href="/portal-cidadao/boletim-dengue?municipio=3550308"', html)
         self.assertIn('href="#mapa-risco"', html)
         self.assertIn("Como o mapa de risco pode orientar a prevenção", html)
-        self.assertIn("Este mapa não representa bairros de nenhuma prefeitura nem risco epidemiológico real.", html)
+        self.assertIn("Os limites municipais são reais. Os casos e os resultados desta demonstração são fictícios.", html)
         self.assertIn("Relatar suspeita de adoecimento", html)
         self.assertIn('id="risco-data"', html)
 
@@ -192,9 +278,54 @@ class PortalHealthPageTests(unittest.TestCase):
         self.assertIn(health_data.INFO_DENGUE_SOURCE_URL, html)
         self.assertNotIn("portal-cidadao-health-metrics", html)
 
+    def test_public_municipality_filter_queries_selected_city_and_preserves_report_link(self):
+        def alert_for_city(config, logger):
+            return health_news._build_infodengue_alert(
+                [weekly_record(casos=7)], city=config["INFODENGUE_CITY"], disease="dengue",
+                source_url=f'https://info.dengue.mat.br/api/alertcity?geocode={config["INFODENGUE_GEOCODE"]}',
+            ).to_dict()
+
+        with patch("app.modules.portal_cidadao.routes.list_public_prefeituras", return_value=[]), patch(
+            "app.modules.portal_cidadao.routes.get_infodengue_alert", side_effect=alert_for_city,
+        ) as get, patch("app.modules.portal_cidadao.routes.get_public_risk_demo", return_value=None):
+            response = self.app.test_client().get("/portal-cidadao?municipio=2610905")
+        html = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(get.call_args.kwargs["config"]["INFODENGUE_GEOCODE"], "2610905")
+        self.assertIn("Dengue em Pesqueira", html)
+        self.assertIn('<option value="2610905" selected>', html)
+        self.assertIn('href="/portal-cidadao/boletim-dengue?municipio=2610905"', html)
+        self.assertIn("SES-PE", html)
+        self.assertNotIn("COVISA/SMS-SP", html)
+
+    def test_full_report_filters_municipality_disease_and_year_without_database_access(self):
+        with patch("app.modules.portal_cidadao.routes.get_infodengue_report", return_value=None) as get:
+            response = self.app.test_client().get("/portal-cidadao/boletim-dengue?municipio=2601201&doenca=zika&ano=2025")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(get.call_args.kwargs["config"]["INFODENGUE_GEOCODE"], "2601201")
+        self.assertEqual(get.call_args.kwargs["disease"], "zika")
+        self.assertEqual(get.call_args.kwargs["year"], 2025)
+        html = response.get_data(as_text=True)
+        self.assertIn("Arcoverde/PE", html)
+        self.assertIn('<option value="2601201" selected>', html)
+        self.assertIn('<option value="zika" selected>', html)
+        self.assertIn('href="/portal-cidadao?municipio=2601201"', html)
+        self.assertIn("Ausência de dados não significa ausência de casos", html)
+
+    def test_invalid_public_municipalities_do_not_query_external_api(self):
+        with patch("app.modules.portal_cidadao.routes.get_infodengue_alert") as alert, patch(
+            "app.modules.portal_cidadao.routes.get_infodengue_report",
+        ) as report:
+            for path in ("/portal-cidadao", "/portal-cidadao/boletim-dengue"):
+                for query in ("?municipio=9999999", "?municipio=2610905&municipio=2601201"):
+                    with self.subTest(path=path, query=query):
+                        self.assertEqual(self.app.test_client().get(path + query).status_code, 400)
+        alert.assert_not_called()
+        report.assert_not_called()
+
 
 class PublicRiskDemoTests(unittest.TestCase):
-    def test_portal_demo_map_uses_only_fictional_areas_and_years(self):
+    def test_portal_demo_map_uses_public_boundaries_and_only_fictional_counts(self):
         from app.modules.portal_cidadao.public_risk import get_public_risk_demo
 
         get_public_risk_demo.cache_clear()
@@ -202,12 +333,13 @@ class PublicRiskDemoTests(unittest.TestCase):
         report = get_public_risk_demo()
 
         self.assertEqual(report["status"], "CALCULADO")
-        self.assertEqual(len(report["geografia"]["features"]), 25)
+        self.assertEqual(len(report["geografia"]["features"]), 15)
         self.assertEqual(len(report["anos"]), 5)
         self.assertTrue(all(
-            feature["properties"]["nome"].startswith("Área fictícia ")
+            feature["properties"]["codigo"].startswith("26")
             for feature in report["geografia"]["features"]
         ))
+        self.assertEqual(len(report["contexto"]["features"]), 184)
 
 
 if __name__ == "__main__":

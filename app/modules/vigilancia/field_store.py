@@ -2,6 +2,7 @@
 
 import csv
 import io
+import logging
 import time
 import uuid
 from contextlib import contextmanager
@@ -13,6 +14,9 @@ from app.extensions import db
 from .field_models import CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao, CampoOsReferencia
 from .service import CSV_COLUMNS, MAX_ROWS, PreviewValidationError, preview_csv
 from .domain import DEPOSIT_COLUMNS
+
+
+logger = logging.getLogger(__name__)
 
 
 class FieldStoreError(ValueError):
@@ -39,8 +43,11 @@ class FieldStore:
 
     @contextmanager
     def connection(self, *, write_prefeitura=None):
+        started = time.perf_counter()
+        connected = None
         try:
             with self.engine.connect() as conn, conn.begin():
+                connected = time.perf_counter()
                 if write_prefeitura is not None:
                     if self.engine.dialect.name == "postgresql":
                         # Serializa os lotes da prefeitura entre workers, sem
@@ -54,7 +61,21 @@ class FieldStore:
                         raise FieldStoreError("O banco configurado não suporta a carga de campo.")
                 yield conn
         except SQLAlchemyError as exc:
+            # Registre apenas o tipo/código: a exceção completa pode conter CSV,
+            # parâmetros SQL ou informações da conexão.
+            logger.warning("LIRAa: falha no banco; tipo=%s sqlstate=%s",
+                           type(exc).__name__, getattr(getattr(exc, "orig", None), "pgcode", None))
             raise FieldStoreError("Não foi possível acessar as tabelas de vigilância. Confira a migração e a conexão do banco; nenhuma carga foi confirmada nesta tentativa.") from exc
+        finally:
+            finished = time.perf_counter()
+            if finished - started >= 3:
+                logger.warning("LIRAa: acesso lento ao banco; conexao_ms=%.0f operacao_ms=%.0f",
+                               ((connected or finished) - started) * 1000,
+                               (finished - (connected or finished)) * 1000)
+
+    @staticmethod
+    def _public_columns(table):
+        return [column for column in table.c if column.name != "original"]
 
     @staticmethod
     def _public(row):
@@ -90,7 +111,7 @@ class FieldStore:
                 validate_visits(conn, report["registros"], prefeitura, demo, plan_reference, actor)
             if os_declaration:
                 self._check_os(conn, os_declaration["id"], prefeitura)
-            previous = conn.execute(sa.select(table).where(
+            previous = conn.execute(sa.select(*self._public_columns(table)).where(
                 table.c.prefeitura == prefeitura, table.c.demo == bool(demo), table.c.actor == actor,
                 table.c.sha256 == report["arquivo_sha256"], table.c.source == source)).mappings().first()
             if previous:
@@ -104,12 +125,13 @@ class FieldStore:
             if count >= 200:
                 raise FieldStoreError("Limite inicial de 200 lotes por prefeitura e tipo de dado atingido. Solicite manutenção.")
             batch_id = uuid.uuid4().hex
-            conn.execute(table.insert().values(id=batch_id, prefeitura=prefeitura, demo=bool(demo), actor=actor,
+            batch = conn.execute(table.insert().values(id=batch_id, prefeitura=prefeitura, demo=bool(demo), actor=actor,
                          source=source, filename=filename, sha256=report["arquivo_sha256"], layout=report["layout"],
-                         original=content, created=time.time(), status=status, report=report))
+                         original=content, created=time.time(), status=status, report=report)
+                         .returning(*self._public_columns(table))).mappings().one()
             if os_declaration:
                 conn.execute(CampoOsReferencia.__table__.insert().values(batch_id=batch_id, solicitacao_id=os_declaration["id"]))
-            return self._public(conn.execute(sa.select(table).where(table.c.id == batch_id)).mappings().one())
+            return self._public(batch)
 
     def confirm(self, batch_id, *, prefeitura, actor):
         lots, inspections = CampoLote.__table__, CampoInspecao.__table__
@@ -191,9 +213,10 @@ class FieldStore:
                          origin=record["origem"], code=record["inspecao_codigo"], source_line=record["linha"])
                          for record in report["registros"]])
             report["persistido"] = True
-            conn.execute(lots.update().where(lots.c.id == batch_id).values(status="CONCLUIDO", confirmed=time.time(),
-                         inserted=len(new), reused=len(report["registros"])-len(new), report=report))
-            return self._public(conn.execute(sa.select(lots).where(lots.c.id == batch_id)).mappings().one())
+            saved = conn.execute(lots.update().where(lots.c.id == batch_id).values(status="CONCLUIDO", confirmed=time.time(),
+                         inserted=len(new), reused=len(report["registros"])-len(new), report=report)
+                         .returning(*self._public_columns(lots))).mappings().one()
+            return self._public(saved)
 
     def history(self, prefeitura):
         table = CampoLote.__table__
@@ -205,7 +228,7 @@ class FieldStore:
     def get(self, batch_id, prefeitura):
         table = CampoLote.__table__
         with self.connection() as conn:
-            return self._public(conn.execute(sa.select(table).where(table.c.id == batch_id,
+            return self._public(conn.execute(sa.select(*self._public_columns(table)).where(table.c.id == batch_id,
                                 table.c.prefeitura == prefeitura)).mappings().first())
 
     def original(self, batch_id, prefeitura):

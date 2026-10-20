@@ -65,9 +65,26 @@ OFFICIAL_FALLBACK_LINKS = (
         "published_label": "Fonte oficial",
     },
 )
+PERNAMBUCO_HEALTH_LINKS = (
+    {
+        "title": "Informes de dengue, chikungunya e zika em Pernambuco",
+        "summary": "Boletins estaduais e informes de arboviroses publicados pela Secretaria Estadual de Saúde de Pernambuco.",
+        "url": "https://portalcievs.saude.pe.gov.br/noticias/INFORMES/arbovirose",
+        "source": "SES-PE · CIEVS Pernambuco",
+        "published_label": "Fonte oficial",
+    },
+    OFFICIAL_FALLBACK_LINKS[1],
+    {
+        "title": "Orientações de vigilância e controle das arboviroses",
+        "summary": "Documentos técnicos e planos de enfrentamento disponibilizados pela vigilância de Pernambuco.",
+        "url": "https://portalcievs.saude.pe.gov.br/noticias/DOCUMENTOS/arboviroses",
+        "source": "SES-PE · CIEVS Pernambuco",
+        "published_label": "Fonte oficial",
+    },
+)
 
 _cache = {"expires_at": 0.0, "items": None}
-_infodengue_cache = {"expires_at": 0.0, "item": None}
+_infodengue_cache = {}
 _infodengue_report_cache = {}
 
 
@@ -122,7 +139,11 @@ class InfoDengueAlert:
         }
 
 
-def get_portal_health_news(limit=HEALTH_NEWS_LIMIT, logger=None):
+def get_portal_health_news(limit=HEALTH_NEWS_LIMIT, logger=None, uf="SP"):
+    if uf == "PE":
+        return list(PERNAMBUCO_HEALTH_LINKS)[:limit]
+    if uf != "SP":
+        return [OFFICIAL_FALLBACK_LINKS[1]][:limit]
     now = time.time()
     cached = _cache.get("items")
     if cached is not None and now < _cache.get("expires_at", 0):
@@ -148,11 +169,6 @@ def get_portal_health_news(limit=HEALTH_NEWS_LIMIT, logger=None):
 
 
 def get_infodengue_alert(config=None, logger=None):
-    now = time.time()
-    cached = _infodengue_cache.get("item")
-    if cached is not None and now < _infodengue_cache.get("expires_at", 0):
-        return cached
-
     config = config or {}
     geocode = str(config.get("INFODENGUE_GEOCODE") or INFODENGUE_DEFAULT_GEOCODE)
     city = str(config.get("INFODENGUE_CITY") or INFODENGUE_DEFAULT_CITY)
@@ -163,6 +179,11 @@ def get_infodengue_alert(config=None, logger=None):
     ew_end = int(iso.week)
     ew_start = max(1, ew_end - max(1, lookback_weeks) + 1)
     year = int(iso.year)
+    cache_key = (geocode, city, disease, year, ew_start, ew_end)
+    now = time.time()
+    cached = _infodengue_cache.get(cache_key)
+    if cached is not None and now < cached["expires_at"]:
+        return cached["item"]
 
     params = {
         "geocode": geocode,
@@ -182,14 +203,13 @@ def get_infodengue_alert(config=None, logger=None):
     except Exception as exc:
         if logger:
             logger.warning("Falha ao buscar dados do InfoDengue para o portal: %s", exc)
-        _infodengue_cache["item"] = None
-        _infodengue_cache["expires_at"] = now + HEALTH_NEWS_CACHE_TTL_SECONDS
+        _infodengue_cache[cache_key] = {"item": None, "expires_at": now + HEALTH_NEWS_CACHE_TTL_SECONDS}
         return None
 
     alert = _build_infodengue_alert(rows, city=city, disease=disease, source_url=source_url)
-    _infodengue_cache["item"] = alert.to_dict() if alert else None
-    _infodengue_cache["expires_at"] = now + HEALTH_NEWS_CACHE_TTL_SECONDS
-    return _infodengue_cache["item"]
+    item = alert.to_dict() if alert else None
+    _infodengue_cache[cache_key] = {"item": item, "expires_at": now + HEALTH_NEWS_CACHE_TTL_SECONDS}
+    return item
 
 
 def get_infodengue_report(config=None, disease=None, year=None, logger=None):
@@ -197,15 +217,15 @@ def get_infodengue_report(config=None, disease=None, year=None, logger=None):
     today = date.today()
     selected_disease = _normalize_disease(disease or config.get("INFODENGUE_DISEASE") or INFODENGUE_DEFAULT_DISEASE)
     selected_year = _normalize_year(year, fallback=today.isocalendar().year)
-    cache_key = (selected_disease, selected_year)
+    geocode = str(config.get("INFODENGUE_GEOCODE") or INFODENGUE_DEFAULT_GEOCODE)
+    city = str(config.get("INFODENGUE_CITY") or INFODENGUE_DEFAULT_CITY)
+    cache_key = (geocode, city, selected_disease, selected_year)
     now = time.time()
 
     cached = _infodengue_report_cache.get(cache_key)
     if cached is not None and now < cached.get("expires_at", 0):
         return cached.get("item")
 
-    geocode = str(config.get("INFODENGUE_GEOCODE") or INFODENGUE_DEFAULT_GEOCODE)
-    city = str(config.get("INFODENGUE_CITY") or INFODENGUE_DEFAULT_CITY)
     current_iso = today.isocalendar()
     ew_end = int(current_iso.week) if selected_year == int(current_iso.year) else 53
     params = {
@@ -246,8 +266,7 @@ def get_infodengue_report(config=None, disease=None, year=None, logger=None):
 def clear_health_news_cache():
     _cache["items"] = None
     _cache["expires_at"] = 0.0
-    _infodengue_cache["item"] = None
-    _infodengue_cache["expires_at"] = 0.0
+    _infodengue_cache.clear()
     _infodengue_report_cache.clear()
 
 

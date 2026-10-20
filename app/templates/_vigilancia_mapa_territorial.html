@@ -1,0 +1,24 @@
+<section class="vigilancia-preview-panel campo-territorio" aria-labelledby="campo-territorio-heading">
+  <div class="vigilancia-preview-section-header">
+    <div><h2 id="campo-territorio-heading">Levantamento no território</h2><p class="vigilancia-preview-help">Limites municipais reais do IBGE. Os pontos representam visitas confirmadas; os contornos coloridos mostram somente áreas preservadas no planejamento.</p></div>
+  </div>
+  <div class="campo-territorio-acoes">
+    <button type="button" class="btn btn-outline-primary btn-sm" id="campo-territorio-enquadrar">Enquadrar levantamento</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="campo-territorio-estado">Ver Pernambuco</button>
+    <label><input type="checkbox" data-territorial-layer="iip" checked> Contornos e IIP</label>
+    <label><input type="checkbox" data-territorial-layer="visitas" checked> Visitas com coordenadas</label>
+  </div>
+  <p id="campo-territorio-status" class="vigilancia-preview-help" role="status" aria-live="polite"></p>
+  <div class="campo-territorio-grid">
+    <div><svg id="campo-territorio-svg" viewBox="0 0 1000 610" role="group" aria-label="Mapa geográfico dos municípios de Pernambuco e das visitas confirmadas"></svg><p class="vigilancia-preview-help">Pernambuco continental · norte para cima · malha simplificada do IBGE. Fernando de Noronha fica fora deste recorte do CONDOMAR.</p></div>
+    <aside class="campo-territorio-detalhe" aria-live="polite" id="campo-territorio-detalhe"><h3>Consultar no mapa</h3><p>Selecione um município, uma visita ou um contorno para conferir sua origem e os valores.</p></aside>
+  </div>
+  <div class="campo-territorio-legenda" aria-label="Legenda do levantamento">
+    <span><i class="municipio"></i> Município do CONDOMAR</span><span><i class="positivo"></i> Imóvel positivo para Aedes</span><span><i class="negativo"></i> Inspecionado sem positividade</span><span><i class="pendente"></i> Visita pendente</span><span><i class="iip"></i> IIP do contorno planejado</span>
+  </div>
+  {% if report.resumo.sem_coordenadas %}<p class="vigilancia-preview-notice">{{ report.resumo.sem_coordenadas }} visitas deste recorte não têm coordenadas e permanecem nos índices e na tabela. O sistema não inventa sua localização.</p>{% endif %}
+  {% for warning in report.avisos %}<p class="vigilancia-preview-notice">{{ warning }}</p>{% endfor %}
+  {% if not territorial_ibge %}<p class="vigilancia-preview-help">O vínculo IBGE desta prefeitura ainda não está configurado. A malha de Pernambuco serve como referência; as visitas são posicionadas somente pelas coordenadas registradas.</p>{% endif %}
+  <p class="vigilancia-preview-help">Fonte territorial: <a href="{{ territorial_context.metadata.documentacao }}" target="_blank" rel="noopener">IBGE · API de malhas geográficas</a> · versão consultada em {{ territorial_context.metadata.consultado_em }}. O limite municipal não representa a área amostrada nem recebe o IIP de um bairro automaticamente.</p>
+  <script type="application/json" id="campo-territorio-data">{{ {'contexto':territorial_context,'ibge':territorial_ibge,'geografia':report.geografia,'pontos':report.pontos,'levantamento':report.filtros.levantamento}|tojson }}</script>
+</section>

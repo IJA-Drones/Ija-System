@@ -217,23 +217,18 @@ def analyze(geo_content, csv_content, *, last_year=None):
 
 
 def example_files():
-    """Grade artificial: não é o limite de nenhum município ou bairro real."""
-    features, rows = [], []
+    """Mesma análise e importador: malha real IBGE, contagens fictícias."""
+    from .territory import condomar_territory
+    geography, rows = condomar_territory(), []
     last = date.today().year - 1
-    for y in range(5):
-        for x in range(5):
-            code = f"DEMO-{y*5+x+1:02d}"
-            left, bottom = -37.0+x*.01, -8.5+y*.01
-            # A mesma fórmula em ambas as bordas evita fendas de ponto flutuante.
-            right, top = -37.0+(x+1)*.01, -8.5+(y+1)*.01
-            ring = [[left,bottom],[right,bottom],[right,top],[left,top],[left,bottom]]
-            features.append({"type":"Feature", "properties":{"codigo":code,"nome":f"Área fictícia {y*5+x+1:02d}"}, "geometry":{"type":"Polygon","coordinates":[ring]}})
-            for year in range(last-4,last+1):
-                cases = 200+(year%5)*15+x+y if x >= 3 and y >= 3 else 1+(x+y+year)%6
-                rows.append([code,year,cases])
+    for index, feature in enumerate(geography['features']):
+        code = feature['properties']['codigo']
+        for year in range(last-4, last+1):
+            cases = 180+(year%5)*15+index if code in {'2600609','2610806','2610905','2616001'} else 2+(index+year)%9
+            rows.append([code, year, cases])
     stream=io.StringIO(newline=""); writer=csv.writer(stream,delimiter=";")
     writer.writerow(["codigo","ano","casos_provaveis"]); writer.writerows(rows)
-    return json.dumps({"type":"FeatureCollection","features":features},ensure_ascii=False).encode(), stream.getvalue().encode("utf-8")
+    return json.dumps(geography,ensure_ascii=False).encode(), stream.getvalue().encode("utf-8")
 
 
 def csv_export(report):

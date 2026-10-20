@@ -1,0 +1,25 @@
+.campo-territorio { min-width: 0; }
+.campo-territorio h2 { font-size: 1.25rem; }
+.campo-territorio h3 { font-size: 1.05rem; }
+.campo-territorio-acoes,.campo-territorio-legenda { display:flex; flex-wrap:wrap; gap:.75rem 1rem; align-items:center; margin-block:1rem; font-size:.85rem; }
+.campo-territorio-acoes label { display:flex; gap:.4rem; align-items:center; }
+.campo-territorio-grid { display:grid; grid-template-columns:minmax(0,3fr) minmax(220px,1fr); gap:1rem; align-items:start; }
+.campo-territorio-grid > * { min-width:0; }
+#campo-territorio-svg { display:block; width:100%; height:auto; min-height:300px; max-height:620px; border:1px solid var(--color-border-light); border-radius:.75rem; background:#f8fafc; }
+.campo-municipio { fill:#e2e8f0; stroke:#94a3b8; stroke-width:.7; vector-effect:non-scaling-stroke; cursor:pointer; }
+.campo-municipio.condomar { fill:#dbeafe; stroke:#64748b; }
+.campo-municipio.selecionado { fill:#bfdbfe; stroke:#1d4ed8; stroke-width:2; }
+.campo-contorno-iip { stroke:#1e40af; stroke-width:2; fill-opacity:.7; vector-effect:non-scaling-stroke; cursor:pointer; }
+.campo-visita { stroke:#fff; stroke-width:2; cursor:pointer; }
+.campo-visita.positivo,.campo-territorio-legenda .positivo { fill:#dc2626; background:#dc2626; }
+.campo-visita.negativo,.campo-territorio-legenda .negativo { fill:#15803d; background:#15803d; }
+.campo-visita.pendente,.campo-territorio-legenda .pendente { fill:#d97706; background:#d97706; }
+.campo-territorio :is(path,circle):focus { outline:none; stroke:#111827; stroke-width:3; }
+.campo-territorio-detalhe { border:1px solid var(--color-border-light); background:var(--color-accent-soft); border-radius:.75rem; padding:1rem; font-size:.85rem; overflow-wrap:anywhere; }
+.campo-territorio-detalhe p { margin-bottom:.6rem; }
+.campo-territorio-legenda span { display:inline-flex; align-items:center; gap:.4rem; }
+.campo-territorio-legenda i { width:12px; height:12px; border-radius:50%; display:inline-block; }
+.campo-territorio-legenda .municipio { background:#dbeafe; border:1px solid #64748b; border-radius:2px; }
+.campo-territorio-legenda .iip { background:linear-gradient(90deg,#dbeafe,#1e40af); width:45px; border-radius:2px; }
+@media(max-width:760px) { .campo-territorio-grid { grid-template-columns:minmax(0,1fr); } #campo-territorio-svg { min-height:250px; } .campo-territorio-acoes button { flex:1 1 auto; } }
+@media print { .campo-territorio-acoes { display:none; } #campo-territorio-svg { max-height:400px; print-color-adjust:exact; -webkit-print-color-adjust:exact; } .campo-territorio-grid { grid-template-columns:minmax(0,1fr); } }

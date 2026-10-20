@@ -15,6 +15,7 @@
   const frameButton = document.getElementById("resultados-enquadrar");
   const layers = { iip: [], liraa: [], focal: [], sinan: [] };
   let map, info, ready = false;
+  const googleDetails = document.getElementById("resultados-google-details");
   const unavailable = () => {
     ready = false;
     status.textContent = "O Google Maps está indisponível neste endereço. As tabelas, os gráficos e os contornos para impressão continuam disponíveis.";
@@ -48,6 +49,7 @@
     layers[layer].push({ shape, points: [center] });
   }
   function initialize() {
+    if (googleDetails && !googleDetails.open) return;
     if (map || !window.google?.maps?.Map || window.__GOOGLE_MAPS_AUTH_FAILED__) return;
     try {
       map = new google.maps.Map(document.getElementById("resultados-mapa"), { center: {lat:-8.5,lng:-37},
@@ -88,6 +90,7 @@
     window.print();
   });
   document.addEventListener("googlemaps:ready", initialize);
+  googleDetails?.addEventListener("toggle", () => { if (googleDetails.open) { initialize(); if (ready) frame(); } });
   document.addEventListener("googlemaps:auth-failed", unavailable);
   if (window.__GOOGLE_MAPS_AUTH_FAILED__ || !config.configurado) unavailable(); else initialize();
   window.setTimeout(() => { if (!map) unavailable(); }, 15000);

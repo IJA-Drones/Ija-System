@@ -20,6 +20,27 @@ from test_vigilancia_capture import record, deposits
 POLYGON = {'type':'Polygon','coordinates':[[[-36.701,-8.351],[-36.699,-8.351],[-36.699,-8.349],[-36.701,-8.349],[-36.701,-8.351]]]}
 
 
+@pytest.mark.parametrize('path', ['/vigilancia/campo', '/vigilancia/planejamento', '/vigilancia/resultados'])
+def test_prefeitura_filter_uses_registered_names_and_preserves_municipal_scope(planned, path):
+    client, _ = planned
+    login(client, 'global')
+    response = client.get(path)
+    assert response.status_code == 200
+    assert '<select class="form-select" id="escopo-prefeitura" name="prefeitura_id" required>' in response.text
+    assert '>Sete</option>' in response.text and '>Oito</option>' in response.text
+    selected = client.get(path + '?prefeitura_id=7&demo=true')
+    assert selected.status_code == 200
+    assert '<option value="7" selected>Sete</option>' in selected.text
+    # Um ID de outro ambiente continua sendo rejeitado, sem fallback silencioso.
+    assert client.get(path + '?prefeitura_id=2&demo=true').status_code == 400
+    login(client)
+    own = client.get(path)
+    assert own.status_code == 200
+    assert 'id="escopo-prefeitura" value="Sete" readonly' in own.text
+    assert '>Oito</option>' not in own.text
+    assert client.get(path + '?prefeitura_id=8&demo=true').status_code == 403
+
+
 def setup_results(planned):
     client, store = planned
     create(store)
