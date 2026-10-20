@@ -2,25 +2,20 @@
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">
-{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
 
 {% block content %}
 <div class="vigilancia-preview-page py-4">
-  <p><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a></p>
-  {% if field_mode %}<p><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if not batch or batch.demo else 'false', os_id=batch.report.vinculo_os.id if batch and batch.report.get('vinculo_os') else none) }}">Registrar visita e consultar indicadores</a></p>{% endif %}
+  {% include '_vigilancia_navegacao.html' %}
   <header class="vigilancia-preview-header">
     <div>
-      <p class="vigilancia-preview-eyebrow">Vigilância de campo</p>
-      <h1>{{ 'Importação de Focal e LIRAa' if field_mode else 'Validação de Focal e LIRAa' }}</h1>
-      <p class="vigilancia-preview-muted">Confira o arquivo, revise inconsistências e consulte os indicadores preliminares.</p>
+      <h1>{{ 'Importar visitas' if field_mode else 'Validar arquivo de visitas' }}</h1>
+      <p class="vigilancia-preview-muted">Focal e LIRAa · valide o arquivo e confirme a carga.</p>
     </div>
-    <span class="vigilancia-preview-tag">Layout provisório</span>
+    {% if field_mode and batch and batch.report.get('vinculo_os') %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if batch.demo else 'false', os_id=batch.report.vinculo_os.id) }}">Voltar à visita</a>{% endif %}
   </header>
 
-  <div class="vigilancia-preview-notice">
-    <i class="bi bi-info-circle" aria-hidden="true"></i>
-    <p>{% if field_mode %}O arquivo original e a prévia são preservados no lote. Imóveis e inspeções são gravados somente após confirmar a carga. Dados demonstrativos ficam separados dos dados autorizados. Os indicadores continuam preliminares.{% else %}Esta prévia não grava dados no sistema. Use o exemplo sintético para validar o fluxo; os layouts e resultados oficiais dependem de homologação da vigilância.{% endif %}</p>
-  </div>
+  <p class="vigilancia-preview-help mb-3">{% if field_mode %}As visitas entram nos resultados e no mapa após confirmar a carga.{% else %}Esta validação não grava os dados no sistema.{% endif %}</p>
 
   {% if erro %}
   <div class="alert alert-danger" role="alert">{{ erro }}</div>
@@ -30,8 +25,8 @@
     {% include '_vigilancia_cargas.html' %}
   {% endif %}
 
-  <section class="vigilancia-preview-panel" aria-labelledby="arquivo-heading">
-    <h2 id="arquivo-heading">Conferir arquivo</h2>
+  <details class="vigilancia-preview-panel liraa-import-form" {% if not batch %}open{% endif %}>
+    <summary id="arquivo-heading">{{ 'Importar outro arquivo' if batch else 'Importar CSV de visitas' }}</summary>
     {% set form_endpoint = 'main.vigilancia_importacoes' if field_mode else 'main.vigilancia_validacao' %}
     {% set sample_endpoint = 'main.vigilancia_import_modelo' if field_mode else 'main.vigilancia_modelo_csv' %}
     <form method="post" action="{{ url_for(form_endpoint) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(form_endpoint), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -42,7 +37,7 @@
         <div><label for="campo-fonte" class="form-label">Fonte do arquivo</label><input id="campo-fonte" name="fonte" class="form-control" maxlength="120" required placeholder="Ex.: levantamento sintético para demonstração"></div>
         <div><label for="campo-demo" class="form-label">Origem dos dados</label><select id="campo-demo" name="demo" class="form-select"><option value="true">Demonstração - dados fictícios</option><option value="false">Dados autorizados da vigilância</option></select></div>
       </div>
-      <p><label><input type="checkbox" name="autorizado" value="sim"> Confirmo a autorização para uso de dados reais, caso tenha selecionado essa opção.</label></p>
+      <p id="campo-autorizacao"><label><input type="checkbox" id="campo-autorizado" name="autorizado" value="sim"> Confirmo a autorização para uso destes dados reais.</label></p>
       {% endif %}
       <div class="vigilancia-preview-form-grid">
         <div>
@@ -52,7 +47,11 @@
             <option value="">Selecione uma prefeitura</option>
             {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
           </select>
-          <p class="vigilancia-preview-help" id="prefeitura-help">O campo <code>municipio_id</code> do CSV deve usar o ID interno da prefeitura selecionada. O modelo de exemplo já utiliza esse ID.</p>
+          <p class="vigilancia-preview-help" id="prefeitura-help"><code>municipio_id</code> deve coincidir com a prefeitura selecionada.</p>
+          {% elif field_mode %}
+          <label for="prefeitura-nome" class="form-label">Prefeitura</label>
+          <input type="hidden" id="prefeitura-id" name="prefeitura_id" value="{{ prefeitura_id }}">
+          <input class="form-control" id="prefeitura-nome" value="{{ prefeitura_nome }}" readonly>
           {% else %}
           <label for="prefeitura-id" class="form-label">Código da prefeitura</label>
           <input class="form-control" type="number" id="prefeitura-id" name="prefeitura_id" min="1" step="1" required
@@ -69,21 +68,10 @@
       </div>
       <div class="vigilancia-preview-actions">
         <button class="btn btn-primary" type="submit"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Validar arquivo</button>
-        <a class="btn btn-outline-primary {% if not prefeitura_id %}disabled{% endif %}" id="sample-download"
-          href="{% if prefeitura_id %}{{ url_for(sample_endpoint, prefeitura_id=prefeitura_id) }}{% else %}#{% endif %}"
-          data-sample-url="{{ url_for(sample_endpoint) }}" {% if not prefeitura_id %}aria-disabled="true" tabindex="-1"{% endif %}>
-          <i class="bi bi-download me-2" aria-hidden="true"></i>Baixar exemplo sintético
-        </a>
+
       </div>
     </form>
-    <details class="vigilancia-preview-layout">
-      <summary>Consultar colunas e regras do layout</summary>
-      <p class="vigilancia-preview-help">Versão: <code>{{ layout_version }}</code>. Todos os cabeçalhos abaixo são obrigatórios.</p>
-      <div class="vigilancia-preview-columns">{% for column in csv_columns %}<code>{{ column }}</code>{% endfor %}</div>
-      <p class="vigilancia-preview-help">Origens: <strong>FOCAL</strong> e <strong>LIRAA</strong>. Situações: <strong>INSPECIONADO</strong>, <strong>FECHADO</strong> ou <strong>RECUSADO</strong>. Positividade: <strong>SIM</strong>/<strong>NAO</strong> para inspeções realizadas e vazia em pendências. Datas no formato AAAA-MM-DD.</p>
-      <p class="vigilancia-preview-help">LIRAa exige levantamento e estrato; focal deixa esses campos vazios. Coordenadas são opcionais, mas devem vir em par. Identificadores de imóvel e inspeção devem permanecer estáveis.</p>
-    </details>
-  </section>
+  </details>
 
   {% if result %}
   <section class="vigilancia-preview-panel" aria-labelledby="resultado-heading">
@@ -150,9 +138,10 @@
   </section>
   <script type="application/json" id="preview-report">{{ result|tojson }}</script>
   {% endif %}
+{% if field_mode %}{% include '_vigilancia_cargas_historico.html' %}{% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/vigilancia-validacao.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/vigilancia-validacao.js', v='20261020-3') }}" defer></script>
 {% endblock %}

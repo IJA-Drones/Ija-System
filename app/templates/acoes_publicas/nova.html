@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% from 'acoes_publicas/_campos.html' import fields, tokens with context %}
+{% block title %}Preparar divulgação | Oceano Azul{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/acoes-publicas.css') }}">{% endblock %}
+{% block content %}
+<main class="acoes-page py-4">
+  <a href="{{ url_for('main.acoes_listar', demo=form.get('demo','true')) }}" class="acoes-back">← Ações realizadas</a>
+  <header class="acoes-heading"><div><span class="acoes-eyebrow">Comunicação com a população</span><h1>Preparar divulgação</h1><p>Crie o rascunho de uma ação já realizada pela prefeitura.</p></div></header>
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  {% if source %}<p class="alert alert-info">Referência interna: <strong>OS #{{ source.id }}</strong>. O texto público e as mídias serão selecionados e revisados nesta publicação.</p>{% endif %}
+  <section class="acoes-panel">
+    <form method="post">
+      {{ tokens(acao_csrf) }}<input type="hidden" name="request_id" value="{{ request_id }}">{% if source %}<input type="hidden" name="os_id" value="{{ source.id }}">{% endif %}
+      <div class="acoes-fields mb-4"><div><label class="form-label" for="acao-prefeitura">Prefeitura *</label><select class="form-select" id="acao-prefeitura" name="prefeitura_id" required>{% if cities|length != 1 %}<option value="">Selecione</option>{% endif %}{% for city in cities %}<option value="{{ city.id }}" {% if form.get('prefeitura_id') == city.id|string %}selected{% endif %}>{{ city.nome }}</option>{% endfor %}</select></div>
+      <div><label class="form-label" for="acao-demo">Origem do conteúdo *</label><select class="form-select" id="acao-demo" name="demo">{% if not source %}<option value="true" {% if form.get('demo') == 'true' %}selected{% endif %}>Demonstração — dados fictícios</option>{% endif %}<option value="false" {% if form.get('demo') == 'false' %}selected{% endif %}>Conteúdo autorizado da prefeitura</option></select></div></div>
+      {{ fields(form, types) }}
+      <div class="acoes-actions"><button class="btn btn-primary">Criar rascunho</button><a class="btn btn-outline-secondary" href="{{ url_for('main.acoes_listar') }}">Cancelar</a></div>
+      <p class="form-text mt-3">Após salvar, adicione as mídias e confira a prévia antes de enviar para revisão.</p>
+    </form>
+  </section>
+</main>
+{% endblock %}

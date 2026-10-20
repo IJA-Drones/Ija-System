@@ -3381,7 +3381,7 @@ class AgroFlightKmlRoute(db.Model):
 
 
 class FinanceiroEmpresaPerfil(db.Model):
-    """Branding keyed by the authorized catalog slug; does not grant data access."""
+    
     __tablename__ = "financeiro_empresa_perfis"
 
     empresa_slug = db.Column(db.String(80), primary_key=True)
@@ -3393,7 +3393,7 @@ class FinanceiroEmpresaPerfil(db.Model):
 
 
 class EdicaoReserva(db.Model):
-    """One durable lease per business object, shared across processes and tabs."""
+    
     __tablename__ = "edicao_reservas"
     tipo = db.Column(db.String(20), primary_key=True)
     objeto_id = db.Column(db.Integer, primary_key=True)
@@ -3483,13 +3483,14 @@ class ConsultaEmailEnvio(db.Model):
     atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
-# Register the field domain for Alembic and isolated db.create_all() tests.
-from app.modules.vigilancia.field_models import (  # noqa: E402,F401
+
+from app.modules.vigilancia.field_models import (  
     CampoLote, CampoImovel, CampoLevantamento, CampoInspecao, CampoLoteInspecao, CampoOsReferencia,
 )
-from app.modules.vigilancia.sinan_models import SinanJob, SinanCase  # noqa: E402,F401
-from app.modules.vigilancia.planning_models import (  # noqa: E402,F401
+from app.modules.vigilancia.sinan_models import SinanJob, SinanCase  
+from app.modules.vigilancia.planning_models import (  
     CampoQuarteirao, CampoPlano, CampoPlanoEstrato, CampoPlanoQuarteirao, CampoPlanoVisita,
 )
 
-from app.modules.vigilancia.risk_models import RiscoAnalise  # noqa: E402,F401
+from app.modules.vigilancia.risk_models import RiscoAnalise  
+from app.modules.acoes_publicas.models import AcaoPublica, AcaoPublicaMidia, AcaoPublicaEvento  

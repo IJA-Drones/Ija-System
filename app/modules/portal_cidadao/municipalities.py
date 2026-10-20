@@ -24,12 +24,20 @@ def public_health_municipality(config, args):
         options.append(municipality)
         by_code[default_code] = municipality
 
+    if len(args.getlist("regiao")) > 1 or args.get("regiao", "todos") not in {"todos", "condomar"}:
+        raise BadRequest("Selecione uma região disponível no filtro.")
     if len(args.getlist("municipio")) > 1:
         raise BadRequest("Selecione um único município para consultar o boletim.")
     requested = args.get("municipio", "").strip()
     if requested and requested not in by_code:
         raise BadRequest("Selecione um município disponível no filtro do boletim.")
-    selected = by_code[requested or (default_code if default_code in by_code else "3550308")]
+    if args.get("regiao") == "condomar":
+        options = [item for item in options if item["region"] == "condomar"]
+    available = {item["ibge"] for item in options}
+    # Ao mudar de região, a cidade anterior pode sair da lista. Selecionar
+    # uma cidade da nova lista sem transformar a troca de região em erro 400.
+    selected_code = next((code for code in (requested, default_code, options[0]["ibge"]) if code in available))
+    selected = by_code[selected_code]
     source_config = {
         "INFODENGUE_GEOCODE": selected["ibge"],
         "INFODENGUE_CITY": selected["name"],

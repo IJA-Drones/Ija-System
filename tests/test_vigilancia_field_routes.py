@@ -80,7 +80,7 @@ def store(client):
 def test_full_prepare_confirm_reopen_and_original(client):
     login(client)
     page=client.get('/vigilancia/importacoes')
-    assert page.status_code==200 and 'Importação de Focal' in page.text
+    assert page.status_code==200 and 'Importar visitas' in page.text
     assert page.headers['Cache-Control']=='private, no-store'
     response=prepare(client)
     assert response.status_code==303

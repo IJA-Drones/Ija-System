@@ -74,7 +74,7 @@ def test_geometry_http_scope_demo_and_safe_json(planned):
     client, store = planned
     login(client, '703')
     page = client.get('/vigilancia/planejamento')
-    assert 'Selecione a área no mapa' in page.text and 'Concluir desenho' in page.text
+    assert 'Delimitar no mapa' in page.text and 'Concluir desenho' in page.text
     payload = values() | dict(acao='territorio', demo='true', _csrf_token=token(client))
     response = client.post('/vigilancia/planejamento', data=payload)
     assert response.status_code == 303 and 'territorio=Q-01' in response.location

@@ -238,8 +238,8 @@
     finally { controls(); }
   }
 
-  el('saved-tab').addEventListener('shown.bs.tab', () => { el('submit').hidden = true; refresh(); });
-  el('saved-tab').addEventListener('hidden.bs.tab', () => { el('submit').hidden = false; clearTimeout(pollTimer); selection.next(); });
+  el('saved-tab').addEventListener('shown.bs.tab', () => { el('filter-actions').hidden = true; refresh(); });
+  el('saved-tab').addEventListener('hidden.bs.tab', () => { el('filter-actions').hidden = false; clearTimeout(pollTimer); selection.next(); });
   el('refresh-jobs').addEventListener('click', () => refresh());
   el('import-api')?.addEventListener('click', () => begin(panel.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(scope()) }));
   el('case-form').addEventListener('submit', event => {
@@ -252,7 +252,13 @@
     begin(panel.dataset.casesUrl, { method: 'POST', body });
   });
   el('case-mode').addEventListener('change', () => { el('case-authorization').hidden = el('case-mode').value !== 'false'; el('case-authorized').checked = false; });
-  el('sample-cases').addEventListener('click', () => download(`${panel.dataset.sampleUrl}?${new URLSearchParams(scope())}`, 'sinan-modelo-DEMONSTRACAO.csv'));
+  function importSource() {
+    const csv = el('import-source').value === 'csv';
+    el('upload-details').hidden = !csv;
+    el('api-import').hidden = csv;
+  }
+  el('import-source').addEventListener('change', importSource);
+  importSource();
   el('export-job').addEventListener('click', () => { if (eligible(selected)) download(`${panel.dataset.url}/${selected.id}/exportar.csv`, `sinan-${selected.disease}-${selected.ibge}-${selected.year}-${selected.status}${selected.demo ? '-DEMONSTRACAO' : ''}.csv`); });
   el('cancel-job').addEventListener('click', async () => {
     if (!selected || selected.status !== 'running') return;

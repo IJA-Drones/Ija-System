@@ -1,4 +1,7 @@
 {
+  "main.portal_acoes": "Public approved municipal actions, explicitly separated demonstration mode",
+  "main.portal_acao": "Only the approved snapshot of an active publication",
+  "main.portal_acao_midia": "Only media selected in the approved active publication",
   "main.ortomosaico_curvas": "Private contour layer; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaico_jpeg": "Private contour JPEG; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaicos": "Fixed role guard: only diretor and dev; cannot be delegated by Central TI",

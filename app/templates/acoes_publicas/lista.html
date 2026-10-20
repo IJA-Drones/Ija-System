@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Ações realizadas | Oceano Azul{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/acoes-publicas.css') }}">{% endblock %}
+{% block content %}
+<main class="acoes-page py-4">
+  <a class="acoes-back" href="{{ url_for('main.vigilancia') }}">← Vigilância</a>
+  <header class="acoes-heading"><div><span class="acoes-eyebrow">Comunicação com a população</span><h1>Ações realizadas</h1><p>Prepare, revise e acompanhe as divulgações da prefeitura.</p></div>{% if can_create %}<a class="btn btn-primary" href="{{ url_for('main.acoes_nova') }}">Preparar divulgação</a>{% endif %}</header>
+  <form class="acoes-panel acoes-filters" method="get">{% if cities %}<div><label class="form-label" for="acoes-prefeitura">Prefeitura</label><select class="form-select" id="acoes-prefeitura" name="prefeitura_id"><option value="">Todas no meu acesso</option>{% for city in cities %}<option value="{{ city.id }}" {% if selected==city.id|string %}selected{% endif %}>{{ city.nome }}</option>{% endfor %}</select></div>{% endif %}<div><label class="form-label" for="acoes-demo">Conteúdo</label><select class="form-select" id="acoes-demo" name="demo"><option value="false" {% if not demo %}selected{% endif %}>Autorizado da prefeitura</option><option value="true" {% if demo %}selected{% endif %}>Demonstração — dados fictícios</option></select></div><button class="btn btn-outline-primary">Consultar</button></form>
+  <div class="acoes-list">
+  {% for row in pagination.items %}<article class="acoes-panel acoes-list-row"><div><span class="acoes-status">{{ statuses[row.status] }}</span>{% if row.publicado and row.status!='PUBLICADO' %}<span class="acoes-status">Versão anterior publicada</span>{% endif %}{% if row.demo %}<span class="acoes-demo">Demonstração</span>{% endif %}<h2><a href="{{ url_for('main.acoes_editar',identifier=row.id) }}">{{ row.titulo }}</a></h2><p>{{ row.prefeitura.nome }}{% if row.bairro %} · {{ row.bairro }}{% endif %}</p><small>{{ row.inicio|acao_data }} a {{ row.fim|acao_data }} · Atualizada em {{ row.atualizado_em|acao_hora }}</small></div><a class="btn btn-outline-primary" href="{{ url_for('main.acoes_editar',identifier=row.id) }}">Abrir ação</a></article>
+  {% else %}<div class="acoes-panel acoes-empty"><i class="bi bi-megaphone" aria-hidden="true"></i><h2>Nenhuma divulgação neste recorte</h2><p>Prepare uma ação ou selecione outra origem do conteúdo.</p></div>{% endfor %}
+  </div>
+  <nav class="acoes-actions" aria-label="Páginas das ações">{% if pagination.has_prev %}<a class="btn btn-outline-secondary" href="{{ url_for('main.acoes_listar',pagina=pagination.prev_num,demo='true' if demo else 'false',prefeitura_id=selected) }}">Anterior</a>{% endif %}<span>Página {{ pagination.page }} de {{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a class="btn btn-outline-secondary" href="{{ url_for('main.acoes_listar',pagina=pagination.next_num,demo='true' if demo else 'false',prefeitura_id=selected) }}">Próxima</a>{% endif %}</nav>
+</main>
+{% endblock %}

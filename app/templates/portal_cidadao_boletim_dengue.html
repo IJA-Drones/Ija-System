@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261020-3') }}">
 {% endblock %}
 
 {% block auth_content %}
@@ -25,6 +25,8 @@
       <p>Dados semanais do InfoDengue para {{ selected_municipality.name }}{% if selected_municipality.uf %}/{{ selected_municipality.uf }}{% endif %}. Selecione município, doença e ano para consultar outro recorte.</p>
     </div>
     <form class="portal-cidadao-report-filter" method="get" action="{{ url_for('main.portal_cidadao_boletim_dengue') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.portal_cidadao_boletim_dengue'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+      {% if request.args.get('demo') == 'true' %}<input type="hidden" name="demo" value="true">{% endif %}
+      <label><span>Região</span><select class="form-select" name="regiao"><option value="todos" {% if selected_region == 'todos' %}selected{% endif %}>Todos os municípios disponíveis</option><option value="condomar" {% if selected_region == 'condomar' %}selected{% endif %}>CONDOMAR · 15 municípios</option></select></label>
       <label class="portal-cidadao-municipality-choice">
         <span>Município</span>
         <select class="form-select" name="municipio">

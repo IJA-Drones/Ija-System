@@ -54,6 +54,8 @@ def current_rules(profile_code):
         allow("sistema.perfis", "consultar configurar")
     else:
         administrative = can_access_admin_panel(user)
+        if is_admin_global_user(user) or is_covisa_user(user) or is_prefeitura_admin_user(user):
+            allow("prefeitura.acoes_publicas", "consultar criar editar publicar")
         editable = can_edit_admin_panel(user)
         operational = role in OPERATIONAL_ROLES
         operational_os = operational or role in VEICULOS_SUPERVISOR_USER_TYPES

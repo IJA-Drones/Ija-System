@@ -1,0 +1,857 @@
+[
+  [
+    1,
+    569.89,
+    "Novas<br/>funcionalidades"
+  ],
+  [
+    1,
+    489.89,
+    "SINAN, LIRAa/focal e<br/>Ações realizadas"
+  ],
+  [
+    1,
+    428.89,
+    "Guia explicativo dos recursos, dos fluxos de trabalho e dos cuidados para i"
+  ],
+  [
+    1,
+    342.89,
+    "Consultar"
+  ],
+  [
+    1,
+    294.89,
+    "Notificações e recortes do SINAN"
+  ],
+  [
+    1,
+    342.89,
+    "Registrar e analisar"
+  ],
+  [
+    1,
+    294.89,
+    "Planejamento, visitas e resultados de campo"
+  ],
+  [
+    1,
+    342.89,
+    "Divulgar"
+  ],
+  [
+    1,
+    294.89,
+    "Publicações aprovadas no Portal do Cidadão"
+  ],
+  [
+    1,
+    103,
+    "VERSÃO EXPLICATIVA / 20 DE OUTUBRO DE 2026"
+  ],
+  [
+    1,
+    59,
+    "As capturas usam dados fictícios da demonstração local. O design de SINAN e"
+  ],
+  [
+    2,
+    716.89,
+    "Três frentes, um fluxo de trabalho"
+  ],
+  [
+    2,
+    689.39,
+    "Cada módulo responde a uma pergunta diferente e conserva a origem da inform"
+  ],
+  [
+    2,
+    645.39,
+    "Frente"
+  ],
+  [
+    2,
+    645.39,
+    "Para que serve"
+  ],
+  [
+    2,
+    645.39,
+    "O que entrega"
+  ],
+  [
+    2,
+    419.83,
+    "A origem faz diferença"
+  ],
+  [
+    2,
+    385.43,
+    "Notificação SINAN não é automaticamente um caso confirmado. Uma OS não subs"
+  ],
+  [
+    2,
+    335.43,
+    "Como navegar neste guia"
+  ],
+  [
+    2,
+    306.43,
+    "Consulta e dados salvos do SINAN"
+  ],
+  [
+    2,
+    267.43,
+    "Planejamento, visitas e resultados de campo"
+  ],
+  [
+    2,
+    228.43,
+    "Preparação, publicação e acesso da população"
+  ],
+  [
+    2,
+    189.43,
+    "Permissões e condições de uso"
+  ],
+  [
+    2,
+    150.43,
+    "Roteiro de demonstração e referências"
+  ],
+  [
+    3,
+    716.89,
+    "Consultar notificações"
+  ],
+  [
+    3,
+    689.39,
+    "Entrada: Vigilância > SINAN - Arboviroses > Consulta pública."
+  ],
+  [
+    3,
+    627.39,
+    "Filtrar"
+  ],
+  [
+    3,
+    610.39,
+    "Doença, município e ano"
+  ],
+  [
+    3,
+    627.39,
+    "Consultar"
+  ],
+  [
+    3,
+    610.39,
+    "Leitura paginada da fonte"
+  ],
+  [
+    3,
+    627.39,
+    "Interpretar"
+  ],
+  [
+    3,
+    610.39,
+    "Página atual e contexto"
+  ],
+  [
+    3,
+    551.99,
+    "Selecione o recorte"
+  ],
+  [
+    3,
+    518.39,
+    "Escolha dengue, zika ou chikungunya, o município de notificação e o ano. O "
+  ],
+  [
+    3,
+    486.99,
+    "Leia a tabela e navegue"
+  ],
+  [
+    3,
+    438.59,
+    "Cada página apresenta até 10 notificações, com semana epidemiológica, class"
+  ],
+  [
+    3,
+    407.19,
+    "Consulte os detalhes do recorte"
+  ],
+  [
+    3,
+    373.59,
+    "Indicadores desta página reúne os dados das linhas exibidas. Sobre os dados"
+  ],
+  [
+    3,
+    342.19,
+    "Refaça a consulta quando necessário"
+  ],
+  [
+    3,
+    308.59,
+    "Alterar filtros ou usar Limpar busca limpa o recorte anterior. Em falhas, T"
+  ],
+  [
+    3,
+    265.59,
+    "Como interpretar uma resposta vazia"
+  ],
+  [
+    3,
+    231.19,
+    "O retorno sem registros descreve a consulta à fonte naquele momento. Ele nã"
+  ],
+  [
+    4,
+    716.89,
+    "Guardar, exportar e comparar"
+  ],
+  [
+    4,
+    689.39,
+    "A aba Dados salvos reúne os lotes importados e as opções de consulta poster"
+  ],
+  [
+    4,
+    645.39,
+    "Origem do lote"
+  ],
+  [
+    4,
+    645.39,
+    "Como funciona"
+  ],
+  [
+    4,
+    645.39,
+    "Uso no mapa"
+  ],
+  [
+    4,
+    465.61,
+    "Acompanhe a importação"
+  ],
+  [
+    4,
+    432.01,
+    "Consulte andamento, situação e origem do lote. Uma carga parcial ou com fal"
+  ],
+  [
+    4,
+    400.61,
+    "Exporte o recorte selecionado"
+  ],
+  [
+    4,
+    367.01,
+    "O CSV exportado lê o lote salvo, sem consultar novamente a fonte. Origem, s"
+  ],
+  [
+    4,
+    335.61,
+    "Compare somente os dados compatíveis"
+  ],
+  [
+    4,
+    287.21,
+    "A integração com os resultados de campo exige o vínculo correto entre a pre"
+  ],
+  [
+    4,
+    244.21,
+    "Regras práticas para os arquivos"
+  ],
+  [
+    4,
+    196.11,
+    "O CSV usa referências sem identificação pessoal. A autorização é exigida pa"
+  ],
+  [
+    5,
+    716.89,
+    "Planejar o levantamento"
+  ],
+  [
+    5,
+    689.39,
+    "A coordenação municipal organiza o território, a amostra informada e as atr"
+  ],
+  [
+    5,
+    627.39,
+    "Território"
+  ],
+  [
+    5,
+    610.39,
+    "Quarteirões e contornos"
+  ],
+  [
+    5,
+    627.39,
+    "Plano"
+  ],
+  [
+    5,
+    610.39,
+    "Estratos, metas e agentes"
+  ],
+  [
+    5,
+    627.39,
+    "Liberação"
+  ],
+  [
+    5,
+    610.39,
+    "Conferir e iniciar visitas"
+  ],
+  [
+    5,
+    551.99,
+    "Cadastre o território"
+  ],
+  [
+    5,
+    518.39,
+    "Informe código estável do quarteirão, bairro, área, número de imóveis e ref"
+  ],
+  [
+    5,
+    486.99,
+    "Defina o levantamento e os estratos"
+  ],
+  [
+    5,
+    453.39,
+    "Cadastre código, período, responsável técnico e fonte do plano amostral. In"
+  ],
+  [
+    5,
+    421.99,
+    "Selecione os quarteirões da amostra"
+  ],
+  [
+    5,
+    388.39,
+    "Vincule os quarteirões já cadastrados ao estrato, defina suas metas e atrib"
+  ],
+  [
+    5,
+    356.99,
+    "Revise e libere o plano"
+  ],
+  [
+    5,
+    323.39,
+    "As metas dos quarteirões precisam fechar a meta do estrato e respeitar sua "
+  ],
+  [
+    5,
+    280.39,
+    "O que a coordenação continua definindo"
+  ],
+  [
+    5,
+    245.99,
+    "O sistema registra a amostra informada. Ele não executa sorteio nem calcula"
+  ],
+  [
+    6,
+    716.89,
+    "Registrar e confirmar uma visita"
+  ],
+  [
+    6,
+    689.39,
+    "Os registros só entram na base confirmada depois da revisão e da confirmaçã"
+  ],
+  [
+    6,
+    650.99,
+    "O agente acessa a própria área"
+  ],
+  [
+    6,
+    602.59,
+    "No login principal, a conta Agente de Endemias entra em Meus levantamentos."
+  ],
+  [
+    6,
+    571.19,
+    "Informe os dados efetivos do campo"
+  ],
+  [
+    6,
+    537.59,
+    "Registre códigos estáveis de imóvel e inspeção, data e situação da visita. "
+  ],
+  [
+    6,
+    506.19,
+    "Registre somente o resultado identificado"
+  ],
+  [
+    6,
+    457.79,
+    "Imóvel inspecionado recebe positividade identificada para Aedes aegypti. Qu"
+  ],
+  [
+    6,
+    426.39,
+    "Revise antes de gravar"
+  ],
+  [
+    6,
+    392.79,
+    "O sistema prepara uma prévia e valida conflitos, vínculo e período. A confi"
+  ],
+  [
+    6,
+    349.79,
+    "Como uma OS pode ajudar"
+  ],
+  [
+    6,
+    301.69,
+    "Na área da coordenação, uma OS acessível pode fornecer uma referência para "
+  ],
+  [
+    6,
+    252.69,
+    "Responsabilidade individual"
+  ],
+  [
+    6,
+    215.69,
+    "Cada confirmação conserva a autoria da conta. O agente não recebe acesso ge"
+  ],
+  [
+    7,
+    716.89,
+    "Entender os resultados e os mapas"
+  ],
+  [
+    7,
+    689.39,
+    "Os painéis preservam as fontes: inspeção de campo, tratamento focal, notifi"
+  ],
+  [
+    7,
+    633.39,
+    "Indicador do painel"
+  ],
+  [
+    7,
+    645.39,
+    "O que expressa"
+  ],
+  [
+    7,
+    645.39,
+    "Dependência"
+  ],
+  [
+    7,
+    408.67,
+    "Exemplo fictício de leitura"
+  ],
+  [
+    7,
+    374.27,
+    "Dois imóveis inspecionados, um positivo e dois recipientes positivos da cat"
+  ],
+  [
+    7,
+    324.27,
+    "Duas leituras territoriais diferentes"
+  ],
+  [
+    7,
+    297.87,
+    "Levantamento LIRAa"
+  ],
+  [
+    7,
+    264.27,
+    "Consulta visitas e IIP do levantamento selecionado, com tabelas, gráficos e"
+  ],
+  [
+    7,
+    232.87,
+    "Histórico de casos - área avançada"
+  ],
+  [
+    7,
+    184.47,
+    "Analisa concentrações e recorrência a partir de contornos territoriais e co"
+  ],
+  [
+    8,
+    716.89,
+    "Preparar a divulgação"
+  ],
+  [
+    8,
+    689.39,
+    "Entrada: Vigilância > Ações realizadas > Preparar divulgação."
+  ],
+  [
+    8,
+    618.89,
+    "Prepare título, tipo de ação, prefeitura, bairro ou área, período e descriç"
+  ],
+  [
+    8,
+    161.59,
+    "Captura real do editor local. Conteúdo e prefeitura fictícios; dados preenc"
+  ],
+  [
+    8,
+    119.59,
+    "A OS é uma referência interna"
+  ],
+  [
+    8,
+    85.19,
+    "Endereço completo, observações operacionais e mídias não são copiados autom"
+  ],
+  [
+    9,
+    716.89,
+    "Revisar, publicar e retirar"
+  ],
+  [
+    9,
+    689.39,
+    "A versão aprovada fica separada das alterações ainda em preparação."
+  ],
+  [
+    9,
+    627.39,
+    "Rascunho"
+  ],
+  [
+    9,
+    599.39,
+    "Preparar texto e arquivos"
+  ],
+  [
+    9,
+    627.39,
+    "Em revisão"
+  ],
+  [
+    9,
+    610.39,
+    "Conferir e autorizar"
+  ],
+  [
+    9,
+    627.39,
+    "Publicado"
+  ],
+  [
+    9,
+    610.39,
+    "Disponível à população"
+  ],
+  [
+    9,
+    627.39,
+    "Retirado"
+  ],
+  [
+    9,
+    599.39,
+    "Bloquear o acesso público"
+  ],
+  [
+    9,
+    551.99,
+    "Confira a prévia"
+  ],
+  [
+    9,
+    518.39,
+    "Conferir prévia permite visualizar o texto e as mídias antes da divulgação."
+  ],
+  [
+    9,
+    486.99,
+    "Confirme a autorização"
+  ],
+  [
+    9,
+    453.39,
+    "A conta com permissão para publicar confirma a autorização do texto e de to"
+  ],
+  [
+    9,
+    416.39,
+    "O que acontece quando a ação é editada?"
+  ],
+  [
+    9,
+    373.39,
+    "VERSÃO JÁ APROVADA"
+  ],
+  [
+    9,
+    345.39,
+    "Continua visível no portal."
+  ],
+  [
+    9,
+    307.39,
+    "A população consulta o último conteúdo que recebeu autorização."
+  ],
+  [
+    9,
+    373.39,
+    "NOVO RASCUNHO"
+  ],
+  [
+    9,
+    345.39,
+    "Permanece no editor."
+  ],
+  [
+    9,
+    307.39,
+    "Só substitui a versão pública depois de nova revisão e publicação."
+  ],
+  [
+    9,
+    242.99,
+    "Retire a publicação quando necessário"
+  ],
+  [
+    9,
+    209.39,
+    "Retirar do portal bloqueia novas consultas públicas à página e às mídias. O"
+  ],
+  [
+    9,
+    166.39,
+    "Limite do compartilhamento externo"
+  ],
+  [
+    9,
+    131.99,
+    "A retirada impede novos acessos pelo sistema. Ela não apaga arquivos já bai"
+  ],
+  [
+    10,
+    716.89,
+    "O que a população acessa"
+  ],
+  [
+    10,
+    689.39,
+    "As páginas públicas dispensam login e mostram somente o conteúdo aprovado."
+  ],
+  [
+    10,
+    618.89,
+    "O visitante pode filtrar prefeitura e período, abrir a ação e consultar tex"
+  ],
+  [
+    10,
+    318.49,
+    "Capturas reais da demonstração: detalhe público (esquerda) e cartão na list"
+  ],
+  [
+    10,
+    278.49,
+    "Compartilhamento iniciado pelo visitante"
+  ],
+  [
+    10,
+    246.49,
+    "Opção"
+  ],
+  [
+    10,
+    246.49,
+    "Como funciona"
+  ],
+  [
+    10,
+    83.39,
+    "O sistema não envia mensagens nem publica automaticamente em contas de rede"
+  ],
+  [
+    11,
+    716.89,
+    "Acesso, arquivos e condições de uso"
+  ],
+  [
+    11,
+    689.39,
+    "A existência do recurso no código não confirma sua ativação em cada ambient"
+  ],
+  [
+    11,
+    645.39,
+    "Perfil / acesso"
+  ],
+  [
+    11,
+    645.39,
+    "Papel no fluxo"
+  ],
+  [
+    11,
+    402.67,
+    "Condições para colocar em uso"
+  ],
+  [
+    11,
+    376.27,
+    "Ações realizadas"
+  ],
+  [
+    11,
+    342.67,
+    "Implementado e demonstrado localmente. O ambiente real ainda precisa recebe"
+  ],
+  [
+    11,
+    311.27,
+    "Campo, mapas e SINAN"
+  ],
+  [
+    11,
+    262.87,
+    "Conferir a estrutura do banco, a configuração dos módulos e vínculo prefeit"
+  ],
+  [
+    11,
+    231.47,
+    "Volume e arquivos"
+  ],
+  [
+    11,
+    183.07,
+    "SINAN: até 100 registros por importação. Publicações: até cinco mídias sele"
+  ],
+  [
+    11,
+    140.07,
+    "Interface em evolução"
+  ],
+  [
+    11,
+    91.97,
+    "O design de SINAN e LIRAa está em finalização. Ações realizadas foi conferi"
+  ],
+  [
+    12,
+    716.89,
+    "Como apresentar as funcionalidades"
+  ],
+  [
+    12,
+    689.39,
+    "Use dados fictícios identificados e mostre os resultados de cada etapa."
+  ],
+  [
+    12,
+    650.99,
+    "Consultar o SINAN"
+  ],
+  [
+    12,
+    632.19,
+    "Escolha doença, município e ano; mostre a paginação e o alcance dos indicad"
+  ],
+  [
+    12,
+    600.79,
+    "Abrir um lote salvo"
+  ],
+  [
+    12,
+    567.19,
+    "Mostre origem, situação, limites e exportação do lote. Explique a diferença"
+  ],
+  [
+    12,
+    535.79,
+    "Percorrer o planejamento e o campo"
+  ],
+  [
+    12,
+    502.19,
+    "Mostre território, estratos, metas e atribuições. Registre uma visita fictí"
+  ],
+  [
+    12,
+    470.79,
+    "Preparar e publicar uma ação"
+  ],
+  [
+    12,
+    451.99,
+    "Escolha texto e mídias, confira a prévia, envie para revisão e publique com"
+  ],
+  [
+    12,
+    420.59,
+    "Acessar como visitante e retirar"
+  ],
+  [
+    12,
+    386.99,
+    "Abra o portal sem login, mostre a página e copie o link. Depois retire a pu"
+  ],
+  [
+    12,
+    351.99,
+    "Base técnica consultada"
+  ],
+  [
+    12,
+    319.19,
+    "<b>S1 - Consulta pública e importações SINAN</b><br/><font color=\"#5A6D7D\">"
+  ],
+  [
+    12,
+    289.39,
+    "<b>S2 - Território e planejamento LIRAa</b><br/><font color=\"#5A6D7D\">docs/"
+  ],
+  [
+    12,
+    259.59,
+    "<b>S3 - Registro e indicadores de campo</b><br/><font color=\"#5A6D7D\">docs/"
+  ],
+  [
+    12,
+    229.79,
+    "<b>S4 - Resultados e comparação de camadas</b><br/><font color=\"#5A6D7D\">do"
+  ],
+  [
+    12,
+    199.99,
+    "<b>S5 - Mapa LIRAa e histórico agregado</b><br/><font color=\"#5A6D7D\">app/m"
+  ],
+  [
+    12,
+    170.19,
+    "<b>S6 - Editor e publicação de ações</b><br/><font color=\"#5A6D7D\">docs/aco"
+  ],
+  [
+    12,
+    137.19,
+    "Revisão do código e da documentação em 20/10/2026. Este guia explica o prod"
+  ]
+]

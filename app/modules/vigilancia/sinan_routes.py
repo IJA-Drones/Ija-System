@@ -46,6 +46,17 @@ def register_routes(bp):
     @bp.get("/vigilancia/sinan", endpoint="vigilancia_sinan")
     @_access_required
     def vigilancia_sinan():
+        from .results import municipality_ibge
+        from app.shared.access import is_admin_global_user
+        prefeitura = getattr(current_user, "prefeitura_id", None)
+        raw_prefeitura = request.args.get("prefeitura_id", "")
+        if is_admin_global_user(current_user) and raw_prefeitura.isascii() and raw_prefeitura.isdecimal() and len(raw_prefeitura) <= 10:
+            prefeitura = int(raw_prefeitura)
+        default_ibge = municipality_ibge(current_app.config.get("VIGILANCIA_MUNICIPIOS_IBGE", {}), prefeitura)
+        default_ibge = default_ibge or str(current_app.config.get("INFODENGUE_GEOCODE", "3550308"))
+        selected_ibge = request.args.get("ibge") or default_ibge
+        if selected_ibge not in sinan.MUNICIPALITIES_BY_IBGE:
+            selected_ibge = "3550308"
         return render_template(
             "vigilancia_sinan.html", municipalities=sinan.MUNICIPALITIES,
             diseases=sinan.DISEASES, current_year=datetime.now().year,
@@ -53,6 +64,7 @@ def register_routes(bp):
             catalog_checked_at=sinan.CATALOG_CHECKED_AT,
             sinan_csrf_token=token(),
             sinan_import_enabled=current_app.config.get("SINAN_IMPORT_ENABLED", True),
+            selected_ibge=selected_ibge,
         )
 
     @bp.get("/api/vigilancia/sinan", endpoint="vigilancia_sinan_api")

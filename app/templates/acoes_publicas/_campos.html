@@ -1,0 +1,14 @@
+{% macro fields(form, types, acao=none) %}
+{% set values = form %}
+<div class="acoes-fields">
+  <div class="acoes-wide"><label class="form-label" for="acao-titulo">Título da ação *</label><input class="form-control" id="acao-titulo" name="titulo" maxlength="160" required value="{{ values.get('titulo', acao.titulo if acao else '') }}"></div>
+  <div><label class="form-label" for="acao-tipo">Tipo de ação *</label><select class="form-select" id="acao-tipo" name="tipo" required>{% for code,label in types.items() %}<option value="{{ code }}" {% if values.get('tipo', acao.tipo if acao else '') == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div><label class="form-label" for="acao-bairro">Bairro ou área</label><input class="form-control" id="acao-bairro" name="bairro" maxlength="120" value="{{ values.get('bairro', acao.bairro if acao else '') }}"><small class="form-text">Use uma referência territorial adequada à divulgação pública.</small></div>
+  <div><label class="form-label" for="acao-inicio">Data inicial *</label><input class="form-control" id="acao-inicio" name="inicio" type="date" required value="{{ values.get('inicio', acao.inicio if acao else '') }}"></div>
+  <div><label class="form-label" for="acao-fim">Data final *</label><input class="form-control" id="acao-fim" name="fim" type="date" required value="{{ values.get('fim', acao.fim if acao else '') }}"></div>
+  <div class="acoes-wide"><label class="form-label" for="acao-descricao">Descrição pública</label><textarea class="form-control" id="acao-descricao" name="descricao" rows="7" maxlength="5000" aria-describedby="acao-description-help">{{ values.get('descricao', acao.descricao if acao else '') }}</textarea><small id="acao-description-help" class="form-text">Descreva o que foi realizado. Inclua somente informações autorizadas para divulgação.</small></div>
+</div>
+{% endmacro %}
+{% macro tokens(token, version=none) %}
+<input type="hidden" name="acao_csrf" value="{{ token }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">{% if version is not none %}<input type="hidden" name="versao" value="{{ version }}">{% endif %}
+{% endmacro %}

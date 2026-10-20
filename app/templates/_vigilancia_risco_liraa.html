@@ -1,12 +1,5 @@
-<ol class="risco-etapas" aria-label="Fluxo do levantamento">
-  <li><strong>1. Importar CSV</strong><span>Arquivo com o município e as visitas.</span><a href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id) }}#arquivo-heading">Abrir importação</a></li>
-  <li><strong>2. Confirmar a carga</strong><span>Revise a prévia e publique os registros.</span><a href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id) }}#historico-cargas">Conferir cargas</a></li>
-  <li class="risco-etapa-atual"><strong>3. Consultar o território</strong><span>O mapa lê as visitas confirmadas no banco.</span></li>
-</ol>
-{% if prefeitura_id and demo and territorial_ibge and territorial_ibge.startswith('26') %}<div class="vigilancia-preview-actions risco-noprint"><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_risco_modelo', kind='liraa', prefeitura_id=prefeitura_id, demo='true') }}">Baixar CSV de demonstração com coordenadas</a><p class="vigilancia-preview-help">20 visitas fictícias dentro do limite IBGE do município. Importe o arquivo normalmente e confirme a carga. Resultado esperado: 16 imóveis inspecionados, 4 positivos, 4 pendências e IIP de 25%.</p></div>{% endif %}
 {% if field_report %}
-<section class="vigilancia-preview-panel risco-noprint" aria-labelledby="campo-filtros-heading">
-  <h2 id="campo-filtros-heading">Selecionar levantamento</h2>
+<section class="vigilancia-preview-panel risco-noprint" aria-label="Levantamento e período">
   <form method="get" class="risco-filtros">
     <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}"><input type="hidden" name="camada" value="liraa">
     <label class="form-label">Levantamento LIRAa<select class="form-select" name="levantamento"><option value="">Todos · índices separados por levantamento</option>{% for code in field_report.levantamentos %}<option value="{{ code }}" {% if field_filters.levantamento == code %}selected{% endif %}>{{ code }}</option>{% endfor %}</select></label>
@@ -15,10 +8,10 @@
     <button class="btn btn-primary">Atualizar mapa</button>
   </form>
 </section>
-<div class="risco-contexto"><div><strong>{{ prefeitura_nome }}</strong><p>{{ 'DEMONSTRAÇÃO · visitas e resultados fictícios' if demo else 'Dados autorizados da vigilância' }}</p><p>Levantamento: {{ field_filters.levantamento or 'todos, com índices separados' }} · Somente cargas confirmadas.</p></div><span class="vigilancia-preview-tag">LIRAa · indicadores de campo</span></div>
 <dl class="vigilancia-preview-metrics"><div><dt>Visitas confirmadas</dt><dd>{{ field_report.registros|length }}</dd></div><div><dt>Visitas com coordenadas</dt><dd>{{ field_report.pontos|length }}</dd></div><div><dt>Estratos / áreas com índice</dt><dd>{{ field_report.indicadores|length }}</dd></div><div><dt>Contornos disponíveis</dt><dd>{{ field_report.geografia.features|length }}</dd></div></dl>
 {% with report=field_report %}{% include '_vigilancia_mapa_territorial.html' %}{% endwith %}
-<section class="vigilancia-preview-panel" aria-labelledby="campo-indices-heading"><h2 id="campo-indices-heading">Índices do levantamento importado</h2>
+<details class="vigilancia-preview-layout mb-3"><summary>Fonte e período do levantamento</summary><div class="risco-contexto"><div><strong>{{ prefeitura_nome }}</strong><p>{{ 'DEMONSTRAÇÃO · visitas e resultados fictícios' if demo else 'Dados autorizados da vigilância' }}</p><p>Levantamento: {{ field_filters.levantamento or 'todos, com índices separados' }} · Somente visitas confirmadas.</p></div></div></details>
+<section class="vigilancia-preview-panel" aria-labelledby="campo-indices-heading"><h2 id="campo-indices-heading">Índices do levantamento</h2>
   <p class="vigilancia-preview-help">IIP = 100 × imóveis positivos ÷ imóveis inspecionados. Os índices permanecem separados por levantamento, estrato e área.</p>
   <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Índices LIRAa das cargas confirmadas"><table class="table vigilancia-preview-table"><thead><tr><th>Levantamento / estrato / área</th><th>Inspecionados</th><th>Positivos</th><th>Pendentes</th><th>IIP</th><th>Breteau</th></tr></thead><tbody>{% for item in field_report.indicadores %}<tr><td>{{ item.levantamento_codigo }}<br>{{ item.estrato_codigo }} / {{ item.area_codigo }}</td><td>{{ item.imoveis_inspecionados }}</td><td>{{ item.imoveis_positivos }}</td><td>{{ item.imoveis_pendentes }}</td><td>{{ ('%.2f'|format(item.iip)|replace('.', ',')) ~ '%' if item.iip is not none else 'Indisponível' }}</td><td>{{ '%.2f'|format(item.ib)|replace('.', ',') if item.ib is not none else 'Indisponível' }}</td></tr>{% else %}<tr><td colspan="6">Nenhum levantamento confirmado neste recorte. Importe o CSV e confirme a carga para visualizar seus dados.</td></tr>{% endfor %}</tbody></table></div>
   <a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', levantamento=field_filters.levantamento, inicio=field_filters.inicio, fim=field_filters.fim) }}">Ver gráficos, depósitos e comparação com SINAN</a>

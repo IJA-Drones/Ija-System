@@ -158,6 +158,17 @@ class PublicHealthMunicipalityTests(unittest.TestCase):
         self.assertEqual(selected["uf"], "PE")
         self.assertEqual(len(options), 17)
 
+    def test_region_filter_lists_only_condomar_and_accepts_switching_from_sao_paulo(self):
+        for previous in ("3550308", "2610905"):
+            selected, options, config = public_health_municipality({}, MultiDict({"regiao": "condomar", "municipio": previous}))
+            self.assertEqual(len(options), 15)
+            self.assertTrue(all(item["region"] == "condomar" for item in options))
+            self.assertEqual(selected["region"], "condomar")
+            self.assertEqual(config["INFODENGUE_GEOCODE"], selected["ibge"])
+        for args in (MultiDict({"regiao": "invalida"}), MultiDict([("regiao", "todos"), ("regiao", "condomar")])):
+            with self.assertRaises(BadRequest):
+                public_health_municipality({}, args)
+
 
 class InfoDengueMunicipalCacheTests(unittest.TestCase):
     def setUp(self):
@@ -229,9 +240,10 @@ class PortalHealthPageTests(unittest.TestCase):
 
     @staticmethod
     def demo_risk_report():
-        from app.modules.portal_cidadao.public_risk import get_public_risk_demo
+        from app.modules.portal_cidadao.public_risk import get_public_risk_report
 
-        return get_public_risk_demo()
+        return get_public_risk_report({"VIGILANCIA_IMPORT_ENABLED": False, "SINAN_ENABLED": False},
+            {"ibge": "2610905", "name": "Pesqueira", "uf": "PE"}, MultiDict({"demo": "true"}))
 
     def render_page(self, available):
         alert = health_news._build_infodengue_alert(
@@ -244,10 +256,10 @@ class PortalHealthPageTests(unittest.TestCase):
             "app.modules.portal_cidadao.routes.get_portal_health_news",
             return_value=list(health_news.OFFICIAL_FALLBACK_LINKS),
         ), patch(
-            "app.modules.portal_cidadao.routes.get_public_risk_demo",
+            "app.modules.portal_cidadao.routes.get_public_risk_report",
             return_value=self.demo_risk_report(),
         ):
-            page = self.app.test_client().get("/portal-cidadao")
+            page = self.app.test_client().get("/portal-cidadao?demo=true")
         self.assertEqual(page.status_code, 200)
         return page.get_data(as_text=True)
 
@@ -262,12 +274,13 @@ class PortalHealthPageTests(unittest.TestCase):
             self.assertIn(text, html)
         self.assertEqual(html.count('id="portal-dengue-title"'), 1)
         self.assertEqual(html.count("Casos notificados"), 1)
-        self.assertIn('href="/portal-cidadao/boletim-dengue?municipio=3550308"', html)
+        self.assertIn('href="/portal-cidadao/boletim-dengue?municipio=3550308&amp;demo=true"', html)
         self.assertIn('href="#mapa-risco"', html)
-        self.assertIn("Como o mapa de risco pode orientar a prevenção", html)
-        self.assertIn("Os limites municipais são reais. Os casos e os resultados desta demonstração são fictícios.", html)
+        self.assertIn("Mapa de risco e vigilância", html)
+        self.assertIn("Os limites municipais são reais. Os registros de vigilância exibidos neste mapa são fictícios.", html)
+        self.assertIn("CONDOMAR · 15 municípios de Pernambuco", html)
         self.assertIn("Relatar suspeita de adoecimento", html)
-        self.assertIn('id="risco-data"', html)
+        self.assertIn('id="portal-risco-data"', html)
 
     def test_public_page_keeps_form_news_and_source_links_when_api_fails(self):
         html = self.render_page(False)
@@ -287,7 +300,7 @@ class PortalHealthPageTests(unittest.TestCase):
 
         with patch("app.modules.portal_cidadao.routes.list_public_prefeituras", return_value=[]), patch(
             "app.modules.portal_cidadao.routes.get_infodengue_alert", side_effect=alert_for_city,
-        ) as get, patch("app.modules.portal_cidadao.routes.get_public_risk_demo", return_value=None):
+        ) as get, patch("app.modules.portal_cidadao.routes.get_public_risk_report", return_value=None):
             response = self.app.test_client().get("/portal-cidadao?municipio=2610905")
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
@@ -322,24 +335,6 @@ class PortalHealthPageTests(unittest.TestCase):
                         self.assertEqual(self.app.test_client().get(path + query).status_code, 400)
         alert.assert_not_called()
         report.assert_not_called()
-
-
-class PublicRiskDemoTests(unittest.TestCase):
-    def test_portal_demo_map_uses_public_boundaries_and_only_fictional_counts(self):
-        from app.modules.portal_cidadao.public_risk import get_public_risk_demo
-
-        get_public_risk_demo.cache_clear()
-        self.addCleanup(get_public_risk_demo.cache_clear)
-        report = get_public_risk_demo()
-
-        self.assertEqual(report["status"], "CALCULADO")
-        self.assertEqual(len(report["geografia"]["features"]), 15)
-        self.assertEqual(len(report["anos"]), 5)
-        self.assertTrue(all(
-            feature["properties"]["codigo"].startswith("26")
-            for feature in report["geografia"]["features"]
-        ))
-        self.assertEqual(len(report["contexto"]["features"]), 184)
 
 
 if __name__ == "__main__":

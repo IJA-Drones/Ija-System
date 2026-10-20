@@ -42,8 +42,9 @@ def register_routes(bp):
                 block = text(values, "quarteirao", optional=True) if action == "territorio" else ""
                 if action == "territorio":
                     code = text(values, "retorno_plano", optional=True)
+                target = "territorio" if action in {"territorio", "importar_territorio"} else "amostra" if code else "levantamentos"
                 return redirect(url_for("main.vigilancia_planejamento", prefeitura_id=prefeitura,
-                                        demo="true" if demo else "false", plano=code, territorio=block), code=303)
+                                        demo="true" if demo else "false", plano=code, territorio=block, _anchor=target), code=303)
             if prefeitura:
                 overview = PlanningStore().overview(prefeitura, demo, code)
                 if code and not overview["plano"]:

@@ -23,6 +23,7 @@
     {% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}{% if is_financeiro_context and empresa_financeiro %}Financeiro · {{ empresa_financeiro.nome }} | {% endif %}Oceano Azul{% endblock %}</title>
+    {% block meta %}{% endblock %}
 
     <link
       rel="manifest"
@@ -764,6 +765,9 @@
           </li>
           {% endif %}
 
+          {% if acoes_publicas_ready|default(false) and acoes_publicas_can_view|default(false) %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.acoes_') %}active{% endif %}" href="{{ url_for('main.acoes_listar') }}"><i class="bi bi-megaphone me-2" aria-hidden="true"></i><span>Ações realizadas</span></a></li>
+          {% endif %}
           {% if current_user.tipo_usuario == 'agente_endemias' %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.vigilancia_agente' %}active{% endif %}" href="{{ url_for('main.vigilancia_agente') }}"><i class="bi bi-person-badge me-2" aria-hidden="true"></i><span>Meus levantamentos</span></a></li>
           {% elif (central_ti_ui_guard(['main.vigilancia'], vigilancia_coordena_campo|default(false)) if central_ti_ui_guard is defined else vigilancia_coordena_campo|default(false)) %}

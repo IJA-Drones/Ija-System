@@ -3,51 +3,50 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_sinan.css') }}">
-{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_sinan.css', v='20261020-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
 {% block content %}
 <div class="container-fluid py-4 sinan-page" id="sinan-page" data-endpoint="{{ url_for('main.vigilancia_sinan_api') }}">
+  {% include '_vigilancia_navegacao.html' %}
   <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-    <div><h2 class="text-dark mb-1"><i class="bi bi-activity me-2 text-primary" aria-hidden="true"></i>SINAN · Arboviroses</h2>
-      <p class="text-muted mb-0">Consulta de notificações por município.</p></div>
-    <a href="{{ url_for('main.vigilancia') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Central de Vigilância</a>
+    <div><h1 class="mb-1">SINAN</h1>
+      <p class="text-muted mb-0">Notificações por município, doença e ano.</p></div>
   </div>
+  {% if sinan_import_enabled %}
+  <nav class="nav nav-pills gap-2 mb-4" role="tablist" aria-label="Visualização SINAN">
+    <button class="nav-link active" id="sinan-query-tab" data-bs-toggle="tab" data-bs-target="#sinan-query-pane" type="button" role="tab" aria-controls="sinan-query-pane" aria-selected="true">Consultar dados</button>
+    <button class="nav-link" id="sinan-saved-tab" data-bs-toggle="tab" data-bs-target="#sinan-workflow" type="button" role="tab" aria-controls="sinan-workflow" aria-selected="false">Importar dados</button>
+  </nav>
+  {% endif %}
   <section class="card shadow-sm rounded-4 mb-4 border-0 filter-card" aria-labelledby="sinan-filter-title">
-    <button type="button" class="card-header border-0 p-3 d-flex justify-content-between align-items-center filter-card-header cursor-pointer w-100" data-bs-toggle="collapse" data-bs-target="#sinan-filters" aria-expanded="true" aria-controls="sinan-filters">
-      <span class="d-flex align-items-center gap-2"><i class="bi bi-funnel-fill text-primary" aria-hidden="true"></i><span class="text-dark fw-bold" id="sinan-filter-title">Filtros de busca</span></span><i class="bi bi-chevron-down text-muted filter-card-toggle" aria-hidden="true"></i>
-    </button>
-    <div class="collapse show" id="sinan-filters"><div class="card-body pt-0 pb-3">
+    <h2 class="visually-hidden" id="sinan-filter-title">Município, doença e ano</h2>
+    <div id="sinan-filters"><div class="card-body p-3 p-md-4">
       <form id="sinan-form" class="form-no-loading">
         <div class="row g-2 align-items-end">
-          <div class="col-md-3"><label class="small text-muted" for="sinan-disease">Doença</label><select class="form-select form-select-sm" id="sinan-disease" name="disease">
+          <div class="col-md-3"><label class="form-label" for="sinan-disease">Doença</label><select class="form-select" id="sinan-disease" name="disease">
             {% for code, disease in diseases.items() %}<option value="{{ code }}">{{ disease.label }}</option>{% endfor %}
           </select></div>
-          <div class="col-md-6"><label class="small text-muted" for="sinan-scope">Município de notificação</label><select class="form-select form-select-sm" id="sinan-scope" name="scope">
-            <optgroup label="São Paulo"><option value="3550308" selected>São Paulo — capital / SP</option></optgroup>
+          <div class="col-md-6"><label class="form-label" for="sinan-scope">Município de notificação</label><select class="form-select" id="sinan-scope" name="scope">
+            <optgroup label="São Paulo"><option value="3550308" {% if selected_ibge == '3550308' %}selected{% endif %}>São Paulo — capital / SP</option></optgroup>
             <optgroup label="CONDOMAR · 15 municípios">
-              {% for city in municipalities if city.region == 'condomar' %}<option value="{{ city.ibge }}">{{ city.name }} / {{ city.uf }}</option>{% endfor %}
+              {% for city in municipalities if city.region == 'condomar' %}<option value="{{ city.ibge }}" {% if selected_ibge == city.ibge %}selected{% endif %}>{{ city.name }} / {{ city.uf }}</option>{% endfor %}
             </optgroup>
           </select></div>
-          <div class="col-md-3"><label class="small text-muted" for="sinan-year">Ano de notificação</label><select class="form-select form-select-sm" id="sinan-year" name="year">
+          <div class="col-md-3"><label class="form-label" for="sinan-year">Ano de notificação</label><select class="form-select" id="sinan-year" name="year">
             {% for year in range(current_year, 2014, -1) %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
           </select></div>
-          <div class="col-12 d-flex flex-wrap gap-2 justify-content-end mt-3">
+          <div class="col-12 d-flex flex-wrap gap-2 mt-3" id="sinan-filter-actions">
             <button type="button" class="btn btn-outline-secondary btn-sm" id="sinan-clear"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar busca</button>
             <button type="button" class="btn btn-outline-secondary btn-sm" id="sinan-cancel" hidden>Interromper</button>
-            <button type="submit" class="btn btn-info text-white btn-sm" id="sinan-submit"><i class="bi bi-search me-1" id="sinan-search-icon" aria-hidden="true"></i><span class="spinner-border spinner-border-sm me-1" id="sinan-spinner" aria-hidden="true" hidden></span><span id="sinan-submit-label">Consultar</span></button>
+            <button type="submit" class="btn btn-primary" id="sinan-submit"><i class="bi bi-search me-1" id="sinan-search-icon" aria-hidden="true"></i><span class="spinner-border spinner-border-sm me-1" id="sinan-spinner" aria-hidden="true" hidden></span><span id="sinan-submit-label">Consultar Ministério da Saúde</span></button>
           </div>
         </div>
       </form>
     </div></div>
   </section>
-  {% if sinan_import_enabled %}
-  <nav class="nav nav-pills gap-2 mb-4" role="tablist" aria-label="Visualização SINAN">
-    <button class="nav-link active" id="sinan-query-tab" data-bs-toggle="tab" data-bs-target="#sinan-query-pane" type="button" role="tab" aria-controls="sinan-query-pane" aria-selected="true">Consulta pública</button>
-    <button class="nav-link" id="sinan-saved-tab" data-bs-toggle="tab" data-bs-target="#sinan-workflow" type="button" role="tab" aria-controls="sinan-workflow" aria-selected="false">Dados salvos</button>
-  </nav>
-  {% endif %}
   <div class="tab-content">
   <div id="sinan-query-pane" class="tab-pane fade show active" role="tabpanel" aria-labelledby="sinan-query-tab">
+  <p class="sinan-help">Fonte pública · Ministério da Saúde. Para salvar os dados, use “Importar dados”.</p>
   <div id="sinan-status" class="sinan-status" role="status" aria-live="polite" hidden></div>
   <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="sinan-retry" hidden>Tentar novamente</button>
   <section id="sinan-results" hidden aria-labelledby="sinan-results-title">
@@ -97,4 +96,4 @@
 </div>
 <script id="sinan-config" type="application/json">{{ {'municipalities': municipalities, 'diseases': diseases}|tojson }}</script>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia_sinan.js') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia_sinan_import.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia_sinan.js', v='20261020-3') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia_sinan_import.js', v='20261020-3') }}" defer></script>{% endblock %}

@@ -52,6 +52,7 @@ class Config:
     VIGILANCIA_PREVIEW_ENABLED = os.getenv("VIGILANCIA_PREVIEW_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     VIGILANCIA_IMPORT_ENABLED = os.getenv("VIGILANCIA_IMPORT_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     SINAN_ENABLED = os.getenv("SINAN_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    ACOES_PUBLICAS_ENABLED = os.getenv("ACOES_PUBLICAS_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     SINAN_IMPORT_ENABLED = os.getenv("SINAN_IMPORT_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
     SINAN_STORAGE_BACKEND = os.getenv("SINAN_STORAGE_BACKEND", "database").strip().lower()
     # Legacy SQLite path, preserved for transfer or explicit local use.

@@ -119,6 +119,7 @@
     if (!select) return;
     select.value = item.code;
     select.dispatchEvent(new Event("change", { bubbles: true }));
+    document.querySelector('[data-vigilancia-target="amostra"]')?.click();
     const details = document.getElementById("quarteirao-amostra");
     details.open = true;
     document.getElementById("amostra-mapa-selecao").textContent = `Área selecionada: ${item.code} · ${item.bairro}. Confira o estrato, a meta e a conta responsável antes de salvar.`;
@@ -163,7 +164,8 @@
     finally { root.clearTimeout(timeout); if (sequence === state.search && state.ready) allow("buscar", true); }
   }
   function initialize() {
-    if (state.map || !root.google?.maps?.Map || root.__GOOGLE_MAPS_AUTH_FAILED__) return;
+    if (state.map || !config.configurado || !root.google?.maps?.Map || root.__GOOGLE_MAPS_AUTH_FAILED__) return;
+    if (byId("mapa-canvas").closest?.("[data-vigilancia-panel]")?.hidden) return;
     try {
       state.map = new root.google.maps.Map(byId("mapa-canvas"), { center: { lat: -8.5, lng: -37 }, zoom: 7,
         mapTypeId: "hybrid", streetViewControl: false, fullscreenControl: true, gestureHandling: "cooperative" });
@@ -245,6 +247,12 @@
     }
   }));
   document.addEventListener("googlemaps:ready", initialize);
+  document.addEventListener("vigilancia:panel-visible", event => {
+    if (event.detail.id === "territorio") {
+      if (state.map) root.google?.maps?.event?.trigger?.(state.map, "resize");
+      else initialize();
+    }
+  });
   document.addEventListener("googlemaps:auth-failed", unavailable);
   if (root.__GOOGLE_MAPS_AUTH_FAILED__ || !config.configurado) unavailable(); else initialize();
   root.setTimeout(() => { if (!state.map) unavailable(); }, 15000);
