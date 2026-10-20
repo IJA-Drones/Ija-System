@@ -9,8 +9,9 @@
   <section class="dev-hero p-4 p-lg-5 mb-4">
     <div class="dev-hero-content">
       <div>
-        <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Painel exclusivo para DEV</span>
-        <h1 class="dev-title">{{ dev_profile.greeting }}, {{ dev_profile.name }}</h1>
+        <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Developer console · Oceano Azul</span>
+        <h1 class="dev-title">Saúde do sistema</h1>
+        <p class="dev-welcome">{{ dev_profile.greeting }}, {{ dev_profile.name }}. Sua visão técnica da operação.</p>
         <p class="dev-subtitle">
           Central técnica do sistema: presença em tempo real, saúde da aplicação, erros recentes, infraestrutura e contexto operacional.
         </p>
@@ -46,7 +47,7 @@
       <aside class="dev-command p-3">
         <div class="dev-command-row">
           <span class="text-white-50">Status</span>
-          <strong id="devRefreshStatus">Atualizado {{ generated_at.strftime('%d/%m/%Y %H:%M') }}</strong>
+          <strong id="devRefreshStatus" aria-live="polite">Atualizado {{ generated_at.strftime('%d/%m/%Y %H:%M') }}</strong>
         </div>
         <div class="dev-command-row">
           <span class="text-white-50">Ambiente</span>
@@ -67,39 +68,50 @@
   <section class="dev-grid mb-4">
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-label">Online agora</div>
+        <div class="dev-label"><i class="bi bi-broadcast"></i> Online agora</div>
         <div class="dev-value text-success" id="metricOnlineUsers">{{ metrics.online_users }}</div>
         <div class="small text-muted">de {{ presence.tracked_count }} presença(s) monitorada(s)</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-label">Ações / 24h</div>
+        <div class="dev-label"><i class="bi bi-activity"></i> Ações / 24h</div>
         <div class="dev-value" id="metricAudited24h">{{ metrics.audited_24h }}</div>
         <div class="small text-muted"><span id="metricActiveUsers24h">{{ metrics.active_users_24h }}</span> usuário(s) ativo(s)</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-label">Erros / 24h</div>
+        <div class="dev-label"><i class="bi bi-exclamation-octagon"></i> Falhas / 24h</div>
         <div class="dev-value text-warning" id="metricErrors24h">{{ metrics.errors_24h }}</div>
         <div class="small text-muted"><span id="metricErrorRate">{{ metrics.error_rate }}</span>% das ações auditadas</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-label">Rotas registradas</div>
+        <div class="dev-label"><i class="bi bi-diagram-3"></i> Rotas registradas</div>
         <div class="dev-value" id="metricRouteCount">{{ metrics.route_count }}</div>
         <div class="small text-muted"><span id="metricServerErrors7d">{{ metrics.server_errors_7d }}</span> erro(s) 5xx em 7 dias</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-label">Watchdog / 7d</div>
+        <div class="dev-label"><i class="bi bi-arrow-repeat"></i> Watchdog / 7d</div>
         <div class="dev-value text-info" id="metricWatchdogDeploys7d">{{ watchdog.deploys_7d }}</div>
         <div class="small text-muted"><span id="metricWatchdogDeploys24h">{{ watchdog.deploys_24h }}</span> em 24h | <span id="metricWatchdogDeploysTotal">{{ watchdog.deploys_total }}</span> total</div>
       </div>
     </div>
+  </section>
+
+  <section class="dev-observability mb-4" aria-label="Resumo de autenticação e infraestrutura">
+    <div class="dev-session-summary">
+      <span class="dev-summary-icon"><i class="bi bi-shield-check"></i></span>
+      <div><div class="dev-label">Autenticação · últimas 24h</div>
+        <strong><span id="metricExpiredSessions24h">{{ metrics.expired_sessions_24h }}</span> ocorrências de sessão expirada</strong>
+        <p class="small text-muted mb-0">Eventos esperados, preservados na auditoria e excluídos dos indicadores de falha.</p>
+      </div>
+    </div>
+    <div class="dev-runtime-summary"><span class="dev-label">Runtime</span><strong>Python {{ runtime.python }}</strong><span>{{ runtime.database }} · {{ metrics.route_count }} rotas</span></div>
   </section>
 
   {% if alerts %}
@@ -155,7 +167,7 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
               <div>
                 <h2 class="h5 fw-bold mb-1"><i class="bi bi-bar-chart-fill text-danger me-2"></i>Falhas por hora</h2>
-                <div class="small text-muted">Últimas 24 horas, considerando respostas 4xx e 5xx.</div>
+                <div class="small text-muted">Últimas 24 horas · horário de Brasília · 4xx e 5xx, sem sessões expiradas.</div>
               </div>
             </div>
             <div class="dev-timeline" id="devFailureTimeline" aria-label="Falhas por hora nas últimas 24 horas">
@@ -466,7 +478,7 @@
       if (!value) return "-";
       const parsed = new Date(value);
       if (Number.isNaN(parsed.getTime())) return "-";
-      return parsed.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      return parsed.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
     }
 
     function statusBadge(statusCode) {
@@ -584,6 +596,7 @@
       setText("heroOnlineUsers", metrics.online_users ?? 0);
       setText("metricAudited24h", metrics.audited_24h ?? 0);
       setText("metricActiveUsers24h", metrics.active_users_24h ?? 0);
+      setText("metricExpiredSessions24h", metrics.expired_sessions_24h ?? 0);
       setText("metricErrors24h", metrics.errors_24h ?? 0);
       setText("metricErrorRate", metrics.error_rate ?? 0);
       setText("metricRouteCount", metrics.route_count ?? 0);
@@ -682,7 +695,7 @@
       if (!list) return;
 
       lastErrorDetailText = [
-        `Erro ${detail.status_code}`,
+        detail.title || `Erro ${detail.status_code}`,
         `Data: ${formatDateTime(detail.created_at)}`,
         `Usuário: ${detail.user_name || "-"} (${detail.user_type || "-"})`,
         `Método: ${detail.method || "-"}`,
@@ -694,7 +707,7 @@
         `Referrer: ${detail.referrer || "-"}`,
       ].join("\n");
 
-      if (title) title.textContent = `Erro ${detail.status_code}`;
+      if (title) title.textContent = detail.title || `Erro ${detail.status_code}`;
       if (subtitle) subtitle.textContent = `${formatDateTime(detail.created_at)} - ${detail.endpoint || detail.path || "-"}`;
       const rows = [
         ["Status", statusBadge(detail.status_code)],
@@ -784,7 +797,7 @@
         setText("devWeatherCondition", weatherCodes[code] || "Condição variável");
         setText("devHumidity", Number.isFinite(humidity) ? `${humidity}%` : "--");
         setText("devWind", Number.isFinite(wind) ? `${Math.round(wind)} km/h` : "--");
-        setText("devWeatherUpdated", current.time ? new Date(current.time).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "--");
+        setText("devWeatherUpdated", current.time ? new Date(current.time).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" }) : "--");
       } catch (error) {
         setText("devWeatherCondition", "Clima indisponível");
       }

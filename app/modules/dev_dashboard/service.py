@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from flask import current_app
 from flask_login import current_user
-from sqlalchemy import func, text
+from sqlalchemy import and_, func, or_, select, text
 
 from app.extensions import db
 from app.models import AuditoriaUsuario, Usuario, UsuarioPresenca, WatchdogDeployEvent
@@ -16,6 +16,37 @@ PRESENCE_ONLINE_WINDOW = timedelta(minutes=5)
 PRESENCE_AWAY_WINDOW = timedelta(minutes=30)
 UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+
+
+def _expected_session_event():
+    """Keep expired sessions auditable without treating them as application failures."""
+    return or_(
+        and_(AuditoriaUsuario.tipo_evento == "SESSAO_EXPIRADA", AuditoriaUsuario.status_code < 500),
+        and_(AuditoriaUsuario.status_code == 401,
+             func.coalesce(AuditoriaUsuario.endpoint, "").in_(("session_security.status", "session_security.activity"))),
+    )
+
+
+def _failure_filter():
+    reset = AuditoriaUsuario.__table__.alias("dev_error_reset")
+    cutoff = select(func.coalesce(func.max(reset.c.id), 0)).where(
+        reset.c.tipo_evento == "DEV_ERROS_LIMPOS",
+    ).scalar_subquery()
+    return and_(AuditoriaUsuario.status_code >= 400,
+                ~_expected_session_event(), AuditoriaUsuario.id > cutoff)
+
+
+def clear_dev_errors():
+    """Acknowledge existing failures without deleting or rewriting audit evidence."""
+    from app.modules.auditoria.recorder import event_values
+
+    count = AuditoriaUsuario.query.filter(_failure_filter()).count()
+    marker = AuditoriaUsuario(**event_values(
+        "DEV_ERROS_LIMPOS", "CONFIRMADO", detalhes={"falhas_reconhecidas": count},
+    ))
+    db.session.add(marker)
+    db.session.commit()
+    return count
 
 
 def _check_item(name, status, detail, severity="success"):
@@ -82,7 +113,7 @@ def _current_user_activity(since_24h, since_7d):
 def _serialize_datetime(value):
     if not value:
         return None
-    return value.isoformat()
+    return (value.replace(tzinfo=UTC_TZ) if value.tzinfo is None else value).isoformat()
 
 
 def _format_brazil_datetime(value):
@@ -103,6 +134,10 @@ def _serialize_error_log(log):
         "user_type": log.tipo_usuario,
         "method": log.metodo,
         "event_type": log.tipo_evento,
+        "title": "Sessão expirada" if (
+            (log.tipo_evento == "SESSAO_EXPIRADA" and log.status_code < 500)
+            or (log.status_code == 401 and log.endpoint in {"session_security.status", "session_security.activity"})
+        ) else f"Erro {log.status_code}",
         "endpoint": log.endpoint,
         "path": log.path,
         "query_string": log.query_string,
@@ -275,27 +310,20 @@ def _failure_timeline(since_24h):
         AuditoriaUsuario.query.with_entities(AuditoriaUsuario.criado_em)
         .filter(
             AuditoriaUsuario.criado_em >= since_24h,
-            AuditoriaUsuario.status_code >= 400,
+            _failure_filter(),
         )
         .all()
     )
     totals_by_hour = {}
     for log in logs:
-        created_at = log.criado_em
-        if not created_at:
-            continue
-        totals_by_hour[created_at.hour] = totals_by_hour.get(created_at.hour, 0) + 1
-
-    current_hour = datetime.utcnow().hour
-
-    timeline = []
-    for offset in range(23, -1, -1):
-        hour = (current_hour - offset) % 24
-        timeline.append({
-            "hour": f"{hour:02d}:00",
-            "total": totals_by_hour.get(hour, 0),
-        })
-    return timeline
+        bucket = log.criado_em.replace(minute=0, second=0, microsecond=0)
+        totals_by_hour[bucket] = totals_by_hour.get(bucket, 0) + 1
+    first_hour = since_24h.replace(minute=0, second=0, microsecond=0)
+    return [
+        {"hour": (bucket.replace(tzinfo=UTC_TZ).astimezone(BRAZIL_TZ)).strftime("%H:%M"),
+         "total": totals_by_hour.get(bucket, 0)}
+        for bucket in (first_hour + timedelta(hours=offset) for offset in range(25))
+    ]
 
 
 def _diagnostic_snapshot(context):
@@ -306,6 +334,7 @@ def _diagnostic_snapshot(context):
         f"Snapshot dev - {context['generated_at'].strftime('%d/%m/%Y %H:%M:%S')}",
         f"Dev: {context['dev_profile']['name']} ({context['dev_profile']['type'] or '-'})",
         f"Ações 24h: {metrics['audited_24h']} | Erros 24h: {metrics['errors_24h']} ({metrics['error_rate']}%)",
+        f"Sessões expiradas/24h: {metrics['expired_sessions_24h']} (eventos esperados)",
         f"Erros 5xx/7d: {metrics['server_errors_7d']} | Usuários ativos/24h: {metrics['active_users_24h']}",
         f"Redeploys watchdog: {metrics['watchdog_deploys_7d']}/7d | {metrics['watchdog_deploys_24h']}/24h | {metrics['watchdog_deploys_total']} total",
         f"Checks OK: {metrics['healthy_checks']}/{metrics['total_checks']} | Google Maps: {maps_status}",
@@ -316,18 +345,19 @@ def _diagnostic_snapshot(context):
 
 def _base_dev_dashboard_context():
     now = datetime.utcnow()
-    generated_at = datetime.now()
+    generated_at = datetime.now(BRAZIL_TZ)
     since_24h = now - timedelta(hours=24)
     since_7d = now - timedelta(days=7)
 
     total_24h = AuditoriaUsuario.query.filter(AuditoriaUsuario.criado_em >= since_24h).count()
     errors_24h = AuditoriaUsuario.query.filter(
         AuditoriaUsuario.criado_em >= since_24h,
-        AuditoriaUsuario.status_code >= 400,
+        _failure_filter(),
     ).count()
     server_errors_7d = AuditoriaUsuario.query.filter(
         AuditoriaUsuario.criado_em >= since_7d,
         AuditoriaUsuario.status_code >= 500,
+        _failure_filter(),
     ).count()
 
     top_error_routes = (
@@ -339,7 +369,7 @@ def _base_dev_dashboard_context():
         )
         .filter(
             AuditoriaUsuario.criado_em >= since_7d,
-            AuditoriaUsuario.status_code >= 400,
+            _failure_filter(),
         )
         .group_by(AuditoriaUsuario.endpoint, AuditoriaUsuario.path)
         .order_by(func.count(AuditoriaUsuario.id).desc())
@@ -349,11 +379,15 @@ def _base_dev_dashboard_context():
 
     recent_errors = (
         AuditoriaUsuario.query
-        .filter(AuditoriaUsuario.status_code >= 400)
+        .filter(_failure_filter())
         .order_by(AuditoriaUsuario.criado_em.desc())
         .limit(10)
         .all()
     )
+
+    expired_sessions_24h = AuditoriaUsuario.query.filter(
+        AuditoriaUsuario.criado_em >= since_24h, _expected_session_event(),
+    ).count()
 
     secret_key = current_app.config.get("SECRET_KEY") or ""
     maps_key = (
@@ -470,6 +504,7 @@ def _base_dev_dashboard_context():
         },
         "metrics": {
             "audited_24h": total_24h,
+            "expired_sessions_24h": expired_sessions_24h,
             "errors_24h": errors_24h,
             "error_rate": error_rate,
             "server_errors_7d": server_errors_7d,
@@ -533,8 +568,11 @@ def build_dev_dashboard_payload():
 
 
 def get_dev_error_detail(log_id):
-    log = AuditoriaUsuario.query.get(log_id)
-    if not log or log.status_code < 400:
+    # Acknowledgement changes the dashboard, never access to retained evidence.
+    log = AuditoriaUsuario.query.filter(
+        AuditoriaUsuario.id == log_id, AuditoriaUsuario.status_code >= 400,
+    ).first()
+    if not log:
         return None
     return _serialize_error_log(log)
 
