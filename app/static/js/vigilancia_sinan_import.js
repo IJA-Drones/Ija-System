@@ -22,7 +22,7 @@
   const isOpen = () => panel.classList.contains('active');
   const number = n => Number(n || 0).toLocaleString('pt-BR');
   const date = n => new Date(n * 1000).toLocaleString('pt-BR');
-  let selected = null, jobs = [], pollTimer = null, busy = false, map = null, shapes = [], mapData = null, mapVersion = 0;
+  let selected = null, jobs = [], pollTimer = null, busy = false, map = null, shapes = [], mapInfo = null, mapData = null, mapVersion = 0;
 
   function message(text, error = false) {
     el('import-status').textContent = text;
@@ -58,6 +58,7 @@
   }
   function clearMap() {
     mapVersion++;
+    mapInfo?.close(); mapInfo = null;
     shapes.forEach(shape => shape.setMap(null)); shapes = [];
     mapData = null;
     el('map-section').hidden = true;
@@ -188,6 +189,7 @@
     el('map').hidden = false;
     if (!map) map = new root.google.maps.Map(el('map'), { center: { lat: -14, lng: -48 }, zoom: 4, streetViewControl: false, mapTypeControl: false });
     root.google.maps.event.trigger(map, 'resize');
+    mapInfo?.close(); mapInfo = null;
     shapes.forEach(shape => shape.setMap(null)); shapes = [];
   }
   function drawCases() {
@@ -201,15 +203,47 @@
       // Fixed-radius symbols mark supplied coordinates, not outbreak/risk areas.
       const marker = new root.google.maps.Circle({ map, center: position, radius: 18, strokeWeight: 1, strokeColor: colors[point.classification], fillColor: colors[point.classification], fillOpacity: .85 });
       const info = new root.google.maps.InfoWindow();
-      marker.addListener('click', () => { const content = document.createElement('div'); content.textContent = `${mapData.demo ? 'DEMONSTRAÇÃO · ' : ''}${caseLabels[point.classification]} · ${point.week || 'Sem semana informada'}`; info.setContent(content); info.setPosition(position); info.open({ map }); });
+      marker.addListener('click', () => { mapInfo?.close(); mapInfo = info; const content = document.createElement('div'); content.textContent = `${mapData.demo ? 'DEMONSTRAÇÃO · ' : ''}${caseLabels[point.classification]} · ${point.week || 'Sem semana informada'}`; info.setContent(content); info.setPosition(position); info.open({ map }); });
       shapes.push(marker); bounds.extend(position);
     });
     if (points.length) { map.fitBounds(bounds); root.google.maps.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() > 16) map.setZoom(16); }); }
     el('map-status').textContent = `${number(points.length)} de ${number(mapData.points.length)} casos exibidos. Coordenadas fornecidas no CSV.`;
   }
+  function drawMunicipality(data, geometry, job) {
+    if (geometry.viewport) map.fitBounds(geometry.viewport, 32);
+    else { map.setCenter(geometry.location); map.setZoom(11); }
+    // A municipal aggregate needs a pixel-sized symbol, not a 120 m radius
+    // that disappears when fitBounds shows the whole municipality.
+    const marker = new root.google.maps.Marker({ map, position: geometry.location,
+      title: `${data.municipality.name} · ${number(data.count)} registros no lote`,
+      label: { text: number(data.count), color: '#ffffff', fontSize: '14px', fontWeight: '700' },
+      icon: { path: root.google.maps.SymbolPath.CIRCLE, scale: 22, fillColor: '#2563eb',
+        fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 },
+    });
+    shapes.push(marker);
+    const content = document.createElement('div'); content.className = 'sinan-map-summary';
+    if (data.demo) {
+      const demo = document.createElement('p'); demo.className = 'sinan-demo-label';
+      demo.textContent = 'DEMONSTRAÇÃO · dados fictícios'; content.appendChild(demo);
+    }
+    const heading = document.createElement('strong'); heading.textContent = `${data.municipality.name} / ${data.municipality.uf}`;
+    const total = document.createElement('p');
+    total.textContent = `${number(data.count)} registros · ${config.diseases[job.disease].label} · ${job.year}${data.status === 'partial' ? ' · LOTE PARCIAL' : ''}`;
+    content.append(heading, total);
+    for (const [code, count] of Object.entries(job.summary?.classifications || {})) {
+      const line = document.createElement('p'); line.textContent = `${classLabel(job, code)}: ${number(count)}`; content.appendChild(line);
+    }
+    const note = document.createElement('p'); note.textContent = 'Agregado por município de notificação. Sem localização individual dos casos.';
+    content.appendChild(note);
+    mapInfo = new root.google.maps.InfoWindow(); mapInfo.setContent(content);
+    const info = mapInfo;
+    marker.addListener('click', () => { info.open({ map, anchor: marker, shouldFocus: false }); });
+    info.open({ map, anchor: marker, shouldFocus: false });
+    el('map-status').textContent = `${number(data.count)} registros no lote municipal. O marcador identifica o município, não endereços de pacientes, focos ou áreas de risco.`;
+  }
   async function openMap() {
     if (!eligible(selected)) return;
-    const jobId = selected.id; const version = ++mapVersion;
+    const job = selected, jobId = job.id; const version = ++mapVersion;
     el('map-section').hidden = false; el('map-status').textContent = 'Carregando mapa…';
     el('open-map').disabled = true;
     try {
@@ -220,7 +254,7 @@
       el('map-class').value = '';
       el('map-caption').textContent = data.kind === 'csv'
         ? `${data.demo ? 'DEMONSTRAÇÃO — dados fictícios. ' : ''}Casos com coordenadas · ${data.municipality.name}`
-        : `Município de notificação · ${data.municipality.name} · ${number(data.count)} registros${data.status === 'partial' ? ' · LOTE PARCIAL' : ''}`;
+        : `${data.demo ? 'DEMONSTRAÇÃO — dados fictícios. ' : ''}Município de notificação · ${data.municipality.name} · ${number(data.count)} registros${data.status === 'partial' ? ' · LOTE PARCIAL' : ''}`;
       el('map-caption').classList.toggle('sinan-demo-label', data.demo);
       if (data.kind === 'csv') { drawCases(); return; }
       const geocoder = new root.google.maps.Geocoder();
@@ -231,9 +265,7 @@
       if (version !== mapVersion || selected?.id !== jobId) return;
       const geometry = result.results?.[0]?.geometry;
       if (!geometry) throw new Error('Município não localizado no Google Maps.');
-      if (geometry.viewport) map.fitBounds(geometry.viewport); else { map.setCenter(geometry.location); map.setZoom(11); }
-      shapes.push(new root.google.maps.Circle({ map, center: geometry.location, radius: 120, strokeColor: '#2563eb', fillColor: '#2563eb', fillOpacity: .5 }));
-      el('map-status').textContent = 'O símbolo identifica o município; não representa endereço de paciente, foco ou área de risco.';
+      drawMunicipality(data, geometry, job);
     } catch (error) { if (version === mapVersion) { el('map-status').textContent = error.message; el('map').hidden = true; } }
     finally { controls(); }
   }

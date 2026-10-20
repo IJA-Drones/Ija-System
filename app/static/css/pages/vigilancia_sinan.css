@@ -37,6 +37,10 @@
 .sinan-workflow .table td, .sinan-workflow .table th { white-space: nowrap; }
 #sinan-map { height: 380px; width: 100%; border-radius: 12px; background: var(--color-accent-soft); }
 .sinan-map-filter { width: auto; max-width: 100%; }
+.sinan-map-summary { max-width: 280px; color: #253345; font-size: .85rem; line-height: 1.45; }
+.sinan-map-summary strong { display: block; margin-bottom: 6px; }
+.sinan-map-summary p { margin: 0 0 6px; }
+.sinan-map-summary p:last-child { margin-bottom: 0; font-size: .78rem; }
 #sinan-import-status[data-error="true"] { color: #b42318; }
 .sinan-job-selected { font-weight: 600; }
 #sinan-snapshot { scroll-margin-top: 100px; }
