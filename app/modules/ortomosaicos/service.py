@@ -6,12 +6,15 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import current_app, url_for
+from requests.exceptions import ConnectionError, SSLError, Timeout
 from sqlalchemy import and_, or_, update
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -23,6 +26,9 @@ from app.shared import skybox
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ortomosaico')
 _futures = {}
 _lock = threading.Lock()
+# This lease detects a stopped worker; it is not a processing time limit.
+_LEASE_SECONDS = 300
+_HEARTBEAT_SECONDS = 30
 
 
 def now():
@@ -31,10 +37,6 @@ def now():
 
 def max_bytes():
     return max(0, current_app.config.get('ORTHOMOSAIC_MAX_UPLOAD_MB', 0)) * 1024 * 1024
-
-
-def process_timeout():
-    return max(60, int(current_app.config.get('ORTHOMOSAIC_PROCESS_TIMEOUT_SECONDS', 3600)))
 
 
 def raster_command(mode, source, destination=None, interval=None, resolution=None):
@@ -46,8 +48,7 @@ def raster_command(mode, source, destination=None, interval=None, resolution=Non
         args.extend([str(interval), str(resolution)])
     environment = os.environ.copy()
     environment['ORTHOMOSAIC_MAX_PIXELS'] = str(max(0, int(current_app.config.get('ORTHOMOSAIC_MAX_PIXELS', 0))))
-    result = subprocess.run(args, capture_output=True, text=True, env=environment,
-                            timeout=60 if mode.startswith('inspect') else process_timeout())
+    result = subprocess.run(args, capture_output=True, text=True, env=environment, timeout=None)
     try:
         payload = json.loads(result.stdout)
     except ValueError:
@@ -58,8 +59,24 @@ def raster_command(mode, source, destination=None, interval=None, resolution=Non
 
 
 def _upload(path, remote):
-    with open(path, 'rb') as stream:
-        return skybox.upload_file_to_skybox(FileStorage(stream=stream, filename=Path(path).name, content_type=mimetypes.guess_type(str(path))[0] or 'application/octet-stream'), remote)
+    # A socket write uses Requests' connect timeout too. Large raster PUTs must
+    # explicitly opt out; changing only the read timeout does not fix this.
+    for attempt in range(1, 4):
+        try:
+            # Reopen from byte zero and PUT to the same attempt-specific path.
+            # Keep the converted file and the recovery transaction across retries.
+            with open(path, 'rb') as stream:
+                return skybox.upload_file_to_skybox(FileStorage(
+                    stream=stream, filename=Path(path).name,
+                    content_type=mimetypes.guess_type(str(path))[0] or 'application/octet-stream',
+                ), remote, timeout=None)
+        except SSLError as exc:
+            raise ValueError('Não foi possível estabelecer uma conexão segura com o Skybox. Verifique o certificado do armazenamento.') from exc
+        except (ConnectionError, Timeout, skybox.SkyboxTemporaryError) as exc:
+            if attempt == 3:
+                raise ValueError('O envio ao Skybox não foi concluído após 3 tentativas por falha de conexão ou indisponibilidade do armazenamento. Tente novamente.') from exc
+            current_app.logger.warning('Envio do levantamento ao Skybox interrompido; repetindo upload (%s/3).', attempt + 1)
+            time.sleep(2 ** attempt)
 
 
 def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=None, resolution=None):
@@ -117,6 +134,42 @@ def eligible():
     return or_(Ortomosaico.status == 'pendente', and_(Ortomosaico.status == 'processando', Ortomosaico.processamento_ate < now()))
 
 
+def _renew_claim(engine, oid, token):
+    # A separate short transaction must not share the worker's session or its
+    # file-recovery transaction, which can remain open during a large upload.
+    with engine.begin() as connection:
+        result = connection.execute(update(Ortomosaico).where(
+            Ortomosaico.id == oid, Ortomosaico.status == 'processando',
+            Ortomosaico.processamento_token == token,
+        ).values(processamento_ate=now() + timedelta(seconds=_LEASE_SECONDS)))
+        return result.rowcount == 1
+
+
+@contextmanager
+def _keep_claim_alive(oid, token):
+    engine = db.engine
+    logger = current_app.logger
+    stopped = threading.Event()
+
+    def heartbeat():
+        while not stopped.wait(_HEARTBEAT_SECONDS):
+            try:
+                if not _renew_claim(engine, oid, token):
+                    return
+            except Exception:
+                # A temporary database outage is not a raster-processing error.
+                # Retry; publication is still conditional on the claim token.
+                logger.exception('Falha ao renovar reserva do ortomosaico %s', oid)
+
+    thread = threading.Thread(target=heartbeat, name=f'ortomosaico-reserva-{oid}', daemon=True)
+    thread.start()
+    try:
+        yield
+    finally:
+        stopped.set()
+        thread.join(timeout=5)
+
+
 def _download(row, destination):
     digest = hashlib.sha256(); size = 0
     with skybox._request('GET', skybox.remote_path_from_marker(row.original_path), stream=True) as response:
@@ -136,12 +189,24 @@ def process_one(oid):
     token = str(uuid.uuid4())
     result = db.session.execute(update(Ortomosaico).where(Ortomosaico.id == oid, eligible()).values(
         status='processando', processamento_token=token,
-        processamento_ate=now()+timedelta(seconds=process_timeout()+1800),
+        processamento_ate=now()+timedelta(seconds=_LEASE_SECONDS),
         atualizado_em=now(), erro=None).execution_options(synchronize_session=False))
     db.session.commit()
     if result.rowcount != 1:
         return False
+    with _keep_claim_alive(oid, token):
+        return _process_claimed(oid, token)
+
+
+def _process_claimed(oid, token):
+    db.session.expire_all()
     row = db.session.get(Ortomosaico, oid)
+    if row is None or row.processamento_token != token:
+        db.session.rollback()
+        return False
+    # Snapshot the input and release the read transaction before lengthy I/O.
+    db.session.expunge(row)
+    db.session.commit()
     markers = []
     try:
         with tempfile.TemporaryDirectory(prefix='ija-orto-process-') as folder:
@@ -210,6 +275,7 @@ def dispatch(oid):
 
 def serialize(row):
     return dict(id=row.id, nome=row.nome, prefeitura=row.prefeitura.nome, prefeitura_id=row.prefeitura_id,
+        agua_url=url_for('main.ortomosaico_agua', oid=row.id),
         tipo=row.tipo, intervalo_m=row.intervalo_m, resolucao_m=row.resolucao_m,
         curvas_url=url_for('main.ortomosaico_curvas', oid=row.id) if row.status == 'pronto' and row.curvas_path else None,
         jpeg_url=url_for('main.ortomosaico_jpeg', oid=row.id) if row.status == 'pronto' and row.jpeg_path else None,

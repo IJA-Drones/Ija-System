@@ -1,6 +1,7 @@
 import unittest
 from io import BytesIO
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from flask import Flask
 from werkzeug.datastructures import FileStorage
@@ -68,6 +69,25 @@ class SkyboxUploadTests(unittest.TestCase):
             ),
             "registros abastecimento/ABC1D23/2026-07-08/nota fiscal/nf_ABC1D23_2026-07-08_09-23-31-123.png",
         )
+
+    def test_upload_timeout_override_reaches_http_without_changing_default(self):
+        skybox._ensure_parent_collections = lambda remote_path: None
+        with patch.object(skybox.requests, 'request', return_value=SimpleNamespace(status_code=201)) as request:
+            for options, expected in (({}, skybox.REQUEST_TIMEOUT), ({'timeout': None}, None)):
+                storage = FileStorage(stream=BytesIO(b'raster'), filename='mapa.tif')
+                skybox.upload_file_to_skybox(storage, 'ortomosaicos/mapa.tif', **options)
+                self.assertEqual(request.call_args.kwargs['timeout'], expected)
+
+    def test_only_transient_http_failures_are_retryable(self):
+        skybox._ensure_parent_collections = lambda remote_path: None
+        for status in (408, 429, 500, 502, 503, 504, 401, 403, 413, 507):
+            with self.subTest(status=status):
+                skybox._request = lambda *a, **kw: SimpleNamespace(status_code=status, text='')
+                storage = FileStorage(stream=BytesIO(b'raster'), filename='mapa.tif')
+                with self.assertRaises(skybox.SkyboxError) as raised:
+                    skybox.upload_file_to_skybox(storage, 'ortomosaicos/mapa.tif')
+                self.assertEqual(isinstance(raised.exception, skybox.SkyboxTemporaryError),
+                                 status in (408, 429, 500, 502, 503, 504))
 
     def test_skybox_roundtrip_checks_upload_confirmation_and_cleanup(self):
         calls = []

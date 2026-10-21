@@ -6,7 +6,7 @@ from flask import Response, abort, current_app, jsonify, render_template, reques
 from flask_login import current_user, login_required
 
 from app.extensions import db
-from app.models import Ortomosaico, Prefeitura
+from app.models import Ortomosaico, OrtomosaicoEstimativaAgua, Prefeitura
 from app.shared import skybox
 from app.shared.access import can_access_prefeitura, normalize_role
 from . import service
@@ -31,6 +31,63 @@ def get_record(oid):
 
 
 def register_routes(bp):
+    from . import water
+
+    def water_record(oid):
+        row = get_record(oid)
+        if row.status != 'pronto':
+            abort(409, description='O levantamento ainda não está disponível.')
+        return row
+
+    def water_data(row):
+        if request.content_length and request.content_length > 65536:
+            raise ValueError('A estimativa excede o tamanho permitido.')
+        return water.calculate(request.get_json(silent=True), (row.metadados or {}).get('limites'))
+
+    @bp.post('/api/ortomosaicos/<int:oid>/agua/calcular', endpoint='ortomosaico_agua_calcular')
+    @restricted
+    def water_calculate(oid):
+        row = water_record(oid)
+        try:
+            return jsonify(item=water_data(row))
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 400
+
+    @bp.route('/api/ortomosaicos/<int:oid>/agua', methods=['GET', 'POST'], endpoint='ortomosaico_agua')
+    @restricted
+    def water_estimates(oid):
+        row = water_record(oid)
+        if request.method == 'GET':
+            records = OrtomosaicoEstimativaAgua.query.filter_by(ortomosaico_id=oid).order_by(
+                OrtomosaicoEstimativaAgua.criado_em.desc(), OrtomosaicoEstimativaAgua.id.desc()).all()
+            response = jsonify(items=[water.serialize(record) for record in records])
+            response.headers['Cache-Control'] = 'private, no-store'
+            return response
+        try:
+            data = water_data(row)
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 400
+        record = OrtomosaicoEstimativaAgua(ortomosaico_id=oid, usuario_id=current_user.id, dados=data)
+        db.session.add(record)
+        db.session.commit()
+        return jsonify(item=water.serialize(record)), 201
+
+    @bp.route('/api/ortomosaicos/<int:oid>/agua/<int:eid>', methods=['PUT', 'DELETE'], endpoint='ortomosaico_agua_item')
+    @restricted
+    def water_estimate(oid, eid):
+        row = water_record(oid)
+        record = OrtomosaicoEstimativaAgua.query.filter_by(id=eid, ortomosaico_id=oid).first_or_404()
+        if request.method == 'DELETE':
+            db.session.delete(record)
+            db.session.commit()
+            return '', 204
+        try:
+            record.dados = water_data(row)
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 400
+        db.session.commit()
+        return jsonify(item=water.serialize(record))
+
     @bp.get('/ortomosaicos', endpoint='ortomosaicos')
     @restricted
     def index():

@@ -23,6 +23,10 @@ class SkyboxAuthenticationError(SkyboxError):
     pass
 
 
+class SkyboxTemporaryError(SkyboxError):
+    """A transient upstream response for which an idempotent PUT can be retried."""
+
+
 def skybox_enabled():
     return bool(_setting("SKYBOX_WEBDAV_URL") and _setting("SKYBOX_USERNAME") and _setting("SKYBOX_APP_PASSWORD"))
 
@@ -130,7 +134,7 @@ def remote_path_from_marker(value):
     return _clean_remote_path(value[len(SKYBOX_MARKER_PREFIX):])
 
 
-def upload_file_to_skybox(file_storage, remote_path, *, recoverable=True, reference_aliases=()):
+def upload_file_to_skybox(file_storage, remote_path, *, recoverable=True, reference_aliases=(), timeout=REQUEST_TIMEOUT):
     if not skybox_enabled():
         raise SkyboxError("Skybox nao esta configurado.")
 
@@ -156,6 +160,7 @@ def upload_file_to_skybox(file_storage, remote_path, *, recoverable=True, refere
         remote_path,
         data=stream,
         headers=headers,
+        timeout=timeout,
     )
     if response.status_code not in (200, 201, 204):
         current_app.logger.warning(
@@ -164,7 +169,8 @@ def upload_file_to_skybox(file_storage, remote_path, *, recoverable=True, refere
             response.status_code,
             (response.text or "")[:500],
         )
-        raise SkyboxError(f"Falha no upload do Skybox ({response.status_code}).")
+        error = SkyboxTemporaryError if response.status_code in (408, 429, 500, 502, 503, 504) else SkyboxError
+        raise error(f"Falha no upload do Skybox ({response.status_code}).")
 
     return build_skybox_marker(remote_path)
 

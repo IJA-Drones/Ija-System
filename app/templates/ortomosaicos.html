@@ -2,7 +2,7 @@
 {% block title %}Ortomosaicos e curvas | IJA System{% endblock %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/openlayers/ol.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css', v='20261020-agua') }}">
 {% endblock %}
 {% block content %}
 <section id="ortho-app" class="ortho" data-list-url="{{ url_for('main.ortomosaicos_listar') }}" data-upload-url="{{ url_for('main.ortomosaico_upload') }}" data-max-mb="{{ limite_mb }}">
@@ -27,6 +27,8 @@
         <button id="ortho-fullscreen" type="button" title="Tela cheia" aria-label="Tela cheia"><i class="bi bi-arrows-fullscreen" aria-hidden="true"></i></button>
         <button id="ortho-layers-toggle" type="button" title="Mostrar ou ocultar camadas" aria-label="Mostrar ou ocultar camadas" aria-expanded="true" aria-controls="ortho-layers-panel"><i class="bi bi-layers" aria-hidden="true"></i></button>
       </div>
+      <button id="ortho-water-toggle" class="ortho-water-toggle" type="button" disabled aria-expanded="false" aria-controls="ortho-water-panel"><i class="bi bi-droplet" aria-hidden="true"></i> Estimar água</button>
+      {% include 'ortomosaicos_agua.html' %}
       <section id="ortho-layers-panel" class="ortho-layers" aria-label="Camadas do mapa">
         <h2><i class="bi bi-layers" aria-hidden="true"></i> Camadas</h2>
         <label for="ortho-basemap">Mapa de fundo</label>
@@ -90,5 +92,6 @@
 <script id="ortho-basemap-config" type="application/json">{{ {'key': ortho_google_key | default('')} | tojson }}</script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261016-perf') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261020-agua') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261020-agua') }}"></script>
 {% endblock %}

@@ -120,7 +120,6 @@ class Config:
     # Zero means no application-imposed size/pixel ceiling.
     ORTHOMOSAIC_MAX_UPLOAD_MB = int(os.getenv('ORTHOMOSAIC_MAX_UPLOAD_MB', '0'))
     ORTHOMOSAIC_MAX_PIXELS = int(os.getenv('ORTHOMOSAIC_MAX_PIXELS', '0'))
-    ORTHOMOSAIC_PROCESS_TIMEOUT_SECONDS = int(os.getenv('ORTHOMOSAIC_PROCESS_TIMEOUT_SECONDS', '3600'))
     ORTHOMOSAIC_BACKGROUND_ENABLED = os.getenv('ORTHOMOSAIC_BACKGROUND_ENABLED', '1') == '1'
 
     AUDIT_SKYBOX_ENABLED = os.getenv("AUDIT_SKYBOX_ENABLED", "1").lower() in {"1", "true", "yes", "on"}

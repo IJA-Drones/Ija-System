@@ -28,6 +28,7 @@
     map.on('pointermove',event=>{const point=ol.proj.toLonLat(event.coordinate);el('coordinates').textContent=`${point[1].toFixed(6)}°, ${point[0].toFixed(6)}° · WGS 84`;});
   } catch (_) {message('Não foi possível iniciar o mapa neste navegador.',true);}
   const rasterCache = map ? window.createOrthoRasterCache({map, onStatus: rasterStatus}) : null;
+  const water = map ? window.createOrthoWater({map,api}) : null;
   function referenceStatus(entry) {
     const notice=el('reference-status');notice.hidden=false;
     const item=items.find(i=>String(i.id)===el('reference').value);
@@ -94,14 +95,15 @@
     el('reference').value=previous;
     if(!el('reference').value)clearReference();
   }
-  function select(item) {
+  function select(item, discardApproved=false) {
+    if(!discardApproved&&water&&!water.canSelect(item))return;
     const needsLayer = !layer || layer.get('loadError') || source?.getState()==='error' || selected?.id!==item.id || selected?.arquivo_url!==item.arquivo_url || selected?.curvas_url!==item.curvas_url;
     if(needsLayer){vectorRequest?.abort();vectorRequest=null;styleCache.clear();}
     el('dem-controls').hidden=item.tipo!=='dem'||item.status!=='pronto';
     el('jpeg').removeAttribute('href');if(item.jpeg_url)el('jpeg').href=item.jpeg_url;
     el('layer-label').textContent=item.tipo==='dem'?'Curvas de nível':'Ortomosaico RGB';
     if(item.tipo==='dem')referenceOptions(item);else clearReference();
-    selected=item;renderList();details(item);el('active-title').textContent=item.nome;
+    selected=item;water?.select(item);renderList();details(item);el('active-title').textContent=item.nome;
     if(item.tipo!=='dem'||item.status!=='pronto')clearReference();
     el('empty').hidden=item.status==='pronto';
     if(item.status!=='pronto'){
@@ -143,12 +145,12 @@
     layer.setZIndex(1);layer.setOpacity(Number(el('opacity').value)/100);layer.setVisible(el('visible').checked);
     fit();rasterStatus(raster);
   }
-  async function load(preferId) {
+  async function load(preferId, discardApproved=false) {
     const data=await api(`${app.dataset.listUrl}?prefeitura_id=${encodeURIComponent(el('filter').value)}`);items=data.items;rasterCache?.retain(items);
     const wanted=items.find(i=>i.id===preferId)||items.find(i=>i.id===selected?.id)||items[0];
-    if(wanted)select(wanted);else{
+    if(wanted)select(wanted,discardApproved);else{
       vectorRequest?.abort();clearReference();el('dem-controls').hidden=true;el('jpeg').removeAttribute('href');
-      selected=null;releaseMainLayer();
+      selected=null;water?.select(null);releaseMainLayer();
       el('empty').hidden=false;el('empty').querySelector('h2').textContent='Selecione um levantamento';
       el('empty').querySelector('p').textContent='Envie um ortomosaico ou escolha outra prefeitura para visualizar os mapas.';
       el('active-title').textContent='Selecione um levantamento';el('detail-name').textContent='Detalhes do levantamento';
@@ -172,11 +174,15 @@
   }
   el('type').onchange=updateType;
   updateType();
-  el('filter').addEventListener('change',()=>load().catch(e=>message(e.message,true)));
+  let previousFilter=el('filter').value;
+  el('filter').addEventListener('change',()=>{
+    if(water&&!water.canSelect(null)){el('filter').value=previousFilter;return;}
+    previousFilter=el('filter').value;load(undefined,true).catch(e=>message(e.message,true));
+  });
   el('visible').onchange=()=>layer?.setVisible(el('visible').checked);
   el('opacity').oninput=()=>{el('opacity-label').textContent=`${el('opacity').value}%`;layer?.setOpacity(Number(el('opacity').value)/100);};
   el('fit').onclick=fit;
-  el('layers-toggle').onclick=()=>{el('layers-panel').hidden=!el('layers-panel').hidden;el('layers-toggle').setAttribute('aria-expanded',String(!el('layers-panel').hidden));};
+  el('layers-toggle').onclick=()=>{water?.close();el('layers-panel').hidden=!el('layers-panel').hidden;el('layers-toggle').setAttribute('aria-expanded',String(!el('layers-panel').hidden));};
   el('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await el('stage').requestFullscreen();map?.updateSize();fit();}catch(_){message('Tela cheia não está disponível neste navegador.',true);}};
   el('new').onclick=()=>{el('prefeitura').value=el('filter').value;el('dialog').showModal();};
   el('close').onclick=()=>{if(!uploading)el('dialog').close();};

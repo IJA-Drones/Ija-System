@@ -96,6 +96,16 @@ class Ortomosaico(db.Model):
     prefeitura = db.relationship('Prefeitura')
 
 
+class OrtomosaicoEstimativaAgua(db.Model):
+    __tablename__ = 'ortomosaico_estimativas_agua'
+
+    id = db.Column(db.Integer, primary_key=True)
+    ortomosaico_id = db.Column(db.Integer, db.ForeignKey('ortomosaicos.id'), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'))
+    dados = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
+
 class PrefeituraDocumentoConfig(db.Model):
     """Preferências municipais aplicadas às exportações PDF."""
     __tablename__ = "prefeitura_documento_config"
