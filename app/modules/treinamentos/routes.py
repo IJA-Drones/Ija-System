@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 
 from app.modules.gestao_ti.permissions import can_access_endpoint, profile_code
 from app.modules.vigilancia.access import can_coordinate_field
-from .catalog import MATERIALS, RESOURCE_DIR, SECTIONS
+from .catalog import GUIDE_GROUPS, MATERIALS, RESOURCE_DIR, SECTIONS
 
 
 def _module_url(section):
@@ -38,7 +38,7 @@ def register_routes(bp):
     @login_required
     def index():
         sections = [dict(section, module_url=_module_url(section)) for section in SECTIONS]
-        return render_template("treinamentos.html", sections=sections)
+        return render_template("treinamentos.html", sections=sections, guide_groups=GUIDE_GROUPS)
 
     @bp.get("/treinamentos/arquivos/<material_id>", endpoint="treinamentos_arquivo")
     @login_required

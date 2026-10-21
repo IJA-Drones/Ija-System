@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Treinamentos | Oceano Azul{% endblock %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261021-2') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261021-3') }}">{% endblock %}
 {% block content %}
 <div class="training-page">
   <header class="training-header">
@@ -48,5 +48,21 @@
     </section>
     {% endfor %}
   </div>
+
+  <section class="training-library" aria-labelledby="training-library-title">
+    <header class="training-library-heading"><h2 id="training-library-title">Outros guias e apresentações</h2><p>Selecione um assunto para consultar os documentos em PDF. Para importar os arquivos de teste, siga os tutoriais acima.</p></header>
+    <div class="training-library-grid">
+      {% for group in guide_groups %}
+      <details class="training-library-group">
+        <summary><i class="bi {{ group.icon }}" aria-hidden="true"></i><span>{{ group.title }}</span><small>{{ group.documents|length }} PDFs</small><i class="bi bi-chevron-down training-library-chevron" aria-hidden="true"></i></summary>
+        <ul class="training-library-files" aria-label="{{ group.title }}">
+          {% for material_id, title, pages, filename in group.documents %}
+          <li><a href="{{ url_for('main.treinamentos_arquivo', material_id=material_id) }}" target="_blank" rel="noopener"><span>{{ title }}</span><span class="training-library-meta">{{ pages }} páginas<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i></span><span class="visually-hidden"> (abre em nova aba)</span></a></li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
 </div>
 {% endblock %}
