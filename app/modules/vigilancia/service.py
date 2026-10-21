@@ -164,7 +164,7 @@ def _read_rows(text, prefeitura_id):
     if len(set(header)) != len(header):
         raise PreviewValidationError("O cabeçalho contém colunas repetidas.", codigo="COLUNA_REPETIDA", linha=1)
     missing = [name for name in CSV_COLUMNS if name not in header]
-    extra = [name for name in header if name not in (*CSV_COLUMNS, *DEPOSIT_COLUMNS)]
+    extra = [name for name in header if name not in (*CSV_COLUMNS, *DEPOSIT_COLUMNS, "quarteirao_codigo")]
     if any(name in header for name in DEPOSIT_COLUMNS):
         missing += [name for name in DEPOSIT_COLUMNS if name not in header]
     if missing or extra:
@@ -238,6 +238,11 @@ def _normalize_and_validate(data, linha, prefeitura_id):
     for name in CODE_COLUMNS:
         if len(data[name]) > 80:
             row.add_error(name, "CODIGO_MUITO_LONGO", "O código deve ter no máximo 80 caracteres.")
+    if "quarteirao_codigo" in data:
+        if not data["quarteirao_codigo"] or len(data["quarteirao_codigo"]) > 80:
+            row.add_error("quarteirao_codigo", "QUARTEIRAO_INVALIDO", "Informe um código de quarteirão com até 80 caracteres.")
+        if data["origem"] != "LIRAA":
+            row.add_error("quarteirao_codigo", "QUARTEIRAO_FORA_LIRAA", "A coluna quarteirao_codigo é exclusiva de visitas LIRAa planejadas.")
     if len(data["bairro"]) > 120:
         row.add_error("bairro", "BAIRRO_MUITO_LONGO", "O bairro deve ter no máximo 120 caracteres.")
     for name, value in data.items():
@@ -286,7 +291,7 @@ def _normalize_and_validate(data, linha, prefeitura_id):
         else:
             data[name] = number
     _validate_deposits(row)
-    row.signature = tuple(data.get(name) for name in (*CSV_COLUMNS, *DEPOSIT_COLUMNS))
+    row.signature = tuple(data.get(name) for name in (*CSV_COLUMNS, *DEPOSIT_COLUMNS, "quarteirao_codigo"))
     if not row.errors:
         row.imovel = ImovelVigilancia(
             prefeitura_id=prefeitura_id,

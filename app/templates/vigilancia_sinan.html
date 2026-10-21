@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_sinan.css', v='20261020-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_sinan.css', v='20261020-4') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
 {% block content %}
 <div class="container-fluid py-4 sinan-page" id="sinan-page" data-endpoint="{{ url_for('main.vigilancia_sinan_api') }}">
@@ -96,4 +96,4 @@
 </div>
 <script id="sinan-config" type="application/json">{{ {'municipalities': municipalities, 'diseases': diseases}|tojson }}</script>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia_sinan.js', v='20261020-3') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia_sinan_import.js', v='20261020-3') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia_sinan.js', v='20261020-3') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia_sinan_import.js', v='20261020-4') }}" defer></script>{% endblock %}

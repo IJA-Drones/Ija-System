@@ -97,6 +97,8 @@ class FieldStore:
         if not source or len(source) > 120 or any(ord(c) < 32 for c in source):
             raise FieldStoreError("Informe uma fonte de até 120 caracteres.")
         report = preview_csv(content, prefeitura_id=prefeitura)
+        from .planning import csv_plan_reference
+        plan_reference = csv_plan_reference(report["registros"], plan_reference)
         if os_declaration:
             if demo or len(report["registros"]) != 1:
                 raise FieldConflict("O vínculo com OS exige uma visita individual com dados autorizados.")
@@ -165,8 +167,9 @@ class FieldStore:
             if report["status"] != "VALIDADO" or not report["registros"] or report["arquivo_sha256"] != batch["sha256"] or report["layout"] != batch["layout"]:
                 raise FieldConflict("O arquivo preservado não passou pela validação. Nenhum registro foi gravado.")
             demo = batch["demo"]
-            from .planning import validate_visits, link_visits
+            from .planning import validate_visits, link_visits, csv_plan_reference
             plan_reference = batch["report"].get("planejamento")
+            plan_reference = csv_plan_reference(report["registros"], plan_reference)
             validate_visits(conn, report["registros"], prefeitura, demo, plan_reference, actor)
             if plan_reference:
                 report["planejamento"] = plan_reference
