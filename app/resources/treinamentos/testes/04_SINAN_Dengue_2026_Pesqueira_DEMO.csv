@@ -1,0 +1,7 @@
+﻿referencia;doenca;municipio_ibge;ano;semana;classificacao;latitude;longitude
+DEMO-SINAN-PES-001;dengue;2610905;2026;202642;confirmado;-8.35754;-36.70191
+DEMO-SINAN-PES-002;dengue;2610905;2026;202642;suspeito;-8.357298;-36.702435
+DEMO-SINAN-PES-003;dengue;2610905;2026;202642;suspeito;-8.35714;-36.69907
+DEMO-SINAN-PES-004;dengue;2610905;2026;202643;descartado;-8.356898;-36.699595
+DEMO-SINAN-PES-005;dengue;2610905;2026;202643;confirmado;-8.35978;-36.69815
+DEMO-SINAN-PES-006;dengue;2610905;2026;202643;suspeito;-8.3595;-36.6985

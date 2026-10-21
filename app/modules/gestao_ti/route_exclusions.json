@@ -1,4 +1,6 @@
 {
+  "main.treinamentos": "Authenticated read-only learning center; no operational data or writes",
+  "main.treinamentos_arquivo": "Authenticated downloads from a fixed catalogue of manuals and synthetic fixtures",
   "main.portal_acoes": "Public approved municipal actions, explicitly separated demonstration mode",
   "main.portal_acao": "Only the approved snapshot of an active publication",
   "main.portal_acao_midia": "Only media selected in the approved active publication",

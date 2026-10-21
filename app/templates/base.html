@@ -291,6 +291,12 @@
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.treinamentos') %}active{% endif %}"
+               href="{{ url_for('main.treinamentos') }}" {% if request.endpoint == 'main.treinamentos' %}aria-current="page"{% endif %}>
+              <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
+            </a>
+          </li>
           {% if current_user.tipo_usuario == 'dev' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.central_ti' %}active{% endif %}" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">

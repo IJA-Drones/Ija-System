@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Treinamentos | Oceano Azul{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261021-2') }}">{% endblock %}
+{% block content %}
+<div class="training-page">
+  <header class="training-header">
+    <div><p class="training-eyebrow">Materiais de apoio</p><h1>Treinamentos</h1><p>Manuais e arquivos para praticar os fluxos do sistema.</p></div>
+    <a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes') }}"><i class="bi bi-download me-2" aria-hidden="true"></i>Baixar kit de testes <span class="training-format">ZIP</span></a>
+  </header>
+
+  <section class="training-guide" aria-labelledby="guia-title">
+    <span class="training-icon"><i class="bi bi-book" aria-hidden="true"></i></span>
+    <div><h2 id="guia-title">Guia do sistema</h2><p>Conheça as telas, os acessos e as principais funções.</p></div>
+    <a class="btn btn-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='guia-geral') }}" target="_blank" rel="noopener">Abrir manual <span class="training-format">PDF</span><span class="visually-hidden"> do sistema (abre em nova aba)</span></a>
+  </section>
+
+  <section class="training-guide training-video" aria-labelledby="video-title">
+    <span class="training-icon"><i class="bi bi-play-circle" aria-hidden="true"></i></span>
+    <div><h2 id="video-title">Vídeo de apresentação do sistema</h2><p>Visão geral das telas e dos principais fluxos.</p></div>
+    <a class="btn btn-outline-primary" href="https://drive.google.com/drive/folders/1gtqsbUG4bizj4ZNbFy-O3FVs3_hlDTCq?usp=drive_link" target="_blank" rel="noopener noreferrer">Abrir no Google Drive<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i><span class="visually-hidden"> (abre em nova aba)</span></a>
+  </section>
+
+  <aside class="training-demo" aria-label="Contexto dos arquivos de teste"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Demonstração · Pesqueira / PE</strong><p>Use a origem <strong>Demonstração</strong> nos módulos. Visitas de <strong>21/10/2026</strong>; o período do levantamento precisa incluir essa data. Resultados de saúde e imóveis são fictícios.</p></div></aside>
+
+  <div class="training-grid">
+    {% for section in sections %}
+    <section class="training-card" aria-labelledby="training-{{ section.id }}">
+      <div class="training-card-heading"><span class="training-icon"><i class="bi {{ section.icon }}" aria-hidden="true"></i></span><div><h2 id="training-{{ section.id }}">{{ section.title }}</h2><p>{{ section.description }}</p></div></div>
+      <div class="training-manual"><a href="{{ url_for('main.treinamentos_arquivo', material_id=section.manual) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i>Abrir manual <span class="training-format">PDF</span><span class="visually-hidden"> de {{ section.title }} (abre em nova aba)</span></a></div>
+
+      {% if section.files %}
+      <ul class="training-files" aria-label="Arquivos de {{ section.title }}">
+        {% for id, title, description in section.files %}
+        <li><div><a href="{{ url_for('main.treinamentos_arquivo', material_id=id) }}">{{ title }}<i class="bi bi-download ms-2" aria-hidden="true"></i></a><p>{{ description }}</p></div></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if section.id == 'liraa' %}
+      <details class="training-details"><summary>Ordem do teste e preenchimento manual</summary><ol><li>Importe o cadastro territorial (01).</li><li>Crie e abra um levantamento em rascunho. Importe a amostra (02) dentro dele e confira o agente atribuído.</li><li>Revise a amostra e libere o levantamento para campo.</li><li>Em Importar visitas, selecione o levantamento de destino e envie o arquivo 03. Valide e confirme a carga.</li><li>Confira visitas, contornos e IIP em Resultados e Mapa de risco.</li></ol><p>Para preencher à mão: use um levantamento liberado, entre como agente, abra um quarteirão atribuído em Meus levantamentos e registre a visita.</p><p>O arquivo 03 traz o código <strong>teste-1</strong>. Ao importar em outro levantamento, selecione explicitamente o destino. Preserve os vínculos de estrato e quarteirão dos arquivos 01 e 02.</p></details>
+      {% elif section.id == 'mapa' %}
+      <p class="training-hint">O mapa usa as cargas confirmadas do LIRAa e os lotes salvos do SINAN. Use o mesmo município e a mesma origem dos dados. O portal apresenta a versão pública agregada.</p>
+      {% elif section.id == 'sinan' %}
+      <p class="training-hint">Arquivo com 6 registros fictícios. Suspeitos, confirmados e descartados permanecem separados.</p>
+      {% endif %}
+
+      {% if section.module_url %}<footer class="training-card-footer"><a class="btn btn-outline-primary" href="{{ section.module_url }}">{{ 'Meus levantamentos' if current_user.tipo_usuario == 'agente_endemias' and section.id == 'liraa' else 'Acessar módulo' }}<i class="bi bi-arrow-right ms-2" aria-hidden="true"></i><span class="visually-hidden"> · {{ section.title }}</span></a></footer>{% endif %}
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
