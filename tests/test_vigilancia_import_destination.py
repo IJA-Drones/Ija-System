@@ -135,6 +135,21 @@ def test_failed_upload_keeps_selected_mode_and_destination(destination):
     assert 'value="true" selected' in response.text
 
 
+def test_released_plan_opens_import_with_explicit_destination(destination):
+    c, store = destination
+    page = c.get('/vigilancia/planejamento?prefeitura_id=7&demo=true&plano=L-2026-01')
+    assert page.status_code == 200
+    assert 'Importar visitas deste levantamento' in page.text
+    assert 'levantamento_destino=L-2026-01' in page.text
+    page = c.get('/vigilancia/importacoes?prefeitura_id=7&demo=true&levantamento_destino=L-2026-01')
+    assert page.status_code == 200 and 'value="L-2026-01" selected' in page.text
+    assert 'id="campo-planejamento-link"' in page.text
+    with store.connection(write_prefeitura=7) as conn:
+        conn.execute(CampoPlano.__table__.update().values(status='RASCUNHO'))
+    page = c.get('/vigilancia/planejamento?prefeitura_id=7&demo=true&plano=L-2026-01')
+    assert 'Importar visitas deste levantamento' not in page.text
+
+
 def test_other_tenant_cannot_use_destination_endpoint_or_upload(destination):
     c, store = destination
     login(c, 'b')

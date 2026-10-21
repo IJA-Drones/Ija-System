@@ -74,7 +74,8 @@
           {% for row in import_plans %}<option value="{{ row.code }}" {% if import_plan == row.code %}selected{% endif %}>{{ row.titulo }} · {{ row.code }} · {{ row.inicio.strftime('%d/%m/%Y') }} a {{ row.fim.strftime('%d/%m/%Y') }}</option>{% endfor %}
         </select>
         <p class="vigilancia-preview-help" id="campo-levantamento-help">Para visitas LIRAa, escolha o levantamento liberado. A seleção substitui o código de levantamento do CSV; quarteirões, estratos e datas continuam sendo conferidos.</p>
-        <p class="vigilancia-preview-help" id="campo-levantamento-status" role="status">{% if not import_plans %}Nenhum levantamento liberado nesta prefeitura e origem de dados.{% endif %}</p>
+        <p class="vigilancia-preview-help" id="campo-levantamento-status" role="status" aria-live="polite">{% if not import_plans %}Para importar visitas LIRAa planejadas, complete a amostra e libere um levantamento nesta prefeitura e origem de dados.{% endif %}</p>
+        <a id="campo-planejamento-link" class="btn btn-outline-primary btn-sm" data-planning-url="{{ url_for('main.vigilancia_planejamento') }}" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if import_demo else 'false') }}">Abrir planejamento</a>
       </div>
       {% endif %}
       <div class="vigilancia-preview-actions">
@@ -154,5 +155,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/vigilancia-validacao.js', v='20261021-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/vigilancia-validacao.js', v='20261021-2') }}" defer></script>
 {% endblock %}

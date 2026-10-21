@@ -48,34 +48,48 @@ def visits(**changes):
             quarteirao_codigo=f'Q-{i}') | changes for i in (1,2)])
 
 
-def test_three_csv_http_flow_links_multiple_blocks_and_renders_iip_polygons(planned):
+@pytest.mark.parametrize('plan_code,csv_code,select_destination', [
+    ('L-2026-01','L-2026-01',False),
+    ('teste-1','DEMO-POC-PESQUEIRA-2026',True),
+])
+def test_three_csv_http_flow_links_multiple_blocks_and_renders_iip_polygons(planned,plan_code,csv_code,select_destination):
     c,planning=planned;login(c)
     c.get('/vigilancia/planejamento')
     common={'demo':'true','_csrf_token':token(c)}
     response=c.post('/vigilancia/planejamento',data={**common,'acao':'importar_territorio',
         'geometrias_confirmadas':'sim','arquivo':(io.BytesIO(csv_bytes((*RG_COLUMNS,'geometria'),territory())),'territorio.csv')})
     assert response.status_code==303,response.text
-    response=c.post('/vigilancia/planejamento',data={**common,'acao':'criar','plano':'L-2026-01',
+    response=c.post('/vigilancia/planejamento',data={**common,'acao':'criar','plano':plan_code,
         'titulo':'DEMO','inicio':'2026-10-19','fim':'2026-10-23','responsavel':'Coordenação','fonte':'DEMO'})
     assert response.status_code==303,response.text
-    p=planning.overview(7,True,'L-2026-01')['plano']
+    p=planning.overview(7,True,plan_code)['plano']
+    assert p['status']=='RASCUNHO'
     response=c.post('/vigilancia/planejamento',data={**common,'acao':'importar_plano','plano':p['code'],'versao':str(p['versao']),
         'arquivo':(io.BytesIO(csv_bytes(PLAN_COLUMNS,[dict(estrato=f'E-{i}',imoveis_estrato='100',meta_estrato='1',
             criterio='DEMO',quarteirao=f'Q-{i}',meta_quarteirao='1',agente_id='') for i in (1,2)])),'amostra.csv')})
     assert response.status_code==303,response.text
-    change(planning,'liberar',amostra_validada='sim')
+    overview=planning.overview(7,True,plan_code)
+    assert overview['plano']['status']=='RASCUNHO'
+    assert len(overview['estratos'])==2 and len(overview['quarteiroes'])==2
+    page=c.get('/vigilancia/planejamento?demo=true&plano='+plan_code)
+    assert f'Importar amostra em {plan_code}' in page.text
+    planning.mutate(7,True,'a','liberar',{'plano':plan_code,
+        'versao':str(overview['plano']['versao']),'amostra_validada':'sim'})
+    original=visits(levantamento_codigo=csv_code)
     response=c.post('/vigilancia/importacoes',data={**common,'acao':'preparar','fonte':'CSV planejado',
-        'arquivo':(io.BytesIO(visits()),'visitas.csv')})
+        **({'levantamento_destino':plan_code} if select_destination else {}),
+        'arquivo':(io.BytesIO(original),'visitas.csv')})
     assert response.status_code==303,response.text
     batch=planning.history(7)[0]
     assert planning.records(7,demo=True)==[]
     assert confirm(c,batch['id']).status_code==303
     assert confirm(c,batch['id']).status_code==303
-    overview=planning.overview(7,True,'L-2026-01')
+    assert planning.original(batch['id'],7)==original
+    overview=planning.overview(7,True,plan_code)
     assert [b['inspecionados'] for b in overview['quarteiroes']]==[1,1]
     with planning.connection() as conn:
         assert conn.scalar(sa.select(sa.func.count()).select_from(CampoPlanoVisita))==2
-    report=ResultsStore(planning.engine).report(7,True,filters_from({'levantamento':'L-2026-01'}))
+    report=ResultsStore(planning.engine).report(7,True,filters_from({'levantamento':plan_code}))
     assert len(report['geografia']['features'])==2
     assert sorted(f['properties']['iip'] for f in report['geografia']['features'])==[0,100]
     page=c.get('/vigilancia/importacoes?lote='+batch['id'])
