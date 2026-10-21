@@ -1,4 +1,4 @@
-"""Bounded GeoTIFF inspection/conversion; also runs in a timeout-limited subprocess."""
+"""GeoTIFF inspection/conversion in a subprocess without a time limit."""
 import json
 import math
 import os

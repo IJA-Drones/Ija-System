@@ -1,0 +1,49 @@
+<section id="ortho-water-panel" class="ortho-water-panel" aria-label="Estimativa de água" hidden>
+  <div class="ortho-water-head"><div><span class="ortho-eyebrow">VIGILÂNCIA EM CAMPO</span><h2>Volume de água</h2></div><button id="ortho-water-close" type="button" aria-label="Fechar estimativa">×</button></div>
+  <p class="ortho-muted">Marque o recipiente e informe as medidas. O DEM não determina a profundidade da água.</p>
+  <form id="ortho-water-form">
+    <fieldset id="ortho-water-fields">
+      <label for="ortho-water-name">Identificação</label>
+      <input id="ortho-water-name" maxlength="120" required placeholder="Ex.: Piscina do imóvel 12">
+      <div class="ortho-water-grid">
+        <div><label for="ortho-water-kind">Recipiente</label><select id="ortho-water-kind"><option value="piscina">Piscina</option><option value="caixa">Caixa d’água</option><option value="outro">Outro reservatório</option></select></div>
+        <div><label for="ortho-water-origin">Origem das medidas</label><select id="ortho-water-origin"><option value="estimada">Estimadas</option><option value="medida">Medidas em campo</option><option value="fabricante">Fabricante</option></select></div>
+      </div>
+      <label for="ortho-water-method">Como calcular</label>
+      <select id="ortho-water-method">
+        <option value="mapa">Área desenhada × profundidade</option>
+        <option value="retangular">Comprimento × largura × profundidade</option>
+        <option value="cilindrico">Cilindro: diâmetro × profundidade</option>
+        <option value="capacidade">Capacidade conhecida em litros</option>
+      </select>
+      <button id="ortho-water-draw" class="ortho-water-secondary" type="button">Desenhar área no mapa</button>
+      <p id="ortho-water-location" class="ortho-muted">Contorne a área interna do recipiente.</p>
+      <div id="ortho-water-rectangle" class="ortho-water-grid" hidden>
+        <div><label for="ortho-water-length">Comprimento interno (m)</label><input id="ortho-water-length" type="number" min="0.001" max="1000" step="any"></div>
+        <div><label for="ortho-water-width">Largura interna (m)</label><input id="ortho-water-width" type="number" min="0.001" max="1000" step="any"></div>
+      </div>
+      <div id="ortho-water-cylinder" hidden><label for="ortho-water-diameter">Diâmetro interno (m)</label><input id="ortho-water-diameter" type="number" min="0.001" max="1000" step="any"></div>
+      <div id="ortho-water-depths" class="ortho-water-grid">
+        <div><label for="ortho-water-depth">Profundidade média até o nível máximo (m)</label><input id="ortho-water-depth" type="number" min="0.001" max="100" step="any" placeholder="Ex.: 1,50"></div>
+        <div><label for="ortho-water-current">Profundidade média atual da água (m)</label><input id="ortho-water-current" type="number" min="0" max="100" step="any" placeholder="Se conhecida"></div>
+      </div>
+      <div id="ortho-water-known" class="ortho-water-grid" hidden>
+        <div><label for="ortho-water-capacity">Capacidade total (L)</label><input id="ortho-water-capacity" type="number" min="0.001" max="1000000000" step="any"></div>
+        <div><label for="ortho-water-percent">Volume ocupado (%)</label><input id="ortho-water-percent" type="number" min="0" max="100" step="any" placeholder="Se conhecido"></div>
+      </div>
+      <p id="ortho-water-assumption" class="ortho-muted">Para paredes verticais. Use a profundidade média sobre toda a área; deixe a água atual em branco se desconhecida.</p>
+      <div id="ortho-water-result" class="ortho-water-result" aria-live="polite" hidden>
+        <span>Capacidade total estimada</span><strong id="ortho-water-total">—</strong>
+        <div>Água presente <b id="ortho-water-volume">Não informada</b></div>
+        <small id="ortho-water-area"></small>
+      </div>
+      <label for="ortho-water-notes">Observações (opcional)</label><textarea id="ortho-water-notes" rows="2" maxlength="1000" placeholder="Ex.: Profundidade informada pelo morador"></textarea>
+      <p id="ortho-water-status" class="ortho-muted" role="status" aria-live="polite">Preencha as medidas para visualizar a estimativa.</p>
+      <div class="ortho-water-actions"><button id="ortho-water-save" class="ortho-primary" type="submit" disabled>Salvar estimativa</button><button id="ortho-water-new" class="ortho-water-secondary" type="button">Nova</button></div>
+    </fieldset>
+  </form>
+  <div class="ortho-water-saved-head"><h3>Estimativas deste levantamento</h3><button id="ortho-water-refresh" class="ortho-water-secondary" type="button" aria-label="Atualizar estimativas">Atualizar</button></div>
+  <p id="ortho-water-list-status" class="ortho-muted" role="status"></p>
+  <div id="ortho-water-list" class="ortho-water-list"></div>
+</section>
+<div id="ortho-water-drawing" class="ortho-water-drawing" hidden><span id="ortho-water-instruction">Toque nos vértices e finalize no primeiro ponto.</span><button id="ortho-water-cancel" type="button">Cancelar</button></div>

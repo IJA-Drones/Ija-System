@@ -22,11 +22,11 @@ Referências: [configuração da API](https://developers.google.com/maps/documen
 
 ## Armazenamento e processamento
 
-O original é validado em um subprocesso, com limite de tempo, e gravado no Skybox antes de confirmar o cadastro. O banco mantém nome, prefeitura, usuário, hash SHA-256, tamanho, metadados geográficos, estado e referência privada dos arquivos. O prefixo é `SKYBOX_BASE_DIR/ortomosaicos/<namespace-do-banco>/prefeitura-<id>/<uuid>/`; testes e produção ficam em namespaces distintos. Arquivos não são publicados em `/static` nem retornados como links remotos ao navegador.
+O original é validado em um subprocesso, sem limite de duração, e gravado no Skybox antes de confirmar o cadastro. O banco mantém nome, prefeitura, usuário, hash SHA-256, tamanho, metadados geográficos, estado e referência privada dos arquivos. O prefixo é `SKYBOX_BASE_DIR/ortomosaicos/<namespace-do-banco>/prefeitura-<id>/<uuid>/`; testes e produção ficam em namespaces distintos. Arquivos não são publicados em `/static` nem retornados como links remotos ao navegador.
 
 O processamento baixa o original para uma pasta temporária, confere tamanho e hash, reprojeta para EPSG:3857 e gera um Cloud Optimized GeoTIFF com blocos e níveis de zoom. A cópia é enviada ao Skybox. Antes de marcar como disponível, o sistema exige uma resposta real HTTP 206 para uma leitura parcial. O navegador consulta uma rota autenticada do IJA, que encaminha as faixas de bytes ao Skybox e mantém as credenciais no servidor. O tráfego passa pela aplicação: dimensionar conexões e banda antes de ampliar o uso.
 
-Estados: `pendente`, `processando`, `pronto` e `falha`. A fila é persistida no banco. Um executor local processa um arquivo por vez; vários processos disputam a execução por uma atualização condicional no banco. Uma tarefa interrompida pode ser retomada após o vencimento da reserva de processamento, pela consulta da página ou pelo comando abaixo. A conversão tem timeout configurável em `ORTHOMOSAIC_PROCESS_TIMEOUT_SECONDS` (padrão de uma hora); a reserva inclui esse tempo mais 30 minutos para transferências (90 minutos por padrão). Não há promessa de processamento ilimitado: recursos, encerramento de processos e tempo disponível na hospedagem continuam relevantes. O token de processamento evita que uma tentativa antiga substitua o resultado de uma nova tentativa. Falhas permitem **Processar novamente** na tela.
+Estados: `pendente`, `processando`, `pronto` e `falha`. A fila é persistida no banco. Um executor local processa um arquivo por vez; vários processos disputam a execução por uma atualização condicional no banco. Uma tarefa interrompida pode ser retomada após o vencimento da reserva de processamento, pela consulta da página ou pelo comando abaixo. A validação, a conversão RGB e a geração de curvas não têm prazo máximo de execução. A antiga configuração `ORTHOMOSAIC_PROCESS_TIMEOUT_SECONDS` não é mais utilizada. Enquanto o trabalhador está ativo, uma thread renova a reserva de cinco minutos a cada 30 segundos, inclusive durante download e upload. Essa reserva detecta um trabalhador encerrado; seu vencimento permite uma nova tentativa, sem marcar falha apenas pelo tempo decorrido. Se o banco ficar indisponível, a renovação é tentada novamente; uma indisponibilidade maior que a reserva pode permitir outra tentativa, mas somente o token vigente pode publicar. Recursos, encerramento de processos e limites externos da hospedagem continuam relevantes. Falhas reais de integridade, processamento ou armazenamento continuam sendo informadas; os uploads dos levantamentos ao Skybox usam `timeout=None`, inclusive para a escrita no socket, que no Requests também é afetada pelo timeout de conexão. Em desconexões ou respostas HTTP transitórias (408, 429, 500, 502, 503, 504), o envio é repetido até três vezes, com pausas de 2 e 4 segundos, reabrindo o arquivo desde o início no mesmo caminho privado da tentativa. Durante essas tentativas o resultado convertido é mantido localmente, sem repetir a conversão. Esgotadas as tentativas, a falha informa que o envio ao Skybox não foi concluído. Erros permanentes, como autenticação, falta de espaço e certificado inválido, não entram nessa repetição. Os demais usos do Skybox, a preparação de pastas e as leituras mantêm seus limites de conexão/inatividade. Sem timeout no PUT, uma conexão travada pode exigir intervenção; o sistema não consegue impedir limites ou interrupções impostos pelo próprio armazenamento/proxy. O token de processamento evita que uma tentativa antiga substitua o resultado de uma nova tentativa. Falhas permitem **Processar novamente** na tela.
 
 Para retomar pendências por um trabalhador/agendador externo:
 
@@ -54,7 +54,7 @@ Fluxo: enviar DEM → escolher intervalo vertical e resolução horizontal → a
 
 O subprocesso usa Rasterio/GDAL para ler máscaras e reprojetar/re-amostrar em grade métrica com interpolação bilinear; ContourPy extrai isolinhas lineares. Preserva o CRS projetado em metros quando disponível; caso contrário usa uma zona UTM local. A resolução efetiva nunca é menor que a estimativa da resolução nativa. O sistema registra a grade efetiva, CRS de cálculo, intervalo, contagem e amplitude de cotas da grade processada. O referencial vertical é o do arquivo original, sem conversão de datum. Não há classificação de solo, suavização nem remoção automática de vegetação/construções: MDS continua sendo superfície, não MDT. Resultados não são necessariamente idênticos aos de outro algoritmo/configuração no QGIS.
 
-Limites de trabalho desta versão: 4 milhões de células na grade, 500 cotas, 30.000 linhas e 1 milhão de vértices. Ao exceder, o trabalho falha com orientação para ajustar parâmetros, sem simplificar silenciosamente. A aplicação não impõe novo teto de MB ao original; continuam valendo timeout, espaço temporário e limites do servidor. Jobs compartilham o worker durável dos ortomosaicos e a CLI `flask --app app:create_app main processar-ortomosaicos --limite 5`.
+Limites de trabalho desta versão: 4 milhões de células na grade, 500 cotas, 30.000 linhas e 1 milhão de vértices. Ao exceder, o trabalho falha com orientação para ajustar parâmetros, sem simplificar silenciosamente. A aplicação não impõe novo teto de MB ao original; continuam valendo espaço temporário, memória e limites externos do servidor, sem prazo máximo de processamento imposto pela aplicação. Jobs compartilham o worker durável dos ortomosaicos e a CLI `flask --app app:create_app main processar-ortomosaicos --limite 5`.
 
 Resultados no Skybox, na pasta privada do levantamento e namespace do banco:
 
@@ -80,3 +80,49 @@ O seletor mostra carregamento, conclusão das leituras ou falha; metadados carre
 Validação de desempenho local em 16/10/2026: COG RGBA real Base PCTI de 43.285.787 bytes, enquadramento inicial e atraso simulado de 120 ms por leitura remota. Código anterior: 5 leituras, 655.360 bytes, janela de transferência de 0,692 s. Código ajustado: 3 leituras, 786.432 bytes, 0,417 s. Blocos maiores reduzem viagens de rede, podendo transferir bytes extras. Desligar/ligar a referência carregada não gerou leituras adicionais na versão ajustada. Esses números medem esse cenário local, não o tempo total garantido no site. Uma amostra somente leitura no Skybox real também confirmou menor latência com conexão reutilizada (aproximadamente 120–150 ms após a primeira chamada, contra 220–370 ms com conexões novas).
 
 Testes adicionais: `node --test tests/ortomosaicos_raster.test.cjs` e `python -m pytest tests/test_skybox_read_pool.py tests/test_ortomosaicos.py -q`.
+
+## Estimativa de água para vigilância
+
+No levantamento disponível, **Estimar água** abre um painel para cadastrar piscinas,
+caixas d’água e outros reservatórios. A estimativa exige identificação, origem das
+medidas (estimadas, campo ou fabricante) e localização dentro dos limites do
+levantamento. Funciona tanto com RGB quanto com DEM e referência RGB.
+
+Métodos:
+
+- **Área desenhada × profundidade:** desenhar um contorno simples da área interna.
+  O servidor valida o polígono e calcula sua área em uma projeção UTM local, em
+  metros quadrados, sem usar a área distorcida do mapa Web Mercator.
+- **Retangular:** comprimento e largura internos, em metros.
+- **Cilíndrico:** diâmetro interno, em metros.
+- **Capacidade conhecida:** capacidade em litros e percentual opcional do volume
+  ocupado. Esse percentual não representa a altura em recipientes afunilados.
+
+Os três métodos geométricos usam área × profundidade média × 1.000 para litros.
+Exigem a profundidade média até o nível máximo; a profundidade média atual da água
+é opcional. Pressupõem paredes verticais e profundidade média sobre toda a área.
+Se houver degraus, paredes inclinadas ou fundo parcialmente seco, utilizar
+medições/modelagem apropriadas ou capacidade conhecida. O DEM não fornece
+automaticamente profundidade, fundo submerso nem capacidade de caixas tampadas.
+Não há cálculo de dosagem ou recomendação de produto.
+
+Capacidade total e água presente são resultados separados. Campo atual em branco
+significa **não informada**; zero significa vazio. Profundidade atual maior que a
+máxima, percentuais fora de 0–100, números não finitos e contornos que se cruzam são
+rejeitados. A interface recalcula antes de salvar; o servidor recalcula novamente
+e ignora resultados/áreas enviados pelo cliente.
+
+As estimativas ficam no banco por levantamento, com geometria WGS 84, parâmetros,
+origem, observações, versão do cálculo, usuário criador e data. A lista permite
+consultar, editar, localizar no mapa e excluir com confirmação. Não há histórico
+de revisões nesta primeira versão. Troca de levantamento e saída da página
+protegem rascunhos não salvos; fechar o painel mantém o rascunho na página.
+As rotas usam os mesmos perfis DIRETOR/DEV, verificação de acesso à prefeitura e
+proteção CSRF do módulo. Os arquivos originais e o processamento DEM permanecem
+independentes dessas estimativas.
+
+Aplicar a migração `b84f20d19a6e` (após `a73e5c9b204f`) com
+`flask --app app:create_app db upgrade` no ambiente de implantação. Ela cria apenas
+`ortomosaico_estimativas_agua`; não é necessário reenviar ou reprocessar rasters.
+
+Validação: `python -m pytest tests/test_ortomosaicos_agua.py tests/test_ortomosaicos.py tests/test_dem_contours.py -q`.

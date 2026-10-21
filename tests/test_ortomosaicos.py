@@ -1,6 +1,8 @@
 import hashlib
 import importlib.util
 import io
+import threading
+from types import SimpleNamespace
 from datetime import timedelta
 from pathlib import Path
 
@@ -26,6 +28,132 @@ from app.shared import skybox
 from app.shared.csrf_security import register_csrf_security
 
 ROOT=Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize('mode', ['inspect', 'inspect-dem', 'convert', 'contours'])
+def test_raster_subprocess_has_no_deadline(app, monkeypatch, mode):
+    calls = []
+    def run(*args, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(returncode=0, stdout='{"ok":true,"metadata":{"checked":true}}')
+    monkeypatch.setattr(service.subprocess, 'run', run)
+    # An old deployment's setting must not silently restore the former limit.
+    app.config['ORTHOMOSAIC_PROCESS_TIMEOUT_SECONDS'] = 60
+    with app.app_context():
+        assert service.raster_command(mode, 'original.tif', 'output', 1, 2) == {'checked': True}
+    assert calls[0]['timeout'] is None
+
+
+def test_long_processing_renews_claim_through_download_conversion_and_upload(app, monkeypatch):
+    oid = upload(client(app)).json['item']['id']
+    clock = [service.now()]
+    renewed = threading.Event()
+    real_renew = service._renew_claim
+    def renew(*args):
+        result = real_renew(*args)
+        renewed.set()
+        return result
+    monkeypatch.setattr(service, 'now', lambda: clock[0])
+    monkeypatch.setattr(service, '_HEARTBEAT_SECONDS', .01)
+    monkeypatch.setattr(service, '_renew_claim', renew)
+    stages = []
+    def slow_stage(name, function):
+        def run(*args, **kwargs):
+            clock[0] += timedelta(hours=2)
+            renewed.clear()
+            # Wait for actual background renewal, not a manually called helper.
+            assert renewed.wait(5), name
+            db.session.expire_all()
+            row = db.session.get(Ortomosaico, oid)
+            assert row.status == 'processando'
+            assert row.processamento_ate > clock[0]
+            assert not service.process_one(oid), 'another worker must not take the live task'
+            stages.append(name)
+            return function(*args, **kwargs)
+        return run
+    for name in ('_download', 'raster_command', '_upload'):
+        monkeypatch.setattr(service, name, slow_stage(name, getattr(service, name)))
+    with app.app_context():
+        assert service.process_one(oid)
+        db.session.expire_all()
+        row = db.session.get(Ortomosaico, oid)
+        assert row.status == 'pronto'
+        assert row.processamento_ate is None
+    assert stages == ['_download', 'raster_command', '_upload']
+    assert not any(t.name == f'ortomosaico-reserva-{oid}' for t in threading.enumerate())
+
+
+def test_old_claim_cannot_renew_or_publish_over_new_worker(app, monkeypatch):
+    oid = upload(client(app)).json['item']['id']
+    convert = service.raster_command
+    def takeover(*args, **kwargs):
+        row = db.session.get(Ortomosaico, oid)
+        old_token = row.processamento_token
+        row.processamento_token = 'new-worker'
+        row.processamento_ate = service.now() + timedelta(minutes=5)
+        db.session.commit()
+        assert not service._renew_claim(db.engine, oid, old_token)
+        return convert(*args, **kwargs)
+    monkeypatch.setattr(service, 'raster_command', takeover)
+    with app.app_context():
+        assert not service.process_one(oid)
+        db.session.expire_all()
+        row = db.session.get(Ortomosaico, oid)
+        assert row.status == 'processando'
+        assert row.processamento_token == 'new-worker'
+        assert row.cog_path is None
+        assert len(app.test_files) == 1  # only the original survives
+    assert not any(t.name == f'ortomosaico-reserva-{oid}' for t in threading.enumerate())
+
+
+def test_upload_retries_from_start_without_reconverting(app, monkeypatch):
+    oid = upload(client(app)).json['item']['id']
+    original_upload = skybox.upload_file_to_skybox
+    original_raster = service.raster_command
+    attempts, conversions, pauses = [], [], []
+    def interrupted(storage, remote, **kwargs):
+        attempts.append((remote, storage.stream.read(), kwargs['timeout']))
+        if len(attempts) == 1:
+            # Same Requests wrapper as the user's socket-write timeout.
+            raise service.ConnectionError('Connection aborted.', TimeoutError('The write operation timed out'))
+        if len(attempts) == 2:
+            raise skybox.SkyboxTemporaryError('Falha no upload do Skybox (503).')
+        storage.stream.seek(0)
+        return original_upload(storage, remote, **kwargs)
+    def raster(*args, **kwargs):
+        conversions.append(args[0])
+        return original_raster(*args, **kwargs)
+    monkeypatch.setattr(skybox, 'upload_file_to_skybox', interrupted)
+    monkeypatch.setattr(service, 'raster_command', raster)
+    monkeypatch.setattr(service.time, 'sleep', pauses.append)
+    with app.app_context():
+        assert service.process_one(oid)
+        db.session.expire_all()
+        assert db.session.get(Ortomosaico, oid).status == 'pronto'
+    assert conversions == ['convert']
+    assert len(attempts) == 3 and attempts[0] == attempts[1] == attempts[2]
+    assert attempts[0][2] is None
+    assert pauses == [2, 4]
+
+
+def test_persistent_upload_disconnect_has_specific_error_and_stops_heartbeat(app, monkeypatch):
+    oid = upload(client(app)).json['item']['id']
+    attempts = []
+    def disconnected(*args, **kwargs):
+        attempts.append(1)
+        raise service.ConnectionError('private-provider-url')
+    monkeypatch.setattr(skybox, 'upload_file_to_skybox', disconnected)
+    monkeypatch.setattr(service.time, 'sleep', lambda _: None)
+    with app.app_context():
+        assert not service.process_one(oid)
+        db.session.expire_all()
+        row = db.session.get(Ortomosaico, oid)
+        assert row.status == 'falha' and row.cog_path is None
+        assert 'envio ao Skybox' in row.erro and '3 tentativas' in row.erro
+        assert 'private-provider-url' not in row.erro
+        assert row.processamento_ate is None
+    assert len(attempts) == 3
+    assert not any(t.name == f'ortomosaico-reserva-{oid}' for t in threading.enumerate())
 
 
 def tiff(crs='EPSG:4326',count=3):
@@ -59,7 +187,7 @@ def app(tmp_path,monkeypatch):
         def __exit__(self,*args):self.close()
         def close(self):self.closed=True
         def iter_content(self,chunk_size):yield self.data
-    def upload(file,path):files[path]=file.stream.read();return skybox.build_skybox_marker(path)
+    def upload(file,path,**kwargs):files[path]=file.stream.read();return skybox.build_skybox_marker(path)
     def remote(method,path,headers=None,**kwargs):
         if path not in files:return Remote(b'',404)
         data=files[path];total=len(data);status=200;result={}
@@ -107,7 +235,7 @@ def test_upload_larger_than_old_128mb_limit_streams_to_storage(app,tmp_path,monk
     with path.open('wb') as stream:
         stream.write(tiff());stream.seek(129*1024*1024);stream.write(b'\0')
     received=0
-    def remote_upload(storage,remote):
+    def remote_upload(storage,remote,**kwargs):
         nonlocal received
         while chunk:=storage.stream.read(1024*1024):received+=len(chunk)
         return skybox.build_skybox_marker(remote)
