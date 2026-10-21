@@ -343,3 +343,51 @@
       height: 280px;
     }
   }
+
+/* Console surfaces stay scoped to the developer dashboard. */
+.dev-shell { max-width: 1600px; --dev-accent: #0891b2; }
+.dev-shell .dev-hero { border-radius: 24px; border-color: #25485e; background: radial-gradient(ellipse at 90% 0%, #125367 0%, transparent 55%), linear-gradient(120deg, #091525, #102d40); }
+.dev-shell .dev-title { color: #f1f8ff; letter-spacing: -.045em; font-size: clamp(2rem, 3.5vw, 3.5rem); }
+.dev-welcome { color: #c0e5ed; margin-bottom: .6rem; }
+.dev-kicker { color: #a5f3fc; border-color: #307283; letter-spacing: .1em; font-size: .65rem; }
+.dev-command { border-radius: 16px; background: #081c2dcc; font-size: .85rem; }
+.dev-command-row { align-items: center; }
+.dev-command-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+.dev-hero-actions .btn { border-radius: 9px; padding: .55rem .8rem; }
+.dev-card, .dev-metric { border-radius: 16px; box-shadow: 0 4px 18px #0f274008; border-color: #dce5ee; overflow: hidden; }
+.dev-metric { position: relative; }
+.dev-metric::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: #0891b2; }
+.dev-metric:nth-child(3)::before { background: #d97706; }
+.dev-metric .card-body { padding: 1.3rem; }
+.dev-label { letter-spacing: .055em; margin-bottom: .55rem; }
+.dev-label i { margin-right: .3rem; }
+.dev-value { font-size: 2.3rem; letter-spacing: -.04em; margin-bottom: .4rem; font-variant-numeric: tabular-nums; }
+.dev-observability { display: flex; justify-content: space-between; gap: 1.5rem; padding: 1.25rem 1.5rem; background: #edf7fa; border: 1px solid #c8e6ed; border-radius: 16px; }
+.dev-session-summary { display: flex; gap: 1rem; align-items: center; }
+.dev-summary-icon { display: grid; place-items: center; flex: 0 0 44px; height: 44px; background: #d5eef3; color: #0e6173; border-radius: 12px; font-size: 1.4rem; }
+.dev-runtime-summary { display: flex; flex-direction: column; flex-shrink: 0; font-size: .8rem; padding-left: 1.5rem; border-left: 1px solid #c8e6ed; }
+.dev-tabs { padding: .4rem; background: #edf2f7; border: 1px solid #dce5ee; border-radius: 13px; width: fit-content; max-width: 100%; }
+.dev-tabs .nav-link { border: 0; border-radius: 9px; padding: .65rem 1.2rem; }
+.dev-tabs .nav-link.active { background: #123e55; box-shadow: 0 3px 8px #0f274025; }
+.dev-shell .table { font-size: .85rem; }
+.dev-shell .table th { font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; padding-top: 1rem; padding-bottom: 1rem; }
+.dev-shell .table td { padding-top: .95rem; padding-bottom: .95rem; }
+.dev-shell code { font-size: .8rem; overflow-wrap: anywhere; }
+.dev-shell .alert { border-radius: 10px; font-size: .88rem; }
+.dev-timeline { grid-template-columns: repeat(25, minmax(0, 1fr)); height: 160px; background: repeating-linear-gradient(to top, transparent 0, transparent 39px, #94a3b822 39px, #94a3b822 40px); }
+.dev-timeline-bar { background: linear-gradient(0deg, #d97706, #fb923c); }
+.dev-tile, .dev-action, .dev-map-shell { border-radius: 12px; }
+.dev-shell button:focus-visible, .dev-shell a:focus-visible { outline: 3px solid #22b8cf; outline-offset: 3px; }
+.dark-mode .dev-observability { background: #102b3a; border-color: #264958; color: #e2e8f0; }
+.dark-mode .dev-runtime-summary { border-color: #264958; }
+.dark-mode .dev-tabs { background: #102033; border-color: #294056; }
+.dark-mode .dev-tabs .nav-link.active { background: #155e75; }
+@media (max-width: 767.98px) {
+  .dev-observability { flex-direction: column; }
+  .dev-runtime-summary { border-left: 0; border-top: 1px solid #c8e6ed; padding: 1rem 0 0; }
+  .dev-tabs { width: 100%; }
+  .dev-tabs .nav-item { flex: 1 1 40%; }
+  .dev-tabs .nav-link { width: 100%; padding: .65rem; }
+  .dev-filter { grid-template-columns: minmax(0, 1fr); }
+  .dev-command-row { flex-wrap: wrap; }
+}
