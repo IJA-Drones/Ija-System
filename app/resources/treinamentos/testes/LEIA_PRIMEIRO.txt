@@ -1,0 +1,36 @@
+TREINAMENTO - PESQUEIRA / PE - DEMONSTRAÇÃO
+Atualizado em 21/10/2026
+
+Todos os registros de saúde, imóveis, metas e amostras são fictícios.
+Os CSVs LIRAa usam coordenadas de ruas reais de Pesqueira e contornos
+demonstrativos não oficiais. Base: © OpenStreetMap contributors, ODbL 1.0.
+https://www.openstreetmap.org/copyright
+
+Use Demonstração em todas as telas. Nunca apresente estes registros como reais.
+
+LIRAa: 01 cadastro territorial → criar rascunho → 02 amostra dentro do
+rascunho → conferir agentes e liberar → 03 visitas, selecionando o destino
+na importação → validar e confirmar a carga → resultados e mapa de risco.
+
+As visitas são de 21/10/2026. O período do levantamento deve incluir essa data.
+Arquivo 03: municipio_id=14 e levantamento_codigo=teste-1.
+O seletor permite importar em outro levantamento liberado que tenha os mesmos
+estratos e quarteirões. Ele não cria a amostra nem substitui os vínculos.
+Arquivo 02: agente_id=167. Confira a conta da mesma prefeitura antes da carga.
+Os IDs são do cadastro atual de Pesqueira; ajuste-os para outro ambiente.
+
+O kit LIRAa tem 3 quarteirões, 3 estratos e 24 visitas.
+Esperado: 21 inspecionados, 3 positivos, 3 pendências.
+IIP: Q01 16,67%; Q02 28,57%; Q03 0%.
+Para praticar manualmente sem alterar estes totais, use outro levantamento.
+
+SINAN: arquivo 04 → SINAN → Importar dados → Arquivo CSV.
+Escolha Pesqueira, dengue, 2026 e Demonstração. Esperado: 6 registros
+(2 confirmados, 3 suspeitos e 1 descartado). IBGE 2610905.
+
+Compartilhamento: use a imagem 05 e o texto 06 em Ações realizadas, com
+origem Demonstração. Prepare o rascunho, confira a prévia, envie à revisão
+e publique somente após a conferência e com permissão editorial.
+O kit não publica conteúdo nem envia mensagens automaticamente.
+
+Os manuais completos estão na página Treinamentos do sistema.

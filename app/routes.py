@@ -46,6 +46,7 @@ from app.modules.uvis_equipes import register_routes as register_uvis_equipes_ro
 from app.modules.usuarios import register_routes as register_usuarios_routes
 from app.modules.veiculos import register_routes as register_veiculos_routes
 from app.modules.vigilancia import register_routes as register_vigilancia_routes
+from app.modules.treinamentos import register_routes as register_treinamentos_routes
 
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
@@ -98,6 +99,7 @@ register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)
 register_veiculos_routes(bp)
 register_vigilancia_routes(bp)
+register_treinamentos_routes(bp)
 
 
 @bp.record_once

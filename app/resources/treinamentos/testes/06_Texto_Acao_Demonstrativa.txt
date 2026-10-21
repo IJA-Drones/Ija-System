@@ -1,0 +1,18 @@
+MATERIAL FICTÍCIO PARA DEMONSTRAÇÃO
+
+Prefeitura: Pesqueira
+Dados: Demonstração
+Título: Ação demonstrativa de prevenção ao Aedes em Pesqueira
+Tipo: Orientação e prevenção
+Bairro / área: Setor Alfa - fictício
+Início: 20/10/2026
+Fim: 20/10/2026
+
+Descrição pública:
+Esta publicação integra uma demonstração do sistema de vigilância de Pesqueira. O conteúdo simula o registro de uma ação educativa de prevenção ao Aedes, com preparação, revisão, publicação e compartilhamento pelo Portal do Cidadão. Os dados e a imagem são fictícios e não comprovam a execução de uma atividade municipal real.
+
+Legenda da imagem:
+Imagem ilustrativa de uma ação fictícia, utilizada para testar o fluxo de divulgação.
+
+Arquivo de imagem:
+05_Imagem_Acao_Demonstrativa.jpg

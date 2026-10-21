@@ -25,7 +25,8 @@ def register_routes(bp):
     @bp.before_app_request
     def agent_area():
         if is_agent() and (request.endpoint or "").startswith("main.") and request.endpoint not in {
-            "main.vigilancia_agente", "main.vigilancia", "main.inicio"}:
+            "main.vigilancia_agente", "main.vigilancia", "main.inicio",
+            "main.treinamentos", "main.treinamentos_arquivo"}:
             abort(403)
 
     @bp.route("/vigilancia/agente", methods=["GET", "POST"], endpoint="vigilancia_agente")
