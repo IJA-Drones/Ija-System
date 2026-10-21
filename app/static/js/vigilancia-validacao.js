@@ -39,12 +39,37 @@
   const destinationStatus = document.getElementById("campo-levantamento-status");
   if (destination && destinationStatus && municipality && mode) {
     let sequence = 0, controller, pending = false, failed = false;
+    let plannedFile = false, checkingFile = false, fileFailed = false, fileSequence = 0;
+    const fileInput = document.getElementById("arquivo-csv");
+    const planningLink = document.getElementById("campo-planejamento-link");
+    const updateGuidance = () => {
+      destination.required = plannedFile;
+      if (destination.options[0]) destination.options[0].textContent = plannedFile ?
+        "Selecione o levantamento liberado" : "Usar o código do CSV / tratamento focal";
+      if (planningLink) {
+        const query = new URLSearchParams({demo: mode.value});
+        if (/^[1-9]\d*$/.test(municipality.value)) query.set("prefeitura_id", municipality.value);
+        planningLink.href = `${planningLink.dataset.planningUrl}?${query}`;
+      }
+      if (pending || failed || checkingFile || fileFailed) return;
+      if (!/^[1-9]\d*$/.test(municipality.value)) {
+        destinationStatus.textContent = "Selecione a prefeitura para consultar os levantamentos.";
+      } else if (plannedFile && !destination.value) {
+        destinationStatus.textContent = destination.options.length > 1 ?
+          "Este CSV contém visitas planejadas. Selecione o levantamento de destino antes de validar." :
+          "Este CSV contém visitas planejadas. Abra o planejamento, complete a amostra e libere o levantamento antes de importar.";
+      } else {
+        destinationStatus.textContent = destination.options.length > 1 ? "" :
+          "Nenhum levantamento liberado. Complete a amostra no planejamento e libere o levantamento para importar visitas planejadas.";
+      }
+    };
     const reset = () => {
       const option = document.createElement("option");
       option.value = "";
       option.textContent = "Usar o código do CSV / tratamento focal";
       destination.replaceChildren(option);
       destination.value = "";
+      updateGuidance();
     };
     const updateDestinations = async () => {
       const current = ++sequence;
@@ -86,18 +111,52 @@
           pending = false;
           destination.disabled = false;
           destination.removeAttribute("aria-busy");
+          updateGuidance();
         }
       }
     };
     municipality.addEventListener("change", updateDestinations);
     mode.addEventListener("change", updateDestinations);
+    destination.addEventListener("change", updateGuidance);
+    fileInput?.addEventListener("change", async () => {
+      const current = ++fileSequence;
+      const file = fileInput.files[0];
+      plannedFile = false;
+      fileFailed = false;
+      checkingFile = !!file;
+      updateGuidance();
+      if (!file) return;
+      destinationStatus.textContent = "Conferindo o tipo do arquivo…";
+      try {
+        // Apenas o cabeçalho: a validação integral e os vínculos continuam no servidor.
+        const header = (await file.slice(0, 4096).text()).replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0];
+        if (current !== fileSequence) return;
+        plannedFile = /(?:^|[;,])\s*"?quarteirao_codigo"?\s*(?:[;,]|$)/.test(header);
+      } catch (_error) {
+        if (current !== fileSequence) return;
+        fileFailed = true;
+        destinationStatus.textContent = "Não foi possível ler o arquivo. Selecione o CSV novamente antes de validar.";
+      } finally {
+        if (current === fileSequence) {
+          checkingFile = false;
+          updateGuidance();
+        }
+      }
+    });
     destination.closest("form").addEventListener("submit", event => {
+      if (checkingFile || fileFailed || (plannedFile && !destination.value)) {
+        event.preventDefault();
+        if (checkingFile) destinationStatus.textContent = "Aguarde a conferência do arquivo antes de validar.";
+        else if (!fileFailed) { updateGuidance(); destination.focus(); }
+        return;
+      }
       if (pending || failed) {
         event.preventDefault();
         destinationStatus.textContent = pending ? "Aguarde a consulta dos levantamentos antes de importar." :
           "Recarregue a lista de levantamentos antes de importar.";
       }
     });
+    updateGuidance();
   }
 
   const reportButton = document.getElementById("download-report");
