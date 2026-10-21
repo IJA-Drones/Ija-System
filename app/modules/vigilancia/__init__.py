@@ -15,6 +15,8 @@ def register_routes(bp):
     register_field_routes(bp)
     register_hub_routes(bp)
     register_planning_routes(bp)
+    from .deletion_routes import register_routes as register_deletion_routes
+    register_deletion_routes(bp)
     register_agent_routes(bp)
     register_results_routes(bp)
     from .risk_routes import register_routes as register_risk_routes

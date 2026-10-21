@@ -144,6 +144,8 @@ def current_rules(profile_code):
                 allow("prefeitura.denuncias", "converter")
         if is_admin_global_user(user) or is_prefeitura_admin_user(user) or is_covisa_user(user):
             allow("prefeitura.vigilancia", "consultar editar")
+        if role == "dev":
+            allow("prefeitura.vigilancia", "excluir")
 
         if can_access_agro_panel(user):
             for module in ("clientes", "comercial", "mapeamentos", "os", "equipes", "equipamentos"):

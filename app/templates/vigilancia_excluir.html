@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">{% endblock %}
+{% block content %}
+{% set label = 'quarteirão' if item.tipo == 'quarteirao' else item.tipo %}
+<main class="vigilancia-preview-page py-4">
+  <header class="vigilancia-preview-header"><div><h1>Excluir {{ label }}</h1><p>Confira o registro e o impacto antes de confirmar.</p></div></header>
+  <section class="vigilancia-preview-panel" aria-labelledby="exclusao-registro">
+    <h2 id="exclusao-registro" class="text-break">{{ item.titulo }}</h2>
+    <p><strong>{{ prefeitura_nome }}</strong> · {{ 'Demonstração - dados fictícios' if demo else 'Dados autorizados da vigilância' }}</p>
+    <p class="text-break">Código: {{ item.codigo }}{% if item.origem %} · {{ item.origem }}{% endif %}</p>
+    {% if item.tipo == 'levantamento' %}
+    <p>Serão excluídos o levantamento, seus estratos, os vínculos da amostra e <strong>{{ item.visitas }} visitas</strong>. Os quarteirões do cadastro territorial serão preservados.</p>
+    {% elif item.tipo == 'visita' %}
+    <p>Esta visita será removida dos indicadores, mapas e da execução do levantamento. Se ela aparece em vários lotes, a exclusão vale para todos eles.</p>
+    {% else %}<p>Será excluído o cadastro deste quarteirão, incluindo seu contorno.</p>{% endif %}
+    {% if item.lotes %}<p>{{ item.lotes }} lote(s) receberão uma anotação da exclusão. Os arquivos originais e o histórico da importação serão preservados, e essas cargas não poderão ser reconfirmadas.</p>{% endif %}
+    {% if item.bloqueio %}<div class="alert alert-warning" role="alert">{{ item.bloqueio }}</div>
+    {% else %}
+    <p>Esta ação não pode ser desfeita pela tela e ficará registrada na auditoria.</p>
+    <form method="post" action="{{ url_for('main.vigilancia_excluir') }}">
+      <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
+      <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
+      <input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}">
+      <input type="hidden" name="tipo" value="{{ item.tipo }}"><input type="hidden" name="codigo" value="{{ item.codigo }}">
+      <input type="hidden" name="origem" value="{{ item.origem }}"><input type="hidden" name="revisao" value="{{ item.revisao }}">
+      <label><input type="checkbox" name="confirmacao" value="sim" required> Conferi os dados e confirmo a exclusão {{ 'desta' if item.tipo == 'visita' else 'deste' }} {{ label }}{% if item.tipo == 'levantamento' %} e de suas {{ item.visitas }} visitas{% endif %}.</label>
+      <div class="vigilancia-preview-actions mt-3"><button class="btn btn-danger" type="submit">Confirmar exclusão</button></div>
+    </form>
+    {% endif %}
+    <a class="btn btn-outline-primary mt-3" href="{{ url_for('main.vigilancia_campo' if item.tipo == 'visita' else 'main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Voltar sem excluir</a>
+  </section>
+</main>
+{% endblock %}

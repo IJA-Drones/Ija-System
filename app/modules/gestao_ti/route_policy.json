@@ -731,6 +731,10 @@
   "main.vigilancia_risco_export": {"GET": "prefeitura.relatorios.exportar"},
   "main.vigilancia_resultados": {"GET": "prefeitura.vigilancia.consultar"},
   "main.vigilancia_resultados_export": {"GET": "prefeitura.relatorios.exportar"},
+  "main.vigilancia_excluir": {
+    "GET": "prefeitura.vigilancia.excluir",
+    "POST": "prefeitura.vigilancia.excluir"
+  },
   "main.vigilancia_planejamento": {
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
