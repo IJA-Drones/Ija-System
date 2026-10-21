@@ -722,6 +722,7 @@
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
   },
+  "main.vigilancia_import_levantamentos": {"GET": "prefeitura.vigilancia.consultar"},
   "main.vigilancia_campo": {
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"

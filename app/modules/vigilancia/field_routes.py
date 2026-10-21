@@ -5,7 +5,7 @@ from io import BytesIO
 from datetime import datetime, timezone
 import uuid
 
-from flask import Response, abort, current_app, redirect, render_template, request, send_file, session, url_for
+from flask import Response, abort, current_app, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.utils import secure_filename
@@ -217,7 +217,13 @@ def register_routes(bp):
         prefeitura = _scope()
         _ensure_preview_csrf_token()
         batch, error, code, history = None, None, 200, []
+        demo, selected_plan, available_plans = True, "", []
         try:
+            from .planning import PlanningStore, text
+            if request.method == "GET" or request.form.get("acao") != "confirmar":
+                values = request.form if request.method == "POST" else request.args
+                demo = data_mode(values)
+                selected_plan = text(values, "levantamento_destino", optional=True)
             if prefeitura:
                 store = _store()
                 if request.method == "POST":
@@ -239,18 +245,24 @@ def register_routes(bp):
                     content = _uploaded_csv()
                     batch = store.prepare(content, prefeitura=prefeitura, actor=str(current_user.get_id()),
                                           source=request.form.get("fonte", ""),
-                                          filename=secure_filename(request.files["arquivo"].filename)[:120], demo=mode == "true")
+                                          filename=secure_filename(request.files["arquivo"].filename)[:120], demo=mode == "true",
+                                          levantamento_destino=selected_plan or None)
                     return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
                 if request.args.get("lote"):
                     batch = store.get(request.args["lote"], prefeitura)
                     if batch is None:
                         abort(404)
                 history = store.history(prefeitura)
+                if batch:
+                    demo = batch["demo"]
+                    selected_plan = batch["report"].get("vinculo_levantamento", {}).get("destino", "")
         except _RequestError as exc:
             error, code = str(exc), exc.status_code
         except FieldConflict as exc:
             error, code = str(exc), 409
         except PreviewValidationError as exc:
+            error, code = str(exc), 400
+        except FieldInputError as exc:
             error, code = str(exc), 400
         except FieldStoreError as exc:
             error, code = str(exc), 503
@@ -261,12 +273,34 @@ def register_routes(bp):
                     batch = _store().get(request.form.get("lote", ""), prefeitura)
             except (FieldStoreError, OSError):
                 pass
+        if prefeitura:
+            try:
+                available_plans = PlanningStore().released_plans(prefeitura, demo)
+            except FieldStoreError as exc:
+                if not error:
+                    error, code = str(exc), 503
         return render_template("vigilancia_validacao.html", field_mode=True, batch=batch, history=history,
                                result=batch["report"] if batch else None, erro=error,
+                               demo=demo, import_demo=demo, import_plan=selected_plan, import_plans=available_plans,
                                prefeitura_id=prefeitura, **_municipality_filter_context(prefeitura),
                                layout_version=LAYOUT_VERSION, csv_columns=CSV_COLUMNS,
                                max_file_bytes=MAX_FILE_BYTES, preview_csrf_token=session[CSRF_SESSION_KEY],
                                field_datetime=lambda value: datetime.fromtimestamp(value, timezone.utc).strftime("%d/%m/%Y %H:%M UTC")), code
+
+    @bp.get("/vigilancia/importacoes/levantamentos", endpoint="vigilancia_import_levantamentos")
+    @_access
+    def import_plans():
+        prefeitura = _scope()
+        try:
+            from .planning import PlanningStore
+            demo = data_mode(request.args)
+            plans = PlanningStore().released_plans(prefeitura, demo) if prefeitura else []
+            return jsonify(levantamentos=[dict(codigo=row["code"], titulo=row["titulo"],
+                inicio=row["inicio"].strftime('%d/%m/%Y'), fim=row["fim"].strftime('%d/%m/%Y')) for row in plans])
+        except FieldInputError as exc:
+            abort(400, description=str(exc))
+        except FieldStoreError as exc:
+            abort(503, description=str(exc))
 
     @bp.get("/vigilancia/importacoes/<batch_id>/origem.csv", endpoint="vigilancia_import_origem")
     @_access

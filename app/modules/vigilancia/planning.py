@@ -70,6 +70,16 @@ def available_agents(conn, prefeitura):
 
 
 class PlanningStore(FieldStore):
+    def released_plans(self, prefeitura, demo):
+        table = CampoPlano.__table__
+        with self.connection() as conn:
+            if not sa.inspect(conn).has_table(table.name):
+                return []
+            return [dict(row) for row in conn.execute(sa.select(
+                table.c.code, table.c.titulo, table.c.inicio, table.c.fim
+            ).where(*scoped(table, prefeitura, demo), table.c.status == "LIBERADO")
+             .order_by(table.c.inicio.desc(), table.c.code)).mappings()]
+
     def agent_blocks(self, prefeitura, agent_id, demo):
         plans, blocks = CampoPlano.__table__, CampoPlanoQuarteirao.__table__
         with self.connection() as conn:
@@ -341,7 +351,9 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
         plan = plans.get(code)
         if not plan and not reference:
             continue  # Registros legados continuam disponíveis.
-        if not plan or plan["status"] != "LIBERADO":
+        if not plan:
+            raise FieldConflict(f'O levantamento "{code}" não foi encontrado nesta prefeitura e origem de dados. Selecione o levantamento de destino na importação.')
+        if plan["status"] != "LIBERADO":
             raise FieldConflict("O levantamento precisa estar liberado para receber visitas planejadas.")
         if not reference or reference.get("plano") != code:
             raise FieldConflict("Abra a visita pelo quarteirão no planejamento deste levantamento.")

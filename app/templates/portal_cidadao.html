@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261020-4') }}">
 {% endblock %}
 
-{% block auth_content %}
+{% macro portal_content() %}
 <main class="portal-cidadao-page" data-portal-cidadao>
   <nav class="portal-cidadao-nav" aria-label="Navegação do portal">
     <a class="portal-cidadao-nav-brand" href="#portal-inicio" aria-label="Portal do cidadão, início">
@@ -409,7 +409,9 @@
   <script type="application/json" id="portalCidadaoFocusCatalog">{{ focus_catalog | tojson }}</script>
 </main>
 {% include '_portal_chatbot.html' %}
-{% endblock auth_content %}
+{% endmacro %}
+{% block content %}{{ portal_content() }}{% endblock %}
+{% block auth_content %}{{ portal_content() }}{% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/portal-chat-mobile.js') }}"></script>
