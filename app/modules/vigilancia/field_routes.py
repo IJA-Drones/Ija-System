@@ -31,7 +31,7 @@ class FieldBodyLimit:
 
     def __call__(self, environ, start_response):
         path = environ.get("PATH_INFO", "")
-        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path in {"/vigilancia/campo", "/vigilancia/planejamento", "/vigilancia/agente", "/vigilancia/risco"}):
+        if environ.get("REQUEST_METHOD") == "POST" and (path.startswith("/vigilancia/importacoes") or path in {"/vigilancia/campo", "/vigilancia/planejamento", "/vigilancia/agente", "/vigilancia/risco", "/vigilancia/excluir"}):
             limit = MAX_FILE_BYTES + 65536
             try:
                 length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -52,7 +52,10 @@ def _access(view):
         if not current_user.is_authenticated:
             return current_app.login_manager.unauthorized()
         legacy = can_coordinate_field(current_user)
-        if not can_access_endpoint(current_user, "main.vigilancia_importacoes", "GET", legacy=legacy) or not route_access(current_user, legacy):
+        deleting = request.endpoint == "main.vigilancia_excluir"
+        endpoint = request.endpoint if deleting else "main.vigilancia_importacoes"
+        method = request.method if deleting else "GET"
+        if not can_access_endpoint(current_user, endpoint, method, legacy=legacy) or not route_access(current_user, legacy):
             abort(403)
         return view(*args, **kwargs)
     return guarded
@@ -106,7 +109,7 @@ def register_routes(bp):
 
     @bp.after_request
     def field_no_cache(response):
-        if (request.endpoint or "").startswith(("main.vigilancia_import", "main.vigilancia_campo", "main.vigilancia_planejamento")):
+        if (request.endpoint or "").startswith(("main.vigilancia_import", "main.vigilancia_campo", "main.vigilancia_planejamento", "main.vigilancia_excluir")):
             response.headers["Cache-Control"] = "private, no-store"
         return response
 

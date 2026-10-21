@@ -86,6 +86,11 @@ def active_configuration(user):
 
 
 def has_permission(user, permission, legacy=False):
+    # Exclusão LIRAa é uma capacidade permanente do Dev. A rota ainda valida
+    # prefeitura, confirmação, CSRF e vínculos; nenhuma outra ação é ampliada.
+    if (permission == "prefeitura.vigilancia.excluir"
+            and getattr(user, "is_authenticated", False) and profile_code(user) == "dev"):
+        return True
     choices = active_configuration(user)
     if choices is None:
         return bool(legacy)

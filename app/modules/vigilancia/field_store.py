@@ -117,6 +117,8 @@ class FieldStore:
                 table.c.prefeitura == prefeitura, table.c.demo == bool(demo), table.c.actor == actor,
                 table.c.sha256 == report["arquivo_sha256"], table.c.source == source)).mappings().first()
             if previous:
+                if previous['report'].get('exclusoes'):
+                    raise FieldConflict('Este arquivo já pertence a uma carga afetada por exclusões. Para uma nova importação deliberada, informe uma nova fonte e revise o arquivo.')
                 if previous["report"].get("vinculo_os") != report.get("vinculo_os"):
                     raise FieldConflict("Esta visita já foi preparada com outra referência ou responsável. Revise o registro existente.")
                 if previous["report"].get("planejamento") != plan_reference:
@@ -143,6 +145,8 @@ class FieldStore:
                                                      lots.c.actor == actor)).mappings().first()
             if batch is None:
                 raise FieldStoreError("Lote indisponível para confirmação nesta conta e prefeitura.")
+            if batch['report'].get('exclusoes'):
+                raise FieldConflict('Esta carga foi afetada por exclusões e não pode ser reconfirmada. Revise o arquivo em uma nova importação.')
             if batch["status"] == "CONCLUIDO":
                 return self._public(batch)
             if batch["status"] != "VALIDADO":
