@@ -56,6 +56,7 @@ class _Row:
     duplicate: bool = False
     imovel: ImovelVigilancia | None = None
     inspecao: InspecaoCampo | None = None
+    levantamento_csv: str | None = None
 
     def add_error(self, campo, codigo, mensagem):
         if any(error["campo"] == campo and error["codigo"] == codigo for error in self.errors):
@@ -68,7 +69,7 @@ class _Row:
         })
 
 
-def preview_csv(content: bytes, *, prefeitura_id: int) -> dict:
+def preview_csv(content: bytes, *, prefeitura_id: int, levantamento_destino: str | None = None) -> dict:
     """Valida todo o arquivo antes de produzir registros e indicadores.
 
     Códigos são texto e preservam zeros. Espaços externos são removidos e
@@ -90,7 +91,13 @@ def preview_csv(content: bytes, *, prefeitura_id: int) -> dict:
     except UnicodeDecodeError as exc:
         raise PreviewValidationError("Use um CSV codificado em UTF-8.", codigo="ENCODING_INVALIDO") from exc
 
-    rows = _read_rows(text, prefeitura_id)
+    if levantamento_destino is not None and (
+        not isinstance(levantamento_destino, str) or not levantamento_destino.strip()
+        or len(levantamento_destino) > 80
+        or any(ord(char) < 32 or ord(char) == 127 for char in levantamento_destino)
+    ):
+        raise PreviewValidationError("Selecione um levantamento de destino válido.", codigo="LEVANTAMENTO_DESTINO_INVALIDO")
+    rows = _read_rows(text, prefeitura_id, levantamento_destino)
     _validate_inspection_identities(rows, prefeitura_id)
     _validate_property_identities(rows)
     _validate_liraa_results(rows)
@@ -139,6 +146,9 @@ def preview_csv(content: bytes, *, prefeitura_id: int) -> dict:
         "registros": records,
         "indicadores": indicators,
         "pontos": points,
+        **({"vinculo_levantamento": {"destino": levantamento_destino,
+                                    "codigo_csv": rows[0].levantamento_csv}}
+           if levantamento_destino is not None else {}),
     }
 
 
@@ -146,7 +156,7 @@ def _reader(text, delimiter):
     return csv.reader(io.StringIO(text, newline=""), delimiter=delimiter, strict=True)
 
 
-def _read_rows(text, prefeitura_id):
+def _read_rows(text, prefeitura_id, levantamento_destino=None):
     if not text.strip():
         raise PreviewValidationError("O arquivo CSV está vazio.", codigo="ARQUIVO_VAZIO")
     candidates = []
@@ -179,6 +189,7 @@ def _read_rows(text, prefeitura_id):
         raise PreviewValidationError("O cabeçalho deve ocupar uma única linha.", codigo="CABECALHO_INVALIDO", linha=1)
 
     rows = []
+    source_surveys = set()
     while True:
         start_line = reader.line_num + 1
         try:
@@ -200,7 +211,21 @@ def _read_rows(text, prefeitura_id):
                 codigo="QUANTIDADE_COLUNAS_INVALIDA", linha=start_line,
             )
         data = {name: value.strip() for name, value in zip(header, values)}
+        original_survey = data["levantamento_codigo"]
+        if levantamento_destino is not None:
+            if data["origem"].upper() != "LIRAA":
+                raise PreviewValidationError("Selecione um levantamento de destino somente para arquivos de visitas LIRAa.",
+                                             codigo="DESTINO_FORA_LIRAA", linha=start_line)
+            if len(original_survey) > 80 or any(ord(char) < 32 or ord(char) == 127 for char in original_survey):
+                raise PreviewValidationError("Revise o código de levantamento informado no CSV.",
+                                             codigo="LEVANTAMENTO_CSV_INVALIDO", linha=start_line)
+            source_surveys.add(original_survey)
+            if len(source_surveys) > 1:
+                raise PreviewValidationError("O arquivo contém mais de um levantamento. Separe as visitas antes de selecionar o destino.",
+                                             codigo="MULTIPLOS_LEVANTAMENTOS", linha=start_line)
+            data["levantamento_codigo"] = levantamento_destino
         row = _normalize_and_validate(data, start_line, prefeitura_id)
+        row.levantamento_csv = original_survey
         rows.append(row)
     if not rows:
         raise PreviewValidationError("O arquivo não contém registros para validar.", codigo="SEM_REGISTROS")

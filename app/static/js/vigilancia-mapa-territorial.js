@@ -14,7 +14,8 @@
   const polygons = geometry => geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
   const positions = geometry => polygons(geometry).flat(2);
   const geographicVisits = visits.map(point => [point.longitude, point.latitude]);
-  let view = "levantamento";
+  const selectedMunicipalities = context.filter(feature => feature.properties.selecionado);
+  let view = !features.length && selectedMunicipalities.length ? "municipio" : "levantamento";
   const visible = name => controls.find(control => control.dataset.territorialLayer === name)?.checked;
   const number = value => value === null || value === undefined ? "Indisponível" : value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
@@ -32,9 +33,10 @@
     });
   }
   function draw() {
-    const selected = context.filter(feature => feature.properties.selecionado);
+    const selected = selectedMunicipalities;
     const plotted = features.flatMap(feature => positions(feature.geometry)).concat(geographicVisits);
-    let frame = view === "estado" ? context.flatMap(feature => positions(feature.geometry)) :
+    let frame = view === "estado" ? context.flatMap(feature => positions(feature.geometry)) : view === "municipio" ?
+      selected.flatMap(feature => positions(feature.geometry)).concat(geographicVisits) :
       (plotted.length ? plotted : (selected.length ? selected : context).flatMap(feature => positions(feature.geometry)));
     if (!frame.length) frame = [[-41.4, -9.5], [-34.8, -7.1]];
     const west = Math.min(...frame.map(point => point[0])), east = Math.max(...frame.map(point => point[0]));
@@ -80,10 +82,18 @@
          "Posição informada na visita ou no CSV; não é um caso de doença."]));
       svg.append(marker);
     });
-    status.textContent = `${visible("visitas") ? visits.length : 0} visitas com coordenadas · ${visible("iip") ? features.length : 0} contornos de planejamento. ${view === "estado" ? "Visão de Pernambuco continental." : "Visão do levantamento selecionado."}`;
+    const caption = view === "estado" ? "Visão de Pernambuco continental." : view === "municipio" ?
+      "Visão do município selecionado." : "Visão aproximada do levantamento selecionado.";
+    const missing = !features.length && visits.length ? " Sem contornos vinculados a este levantamento; são exibidas somente as visitas." : "";
+    status.textContent = `${visible("visitas") ? visits.length : 0} visitas com coordenadas · ${visible("iip") ? features.length : 0} contornos de planejamento. ${caption}${missing}`;
   }
   document.getElementById("campo-territorio-estado").addEventListener("click", () => { view = "estado"; draw(); });
   document.getElementById("campo-territorio-enquadrar").addEventListener("click", () => { view = "levantamento"; draw(); });
+  const municipalityButton = document.getElementById("campo-territorio-municipio");
+  if (municipalityButton) {
+    municipalityButton.disabled = !selectedMunicipalities.length;
+    municipalityButton.addEventListener("click", () => { view = "municipio"; draw(); });
+  }
   controls.forEach(control => control.addEventListener("change", draw));
   draw();
 })();

@@ -78,6 +78,24 @@ def payload(response):
     return json.loads(response.text.split('id="portal-risco-data">', 1)[1].split("</script>", 1)[0])
 
 
+@pytest.mark.parametrize('authenticated', [False, True])
+def test_portal_content_and_public_map_render_once_for_both_layouts(public_app, authenticated):
+    # Reproduz a escolha de blocos do base.html para não mascarar uma página
+    # vazia na sessão interna com um layout que só renderiza auth_content.
+    public_app.jinja_loader.loaders[0].mapping['base.html'] = (
+        "{% if authenticated_layout %}{% block content %}{% endblock %}"
+        "{% else %}{% block auth_content %}{% endblock %}{% endif %}"
+        "{% block scripts %}{% endblock %}")
+    public_app.jinja_env.globals['authenticated_layout'] = authenticated
+    store, batch = field(public_app)
+    store.confirm(batch['id'], prefeitura=7, actor='50')
+    page = public_app.test_client().get('/portal-cidadao?municipio=2610905&demo=true')
+    assert page.text.count('data-portal-cidadao>') == 1
+    assert page.text.count('id="portal-risco-data"') == 1
+    assert payload(page)['liraa']['visitas'] == 20
+    assert 'imovel_codigo' not in page.text and 'inspecao_codigo' not in page.text
+
+
 def test_public_map_reads_confirmed_csv_and_never_serializes_individuals(public_app):
     app = public_app
     store, batch = field(app)

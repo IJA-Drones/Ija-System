@@ -92,13 +92,16 @@ class FieldStore:
         if conn.scalar(sa.select(table.c.id).where(table.c.id == os_id, table.c.prefeitura_id == prefeitura)) is None:
             raise FieldConflict("A OS não pertence à prefeitura do registro ou não está mais disponível.")
 
-    def prepare(self, content, *, prefeitura, actor, source, filename, demo, os_declaration=None, plan_reference=None):
+    def prepare(self, content, *, prefeitura, actor, source, filename, demo, os_declaration=None, plan_reference=None,
+                levantamento_destino=None):
         source = source.strip()
         if not source or len(source) > 120 or any(ord(c) < 32 for c in source):
             raise FieldStoreError("Informe uma fonte de até 120 caracteres.")
-        report = preview_csv(content, prefeitura_id=prefeitura)
+        report = preview_csv(content, prefeitura_id=prefeitura, levantamento_destino=levantamento_destino)
         from .planning import csv_plan_reference
         plan_reference = csv_plan_reference(report["registros"], plan_reference)
+        if levantamento_destino and report["status"] == "VALIDADO" and not plan_reference:
+            raise FieldConflict("Para vincular ao levantamento selecionado, informe quarteirao_codigo nas visitas do CSV.")
         if os_declaration:
             if demo or len(report["registros"]) != 1:
                 raise FieldConflict("O vínculo com OS exige uma visita individual com dados autorizados.")
@@ -151,7 +154,8 @@ class FieldStore:
                 return self._public(batch)
             if batch["status"] != "VALIDADO":
                 raise FieldConflict("O lote contém inconsistências. Corrija o arquivo e valide novamente.")
-            report = preview_csv(bytes(batch["original"]), prefeitura_id=prefeitura)
+            destination = batch["report"].get("vinculo_levantamento", {}).get("destino")
+            report = preview_csv(bytes(batch["original"]), prefeitura_id=prefeitura, levantamento_destino=destination)
             declaration = batch["report"].get("vinculo_os")
             if declaration:
                 reference = conn.scalar(sa.select(CampoOsReferencia.solicitacao_id).where(CampoOsReferencia.batch_id == batch_id))
