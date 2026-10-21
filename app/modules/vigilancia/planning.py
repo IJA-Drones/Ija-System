@@ -34,12 +34,12 @@ def number(values, name, optional=False):
     return int(value)
 
 
-def read_csv(content, columns):
+def read_csv(content, columns, optional_columns=()):
     if not isinstance(content, bytes) or len(content) > 1024 * 1024:
         raise FieldConflict("Envie um CSV de até 1 MiB.")
     try:
         reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")), delimiter=";", strict=True)
-        if tuple(reader.fieldnames or ()) != columns:
+        if tuple(reader.fieldnames or ()) not in {columns, (*columns, *optional_columns)}:
             raise FieldConflict("Cabeçalho diferente do modelo de planejamento.")
         rows = []
         for row in reader:
@@ -101,8 +101,11 @@ class PlanningStore(FieldStore):
     def mutate(self, prefeitura, demo, actor, action, values, content=None):
         with self.connection(write_prefeitura=prefeitura) as conn:
             if action in {"territorio", "importar_territorio"}:
-                source = read_csv(content, RG_COLUMNS) if content is not None else [values]
-                self._territory(conn, prefeitura, demo, actor, source)
+                source = read_csv(content, RG_COLUMNS, ("geometria",)) if content is not None else [values]
+                has_geometry = content is not None and any(row.get("geometria") for row in source)
+                if has_geometry and values.get("geometrias_confirmadas") != "sim":
+                    raise FieldConflict("Confira os polígonos do CSV e marque a confirmação dos contornos antes de importar.")
+                self._territory(conn, prefeitura, demo, actor, source, imported_geometry=has_geometry)
                 return ""
             code = text(values, "plano")
             table = CampoPlano.__table__
@@ -192,7 +195,7 @@ class PlanningStore(FieldStore):
                     responsavel=text(values, "responsavel", 120), fonte=text(values, "fonte", 200))
 
     @staticmethod
-    def _territory(conn, prefeitura, demo, actor, source):
+    def _territory(conn, prefeitura, demo, actor, source, imported_geometry=False):
         table, seen = CampoQuarteirao.__table__, set()
         for values in source:
             code = text(values, "quarteirao")
@@ -204,6 +207,11 @@ class PlanningStore(FieldStore):
                 atualizado_por=actor, atualizado_em=time.time())
             where = (*scoped(table, prefeitura, demo), table.c.code == code)
             previous = rows(conn, table, prefeitura, demo, table.c.code == code)
+            if imported_geometry and values.get("geometria"):
+                geometry = validate_polygon(text(values, "geometria", 32768))
+                if previous and previous[0].get("geometria") and previous[0]["geometria"] != geometry:
+                    raise FieldConflict(f"O quarteirão {code} já possui outro contorno. Confira e altere esse limite pelo mapa.")
+                item["geometria"] = geometry
             action = text(values, "geometria_acao", 20, optional=True) or "manter"
             if action not in {"manter", "substituir", "remover"}:
                 raise FieldConflict("Ação de desenho inválida.")
@@ -283,6 +291,30 @@ class PlanningStore(FieldStore):
                 raise FieldConflict("A população dos quarteirões selecionados ultrapassa a do estrato.")
 
 
+def csv_plan_reference(records, reference=None):
+    """A coluna opcional vincula cada visita ao quarteirão, sem mudar o payload operacional."""
+    if not any("quarteirao_codigo" in record for record in records):
+        return reference
+    if any(record["origem"] != "LIRAA" or not record.get("quarteirao_codigo") for record in records):
+        raise FieldConflict("O CSV planejado deve conter somente visitas LIRAa com quarteirao_codigo preenchido.")
+    codes = {record["levantamento_codigo"] for record in records}
+    if len(codes) != 1:
+        raise FieldConflict("Importe um único levantamento planejado por CSV de visitas.")
+    inferred = {"plano": codes.pop(), "quarteiroes": {
+        record["inspecao_codigo"]: record["quarteirao_codigo"] for record in records}}
+    if reference:
+        if reference["plano"] != inferred["plano"] or any(
+            planned_block(reference, record) != record["quarteirao_codigo"] for record in records
+        ):
+            raise FieldConflict("Os quarteirões do CSV divergem do vínculo de planejamento informado.")
+        return reference
+    return inferred
+
+
+def planned_block(reference, record):
+    return reference.get("quarteirao") or reference.get("quarteiroes", {}).get(record["inspecao_codigo"])
+
+
 def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
     """Executado novamente na confirmação, sob o mesmo lock municipal do plano."""
     if not sa.inspect(conn).has_table(CampoPlano.__tablename__):
@@ -295,7 +327,11 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
     plans = {plan["code"]: plan for plan in rows(
         conn, CampoPlano.__table__, prefeitura, demo, CampoPlano.code.in_(codes)
     )} if codes else {}
-    block, agent_checked = None, False
+    blocks = {item["quarteirao"]: item for item in rows(
+        conn, CampoPlanoQuarteirao.__table__, prefeitura, demo,
+        CampoPlanoQuarteirao.plano == reference["plano"]
+    )} if reference else {}
+    agents_checked = set()
     for record in records:
         if record["origem"] != "LIRAA":
             if reference:
@@ -309,20 +345,18 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
             raise FieldConflict("O levantamento precisa estar liberado para receber visitas planejadas.")
         if not reference or reference.get("plano") != code:
             raise FieldConflict("Abra a visita pelo quarteirão no planejamento deste levantamento.")
-        if block is None:
-            blocks = rows(conn, CampoPlanoQuarteirao.__table__, prefeitura, demo,
-                CampoPlanoQuarteirao.plano == code, CampoPlanoQuarteirao.quarteirao == reference.get("quarteirao"))
-            block = blocks[0] if blocks else None
+        block_code = planned_block(reference, record)
+        block = blocks.get(block_code)
         if block is None or block["estrato"] != record["estrato_codigo"]:
             raise FieldConflict("O quarteirão ou estrato não pertence à amostra planejada.")
-        if reference.get("agente_id") is not None and not agent_checked:
+        if reference.get("agente_id") is not None and block_code not in agents_checked:
             from app.models import Usuario
             agent_id = reference["agente_id"]
             if str(agent_id) != str(actor) or block["agente_id"] != agent_id or conn.scalar(sa.select(Usuario.id)
                 .where(Usuario.id == agent_id, Usuario.prefeitura_id == prefeitura,
                        Usuario.tipo_usuario == "agente_endemias")) is None:
                 raise FieldConflict("O quarteirão não está atribuído a este agente nesta prefeitura.")
-            agent_checked = True
+            agents_checked.add(block_code)
         if any(record[key] != block["territorio"][column] for key, column in (("bairro", "bairro"), ("area_codigo", "area"))):
             raise FieldConflict("A área e o bairro devem corresponder ao quarteirão planejado.")
         inspected = date.fromisoformat(record["data_inspecao"])
@@ -335,10 +369,11 @@ def link_visits(conn, records, prefeitura, demo, reference, actor):
         return
     table = CampoPlanoVisita.__table__
     for record in records:
+        block_code = planned_block(reference, record)
         where = (*scoped(table, prefeitura, demo), table.c.origin == record["origem"], table.c.code == record["inspecao_codigo"])
         existing = conn.execute(sa.select(table).where(*where)).mappings().first()
-        if existing and (existing["plano"], existing["quarteirao"]) != (reference["plano"], reference["quarteirao"]):
+        if existing and (existing["plano"], existing["quarteirao"]) != (reference["plano"], block_code):
             raise FieldConflict("Esta visita já pertence a outro quarteirão planejado.")
         if not existing:
             conn.execute(table.insert().values(prefeitura=prefeitura, demo=demo, origin=record["origem"],
-                code=record["inspecao_codigo"], plano=reference["plano"], quarteirao=reference["quarteirao"], autor=actor))
+                code=record["inspecao_codigo"], plano=reference["plano"], quarteirao=block_code, autor=actor))
