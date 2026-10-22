@@ -264,9 +264,9 @@
         [
           "comercial",
           "Clientes e comercial",
-          "Consulta de clientes, orçamentos e contratos da empresa.",
+          "Cadastro de clientes e consulta de orçamentos e contratos da empresa.",
           "bi-briefcase",
-          "consultar exportar"
+          "consultar criar exportar"
         ],
         [
           "relatorios",

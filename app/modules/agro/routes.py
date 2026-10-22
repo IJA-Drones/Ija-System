@@ -4357,6 +4357,9 @@ def register_routes(bp):
             filters={"q": q, "page": page, "total": total, "total_pages": total_pages},
             pagination_args=_query_args_without_page(),
             is_editable=can_edit_agro_panel(current_user),
+            can_create_cliente=(has_permission(current_user, "financeiro.comercial.criar", can_edit_agro_finance_panel(current_user))
+                                if getattr(g, "financeiro_empresa", None) is not None
+                                else can_edit_agro_panel(current_user)),
         )
 
     @bp.route("/agro/clientes-fornecedores", methods=["GET"], endpoint="agro_clientes_menu")
@@ -4378,7 +4381,11 @@ def register_routes(bp):
     @bp.route("/agro/clientes/cadastrar", methods=["GET", "POST"], endpoint="agro_cliente_novo")
     @login_required
     def agro_cliente_novo():
-        _require_agro_edit()
+        empresa = getattr(g, "financeiro_empresa", None)
+        if request.endpoint == "main.financeiro_empresa_cliente_novo" and empresa is not None:
+            _require_agro_finance_edit()
+        else:
+            _require_agro_edit()
 
         errors = {}
         form = _normalize_cliente_form(request.form if request.method == "POST" else {})
@@ -4405,6 +4412,8 @@ def register_routes(bp):
             db.session.commit()
 
             flash(f"Cliente agro cadastrado com sucesso. Documento salvo como {doc_fmt}.", "success")
+            if empresa is not None:
+                return redirect(url_for("main.financeiro_empresa_clientes", empresa_slug=empresa["slug"]))
             return redirect(url_for("main.agro_clientes_listar"))
 
         return render_template("agro_cliente_form.html", form=form, errors=errors, modo="novo")

@@ -456,6 +456,10 @@
   "main.financeiro_empresa_clientes": {
     "GET": "financeiro.comercial.consultar"
   },
+  "main.financeiro_empresa_cliente_novo": {
+    "GET": "financeiro.comercial.criar",
+    "POST": "financeiro.comercial.criar"
+  },
   "main.financeiro_empresa_relacionamentos": {
     "GET": [
       "financeiro.comercial.consultar",

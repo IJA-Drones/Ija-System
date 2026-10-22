@@ -522,6 +522,8 @@ class FinanceiroCentralTests(unittest.TestCase):
                     else:
                         self.assertIn('href="/agro/admin"', html)
                         self.assertIn('data-admin-context="agro"', html)
+                    if tab == "clientes" and role in {"financeiro", "financeiro_admin", "dev"}:
+                        self.assertIn('href="/financeiro/empresas/ija/clientes/cadastrar"', html)
                     if role in {"financeiro", "financeiro_admin"}:
                         self.assertNotIn("Editar orçamento", html)
                         self.assertNotIn("Editar contrato", html)
@@ -532,6 +534,54 @@ class FinanceiroCentralTests(unittest.TestCase):
                         query.limit.assert_called_once_with(12)
                     else:
                         query.filter.assert_called_once()
+
+    def test_finance_can_register_client_and_use_receivables_client_query(self):
+        from app.modules.agro.service import build_clientes_agro_query
+        from app.models import Prefeitura
+
+        with self.app.app_context():
+            Prefeitura.__table__.create(db.engine)
+            ClienteAgro.__table__.create(db.engine)
+        path = "/financeiro/empresas/ija/clientes/cadastrar"
+        for role in ("financeiro", "financeiro_admin", "dev"):
+            with self.subTest(role=role):
+                self.login(role, trabalha_agro=False)
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('href="/financeiro/empresas/ija/clientes"', response.get_data(as_text=True))
+                response = self.client.post(path, data={
+                    "nome": "Cliente financeiro", "documento": "52998224725",
+                    "cep": "01001000", "logradouro": "Praça da Sé", "numero": "1",
+                    "bairro": "Sé", "cidade": "São Paulo", "uf": "SP",
+                })
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.location, "/financeiro/empresas/ija/clientes")
+                with self.app.app_context():
+                    clients = build_clientes_agro_query(self.user).all()
+                    self.assertEqual(len(clients), 1)
+                    self.assertEqual(clients[0].nome, "Cliente financeiro")
+                    self.assertEqual(clients[0].documento, "52998224725")
+                    ClienteAgro.query.delete()
+                    db.session.commit()
+
+    def test_finance_client_registration_validates_fields_and_company_access(self):
+        self.login(trabalha_agro=False)
+        response = self.client.post("/financeiro/empresas/ija/clientes/cadastrar", data={})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Informe o nome do cliente", response.get_data(as_text=True))
+        for role in ("admin", "diretor", "piloto", "prefeitura_admin"):
+            self.login(role)
+            for method in (self.client.get, self.client.post):
+                self.assertEqual(method("/financeiro/empresas/ija/clientes/cadastrar").status_code, 403)
+        self.login()
+        self.assertEqual(self.client.post("/financeiro/empresas/inexistente/clientes/cadastrar").status_code, 404)
+
+    def test_consultation_permission_does_not_grant_client_creation(self):
+        self.login()
+        permissions = frozenset({"area:financeiro", "financeiro.comercial.consultar"})
+        with patch("app.modules.gestao_ti.permissions.active_configuration", return_value=permissions):
+            for method in (self.client.get, self.client.post):
+                self.assertEqual(method("/financeiro/empresas/ija/clientes/cadastrar").status_code, 403)
 
     def test_company_consultations_do_not_allow_mutations(self):
         with patch.dict(self.app.view_functions, {endpoint: MagicMock() for endpoint in ("main.agro_clientes_menu", "main.agro_clientes_listar", "main.agro_fornecedores_listar", "main.agro_orcamentos_listar", "main.agro_orcamentos_template_mapeamento", "main.agro_contratos_listar")}):

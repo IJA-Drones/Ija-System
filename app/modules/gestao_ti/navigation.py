@@ -35,7 +35,7 @@ SCREENS = {
  'financeiro.bancos': [('agro_bancos_listar','Bancos'),('agro_bancos_conciliacao','Conciliação'),('agro_banco_novo','Cadastrar banco')],
  'financeiro.comprovantes': [('agro_contratos_comprovantes','Comprovantes')],
  'financeiro.relacionamentos': [('financeiro_empresa_fornecedores','Fornecedores')],
- 'financeiro.comercial': [('financeiro_empresa_clientes','Clientes'),('financeiro_empresa_comercial','Comercial')],
+ 'financeiro.comercial': [('financeiro_empresa_clientes','Clientes'),('financeiro_empresa_cliente_novo','Cadastrar cliente'),('financeiro_empresa_comercial','Comercial')],
  'financeiro.relatorios': [('agro_financeiro_dashboard','Painel financeiro'),('agro_relatorio_contas_geral','Relatório geral')],
  'financeiro.configuracoes': [('financeiro_empresa_configuracoes','Configurações'),('agro_financeiro_categorias_listar','Categorias')],
  'sistema.usuarios': [('admin_usuarios_listar','Usuários'),('admin_usuario_novo','Cadastrar usuário')],
