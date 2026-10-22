@@ -250,6 +250,12 @@ def register_routes(bp):
     def financeiro_empresa_clientes(empresa_slug):
         return render_company_consulta(empresa_slug, "clientes")
 
+    @bp.route("/financeiro/empresas/<empresa_slug>/clientes/cadastrar", methods=["GET", "POST"], endpoint="financeiro_empresa_cliente_novo")
+    @login_required
+    def financeiro_empresa_cliente_novo(empresa_slug):
+        g.financeiro_empresa = _resolve_empresa(empresa_slug, existing_data=True)
+        return current_app.view_functions["main.agro_cliente_novo"]()
+
     @bp.route("/financeiro/empresas/<empresa_slug>/relacionamentos", methods=["GET"], endpoint="financeiro_empresa_relacionamentos")
     @login_required
     def financeiro_empresa_relacionamentos(empresa_slug):
