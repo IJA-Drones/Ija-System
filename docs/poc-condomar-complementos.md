@@ -37,6 +37,16 @@ A chave pública acima foi gerada em 22/10/2026 para esta POC (a privada fica fo
 `POST /api/push/inscrever` e `POST /api/agente/posicao` (aceita Bearer). A denúncia de foco usa o
 `POST /portal-cidadao/denuncias` existente (multipart). Tudo sem sessão/cookie.
 
+## Aplicativo: download e PWA
+
+- Página pública `/app`: APK Android (servido em `/app/ija-vigilancia.apk`, arquivo em `app/static/downloads/`) com QR
+  code, e passo a passo do iPhone (PWA pelo Safari → Adicionar à Tela de Início). Link no login e no portal.
+- O Portal do Cidadão tem manifesto próprio (`manifest-portal.json`, nome "IJA Vigilância"), botão "Instalar
+  aplicativo" (Android/Chrome), dica para iPhone, estado da inscrição push e opção de desativar; o service worker
+  reinscreve sozinho quando o navegador troca a inscrição.
+- Base de demonstração: `python scripts/poc_seed.py --prefeitura-id 14 --usuario-demo <login> --agente-login agente.pesqueira --agente-senha '<senha>' --email-alertas <email>`
+  (Shell do Render). Cria plano LIRAa com quarteirões do agente, carga de campo, regras de alerta, relatos, rastro e SINAN DATASUS.
+
 ## Kapso (WhatsApp)
 
 1. No painel da Kapso, número conectado → Webhooks → novo webhook:

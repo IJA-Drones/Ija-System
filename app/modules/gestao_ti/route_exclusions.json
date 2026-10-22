@@ -51,5 +51,8 @@
   "main.mobile_alertas": "public recent alert messages without personal data",
   "main.mobile_chat": "public chatbot for the app; validated input and quota",
   "main.mobile_agente_painel": "bearer-authenticated agent dashboard restricted to the token owner's prefeitura",
-  "main.mobile_agente_visita": "bearer-authenticated field visit by the assigned agent; same validation as the web form"
+  "main.mobile_agente_visita": "bearer-authenticated field visit by the assigned agent; same validation as the web form",
+  "main.app_download": "public page explaining how to install the app",
+  "main.app_apk": "public APK download",
+  "main.app_qr": "public QR code of the APK link"
 }

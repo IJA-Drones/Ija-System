@@ -1,14 +1,26 @@
-// Inscrição para alertas no celular: app (Capacitor/FCM) ou navegador (Web Push).
+// Alertas no celular (Web Push) e instalação do app (PWA) no Portal do Cidadão.
 (function () {
   'use strict';
   const button = document.getElementById('portal-push-button');
-  const status = document.getElementById('portal-push-status');
   if (!button) return;
+  const status = document.getElementById('portal-push-status');
+  const disableButton = document.getElementById('portal-push-disable');
+  const installButton = document.getElementById('portal-install-button');
+  const installHint = document.getElementById('portal-install-hint');
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-  const say = (text, kind) => { status.textContent = text; status.dataset.kind = kind || ''; };
-  const native = () => window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform();
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const supported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   const prefeituraId = () => document.getElementById('portalPrefeitura')?.value || '';
+  const say = (text, kind) => { status.textContent = text; status.dataset.kind = kind || ''; };
+  const setButton = (text, enabled) => { button.innerHTML = '<i class="bi bi-bell" aria-hidden="true"></i> ' + text; button.disabled = !enabled; };
+  let installEvent = null;
 
+  function base64ToUint8(base64) {
+    const padding = '='.repeat((4 - base64.length % 4) % 4);
+    const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(raw, c => c.charCodeAt(0));
+  }
   function position() {
     return new Promise(resolve => {
       if (!navigator.geolocation) return resolve({});
@@ -17,59 +29,85 @@
         () => resolve({}), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
     });
   }
-  async function register(body) {
+  async function registration() {
+    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+    return reg;
+  }
+  async function publicKey() {
+    const data = await (await fetch('/api/push/chave-publica', { cache: 'no-store' })).json();
+    return data.publicKey || null;
+  }
+  async function register(subscription) {
     const where = await position();
     const response = await fetch('/api/push/inscrever', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-      body: JSON.stringify({ ...body, ...where, prefeitura_id: prefeituraId() || undefined }) });
+      body: JSON.stringify({ canal: 'webpush', subscription: subscription.toJSON(), ...where, prefeitura_id: prefeituraId() || undefined }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Não foi possível inscrever este aparelho.');
-    try { localStorage.setItem('ija-push', '1'); } catch (e) { /* privado */ }
-    say(where.latitude ? 'Alertas ativados para a sua localização.' : 'Alertas ativados para o município.', 'ok');
-    button.textContent = 'Alertas ativados';
-    button.disabled = true;
+    return where;
   }
-  function base64ToUint8(base64) {
-    const padding = '='.repeat((4 - base64.length % 4) % 4);
-    const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
-    return Uint8Array.from(raw, c => c.charCodeAt(0));
+  function showSubscribed(where) {
+    setButton('Alertas ativados', false);
+    disableButton.hidden = false;
+    say(where && where.latitude ? 'Alertas ativados para a sua localização. Você será avisado quando houver aumento de focos ou casos perto de você.'
+      : 'Alertas ativados para o município.', 'ok');
   }
-  async function viaNative() {
-    const push = window.Capacitor.Plugins.PushNotifications;
-    const perm = await push.requestPermissions();
-    if (perm.receive !== 'granted') throw new Error('Permissão de notificação negada no aparelho.');
-    const token = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('O aparelho não devolveu o token de notificação. Verifique a configuração do Firebase no app.')), 15000);
-      push.addListener('registration', t => { clearTimeout(timer); resolve(t.value); });
-      push.addListener('registrationError', e => {
-        clearTimeout(timer);
-        const detail = String(e.error || JSON.stringify(e));
-        reject(new Error(/firebase|api key|FirebaseApp/i.test(detail)
-          ? 'As notificações dentro do aplicativo ainda não foram ativadas no servidor (Firebase). Abra o portal pelo navegador do celular para receber alertas por lá.'
-          : 'Falha ao registrar: ' + detail));
-      });
-      push.register();
-    });
-    await register({ canal: 'fcm', token });
+  function showIdle(text) {
+    setButton('Receber alertas no celular', true);
+    disableButton.hidden = true;
+    if (text) say(text);
   }
-  async function viaWeb() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      const ios = /iphone|ipad/i.test(navigator.userAgent);
-      throw new Error(ios ? 'No iPhone, adicione o portal à Tela de Início (Compartilhar → Adicionar à Tela de Início) e abra por lá para ativar os alertas.' : 'Este navegador não suporta notificações.');
+  async function enable() {
+    if (!supported()) {
+      if (isIos && !standalone()) { installHint.hidden = false; throw new Error('No iPhone, instale o app primeiro: Compartilhar → Adicionar à Tela de Início. Depois abra pelo ícone e toque aqui.'); }
+      throw new Error('Este navegador não suporta notificações. Baixe o aplicativo Android ou use o Chrome.');
     }
-    const keys = await (await fetch('/api/push/chave-publica')).json();
-    if (!keys.publicKey) throw new Error('Alertas push ainda não configurados no servidor.');
+    const key = await publicKey();
+    if (!key) throw new Error('Alertas push ainda não configurados no servidor.');
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') throw new Error('Permissão de notificação negada.');
-    const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription()
-      || await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToUint8(keys.publicKey) });
-    await register({ canal: 'webpush', subscription: subscription.toJSON() });
+    if (permission !== 'granted') throw new Error(permission === 'denied'
+      ? 'Notificações bloqueadas neste navegador. Libere em Configurações do site → Notificações e tente de novo.'
+      : 'Permissão de notificação não concedida.');
+    const reg = await registration();
+    const subscription = await reg.pushManager.getSubscription()
+      || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToUint8(key) });
+    const where = await register(subscription);
+    try { localStorage.setItem('ija-push', '1'); } catch (e) { /* privado */ }
+    showSubscribed(where);
+  }
+  async function disable() {
+    disableButton.disabled = true;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration('/');
+      const subscription = reg && await reg.pushManager.getSubscription();
+      if (subscription) {
+        await fetch('/api/push/remover', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify({ token: subscription.endpoint }) }).catch(() => {});
+        await subscription.unsubscribe();
+      }
+      try { localStorage.removeItem('ija-push'); } catch (e) { /* privado */ }
+      showIdle('Alertas desativados neste aparelho.');
+    } finally { disableButton.disabled = false; }
+  }
+  async function detect() {
+    if (installButton) {
+      window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; if (!standalone()) installButton.hidden = false; });
+      window.addEventListener('appinstalled', () => { installButton.hidden = true; installHint.hidden = true; say('Aplicativo instalado. Abra pelo ícone na tela inicial.', 'ok'); });
+      installButton.addEventListener('click', async () => { if (!installEvent) return; installEvent.prompt(); await installEvent.userChoice.catch(() => {}); installEvent = null; installButton.hidden = true; });
+    }
+    if (isIos && !standalone()) installHint.hidden = false;
+    if (!supported()) { setButton('Receber alertas no celular', true); return; }
+    if (Notification.permission === 'denied') { say('Notificações bloqueadas neste navegador. Libere em Configurações do site para receber alertas.', 'error'); return; }
+    try {
+      const reg = await navigator.serviceWorker.getRegistration('/');
+      const subscription = reg && await reg.pushManager.getSubscription();
+      if (subscription && Notification.permission === 'granted') showSubscribed(null);
+    } catch (e) { /* sem registro ainda */ }
   }
   button.addEventListener('click', async () => {
     button.disabled = true; say('Ativando…');
-    try { await (native() ? viaNative() : viaWeb()); }
-    catch (error) { say(error.message, 'error'); button.disabled = false; }
+    try { await enable(); }
+    catch (error) { say(error.message, 'error'); showIdle(); }
   });
-  try { if (localStorage.getItem('ija-push') === '1') { button.textContent = 'Alertas ativados'; say('Este aparelho já recebe alertas. Toque para atualizar a localização.'); } } catch (e) { /* privado */ }
+  disableButton.addEventListener('click', disable);
+  detect();
 })();

@@ -1,4 +1,10 @@
 {% extends "base.html" %}
+{% block meta %}
+    <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="IJA Vigilância">
+    <meta name="application-name" content="IJA Vigilância">
+{% endblock %}
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_chatbot.css') }}">
@@ -39,6 +45,9 @@
       <div class="portal-cidadao-hero-actions">
         <a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">
           <i class="bi bi-heart-pulse" aria-hidden="true"></i> Relatar suspeita de adoecimento
+        </a>
+        <a class="btn btn-outline-primary" href="{{ url_for('main.app_download') }}">
+          <i class="bi bi-phone" aria-hidden="true"></i> Baixar o aplicativo
         </a>
         <a class="btn btn-success portal-cidadao-primary-action" href="#portal-relato">
           <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
@@ -86,8 +95,13 @@
       <span class="portal-cidadao-status-pill"><i class="bi bi-patch-check" aria-hidden="true"></i> Fontes públicas oficiais</span>
     </div>
     <div class="portal-cidadao-push my-3" id="portal-push">
-      <button type="button" class="btn btn-primary" id="portal-push-button"><i class="bi bi-bell" aria-hidden="true"></i> Receber alertas no celular</button>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button type="button" class="btn btn-primary" id="portal-push-button"><i class="bi bi-bell" aria-hidden="true"></i> Receber alertas no celular</button>
+        <button type="button" class="btn btn-outline-primary" id="portal-install-button" hidden><i class="bi bi-download" aria-hidden="true"></i> Instalar aplicativo</button>
+        <button type="button" class="btn btn-link btn-sm" id="portal-push-disable" hidden>Desativar alertas</button>
+      </div>
       <p class="small mb-0 mt-2" id="portal-push-status" role="status">Avisos da vigilância quando houver aumento de focos ou casos perto de você.</p>
+      <p class="small mb-0 mt-1" id="portal-install-hint" hidden>No iPhone: toque em Compartilhar <i class="bi bi-box-arrow-up" aria-hidden="true"></i> no Safari e em "Adicionar à Tela de Início"; depois abra pelo ícone e ative os alertas aqui. <a href="{{ url_for('main.app_download') }}">Ver passo a passo</a>.</p>
     </div>
 
     <form class="portal-cidadao-municipality-filter" method="get" action="{{ url_for('main.portal_cidadao', _anchor='boletim-saude') }}">

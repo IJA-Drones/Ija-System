@@ -143,3 +143,4 @@ pyreaddbc==2.0.4
 dbfread==2.0.7
 pywebpush==2.3.0
 py-vapid==1.9.6
+qrcode==8.2

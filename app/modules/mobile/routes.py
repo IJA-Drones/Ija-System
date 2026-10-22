@@ -4,6 +4,7 @@ Público: config, relato de saúde, alertas recentes, chat. Agente: login com JW
 A denúncia de foco usa o endpoint existente POST /portal-cidadao/denuncias (multipart).
 """
 
+import os
 import threading
 import time
 import uuid
@@ -11,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import jwt
-from flask import current_app, g, jsonify, request
+from flask import Response, current_app, g, jsonify, render_template, request, send_from_directory, url_for
 from openai import OpenAIError
 
 from app.extensions import db
@@ -68,7 +69,34 @@ def _rate_ok(key, limit, window=3600):
         return True
 
 
+APP_VERSION = "1.0.0"
+
+
 def register_routes(bp):
+    @bp.get("/app", endpoint="app_download")
+    def app_download():
+        import os
+        path = os.path.join(current_app.static_folder, "downloads", "ija-vigilancia.apk")
+        size = round(os.path.getsize(path) / (1024 * 1024)) if os.path.exists(path) else 0
+        return render_template("app_download.html", versao=APP_VERSION, tamanho_mb=size)
+
+    @bp.get("/app/ija-vigilancia.apk", endpoint="app_apk")
+    def app_apk():
+        response = send_from_directory(os.path.join(current_app.static_folder, "downloads"), "ija-vigilancia.apk",
+                                       mimetype="application/vnd.android.package-archive", as_attachment=True,
+                                       download_name="ija-vigilancia.apk")
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+    @bp.get("/app/qr.svg", endpoint="app_qr")
+    def app_qr():
+        import io
+        import qrcode
+        from qrcode.image.svg import SvgPathImage
+        image = qrcode.make(url_for("main.app_apk", _external=True), image_factory=SvgPathImage, box_size=10, border=2)
+        buffer = io.BytesIO(); image.save(buffer)
+        return Response(buffer.getvalue(), mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
+
     @bp.get("/api/mobile/config", endpoint="mobile_config")
     def mobile_config():
         catalog = build_public_focus_catalog()
