@@ -21,6 +21,10 @@ def send_report(recipient, content):
     validate_recipient(recipient)
     if len(content) > 10*1024*1024: raise ValueError('O PDF excede 10 MB. Restrinja os filtros para enviar por e-mail.')
     from app.shared import mail
+    html = mail.render_html(title='Consulta personalizada', eyebrow='Relatório',
+                            intro='Segue em anexo (PDF) a consulta solicitada no IJA System. Os critérios e a data de geração constam no arquivo.',
+                            lines=[('Arquivo', 'consulta.pdf'), ('Tamanho', f'{len(content) / 1024:.0f} KB')],
+                            cta_text='Abrir consultas no IJA System', cta_url=f'{mail.base_url()}/relatorios/consultas')
     mail.send([recipient], 'IJA System — consulta personalizada',
               'Segue a consulta solicitada no IJA System. Os critérios e a data de geração constam no arquivo.',
-              attachments=[(content, 'consulta.pdf', 'pdf')])
+              attachments=[(content, 'consulta.pdf', 'pdf')], html=html)

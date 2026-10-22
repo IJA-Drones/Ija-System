@@ -227,8 +227,16 @@ def disparar(regra, valor, *, bairro=None, latitude=None, longitude=None, teste=
     if regra.notificar_email:
         from app.shared import mail
         recipients = [e.strip() for e in re.split(r"[,;\s]+", regra.emails or "") if e.strip()]
+        link = f"{mail.base_url()}/alertas?prefeitura_id={regra.prefeitura_id}"
+        html = mail.render_html(
+            title=regra.nome, eyebrow="Alerta epidemiológico" + (" · teste" if teste else ""),
+            intro=mensagem,
+            lines=[("Fonte", LABELS.get(regra.fonte, regra.fonte).capitalize()), ("Bairro", bairro or regra.bairro or "Município inteiro"),
+                   ("Registros", f"{valor} em {regra.janela_dias} dia(s)"), ("Limite", regra.limiar), ("Quando", agora.strftime("%d/%m/%Y %H:%M"))],
+            cta_text="Abrir alertas no IJA System", cta_url=link,
+            footer_note="Você recebe este aviso porque seu e-mail está cadastrado nesta regra de alerta.")
         try:
-            resultado["email"] = mail.send(recipients, titulo, mensagem + "\n\nAcesse o IJA System para detalhes: /alertas") if recipients else 0
+            resultado["email"] = mail.send(recipients, titulo, mensagem + f"\n\nAcesse o IJA System para detalhes: {link}", html=html) if recipients else 0
         except Exception as exc:
             resultado["email_erro"] = str(exc)[:200]
     if regra.notificar_push:
