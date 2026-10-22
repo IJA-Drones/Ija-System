@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Agentes em campo | Oceano Azul{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><style>#agentes-mapa{height:70vh;min-height:420px;border-radius:1rem}.agentes-lista .badge{font-weight:500}</style>{% endblock %}
+{% block content %}
+<main class="container-fluid py-4">
+  <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div><h1 class="h3 mb-1">Agentes em campo</h1><p class="text-muted mb-0">Percurso real registrado pelo aplicativo do agente de endemias durante a jornada (GPS do celular, enquanto o app está aberto).</p></div>
+  </header>
+  <form method="get" class="row g-2 align-items-end mb-3">
+    {% if global_user %}<div class="col-md-4"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
+    {% else %}<input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">{% endif %}
+    <div class="col-md-3"><label class="form-label">Dia<input class="form-control" type="date" name="data" value="{{ dia.isoformat() }}"></label></div>
+    <div class="col-md-3"><label class="form-label">Agente<select class="form-select" name="usuario_id"><option value="">Todos</option>{% for a in agentes %}<option value="{{ a.id }}" {% if request.args.get('usuario_id') == a.id|string %}selected{% endif %}>{{ a.nome_uvis }}</option>{% endfor %}</select></label></div>
+    <div class="col-auto"><button class="btn btn-primary">Consultar</button></div>
+  </form>
+  {% if prefeitura_id %}
+  <div class="row g-3">
+    <div class="col-lg-9"><div id="agentes-mapa" data-url="{{ url_for('main.vigilancia_agentes_rastro', prefeitura_id=prefeitura_id, data=dia.isoformat(), usuario_id=request.args.get('usuario_id', '')) }}"></div></div>
+    <div class="col-lg-3"><div class="card border-0 shadow-sm rounded-4 p-3 agentes-lista"><h2 class="h6">Resumo do dia · {{ prefeitura_nome }}</h2><ul class="list-unstyled mb-0" id="agentes-resumo"><li class="text-muted">Carregando…</li></ul></div></div>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  const el = document.getElementById('agentes-mapa'); if (!el) return;
+  const map = L.map(el).setView([-8.3558, -36.6978], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+  const colors = ['#2563eb','#dc2626','#15803d','#d97706','#7c3aed','#0891b2','#be185d'];
+  fetch(el.dataset.url, { headers: { Accept: 'application/json' } }).then(r => r.json()).then(data => {
+    const resumo = document.getElementById('agentes-resumo'); resumo.innerHTML = '';
+    if (!data.agentes || !data.agentes.length) { resumo.innerHTML = '<li class="text-muted">Nenhum rastro registrado neste dia.</li>'; return; }
+    const bounds = [];
+    data.agentes.forEach((a, i) => {
+      const color = colors[i % colors.length];
+      const latlngs = a.pontos.map(p => [p[0], p[1]]);
+      L.polyline(latlngs, { color, weight: 4, opacity: .8 }).addTo(map);
+      a.pontos.forEach(p => L.circleMarker([p[0], p[1]], { radius: 3, color, fillOpacity: .9 }).bindTooltip(a.nome + ' · ' + p[2]).addTo(map));
+      const last = latlngs[latlngs.length - 1];
+      L.marker(last).bindPopup('<strong>' + a.nome + '</strong><br>' + a.inicio + ' → ' + a.fim + '<br>' + a.pontos.length + ' pontos · ' + a.distancia_km + ' km').addTo(map);
+      bounds.push(...latlngs);
+      const li = document.createElement('li'); li.className = 'mb-2';
+      li.innerHTML = '<span class="badge" style="background:' + color + '">&nbsp;</span> <strong>' + a.nome + '</strong><br><small>' + a.inicio + ' → ' + a.fim + ' · ' + a.pontos.length + ' pontos · ' + a.distancia_km + ' km</small>';
+      resumo.appendChild(li);
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
+  }).catch(() => { document.getElementById('agentes-resumo').innerHTML = '<li class="text-danger">Não foi possível carregar o rastro.</li>'; });
+})();
+</script>
+{% endblock %}

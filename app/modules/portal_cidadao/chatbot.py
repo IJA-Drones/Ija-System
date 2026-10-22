@@ -214,6 +214,31 @@ def consume_quota():
     return True
 
 
+class ChatbotError(Exception):
+    def __init__(self, message, status=502):
+        super().__init__(message)
+        self.message, self.status = message, status
+
+
+def answer(messages, *, extra_instructions=""):
+    """Resposta da Azul para qualquer canal (portal, WhatsApp). Levanta ChatbotError/OpenAIError."""
+    with OpenAI(api_key=current_app.config["OPENAI_API_KEY"], timeout=50, max_retries=0) as client:
+        response = client.responses.create(
+            model=current_app.config.get("OPENAI_CHAT_MODEL") or "gpt-6-luna",
+            instructions=public_instructions() + extra_instructions, input=messages,
+            reasoning={"effort": "low"}, max_output_tokens=2500, store=False,
+            tools=([{"type": "web_search", "filters": {"allowed_domains": OFFICIAL_DOMAINS}}]
+                   if current_app.config.get("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", True) else []),
+            max_tool_calls=2,
+        )
+    text = response.output_text.strip()
+    if not text or getattr(response, "status", "completed") != "completed":
+        raise ChatbotError("Não consegui responder agora. Tente novamente.")
+    if len(text) > 12000:
+        raise ChatbotError("A resposta ficou longa demais. Tente uma pergunta mais específica.")
+    return text, response_parts(response)
+
+
 def reply():
     if not current_app.config.get("OPENAI_API_KEY"):
         return jsonify(error="Assistente indisponível. Você pode continuar usando o formulário."), 503
@@ -248,21 +273,10 @@ def reply():
     except sqlite3.Error:
         return jsonify(error="Assistente temporariamente indisponível."), 503
     try:
-        with OpenAI(api_key=current_app.config["OPENAI_API_KEY"], timeout=50, max_retries=0) as client:
-            response = client.responses.create(
-                model=current_app.config.get("OPENAI_CHAT_MODEL") or "gpt-6-luna",
-                instructions=public_instructions(), input=messages,
-                reasoning={"effort": "low"}, max_output_tokens=2500, store=False,
-                tools=([{"type": "web_search", "filters": {"allowed_domains": OFFICIAL_DOMAINS}}]
-                       if current_app.config.get("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", True) else []),
-                max_tool_calls=2,
-            )
-        answer = response.output_text.strip()
-        if not answer or getattr(response, "status", "completed") != "completed":
-            return jsonify(error="Não consegui responder agora. Tente novamente."), 502
-        if len(answer) > 12000:
-            return jsonify(error="A resposta ficou longa demais. Tente uma pergunta mais específica."), 502
-        return jsonify(answer=answer, parts=response_parts(response))
+        text, parts = answer(messages)
+        return jsonify(answer=text, parts=parts)
+    except ChatbotError as exc:
+        return jsonify(error=exc.message), exc.status
     except OpenAIError:
         # Never log request bodies, credentials or provider exception details.
         current_app.logger.warning("Portal chatbot: provedor indisponível")

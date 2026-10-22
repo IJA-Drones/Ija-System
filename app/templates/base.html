@@ -785,6 +785,16 @@
               <i class="bi bi-shield-check me-2" aria-hidden="true"></i><span>Vigilância</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.alertas') %}active{% endif %}" href="{{ url_for('main.alertas') }}">
+              <i class="bi bi-bell me-2" aria-hidden="true"></i><span>Alertas</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.vigilancia_agentes' %}active{% endif %}" href="{{ url_for('main.vigilancia_agentes') }}">
+              <i class="bi bi-geo-alt me-2" aria-hidden="true"></i><span>Agentes em campo</span>
+            </a>
+          </li>
           {% endif %}
 
           {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin', 'sup_veiculos'] or central_ti_profile_active|default(false) %}
@@ -1823,9 +1833,12 @@
   });
 
   if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+      navigator.serviceWorker.register("/sw.js", { scope: "/" });
   }
     </script>
+    {% if current_user.is_authenticated and current_user.tipo_usuario == 'agente_endemias' %}
+    <script src="{{ url_for('static', filename='js/agente-rastro.js', v='20261022') }}" defer></script>
+    {% endif %}
     {% if ija_security %}
     <script id="ija-security-config" type="application/json">{{ ija_security|tojson }}</script>
     <script src="{{ url_for('static', filename='js/session-security.js', v='20261007a') }}" defer></script>

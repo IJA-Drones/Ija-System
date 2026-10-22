@@ -68,7 +68,7 @@
     selected = job;
     el('snapshot').hidden = !job;
     if (!job) return;
-    const origin = job.kind === 'api' ? 'Fonte pública · município de notificação' : job.demo ? 'DEMONSTRAÇÃO · dados fictícios' : 'Arquivo fornecido pelo usuário';
+    const origin = job.kind === 'api' ? 'Fonte pública · município de notificação' : job.kind === 'datasus' ? 'DATASUS · arquivo oficial do SINAN · município de notificação' : job.demo ? 'DEMONSTRAÇÃO · dados fictícios' : 'Arquivo fornecido pelo usuário';
     el('snapshot-title').textContent = `Detalhes da importação · ${number(job.count)} registros · ${labels[job.status]}`;
     el('snapshot-note').textContent = `${origin} · ${date(job.updated)}. ${job.message || (job.cancel ? 'Cancelamento solicitado; aguardando a requisição em curso.' : 'Importação em andamento. Você pode continuar usando o sistema.')}`;
     el('snapshot-note').classList.toggle('sinan-demo-label', job.demo);
@@ -105,7 +105,7 @@
     jobs.forEach(job => {
       const tr = document.createElement('tr');
       tr.classList.toggle('sinan-job-selected', job.id === selected?.id);
-      td(tr, date(job.created)); td(tr, job.kind === 'api' ? 'API SINAN' : job.demo ? 'CSV · Demonstração' : 'CSV · Vigilância');
+      td(tr, date(job.created)); td(tr, job.kind === 'api' ? 'API SINAN' : job.kind === 'datasus' ? 'DATASUS · DBC' : job.demo ? 'CSV · Demonstração' : 'CSV · Vigilância');
       td(tr, `${labels[job.status]}${job.id === currentId ? ' · Atual' : ''}`); td(tr, number(job.count));
       const button = document.createElement('button'); button.type = 'button'; button.className = 'btn btn-sm btn-outline-primary'; button.textContent = 'Ver detalhes';
       button.setAttribute('aria-controls', 'sinan-snapshot');
@@ -273,7 +273,7 @@
   el('saved-tab').addEventListener('shown.bs.tab', () => { el('filter-actions').hidden = true; refresh(); });
   el('saved-tab').addEventListener('hidden.bs.tab', () => { el('filter-actions').hidden = false; clearTimeout(pollTimer); selection.next(); });
   el('refresh-jobs').addEventListener('click', () => refresh());
-  el('import-api')?.addEventListener('click', () => begin(panel.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(scope()) }));
+  el('import-api')?.addEventListener('click', () => begin(panel.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...scope(), source: el('import-source').value === 'datasus' ? 'datasus' : 'api' }) }));
   el('case-form').addEventListener('submit', event => {
     event.preventDefault();
     const file = el('case-file').files[0];
@@ -285,9 +285,13 @@
   });
   el('case-mode').addEventListener('change', () => { el('case-authorization').hidden = el('case-mode').value !== 'false'; el('case-authorized').checked = false; });
   function importSource() {
-    const csv = el('import-source').value === 'csv';
+    const value = el('import-source').value, csv = value === 'csv';
     el('upload-details').hidden = !csv;
     el('api-import').hidden = csv;
+    if (el('import-api')) el('import-api').textContent = value === 'datasus' ? 'Importar do DATASUS' : 'Importar da API';
+    if (el('api-help')) el('api-help').textContent = value === 'datasus'
+      ? 'Baixa o arquivo oficial do ano no FTP do DATASUS e lê todas as notificações do município selecionado. Leva de 1 a 3 minutos.'
+      : 'Salva as notificações do município, doença e ano selecionados acima.';
   }
   el('import-source').addEventListener('change', importSource);
   importSource();

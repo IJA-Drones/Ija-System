@@ -10,6 +10,15 @@ def _dev_only():
 
 
 def register_core_routes(bp):
+    @bp.get("/sw.js", endpoint="service_worker")
+    def service_worker():
+        # Servido na raiz para que o escopo do service worker cubra todo o site (push em qualquer página).
+        from flask import current_app, send_from_directory
+        response = send_from_directory(current_app.static_folder, "sw.js", mimetype="application/javascript")
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Service-Worker-Allowed"] = "/"
+        return response
+
     @bp.route("/sw.js")
     def serve_sw():
         return bp.send_static_file("sw.js")

@@ -90,6 +90,8 @@ def criar_denuncia(form, files, *, ip_origem=None, user_agent=None):
         db.session.rollback()
         # File intents survive rollback and are reconciled against committed data.
         raise
+    from app.modules.alertas.service import avaliar
+    avaliar(denuncia.prefeitura_id, "denuncias", bairro=denuncia.bairro, latitude=denuncia.latitude, longitude=denuncia.longitude)
     return denuncia
 
 

@@ -313,6 +313,15 @@
       form.dispatchEvent(new CustomEvent("portal:report-success", {detail: {protocolo: payload.protocolo}}));
     } catch (error) {
       console.error("Erro ao enviar relato cidadão.", error);
+      // Sem rede: guarda o relato no aparelho e reenvia sozinho quando a conexão voltar.
+      if (error instanceof TypeError && window.PortalOffline) {
+        const saved = await window.PortalOffline.save(form);
+        if (saved) {
+          showFeedback("Sem conexão. O relato foi salvo neste aparelho e será enviado automaticamente quando a internet voltar.", "success");
+          form.dispatchEvent(new CustomEvent("portal:report-queued", {detail: {}}));
+          return;
+        }
+      }
       const message = "Não foi possível confirmar o envio. O relato pode ter sido recebido. Evite reenviar imediatamente para não duplicar o registro.";
       showFeedback(message, "error");
       form.dispatchEvent(new CustomEvent("portal:report-error", {detail: {errors: {}, message}}));

@@ -85,6 +85,10 @@
       </div>
       <span class="portal-cidadao-status-pill"><i class="bi bi-patch-check" aria-hidden="true"></i> Fontes públicas oficiais</span>
     </div>
+    <div class="portal-cidadao-push my-3" id="portal-push">
+      <button type="button" class="btn btn-primary" id="portal-push-button"><i class="bi bi-bell" aria-hidden="true"></i> Receber alertas no celular</button>
+      <p class="small mb-0 mt-2" id="portal-push-status" role="status">Avisos da vigilância quando houver aumento de focos ou casos perto de você.</p>
+    </div>
 
     <form class="portal-cidadao-municipality-filter" method="get" action="{{ url_for('main.portal_cidadao', _anchor='boletim-saude') }}">
       <label for="portal-boletim-regiao">
@@ -186,6 +190,7 @@
       <div>
         <span class="portal-cidadao-eyebrow">Novo relato</span>
         <h2 id="portal-relato-title">O que você encontrou?</h2>
+        <p class="small text-warning-emphasis" id="portal-offline-status" role="status" hidden></p>
         <p>Um relato pode fazer a diferença no cuidado com a sua comunidade.</p>
       </div>
     </div>
@@ -414,6 +419,8 @@
 {% block auth_content %}{{ portal_content() }}{% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/portal-offline.js', v='20261022') }}"></script>
+<script src="{{ url_for('static', filename='js/portal-push.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-mobile.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
