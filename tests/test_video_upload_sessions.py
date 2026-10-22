@@ -7,6 +7,7 @@ from flask import Blueprint, Flask
 from flask_login import LoginManager, UserMixin
 
 from app.modules.piloto_os import routes
+from app.modules.ortomosaicos.storage import register_storage
 
 
 class User(UserMixin):
@@ -18,6 +19,7 @@ class User(UserMixin):
 def make_app(path, storage=None):
     app=Flask(__name__,instance_path=str(path))
     app.config.update(TESTING=True,SECRET_KEY='upload-test-only',VIDEO_UPLOAD_TEMP_DIR=str(storage) if storage else '')
+    register_storage(app)  # Same request class installed by the application factory.
     login=LoginManager(app);login.user_loader(User)
     bp=Blueprint('main',__name__);routes.register_routes(bp);app.register_blueprint(bp)
     return app

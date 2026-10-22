@@ -9,11 +9,12 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import current_app, url_for
+from filelock import FileLock, Timeout as FileLockTimeout
 from requests.exceptions import ConnectionError, SSLError, Timeout
 from sqlalchemy import and_, or_, update
 from werkzeug.datastructures import FileStorage
@@ -22,6 +23,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import Ortomosaico
 from app.shared import skybox
+from .storage import TemporaryStorageError, TemporaryUpload, require_space, working_root
 
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ortomosaico')
 _futures = {}
@@ -48,6 +50,9 @@ def raster_command(mode, source, destination=None, interval=None, resolution=Non
         args.extend([str(interval), str(resolution)])
     environment = os.environ.copy()
     environment['ORTHOMOSAIC_MAX_PIXELS'] = str(max(0, int(current_app.config.get('ORTHOMOSAIC_MAX_PIXELS', 0))))
+    # Keep GDAL/Python scratch files next to the job, on the configured volume.
+    scratch = str(Path(source).resolve().parent)
+    environment.update(TMPDIR=scratch, TMP=scratch, TEMP=scratch, CPL_TMPDIR=scratch)
     result = subprocess.run(args, capture_output=True, text=True, env=environment, timeout=None)
     try:
         payload = json.loads(result.stdout)
@@ -97,15 +102,21 @@ def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=No
         raise ValueError('Configure o Skybox antes de enviar um ortomosaico.')
     marker = None
     try:
-        with tempfile.TemporaryDirectory(prefix='ija-orto-upload-') as folder:
-            path = Path(folder) / 'original.tif'
+        root = working_root()
+        with tempfile.TemporaryDirectory(prefix='ija-orto-upload-', dir=root) as folder:
+            reusable = isinstance(storage.stream, TemporaryUpload)
+            path = storage.stream.ortho_upload_path if reusable else Path(folder) / 'original.tif'
+            storage.stream.seek(0)
             digest = hashlib.sha256(); size = 0
-            with path.open('wb') as out:
+            with nullcontext(None) if reusable else path.open('wb') as out:
                 while chunk := storage.stream.read(1024*1024):
                     size += len(chunk)
                     if max_bytes() and size > max_bytes():
                         raise ValueError(f'O arquivo excede {max_bytes() // (1024*1024)} MB.')
-                    digest.update(chunk); out.write(chunk)
+                    digest.update(chunk)
+                    if out is not None:
+                        require_space(root, len(chunk))
+                        out.write(chunk)
             if not size:
                 raise ValueError('O arquivo está vazio.')
             metadata = raster_command('inspect-dem' if tipo == 'dem' else 'inspect', path)
@@ -177,6 +188,7 @@ def _download(row, destination):
             raise ValueError('Não foi possível recuperar o TIF original do Skybox.')
         with open(destination, 'wb') as output:
             for chunk in response.iter_content(1024*1024):
+                require_space(Path(destination).parent, len(chunk))
                 size += len(chunk)
                 if size > row.tamanho_bytes:
                     raise ValueError('O arquivo armazenado tem tamanho diferente do original.')
@@ -186,6 +198,20 @@ def _download(row, destination):
 
 
 def process_one(oid):
+    # Gunicorn has multiple processes; one executor per process is insufficient
+    # to prevent simultaneous multi-GB conversions on the same volume.
+    lock = FileLock(str(working_root() / '.processing.lock'))
+    try:
+        lock.acquire(timeout=0)
+    except FileLockTimeout:
+        return False  # Leave the task queued for the next status/CLI dispatch.
+    try:
+        return _claim_and_process(oid)
+    finally:
+        lock.release()
+
+
+def _claim_and_process(oid):
     token = str(uuid.uuid4())
     result = db.session.execute(update(Ortomosaico).where(Ortomosaico.id == oid, eligible()).values(
         status='processando', processamento_token=token,
@@ -209,7 +235,9 @@ def _process_claimed(oid, token):
     db.session.commit()
     markers = []
     try:
-        with tempfile.TemporaryDirectory(prefix='ija-orto-process-') as folder:
+        root = working_root()
+        require_space(root, row.tamanho_bytes)
+        with tempfile.TemporaryDirectory(prefix='ija-orto-process-', dir=root) as folder:
             source, cog = Path(folder)/'original.tif', Path(folder)/'mapa.tif'
             _download(row, source)
             remote_base = skybox.remote_path_from_marker(row.original_path).rsplit('/', 1)[0]
@@ -241,7 +269,7 @@ def _process_claimed(oid, token):
     except Exception as exc:
         db.session.rollback()
         current_app.logger.exception('Falha ao processar ortomosaico %s', oid)
-        message = str(exc) if isinstance(exc, ValueError) else 'O processamento foi interrompido. Tente processar novamente.'
+        message = str(exc) if isinstance(exc, (ValueError, TemporaryStorageError)) else 'O processamento foi interrompido. Tente processar novamente.'
         db.session.execute(update(Ortomosaico).where(Ortomosaico.id == oid, Ortomosaico.processamento_token == token).values(
             status='falha', erro=message[:500], processamento_ate=None, atualizado_em=now()))
         db.session.commit()

@@ -38,6 +38,51 @@ flask --app app:create_app main processar-ortomosaicos --limite 5
 
 ## Implantação
 
+### Espaço temporário no Render
+
+O erro `Size of temporary storage volume /tmp exceeded the limit of 2GB` indica
+que o Render encerrou a instância por uso de armazenamento, independentemente do
+timeout da conversão. O multipart padrão do Flask já gravava uma cópia do upload
+em `/tmp`; o módulo ainda fazia outra cópia antes de enviá-la ao Skybox.
+
+Agora somente o endpoint de upload dos levantamentos recebe os arquivos em
+`instance/ortomosaicos-tmp`, fora da pasta pública e de `/tmp`. A validação e o
+envio ao Skybox reutilizam esse arquivo, que é removido antes do disparo do
+processamento. O download para conversão, a saída e os temporários de GDAL/Python
+também usam a pasta privada de trabalho. `ORTHOMOSAIC_TEMP_DIR` permite escolher
+outro caminho absoluto; vazio usa o padrão acima. Não há contratação automática
+de disco nem necessidade de disco persistente para essa configuração.
+
+As variáveis `TMPDIR`, `TMP`, `TEMP` e `CPL_TMPDIR` são ajustadas **apenas no
+subprocesso do raster**. Os uploads de vídeos, suas sessões, `VIDEO_UPLOAD_TEMP_DIR`
+e os demais endpoints mantêm seu armazenamento atual. Não configure `TMPDIR`
+globalmente para aplicar esta correção.
+
+Uma trava de arquivo permite uma conversão por vez entre os workers que
+compartilham a pasta de trabalho. Outros levantamentos permanecem na fila até o
+próximo disparo pela página/CLI. A recepção e o download verificam espaço livre;
+a conversão verifica uma estimativa de três vezes os bytes do raster reprojetado
+para saída e arquivos auxiliares. Uma margem de 256 MiB evita ocupar todo o
+espaço reportado pelo sistema. Falta de espaço na recepção retorna mensagem
+específica com HTTP 507. Esses controles **não substituem cotas externas do
+provedor**, nem reservam espaço para todos os uploads simultâneos.
+
+Na inspeção de 22/10/2026, `/tmp` era um volume separado da raiz da aplicação.
+`df` exibia o espaço do host, inclusive para `/tmp`, apesar de sua cota de 2 GB;
+portanto esse número não comprova a cota permitida para a instância. A aceitação
+do arquivo real de 2,4 GB após publicar esta branch ainda precisa ser validada.
+Não foram alterados plano, disco, variáveis ou deploy de produção pela correção.
+
+O armazenamento da instância continua efêmero: os temporários podem desaparecer
+em reinício/deploy. Os arquivos permanentes continuam no Skybox. Uma tarefa já
+registrada pode ser reprocessada a partir do original remoto; um upload ainda
+não confirmado precisa ser reenviado. Em encerramento abrupto sem substituição
+da instância podem sobrar temporários: faça limpeza apenas na pasta dedicada,
+com os uploads/processamentos parados. Não apague `instance` ou `/tmp` inteiros,
+pois outras funcionalidades usam esses locais.
+
+Referência: [sistema de arquivos efêmero e deploys do Render](https://render.com/docs/deploys#ephemeral-filesystem).
+
 Instalar as dependências de `requirements.txt` (inclui Rasterio 1.5.2) e aplicar `flask --app app:create_app db upgrade`. A migração `c8d3e70a192f`, após `b7f2c9d41e60`, cria somente a tabela `ortomosaicos`. Não altera prefeituras, contas ou OS existentes. O serviço precisa de acesso ao Skybox, permissão para executar o subprocesso Python e espaço temporário para original e cópia otimizada. A conversão não ocorre dentro da requisição de navegação, mas o envio inicial ao Skybox ocorre antes da resposta do upload; configurar timeout e limite do proxy de acordo com o tamanho admitido.
 
 Bibliotecas do navegador são servidas localmente em `app/static/vendor`: OpenLayers 10.10.0 e GeoTIFF.js 3.1.0-beta.0, dependência utilizada pela distribuição OpenLayers. As licenças estão nas respectivas pastas. GeoTIFF.js deve ser carregado antes de `ol.js`. Não habilitar `convertToRGB` para o COG RGBA produzido aqui: a leitura RGB descarta a quarta banda de transparência.

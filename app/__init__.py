@@ -36,6 +36,8 @@ def create_app():
     from config import Config
 
     app.config.from_object(Config)
+    from app.modules.ortomosaicos.storage import register_storage
+    register_storage(app)
     from app.shared.private_uploads import PrivateUploadsMiddleware
     app.wsgi_app = PrivateUploadsMiddleware(WhiteNoise(app.wsgi_app, root="app/static/"))
 
