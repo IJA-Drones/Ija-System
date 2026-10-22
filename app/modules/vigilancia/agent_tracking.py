@@ -70,13 +70,15 @@ def _finite(value, low, high):
 def register_routes(bp):
     @bp.post("/api/agente/posicao", endpoint="agente_posicao")
     def agente_posicao():
-        if not current_user.is_authenticated:
+        from app.modules.mobile.routes import user_from_bearer
+        user = user_from_bearer() or (current_user if current_user.is_authenticated else None)
+        if user is None:
             return jsonify(error="login"), 401
         data = request.get_json(silent=True) or {}
         lat, lng = _finite(data.get("latitude"), -34, 6), _finite(data.get("longitude"), -74, -28)
         if lat is None or lng is None:
             return jsonify(error="Coordenadas inválidas."), 400
-        row = AgentePosicao(usuario_id=current_user.id, prefeitura_id=getattr(current_user, "prefeitura_id", None),
+        row = AgentePosicao(usuario_id=user.id, prefeitura_id=getattr(user, "prefeitura_id", None),
                             latitude=lat, longitude=lng, precisao_m=_finite(data.get("precisao"), 0, 100000),
                             origem="app" if data.get("origem") == "app" else "web")
         db.session.add(row)

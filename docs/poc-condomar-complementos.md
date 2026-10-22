@@ -30,6 +30,13 @@ FCM_SERVICE_ACCOUNT_JSON={"type":"service_account",...}   (só para push dentro 
 A chave pública acima foi gerada em 22/10/2026 para esta POC (a privada fica fora do git); o par pode ser trocado por outro
 (`python -c "from py_vapid import Vapid; v=Vapid(); v.generate_keys(); v.save_key('vapid.pem')"`).
 
+## API do aplicativo nativo
+
+`GET /api/mobile/config`, `POST /api/mobile/login` (token Bearer, 30 dias), `GET /api/mobile/me`,
+`POST /api/mobile/relato-saude`, `GET /api/mobile/alertas?prefeitura_id=`, `POST /api/mobile/chat`,
+`POST /api/push/inscrever` e `POST /api/agente/posicao` (aceita Bearer). A denúncia de foco usa o
+`POST /portal-cidadao/denuncias` existente (multipart). Tudo sem sessão/cookie.
+
 ## Kapso (WhatsApp)
 
 1. No painel da Kapso, número conectado → Webhooks → novo webhook:

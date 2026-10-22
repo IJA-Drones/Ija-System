@@ -43,5 +43,11 @@
   "main.push_remover": "public device opt-out by its own token",
   "main.whatsapp_kapso_webhook": "external webhook authenticated by HMAC signature (Kapso)",
   "main.agente_posicao": "personal endpoint: the authenticated user records their own GPS position",
-  "main.service_worker": "public static service worker served at the site root"
+  "main.service_worker": "public static service worker served at the site root",
+  "main.mobile_config": "public app configuration (municipalities and catalogue)",
+  "main.mobile_login": "app login issuing a bearer token; same authenticate_user as the web login",
+  "main.mobile_me": "bearer-authenticated profile of the token owner",
+  "main.mobile_relato_saude": "public citizen health report from the app; validated and rate limited",
+  "main.mobile_alertas": "public recent alert messages without personal data",
+  "main.mobile_chat": "public chatbot for the app; validated input and quota"
 }

@@ -40,7 +40,13 @@
     const token = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('O aparelho não devolveu o token de notificação. Verifique a configuração do Firebase no app.')), 15000);
       push.addListener('registration', t => { clearTimeout(timer); resolve(t.value); });
-      push.addListener('registrationError', e => { clearTimeout(timer); reject(new Error('Falha ao registrar: ' + (e.error || JSON.stringify(e)))); });
+      push.addListener('registrationError', e => {
+        clearTimeout(timer);
+        const detail = String(e.error || JSON.stringify(e));
+        reject(new Error(/firebase|api key|FirebaseApp/i.test(detail)
+          ? 'As notificações dentro do aplicativo ainda não foram ativadas no servidor (Firebase). Abra o portal pelo navegador do celular para receber alertas por lá.'
+          : 'Falha ao registrar: ' + detail));
+      });
       push.register();
     });
     await register({ canal: 'fcm', token });
