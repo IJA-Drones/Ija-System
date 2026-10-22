@@ -49,5 +49,7 @@
   "main.mobile_me": "bearer-authenticated profile of the token owner",
   "main.mobile_relato_saude": "public citizen health report from the app; validated and rate limited",
   "main.mobile_alertas": "public recent alert messages without personal data",
-  "main.mobile_chat": "public chatbot for the app; validated input and quota"
+  "main.mobile_chat": "public chatbot for the app; validated input and quota",
+  "main.mobile_agente_painel": "bearer-authenticated agent dashboard restricted to the token owner's prefeitura",
+  "main.mobile_agente_visita": "bearer-authenticated field visit by the assigned agent; same validation as the web form"
 }

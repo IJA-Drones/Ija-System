@@ -21,6 +21,7 @@ from app.modules.auth.service import authenticate_user
 from app.modules.portal_cidadao import chatbot
 from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.relatos_saude.service import create_report
+from app.models import Denuncia
 
 TOKEN_DAYS = 30
 _chat_rate = {}
@@ -146,3 +147,94 @@ def register_routes(bp):
             return jsonify(error=exc.message), exc.status
         except OpenAIError:
             return jsonify(error="Não foi possível responder agora."), 502
+
+
+    # ------------------------------------------------------------ agente de endemias
+    def _demo_flag():
+        return request.values.get("demo", "false") == "true"
+
+    @bp.get("/api/mobile/agente/painel", endpoint="mobile_agente_painel")
+    @bearer_required
+    def mobile_agente_painel():
+        from datetime import date
+        from app.modules.vigilancia.planning import PlanningStore
+        from app.modules.vigilancia.planning_models import CampoPlanoVisita
+        from app.modules.vigilancia.agent_tracking import AgentePosicao, _haversine
+        user, demo = g.mobile_user, _demo_flag()
+        pid = user.prefeitura_id
+        blocks = PlanningStore().agent_blocks(pid, user.id, demo) if pid else []
+        visits = CampoPlanoVisita.query.filter_by(prefeitura=pid, demo=demo, autor=str(user.id)).all() if pid else []
+        by_block = {}
+        for v in visits:
+            by_block[(v.plano, v.quarteirao)] = by_block.get((v.plano, v.quarteirao), 0) + 1
+        quarteiroes = [{
+            "plano": b["plano"], "titulo": b["titulo"], "quarteirao": b["quarteirao"], "estrato": b["estrato"], "meta": b["meta"],
+            "inicio": b["inicio"].isoformat(), "fim": b["fim"].isoformat(),
+            "bairro": (b.get("territorio") or {}).get("bairro"), "area": (b.get("territorio") or {}).get("area"),
+            "referencia": (b.get("territorio") or {}).get("referencia"), "geometria": (b.get("territorio") or {}).get("geometria"),
+            "visitas_registradas": by_block.get((b["plano"], b["quarteirao"]), 0),
+        } for b in blocks]
+        today = datetime.combine(date.today(), datetime.min.time())
+        pts = (AgentePosicao.query.filter(AgentePosicao.usuario_id == user.id, AgentePosicao.registrado_em >= today)
+               .order_by(AgentePosicao.registrado_em).all())
+        coords = [(p.latitude, p.longitude) for p in pts]
+        km = round(sum(_haversine(a, b) for a, b in zip(coords, coords[1:])), 2)
+        visitas_total = len(visits)
+        abertas = (Denuncia.STATUS_RECEBIDA, Denuncia.STATUS_EM_TRIAGEM_COVISA, Denuncia.STATUS_ENCAMINHADA_COORDENADORIA, Denuncia.STATUS_ENCAMINHADA_UVIS)
+        denuncias = (Denuncia.query.filter(Denuncia.prefeitura_id == pid, Denuncia.status.in_(abertas))
+                     .order_by(Denuncia.criado_em.desc()).limit(50).all()) if pid else []
+        def _f(v):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return None
+        alertas = (AlertaDisparo.query.filter_by(prefeitura_id=pid, teste=False).order_by(AlertaDisparo.criado_em.desc()).limit(5).all()) if pid else []
+        return jsonify(
+            agente={"id": user.id, "nome": user.nome_uvis, "prefeitura_id": pid},
+            demo=demo,
+            resumo_hoje={"posicoes": len(pts), "km": km, "inicio": pts[0].registrado_em.strftime("%H:%M") if pts else None,
+                         "ultimo": pts[-1].registrado_em.strftime("%H:%M") if pts else None, "visitas": visitas_total},
+            rastro_hoje=[[p.latitude, p.longitude] for p in pts],
+            quarteiroes=quarteiroes,
+            ocorrencias=[{"id": d.id, "protocolo": d.protocolo, "status": d.status, "tipo": d.tipo_visita, "foco": d.foco,
+                          "endereco": f"{d.logradouro}, {d.numero} - {d.bairro}", "bairro": d.bairro,
+                          "latitude": _f(d.latitude), "longitude": _f(d.longitude), "quando": d.criado_em.isoformat()} for d in denuncias],
+            alertas=[{"titulo": a.regra.nome, "mensagem": a.mensagem, "quando": a.criado_em.isoformat()} for a in alertas],
+            depositos=[{"codigo": c, "rotulo": l} for c, l in __import__("app.modules.vigilancia.domain", fromlist=["DEPOSIT_TYPES"]).DEPOSIT_TYPES],
+        )
+
+    @bp.post("/api/mobile/agente/visitas", endpoint="mobile_agente_visita")
+    @bearer_required
+    def mobile_agente_visita():
+        from app.modules.vigilancia.planning import PlanningStore
+        from app.modules.vigilancia.field_store import FieldStore, FieldConflict, FieldStoreError
+        from app.modules.vigilancia.field_capture import capture_csv, FieldInputError
+        from app.modules.vigilancia.domain import DEPOSIT_TYPES
+        user = g.mobile_user
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not user.prefeitura_id:
+            return jsonify(error="Envie os dados da visita."), 400
+        demo = data.get("demo") in (True, "true", 1)
+        blocks = PlanningStore().agent_blocks(user.prefeitura_id, user.id, demo)
+        selected = next((b for b in blocks if b["plano"] == data.get("plano") and b["quarteirao"] == data.get("quarteirao")), None)
+        if selected is None:
+            return jsonify(error="Quarteirão não atribuído a você neste plano."), 404
+        form = {k: str(data.get(k) or "") for k in ("imovel_codigo", "inspecao_codigo", "data_inspecao", "situacao", "positivo_aedes", "latitude", "longitude")}
+        if not form["inspecao_codigo"]:
+            form["inspecao_codigo"] = "APP-" + uuid.uuid4().hex[:10].upper()
+        deposits = data.get("depositos") or {}
+        for code, _ in DEPOSIT_TYPES:
+            value = deposits.get(code, "")
+            form["depositos_" + code] = "" if value in (None, "") else str(value)
+        form.update(origem="LIRAA", levantamento_codigo=selected["plano"], estrato_codigo=selected["estrato"],
+                    area_codigo=selected["territorio"]["area"], bairro=selected["territorio"]["bairro"])
+        try:
+            content = capture_csv(form, prefeitura=user.prefeitura_id)
+            store = FieldStore()
+            batch = store.prepare(content, prefeitura=user.prefeitura_id, actor=str(user.id), source="Registro pelo aplicativo do agente",
+                                  filename="visita-app.csv", demo=demo,
+                                  plan_reference=dict(plano=selected["plano"], quarteirao=selected["quarteirao"], agente_id=user.id))
+            batch = store.confirm(batch["id"], prefeitura=user.prefeitura_id, actor=str(user.id))
+        except (FieldInputError, FieldConflict, FieldStoreError) as exc:
+            return jsonify(error=str(exc)), 400
+        return jsonify(ok=True, lote=batch["id"], inspecao_codigo=form["inspecao_codigo"], status=batch.get("status")), 201
