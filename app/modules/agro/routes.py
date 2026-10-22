@@ -1,4 +1,4 @@
-from app.modules.gestao_ti.permissions import active_configuration, has_permission, require_permission, route_access
+from app.modules.gestao_ti.permissions import active_configuration, can_access_endpoint, has_permission, require_permission, route_access
 import os
 import math
 import calendar
@@ -4357,7 +4357,9 @@ def register_routes(bp):
             filters={"q": q, "page": page, "total": total, "total_pages": total_pages},
             pagination_args=_query_args_without_page(),
             is_editable=can_edit_agro_panel(current_user),
-            can_create_cliente=(has_permission(current_user, "financeiro.comercial.criar", can_edit_agro_finance_panel(current_user))
+            can_create_cliente=(can_access_endpoint(
+                                    current_user, "main.financeiro_empresa_cliente_novo",
+                                    legacy=can_edit_agro_finance_panel(current_user) or can_edit_agro_panel(current_user))
                                 if getattr(g, "financeiro_empresa", None) is not None
                                 else can_edit_agro_panel(current_user)),
         )
@@ -4383,7 +4385,8 @@ def register_routes(bp):
     def agro_cliente_novo():
         empresa = getattr(g, "financeiro_empresa", None)
         if request.endpoint == "main.financeiro_empresa_cliente_novo" and empresa is not None:
-            _require_agro_finance_edit()
+            if not route_access(current_user, can_edit_agro_finance_panel(current_user) or can_edit_agro_panel(current_user)):
+                abort(403)
         else:
             _require_agro_edit()
 

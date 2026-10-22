@@ -576,6 +576,39 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.login()
         self.assertEqual(self.client.post("/financeiro/empresas/inexistente/clientes/cadastrar").status_code, 404)
 
+    def test_existing_agro_client_creation_permission_exposes_finance_button_and_form(self):
+        from app.models import Prefeitura
+        from app.modules.gestao_ti.permissions import ui_url_allowed
+
+        self.login(trabalha_agro=False)
+        with self.app.app_context():
+            Prefeitura.__table__.create(db.engine)
+            ClienteAgro.__table__.create(db.engine)
+        permissions = frozenset({
+            "area:financeiro", "financeiro.comercial.consultar",
+            "area:agro", "agro.clientes.consultar", "agro.clientes.criar",
+        })
+        path = "/financeiro/empresas/ija/clientes/cadastrar"
+        with patch("app.modules.gestao_ti.permissions.active_configuration", return_value=permissions):
+            response = self.client.get("/financeiro/empresas/ija/clientes")
+            self.assertEqual(response.status_code, 200)
+            html = response.get_data(as_text=True)
+            self.assertIn(f'href="{path}"', html)
+            self.assertIn("Cadastrar cliente", html)
+            with self.app.test_request_context(path):
+                self.assertTrue(ui_url_allowed(self.user, path, "GET"))
+                self.assertTrue(ui_url_allowed(self.user, path, "POST"))
+            self.assertEqual(self.client.get(path).status_code, 200)
+            response = self.client.post(path, data={
+                "nome": "Cliente financeiro", "documento": "52998224725",
+                "cep": "01001000", "logradouro": "Praça da Sé", "numero": "1",
+                "bairro": "Sé", "cidade": "São Paulo", "uf": "SP",
+            })
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.location, "/financeiro/empresas/ija/clientes")
+            with self.app.app_context():
+                self.assertEqual(ClienteAgro.query.one().nome, "Cliente financeiro")
+
     def test_consultation_permission_does_not_grant_client_creation(self):
         self.login()
         permissions = frozenset({"area:financeiro", "financeiro.comercial.consultar"})

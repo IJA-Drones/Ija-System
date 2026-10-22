@@ -31,7 +31,7 @@
       {% if can_create_cliente %}
         {% set novo_cliente_url = url_for('main.financeiro_empresa_cliente_novo', empresa_slug=empresa_financeiro.slug) if empresa_financeiro else url_for('main.agro_cliente_novo') %}
         <a href="{{ novo_cliente_url }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(novo_cliente_url) if central_ti_url_allowed is defined else true) else 'false' }}">
-          <i class="bi bi-plus-lg"></i> Novo Cliente
+          <i class="bi bi-plus-lg"></i> Cadastrar cliente
         </a>
       {% endif %}
     </div>
