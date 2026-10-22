@@ -141,4 +141,5 @@ zopfli==0.4.1
 shapely==2.1.2
 pyreaddbc==2.0.4
 dbfread==2.0.7
-pywebpush==2.5.0
+pywebpush==2.3.0
+py-vapid==1.9.6
