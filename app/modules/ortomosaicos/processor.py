@@ -2,6 +2,7 @@
 import json
 import math
 import os
+import shutil
 import sys
 
 import rasterio
@@ -46,6 +47,11 @@ def convert(source, destination):
                            add_alpha=src.count == 3, warp_mem_limit=64) as warped:
                 if MAX_PIXELS and warped.width * warped.height > MAX_PIXELS:
                     raise ValueError('A reprojeção excede o limite de pixels permitido.')
+                # Budget the output plus GDAL's intermediate raster/overviews.
+                # This checks filesystem space, not a provider's external quota.
+                required = warped.width * warped.height * warped.count * 3 + 256 * 1024 * 1024
+                if shutil.disk_usage(os.path.dirname(os.path.abspath(destination))).free < required:
+                    raise ValueError('Espaço insuficiente na pasta de trabalho para gerar o ortomosaico e seus níveis de zoom. Libere espaço no servidor e tente novamente.')
                 raster_copy(warped, destination, driver='COG', COMPRESS='DEFLATE',
                             BLOCKSIZE=256, OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS='1')
         with rasterio.open(destination) as result:

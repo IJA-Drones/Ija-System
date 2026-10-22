@@ -10,6 +10,7 @@ from app.models import Ortomosaico, OrtomosaicoEstimativaAgua, Prefeitura
 from app.shared import skybox
 from app.shared.access import can_access_prefeitura, normalize_role
 from . import service
+from .storage import TemporaryStorageError
 
 
 def restricted(fn):
@@ -132,8 +133,11 @@ def register_routes(bp):
                 tipo=request.form.get('tipo', 'rgb'), interval=request.form.get('intervalo_m'),
                 resolution=request.form.get('resolucao_m'))
             payload = service.serialize(row)
+            file.close()  # Free multipart storage before the worker downloads the original.
             service.dispatch(row.id)
             return jsonify(item=payload), 202
+        except TemporaryStorageError as exc:
+            return jsonify(error=str(exc)), 507
         except ValueError as exc:
             return jsonify(error=str(exc)), 400
         except Exception:
