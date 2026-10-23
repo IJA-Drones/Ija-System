@@ -1,4 +1,4 @@
-# Complementos para a Prova de Conceito CONDOMAR (Pregão 006/2026) — 22/10/2026
+# Complementos do módulo de vigilância — 22/10/2026
 
 Itens da ficha de verificação marcados como **N** ou **P** na sessão de 22/10 e o que foi
 feito no código para cada um. Tudo abaixo roda com o mesmo deploy (Render, `Procfile`
@@ -92,10 +92,3 @@ Tela de Início"), e dentro do app mostra a mensagem de que o Firebase não est�
    desligar modo avião → protocolo aparece sozinho.
 7. **Agente em campo:** logar como agente de endemias no app, andar alguns metros, e abrir
    Agentes em campo no computador com a data de hoje.
-
-## Observação sobre o edital
-
-O TR não exige app nativo, offline, push, SMTP nem e-SUS/PEC (ver `docs/poc-condomar-edital.md`
-se existir, ou o PDF do edital). O roteiro usado pela comissão não é o Anexo V publicado; o
-item 11 do próprio roteiro diz que ele não pode acrescentar exigências. Registrar em ata que a
-demonstração complementar do módulo mobile ocorre em data acordada.
