@@ -75,7 +75,8 @@ def register_routes(bp):
                                         intro='Este é um e-mail de teste enviado pelo IJA System. Se você o recebeu, os relatórios e alertas por e-mail estão operacionais.',
                                         lines=[('Servidor', shared_mail.settings()['host']), ('Origem', 'configuração do sistema' if shared_mail.settings()['source'] == 'sistema' else 'variáveis do ambiente')])
                 shared_mail.send([destinatario], 'IJA System — teste de e-mail', 'Teste do servidor de e-mail do IJA System.', html=html)
-                flash(f'E-mail de teste enviado para {destinatario}.', 'success')
+                info = getattr(shared_mail.send, 'ultimo', {})
+                flash(f"E-mail de teste aceito pelo servidor para {destinatario}. Resposta: {info.get('resposta', '')}. Message-ID: {info.get('message_id', '')}. Se não chegar em alguns minutos, veja as orientações abaixo.", 'success')
             except Exception as exc:
                 flash(f'Falha no envio: {str(exc)[:300]}', 'danger')
         return redirect(url_for('main.configuracoes_smtp'), code=303)

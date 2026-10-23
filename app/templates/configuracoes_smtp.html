@@ -24,6 +24,16 @@
       <div class="col-12"><button class="btn btn-primary">Salvar servidor</button></div>
     </form>
   </section>
+  <section class="card p-4 mb-4">
+    <h2 class="h5">E-mail "enviado" que não chegou</h2>
+    <p class="mb-2">"Aceito pelo servidor" significa que o servidor de envio recebeu a mensagem; a entrega final depende do provedor de quem recebe. Gmail e a maioria dos provedores entregam normalmente, mas o <strong>Microsoft 365 / Outlook corporativo</strong> pode reter mensagens de remetentes externos em <strong>quarentena</strong> ou no Lixo Eletrônico <strong>sem avisar o remetente</strong>.</p>
+    <ol class="mb-2">
+      <li>Peça ao destinatário para olhar o <strong>Lixo Eletrônico</strong>.</li>
+      <li>O administrador do Microsoft 365 do destinatário localiza a mensagem em <strong>admin.exchange.microsoft.com → Fluxo de e-mail → Rastreamento de mensagens</strong>, buscando pelo <strong>Message-ID</strong> mostrado no teste (ou nos logs do servidor, linhas <code>[email]</code>).</li>
+      <li>Libera em <strong>security.microsoft.com → Revisar → Quarentena</strong> e, para não se repetir, permite o domínio do remetente em <strong>Políticas → Lista de Permissões/Bloqueios do Locatário → Domínios e endereços</strong>.</li>
+    </ol>
+    <p class="mb-0 text-muted small">Alternativa definitiva para destinatários de uma mesma organização Microsoft 365: configurar aqui uma caixa do próprio domínio deles (servidor <code>smtp.office365.com</code>, porta 587, STARTTLS). As mensagens passam a ser internas e não são retidas.</p>
+  </section>
   <section class="card p-4">
     <h2 class="h5">Enviar e-mail de teste</h2>
     <form method="post" action="{{ url_for('main.configuracoes_smtp_testar') }}" class="d-flex flex-wrap gap-2 align-items-end">

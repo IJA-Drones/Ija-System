@@ -156,5 +156,6 @@ def send(recipients, subject, body, attachments=(), html=None):
         log.error("falha assunto=%r para=%s servidor=%s erro=%s: %s", subject, destinos, conf["host"], type(exc).__name__, str(exc)[:300])
         raise
     aceite = getattr(conn, "_ija_ultima_resposta", "")
+    send.ultimo = {"message_id": message["Message-ID"], "resposta": aceite or "250 OK"}
     log.info("aceito assunto=%r para=%s message_id=%s resposta=%s", subject, destinos, message["Message-ID"], aceite or "250 OK")
     return len(recipients)
