@@ -1,0 +1,39 @@
+/* Migração de dados (TR 4.7): complementos às telas de importação da vigilância. */
+.migracao-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.migracao-step-done .liraa-step-number { background: var(--color-accent); color: var(--color-bg-white); }
+.migracao-destinos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.migracao-destino { display: flex; gap: .65rem; align-items: flex-start; border: 1px solid var(--color-accent-soft); border-radius: var(--radius-md); padding: .9rem; cursor: pointer; background: var(--color-bg-white); }
+.migracao-destino:has(input:checked) { border-color: var(--color-accent); background: var(--color-accent-soft); }
+.migracao-destino input { margin-top: .25rem; }
+.migracao-destino strong { display: block; font-size: .85rem; }
+.migracao-destino small { display: block; color: var(--color-text-muted); font-size: .75rem; line-height: 1.6; margin: .25rem 0 .5rem; }
+.migracao-destino a { font-size: .75rem; color: var(--color-accent); }
+.migracao-info { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 0 0 1rem; }
+.migracao-info > div { background: var(--color-bg-body); border-radius: var(--radius-md); padding: .75rem; min-width: 0; }
+.migracao-info dt { color: var(--color-text-muted); font-size: .75rem; font-weight: 500; }
+.migracao-info dd { margin: .2rem 0 0; font-size: .85rem; overflow-wrap: anywhere; }
+.migracao-mapeamento > summary { list-style: none; cursor: pointer; }
+.migracao-mapeamento > summary::-webkit-details-marker { display: none; }
+.migracao-mapeamento > summary .liraa-section-title > span:last-child { display: block; }
+.migracao-mapeamento > summary small { display: block; color: var(--color-text-muted); font-size: .8rem; margin-top: .35rem; }
+.migracao-map-table select { min-width: 200px; }
+.migracao-required { color: var(--color-accent); font-size: .7rem; font-weight: 600; }
+.migracao-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.migracao-metric-rejeitados dd { color: var(--bs-danger, #b02a37); }
+.migracao-metric-validos dd { color: var(--bs-success, #146c43); }
+.migracao-list { font-size: .82rem; padding-left: 1.1rem; margin: 0; }
+.migracao-badge { display: inline-block; padding: .15rem .5rem; border-radius: var(--radius-sm); font-size: .7rem; font-weight: 600; background: var(--color-bg-body); white-space: nowrap; }
+.migracao-badge-rejeitado { background: rgba(176, 42, 55, .12); color: var(--bs-danger, #b02a37); }
+.migracao-badge-duplicado { background: rgba(102, 77, 3, .12); color: #664d03; }
+.migracao-badge-corrigido, .migracao-badge-enriquecido { background: var(--color-accent-soft); color: var(--color-accent); }
+.migracao-pages { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: .75rem; font-size: .8rem; }
+.migracao-resultado h2 { color: var(--bs-success, #146c43); }
+
+@media (max-width: 991px) {
+  .migracao-destinos, .migracao-steps { grid-template-columns: minmax(0, 1fr); }
+  .migracao-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .migracao-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 575px) {
+  .migracao-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

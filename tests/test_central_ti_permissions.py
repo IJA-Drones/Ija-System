@@ -72,7 +72,7 @@ class CentralTiPermissionsTests(unittest.TestCase):
         response = self.client.get('/vigilancia')
         self.assertEqual(response.status_code, 200)
         self.assertIn('<span>Vigilância</span>', response.text)
-        self.assertEqual(response.text.count('class="vigilancia-central-module"'), 4)
+        self.assertEqual(response.text.count('class="vigilancia-central-module"'), 7)
         self.assertEqual(self.client.get('/relatorios').status_code, 403)
         self.assertEqual(area_home_endpoint(self.users['uvis'], 'prefeitura'), 'main.vigilancia')
         self.configure('uvis', [])

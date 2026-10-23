@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_migracao.css', v='20261022-1') }}">
+{% endblock %}
+
+{% block content %}
+{% set etapa = item.etapa if item else '' %}
+{% set step = 3 if etapa in ('VALIDADO', 'CONCLUIDO') else 2 if etapa == 'EXTRAIDO' else 1 %}
+{% set labels = {'REJEITADO': 'Rejeitado', 'DUPLICADO': 'Duplicado', 'CORRIGIDO': 'Corrigido', 'PADRONIZADO': 'Padronizado', 'ENRIQUECIDO': 'Enriquecido'} %}
+<div class="vigilancia-preview-page migracao-page py-4">
+  <div class="vigilancia-workspace"><div class="vigilancia-workspace-context"><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Central de Vigilância</a></div></div>
+  <header class="vigilancia-preview-header">
+    <div>
+      <p class="vigilancia-preview-eyebrow">Gestão dos dados · TR 4.7</p>
+      <h1>Migração de dados</h1>
+      <p class="vigilancia-preview-muted">Transferência dos dados dos sistemas existentes da SMS e do Ministério da Saúde para a base do sistema, em três etapas auditáveis.</p>
+    </div>
+    {% if item %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_migracao', prefeitura_id=prefeitura_id) }}"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Nova migração</a>{% endif %}
+  </header>
+
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+
+  <ol class="liraa-steps migracao-steps" aria-label="Etapas da migração">
+    {% for number, title, text in [(1, 'Extração', 'Captura do arquivo do legado (CSV, XLSX ou DBF) e conversão para texto.'), (2, 'Validação', 'Mapeamento, limpeza, duplicados, obrigatórios, valores inválidos e enriquecimento.'), (3, 'Adequação e carga', 'Conversão ao formato interno, validação lógica e física e confirmação.')] %}
+    <li class="{{ 'migracao-step-done' if number < step or etapa == 'CONCLUIDO' else '' }}"><div class="liraa-step" {% if number == step and etapa != 'CONCLUIDO' %}aria-current="step"{% endif %}>
+      <span class="liraa-step-number">{% if number < step or etapa == 'CONCLUIDO' %}<i class="bi bi-check-lg" aria-hidden="true"></i>{% else %}{{ number }}{% endif %}</span>
+      <span><strong>{{ title }}</strong><small>{{ text }}</small></span>
+    </div></li>
+    {% endfor %}
+  </ol>
+
+  {% if not item %}
+  <section class="vigilancia-preview-panel" aria-labelledby="extracao-heading">
+    <div class="liraa-section-title"><span>1</span><div><h2 id="extracao-heading">Extração dos dados do sistema legado</h2><p>Envie a exportação do SISPNCD, SISLOC, SINAN ou planilha da SMS. O arquivo original e o texto extraído ficam guardados nesta execução.</p></div></div>
+    <form method="post" action="{{ url_for('main.vigilancia_migracao') }}" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
+      <input type="hidden" name="acao" value="extrair">
+      <fieldset class="liraa-task-section">
+        <legend>Destino dos dados</legend>
+        <div class="migracao-destinos">
+          {% for key, label in destinos.items() %}
+          <label class="migracao-destino">
+            <input type="radio" name="destino" value="{{ key }}" required {% if loop.first %}checked{% endif %}>
+            <span><strong>{{ label }}</strong>
+              <small>{{ {'visitas': 'Gera o lote LIRAa/focal e alimenta Resultados e Mapa de risco.', 'sinan': 'Gera lotes de casos com coordenadas por agravo e ano.', 'quarteiroes': 'Atualiza o cadastro territorial usado no planejamento.'}[key] }}</small>
+              <a href="{{ url_for('main.vigilancia_migracao_exemplo', destino=key, prefeitura_id=prefeitura_id) if prefeitura_id else url_for('main.vigilancia_migracao_exemplo', destino=key) }}"><i class="bi bi-download me-1" aria-hidden="true"></i>Baixar arquivo de exemplo do sistema legado ({{ {'visitas': 'DBF', 'sinan': 'CSV', 'quarteiroes': 'XLSX'}[key] }})</a>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div class="vigilancia-campo-grid">
+        {% include '_vigilancia_prefeitura_filter.html' %}
+        <div><label for="migracao-fonte" class="form-label">Sistema legado de origem</label>
+          <input id="migracao-fonte" name="fonte" class="form-control" maxlength="120" required list="migracao-fontes" placeholder="Ex.: SISPNCD" value="{{ request.form.get('fonte', '') if erro else '' }}">
+          <datalist id="migracao-fontes"><option value="SISPNCD"><option value="SISLOC"><option value="SINAN Net"><option value="SINAN Online"><option value="Planilha da SMS"></datalist></div>
+        <div><label for="migracao-demo" class="form-label">Origem dos dados</label>
+          <select id="migracao-demo" name="demo" class="form-select"><option value="true" {% if demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
+      </div>
+      <p class="mt-2"><label><input type="checkbox" name="autorizado" value="sim"> Confirmo a autorização para uso destes dados reais.</label></p>
+      <div><label for="migracao-arquivo" class="form-label">Arquivo exportado</label>
+        <input class="form-control" type="file" id="migracao-arquivo" name="arquivo" accept=".csv,.txt,.xlsx,.dbf" required aria-describedby="migracao-arquivo-help">
+        <p class="vigilancia-preview-help" id="migracao-arquivo-help">CSV/TXT (ponto e vírgula, vírgula, tabulação ou barra; UTF-8 ou Windows-1252), XLSX (primeira planilha) ou DBF (dBase do SISPNCD/SINAN). Até 2 MiB e 5.000 registros.</p></div>
+      <div class="vigilancia-preview-actions">
+        <button class="btn btn-primary" type="submit" {% if not can_write %}disabled{% endif %}><i class="bi bi-box-arrow-in-down me-2" aria-hidden="true"></i>Extrair dados</button>
+      </div>
+    </form>
+  </section>
+  {% else %}
+  {% set info = item.extracao %}
+  <section class="vigilancia-preview-panel" aria-labelledby="execucao-heading">
+    <div class="vigilancia-preview-section-header">
+      <div><h2 id="execucao-heading">{{ destinos[item.destino] }}</h2>
+        <p class="vigilancia-preview-muted">{{ item.fonte }} · {{ item.filename }} · {{ 'Demonstração' if item.demo else 'Dados autorizados' }} · iniciada em {{ field_datetime(item.criado) }}</p></div>
+      <span class="vigilancia-preview-tag">{{ {'EXTRAIDO': 'Extraída', 'VALIDADO': 'Validada', 'CONCLUIDO': 'Carga concluída'}[item.etapa] }}</span>
+    </div>
+    <dl class="migracao-info">
+      <div><dt>Formato</dt><dd>{{ info.formato|upper }}{% if info.codificacao %} · {{ info.codificacao }}{% endif %}{% if info.separador %} · separador “{{ info.separador }}”{% endif %}{% if info.planilha %} · planilha {{ info.planilha }}{% endif %}</dd></div>
+      <div><dt>Registros extraídos</dt><dd>{{ info.linhas }}</dd></div>
+      <div><dt>Colunas</dt><dd>{{ info.colunas|length }}</dd></div>
+      <div><dt>Ignoradas</dt><dd>{{ info.linhas_antes_cabecalho }} antes do cabeçalho · {{ info.linhas_vazias }} vazias</dd></div>
+    </dl>
+    <div class="vigilancia-preview-actions">
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_migracao_arquivo', identifier=item.id, kind='original', prefeitura_id=prefeitura_id) }}"><i class="bi bi-file-earmark me-1" aria-hidden="true"></i>Arquivo original</a>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_migracao_arquivo', identifier=item.id, kind='extraido', prefeitura_id=prefeitura_id) }}"><i class="bi bi-filetype-csv me-1" aria-hidden="true"></i>Texto extraído (CSV UTF-8)</a>
+    </div>
+    <details class="vigilancia-preview-layout" {% if etapa == 'EXTRAIDO' %}open{% endif %}><summary>Prévia do texto extraído (5 primeiros registros)</summary>
+      <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Prévia do texto extraído">
+        <table class="table vigilancia-preview-table"><thead><tr><th scope="col">Linha</th>{% for column in header %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for row in preview %}<tr><td>{{ loop.index + 1 }}</td>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+      </div>
+    </details>
+  </section>
+
+  {% if etapa != 'CONCLUIDO' %}
+  <details class="vigilancia-preview-panel migracao-mapeamento" {% if etapa == 'EXTRAIDO' %}open{% endif %}>
+    <summary><span class="liraa-section-title"><span>2</span><span><strong id="mapeamento-heading">Validação: mapeamento, limpeza e enriquecimento</strong><small>Colunas sugeridas automaticamente pelo nome e por sinônimos usuais dos sistemas legados; ajuste se necessário.</small></span></span></summary>
+    <form method="post" action="{{ url_for('main.vigilancia_migracao') }}">
+      <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
+      <input type="hidden" name="acao" value="validar">
+      <input type="hidden" name="id" value="{{ item.id }}">
+      <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
+      <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Mapeamento de colunas">
+        <table class="table vigilancia-preview-table migracao-map-table">
+          <thead><tr><th scope="col">Campo do sistema</th><th scope="col">Coluna do arquivo legado</th><th scope="col">Exemplo</th></tr></thead>
+          <tbody>{% for name, label, required, _ in targets[item.destino] %}
+            {% set selected = mapping.get(name, '') %}
+            <tr><td><label for="map-{{ name }}">{{ label }}</label>{% if required %} <span class="migracao-required">obrigatório</span>{% endif %}<br><code>{{ name }}</code></td>
+              <td><select class="form-select form-select-sm" id="map-{{ name }}" name="map_{{ name }}" {% if required %}required{% endif %}>
+                <option value="">— não mapear —</option>
+                {% for column in header %}<option value="{{ column }}" {% if column == selected %}selected{% endif %}>{{ column }}</option>{% endfor %}
+              </select></td>
+              <td class="vigilancia-preview-muted">{% if selected and preview %}{{ preview[0][header.index(selected)] }}{% endif %}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      <fieldset class="liraa-task-section">
+        <legend>Valores do contexto da migração</legend>
+        <div class="vigilancia-campo-grid">
+          {% if item.destino == 'visitas' %}
+          <div><label class="form-label" for="origem-padrao">Atividade quando não informada</label><select class="form-select" id="origem-padrao" name="origem_padrao">{% for value, label in [('LIRAA', 'LIRAa'), ('FOCAL', 'Tratamento focal')] %}<option value="{{ value }}" {% if options.get('origem') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div><label class="form-label" for="levantamento-padrao">Levantamento quando não informado</label><input class="form-control" id="levantamento-padrao" name="levantamento_padrao" maxlength="80" value="{{ options.get('levantamento', '') }}" placeholder="Ex.: LIRAA-2026-10"></div>
+          <div><label class="form-label" for="estrato-padrao">Estrato quando não informado</label><input class="form-control" id="estrato-padrao" name="estrato_padrao" maxlength="80" value="{{ options.get('estrato', '') }}" placeholder="Ex.: E1"></div>
+          {% elif item.destino == 'sinan' %}
+          <div><label class="form-label" for="doenca-padrao">Agravo quando não informado</label><select class="form-select" id="doenca-padrao" name="doenca_padrao">{% for code, disease in diseases.items() %}<option value="{{ code }}" {% if options.get('doenca') == code %}selected{% endif %}>{{ disease.label }}</option>{% endfor %}</select></div>
+          <div><span class="form-label d-block">Município (IBGE)</span><p class="vigilancia-preview-help">{{ ibge or 'Não configurado para esta prefeitura' }} — preenchido quando ausente; códigos de 6 dígitos são completados.</p></div>
+          {% else %}
+          <div><span class="form-label d-block">Referência</span><p class="vigilancia-preview-help">Quando vazia, recebe “Migração {{ item.fonte }}”.</p></div>
+          {% endif %}
+        </div>
+        {% if item.destino != 'quarteiroes' %}
+        <p class="mt-3 mb-0"><label><input type="checkbox" name="geocodificar" value="sim" {% if geocode_available and options.get('geocodificar', True) %}checked{% endif %} {% if not geocode_available %}disabled{% endif %}> Geocodificar endereços sem coordenadas (até 25 consultas por execução)</label></p>
+        <p class="vigilancia-preview-help">{% if geocode_available %}Usa o serviço de mapas configurado; resultados fora do Brasil são descartados.{% else %}Sem chave de geocodificação configurada: os registros sem coordenadas serão marcados como “sem coordenadas”.{% endif %}</p>
+        {% endif %}
+      </fieldset>
+      <div class="vigilancia-preview-actions">
+        <button class="btn btn-primary" type="submit" {% if not can_write %}disabled{% endif %}><i class="bi bi-funnel me-2" aria-hidden="true"></i>{{ 'Validar novamente' if etapa == 'VALIDADO' else 'Validar, limpar e enriquecer' }}</button>
+      </div>
+    </form>
+  </details>
+  {% endif %}
+
+  {% if report %}
+  <section class="vigilancia-preview-panel" aria-labelledby="relatorio-heading">
+    <div class="vigilancia-preview-section-header">
+      <div><h2 id="relatorio-heading">Relatório de validação</h2>
+        <p class="vigilancia-preview-muted">Linhas numeradas conforme o texto extraído (cabeçalho = linha 1).</p></div>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_migracao_arquivo', identifier=item.id, kind='relatorio', prefeitura_id=prefeitura_id) }}"><i class="bi bi-download me-2" aria-hidden="true"></i>Baixar relatório CSV</a>
+    </div>
+    <dl class="vigilancia-preview-metrics migracao-metrics">
+      {% for key, label in [('lidos', 'Total lido'), ('validos', 'Válidos'), ('corrigidos', 'Corrigidos'), ('duplicados', 'Duplicados descartados'), ('rejeitados', 'Rejeitados'), ('enriquecidos', 'Enriquecidos')] %}
+      <div class="migracao-metric-{{ key }}"><dt>{{ label }}</dt><dd id="migracao-{{ key }}">{{ report[key] }}</dd></div>
+      {% endfor %}
+    </dl>
+    <p class="vigilancia-preview-help">{{ report.padronizados }} linhas padronizadas (datas ISO, maiúsculas, espaços, códigos, separador decimal){% if report.sem_coordenadas is not none %} · {{ report.sem_coordenadas }} válidas sem coordenadas{% endif %}{% if report.ja_carregados %} · {{ report.ja_carregados }} já existentes na base (serão reaproveitadas){% endif %}.</p>
+    {% if report.padroes %}
+    <h3>Valores do contexto aplicados</h3>
+    <ul class="migracao-list">{% for rule, count in report.padroes.items() %}<li>{{ rule }} — {{ count }} linha{{ 's' if count != 1 }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if report.regras %}
+    <h3>Regras aplicadas</h3>
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Regras aplicadas">
+      <table class="table vigilancia-preview-table"><thead><tr><th scope="col">Tipo</th><th scope="col">Regra</th><th scope="col">Ocorrências</th></tr></thead>
+        <tbody>{% for tipo, rule, count in report.regras %}<tr><td><span class="migracao-badge migracao-badge-{{ tipo|lower }}">{{ labels[tipo] }}</span></td><td>{{ rule }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    {% endif %}
+    <h3>Ocorrências por linha</h3>
+    <nav class="liraa-section-menu" aria-label="Filtrar ocorrências">
+      {% for key, value in views.items() %}<a href="{{ url_for('main.vigilancia_migracao', prefeitura_id=prefeitura_id, id=item.id, ver=key, _anchor='relatorio-heading') }}" {% if view == key %}aria-current="step"{% endif %}>{{ value[0] }}</a>{% endfor %}
+    </nav>
+    {% if listed %}
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Ocorrências por linha">
+      <table class="table vigilancia-preview-table" id="migracao-ocorrencias"><thead><tr><th scope="col">Linha</th><th scope="col">Tipo</th><th scope="col">Campo</th><th scope="col">Valor original</th><th scope="col">Valor final</th><th scope="col">Motivo</th></tr></thead>
+        <tbody>{% for o in listed %}<tr><td>{{ o.linha }}</td><td><span class="migracao-badge migracao-badge-{{ o.tipo|lower }}">{{ labels[o.tipo] }}</span></td><td><code>{{ o.campo }}</code></td><td>{{ o.original }}</td><td>{{ o.final }}</td><td>{{ o.motivo }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    {% if pages > 1 %}
+    <nav class="migracao-pages" aria-label="Paginação das ocorrências">
+      <span>Página {{ page }} de {{ pages }} · {{ listed_total }} ocorrências</span>
+      {% if page > 1 %}<a href="{{ url_for('main.vigilancia_migracao', prefeitura_id=prefeitura_id, id=item.id, ver=view, pagina=page - 1, _anchor='migracao-ocorrencias') }}">Anterior</a>{% endif %}
+      {% if page < pages %}<a href="{{ url_for('main.vigilancia_migracao', prefeitura_id=prefeitura_id, id=item.id, ver=view, pagina=page + 1, _anchor='migracao-ocorrencias') }}">Próxima</a>{% endif %}
+    </nav>
+    {% endif %}
+    {% else %}<p class="vigilancia-preview-empty">Nenhuma ocorrência deste tipo.</p>{% endif %}
+  </section>
+
+  <section class="vigilancia-preview-panel" aria-labelledby="carga-heading">
+    <div class="liraa-section-title"><span>3</span><div><h2 id="carga-heading">Adequação ao formato interno e carga</h2>
+      <p>{{ {'visitas': 'Layout de visitas LIRAa/focal conferido pelo mesmo validador da importação de campo e confrontado com as visitas já carregadas.', 'sinan': 'Layout de casos SINAN, separado por agravo e ano e conferido pelo validador de casos.', 'quarteiroes': 'Layout do cadastro territorial (RG) do planejamento.'}[item.destino] }}</p></div></div>
+    {% if report.grupos %}<p class="vigilancia-preview-help">Lotes previstos: {% for g in report.grupos %}{{ diseases[g.doenca].label }} {{ g.ano }} ({{ g.casos }} casos){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+    {% if report.amostra %}
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Registros no formato interno">
+      <table class="table vigilancia-preview-table"><thead><tr>{% for c in report.colunas %}<th scope="col">{{ c }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for row in report.amostra %}<tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+    </div>
+    <p class="vigilancia-preview-help">Primeiros {{ report.amostra|length }} de {{ report.validos }} registros válidos.</p>
+    {% endif %}
+    <div class="vigilancia-preview-actions">
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_migracao_arquivo', identifier=item.id, kind='adequado', prefeitura_id=prefeitura_id) }}"><i class="bi bi-filetype-csv me-1" aria-hidden="true"></i>Arquivo no formato interno</a>
+    </div>
+    {% if etapa == 'VALIDADO' %}
+    <form method="post" action="{{ url_for('main.vigilancia_migracao') }}" class="liraa-next-action">
+      <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
+      <input type="hidden" name="acao" value="carregar">
+      <input type="hidden" name="id" value="{{ item.id }}">
+      <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
+      <div><strong>{{ report.validos }} registros prontos para carga</strong><p>Rejeitados e duplicados não serão gravados. A carga é atômica: se a base recusar algum registro, nada é gravado.</p></div>
+      <button class="btn btn-primary" type="submit" {% if not can_write or not report.validos %}disabled{% endif %}><i class="bi bi-database-check me-2" aria-hidden="true"></i>Confirmar carga</button>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if etapa == 'CONCLUIDO' and item.resultado %}
+  {% set r = item.resultado %}
+  {% set mode = 'true' if item.demo else 'false' %}
+  <section class="vigilancia-preview-panel migracao-resultado" aria-labelledby="resultado-heading">
+    <h2 id="resultado-heading"><i class="bi bi-check-circle me-2" aria-hidden="true"></i>Carga concluída</h2>
+    <dl class="vigilancia-preview-metrics">
+      <div><dt>Inseridos</dt><dd id="migracao-inseridos">{{ r.inseridos }}</dd></div>
+      <div><dt>Reaproveitados</dt><dd id="migracao-reaproveitados">{{ r.reaproveitados }}</dd></div>
+      <div><dt>Rejeitados</dt><dd>{{ report.rejeitados }}</dd></div>
+      <div><dt>Duplicados descartados</dt><dd>{{ report.duplicados }}</dd></div>
+    </dl>
+    <div class="vigilancia-preview-actions">
+      {% if item.destino == 'visitas' %}
+      <a class="btn btn-primary" href="{{ url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo=mode, **({'levantamento': r.levantamentos[0]} if r.levantamentos else {})) }}">Ver em Resultados</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_risco', prefeitura_id=prefeitura_id, demo=mode) }}">Mapa de risco</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, lote=r.lote) }}">Abrir lote de campo</a>
+      {% elif item.destino == 'sinan' %}
+      <a class="btn btn-primary" href="{{ url_for('main.vigilancia_sinan', ibge=r.ibge, prefeitura_id=prefeitura_id) }}">Abrir SINAN</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo=mode) }}">Ver em Resultados</a>
+      {% else %}
+      <a class="btn btn-primary" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo=mode, _anchor='territorio') }}">Ver território no planejamento</a>
+      {% endif %}
+    </div>
+    {% if r.lotes_sinan %}<p class="vigilancia-preview-help">Lotes SINAN: {% for job in r.lotes_sinan %}{{ diseases[job.doenca].label }} {{ job.ano }} — {{ job.casos }} casos{{ ' (já importado)' if job.existente }}{{ '; ' if not loop.last }}{% endfor %}. No SINAN, selecione o agravo e o ano para ver o lote no histórico.</p>{% endif %}
+  </section>
+  {% endif %}
+  {% endif %}
+
+  <details class="vigilancia-preview-panel" {% if not item %}open{% endif %}><summary id="historico-migracoes">Histórico de execuções</summary>
+    {% if history %}
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Histórico de migrações">
+      <table class="table vigilancia-preview-table"><thead><tr><th scope="col">Data</th><th scope="col">Destino</th><th scope="col">Arquivo / origem</th><th scope="col">Etapa</th><th scope="col">Lidos / válidos / rejeitados</th><th scope="col">Inseridos</th><th scope="col">Consulta</th></tr></thead>
+        <tbody>{% for h in history %}<tr>
+          <td>{{ field_datetime(h.criado) }}</td><td>{{ destinos[h.destino] }}<br><small>{{ 'Demonstração' if h.demo else 'Dados autorizados' }}</small></td>
+          <td>{{ h.filename }}<br><small>{{ h.fonte }} · {{ h.formato|upper }}</small></td>
+          <td>{{ {'EXTRAIDO': 'Extraída', 'VALIDADO': 'Validada', 'CONCLUIDO': 'Concluída'}[h.etapa] }}</td>
+          <td>{% if h.relatorio.lidos is not none %}{{ h.relatorio.lidos }} / {{ h.relatorio.validos }} / {{ h.relatorio.rejeitados }}{% else %}—{% endif %}</td>
+          <td>{{ h.resultado.inseridos if h.resultado else '—' }}</td>
+          <td><a href="{{ url_for('main.vigilancia_migracao', prefeitura_id=prefeitura_id, id=h.id) }}">Abrir</a></td>
+        </tr>{% endfor %}</tbody></table>
+    </div>
+    {% elif prefeitura_id %}<p class="vigilancia-preview-empty">Nenhuma migração registrada para esta prefeitura.</p>
+    {% else %}<p class="vigilancia-preview-empty">Selecione uma prefeitura para consultar o histórico.</p>{% endif %}
+  </details>
+</div>
+{% endblock %}

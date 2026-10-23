@@ -1,65 +1,134 @@
 {% extends "base.html" %}
 {% block title %}Baixar o aplicativo | IJA Vigilância{% endblock %}
-{% block meta %}<meta name="description" content="Instale o IJA Vigilância no Android (APK) ou no iPhone (Adicionar à Tela de Início).">{% endblock %}
+{% block meta %}<meta name="description" content="IJA Vigilância para Android e iPhone: o mesmo aplicativo, com as mesmas telas e funções nos dois sistemas.">{% endblock %}
 {% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
 <style>
-.app-dl-hero{background:linear-gradient(135deg,#061827 0%,#083348 48%,#087088 100%);color:#fff;border-radius:24px;padding:40px 32px;margin:16px 0 28px}
-.app-dl-hero h1{font-weight:600;font-size:2rem;margin:0 0 8px}.app-dl-hero p{color:#cfeff5;max-width:640px;margin:0}
+.app-dl-hero{background:linear-gradient(135deg,#061827 0%,#083348 48%,#087088 100%);color:#fff;border-radius:24px;padding:36px 32px;margin:16px 0 22px;display:flex;flex-wrap:wrap;gap:28px;align-items:center;justify-content:space-between}
+.app-dl-hero h1{font-weight:600;font-size:2rem;margin:0 0 8px;color:#fff}.app-dl-hero p{color:#cfeff5;max-width:620px;margin:0 0 14px}
 .app-dl-kicker{color:#9ef4ff;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:10px}
-.app-dl-card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;height:100%}
+.app-dl-chips{display:flex;flex-wrap:wrap;gap:8px}.app-dl-chip{background:rgba(158,244,255,.14);border:1px solid rgba(158,244,255,.35);color:#e8f8fb;border-radius:999px;padding:5px 14px;font-size:.85rem;font-weight:500}
+.app-dl-qrbox{background:#fff;border-radius:18px;padding:14px;text-align:center;color:#1c2b3f;width:206px}.app-dl-qrbox img{width:176px;height:176px}.app-dl-qrbox small{display:block;color:#4a5568;line-height:1.3;margin-top:4px}
+.app-dl-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:22px}
+.app-dl-fact{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px 18px}.app-dl-fact b{display:block;color:#087088;font-size:1.05rem;margin-bottom:2px}.app-dl-fact span{color:#4a5568;font-size:.9rem}
+.app-dl-card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;height:100%;position:relative}
+.app-dl-col.is-mine .app-dl-card{border:2px solid #087088;box-shadow:0 8px 28px rgba(8,112,136,.16)}
+.app-dl-mine{display:none;position:absolute;top:-12px;right:20px;background:#087088;color:#fff;border-radius:999px;padding:3px 14px;font-size:.78rem;font-weight:600}.app-dl-col.is-mine .app-dl-mine{display:inline-block}
 .app-dl-card h2{font-size:1.25rem;font-weight:600;color:#1c2b3f;display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .app-dl-card h2 i{color:#087088;font-size:1.5rem}.app-dl-sub{color:#718096;font-size:.9rem;margin-bottom:18px}
 .app-dl-steps{list-style:none;padding:0;margin:0;counter-reset:s}.app-dl-steps li{display:flex;gap:14px;padding:12px 0;border-top:1px solid #edf2f7;counter-increment:s}
 .app-dl-steps li::before{content:counter(s);flex:0 0 32px;height:32px;border-radius:50%;background:#087088;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center}
 .app-dl-steps strong{display:block;color:#1c2b3f}.app-dl-steps span{color:#4a5568;font-size:.92rem}
 .app-dl-btn{background:#087088;color:#fff;border:0;border-radius:14px;padding:14px 24px;font-weight:600;font-size:1rem;display:inline-flex;align-items:center;gap:10px;text-decoration:none}
-.app-dl-btn:hover{background:#06596c;color:#fff}.app-dl-qr{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:10px;width:176px;height:176px}
+.app-dl-btn:hover{background:#06596c;color:#fff}.app-dl-btn.alt{background:#fff;color:#087088;border:1px solid #087088}
 .app-dl-note{border-left:4px solid #42f5c8;background:#f7fcfd;border-radius:12px;padding:16px 18px;color:#2d3748;font-size:.92rem}
 .app-dl-ios-icon{display:inline-block;background:#e8f8fb;border-radius:8px;padding:2px 8px;color:#087088;font-weight:600}
+.app-dl-table{width:100%;border-collapse:collapse;font-size:.93rem}.app-dl-table th,.app-dl-table td{padding:9px 10px;border-top:1px solid #edf2f7;text-align:center}.app-dl-table th:first-child,.app-dl-table td:first-child{text-align:left}
+.app-dl-table thead th{border-top:0;color:#1c2b3f}.app-dl-table .ok{color:#15803d;font-weight:700}
+.app-dl-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+.app-dl-pair{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:18px;text-align:center}.app-dl-pair h3{font-size:1rem;font-weight:600;color:#1c2b3f;margin:0 0 12px}
+.app-dl-pair .phones{display:flex;gap:12px;justify-content:center}.app-dl-pair figure{margin:0;flex:1;max-width:150px}
+.app-dl-pair img{width:100%;border-radius:16px;border:3px solid #1c2b3f;display:block}.app-dl-pair figcaption{font-size:.78rem;color:#4a5568;margin-top:6px;font-weight:600}
+@media (max-width:575px){.app-dl-hero{padding:26px 20px}.app-dl-qrbox{display:none}}
 </style>{% endblock %}
 {% macro page_content() %}
 <main class="container py-3" style="max-width:1080px">
   <section class="app-dl-hero">
-    <div class="app-dl-kicker"><i class="bi bi-phone" aria-hidden="true"></i> Aplicativo do cidadão e do agente</div>
-    <h1>IJA Vigilância no seu celular</h1>
-    <p>Relate focos do mosquito com foto e localização, registre casos suspeitos, receba alertas da vigilância e, se você é agente de endemias, registre suas visitas em campo. Funciona sem internet e envia tudo quando a conexão voltar.</p>
+    <div style="flex:1 1 420px">
+      <div class="app-dl-kicker"><i class="bi bi-phone" aria-hidden="true"></i> Aplicativo do cidadão e do agente</div>
+      <h1>IJA Vigilância no seu celular</h1>
+      <p>Relate focos do mosquito com foto e localização, registre casos suspeitos, receba alertas da vigilância e, se você é agente de endemias, registre suas visitas em campo. Funciona sem internet e envia tudo quando a conexão voltar.</p>
+      <div class="app-dl-chips"><span class="app-dl-chip"><i class="bi bi-android2"></i> Android</span><span class="app-dl-chip"><i class="bi bi-apple"></i> iPhone</span><span class="app-dl-chip">Mesmo aplicativo nos dois</span><span class="app-dl-chip">Versão {{ versao }}</span></div>
+    </div>
+    <div class="app-dl-qrbox"><img src="{{ url_for('main.app_qr') }}" alt="QR Code desta página"><small><strong>Escaneie com o celular</strong><br>abre direto o passo certo para o seu aparelho</small></div>
   </section>
-  <div class="row g-4">
-    <div class="col-lg-6">
+
+  <section class="app-dl-facts" aria-label="Um aplicativo, dois sistemas">
+    <div class="app-dl-fact"><b>Um só aplicativo</b><span>Desenvolvido em Flutter: um único código é compilado para Android e para iPhone.</span></div>
+    <div class="app-dl-fact"><b>Mesmas telas e funções</b><span>Relatos, alertas, assistente Azul e área do agente são idênticos nos dois sistemas.</span></div>
+    <div class="app-dl-fact"><b>Mesmos dados</b><span>O que é registrado em qualquer aparelho chega ao mesmo sistema da vigilância, em tempo real.</span></div>
+    <div class="app-dl-fact"><b>Atualizações juntas</b><span>Cada nova versão sai para Android e iPhone ao mesmo tempo, com a mesma numeração.</span></div>
+  </section>
+
+  <div class="row g-4 mb-2">
+    <div class="col-lg-6 app-dl-col" id="col-android">
       <div class="app-dl-card">
+        <span class="app-dl-mine">Para o seu aparelho</span>
         <h2><i class="bi bi-android2" aria-hidden="true"></i> Android</h2>
         <p class="app-dl-sub">Aplicativo nativo instalado por arquivo APK, disponibilizado diretamente pela Oceano Azul enquanto a publicação na Google Play está em análise (versão {{ versao }} · {{ tamanho_mb }} MB · Android 8 ou superior).</p>
-        <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
-          <a class="app-dl-btn" href="{{ url_for('main.app_apk') }}" download="ija-vigilancia.apk"><i class="bi bi-download" aria-hidden="true"></i> Baixar APK</a>
-          <div class="text-center"><img class="app-dl-qr" src="{{ url_for('main.app_qr') }}" alt="QR Code para baixar o aplicativo"><div class="small text-muted mt-1">Aponte a câmera do celular</div></div>
-        </div>
+        <p class="mb-3"><a class="app-dl-btn" href="{{ url_for('main.app_apk') }}" download="ija-vigilancia.apk"><i class="bi bi-download" aria-hidden="true"></i> Baixar APK</a></p>
         <ol class="app-dl-steps">
-          <li><div><strong>Baixe o aplicativo</strong><span>Toque em "Baixar APK" no próprio celular ou escaneie o QR Code.</span></div></li>
+          <li><div><strong>Baixe o aplicativo</strong><span>Toque em "Baixar APK" no próprio celular, ou escaneie o QR Code acima.</span></div></li>
           <li><div><strong>Autorize a instalação</strong><span>Ao abrir o arquivo, o Android pergunta se permite instalar desta origem. Toque em Configurações e ative "Permitir desta fonte" (só na primeira vez).</span></div></li>
           <li><div><strong>Instale e abra</strong><span>Toque em Instalar. O ícone "IJA Vigilância" aparece na tela inicial.</span></div></li>
-          <li><div><strong>Permita localização, câmera e notificações</strong><span>Na primeira abertura, aceite as permissões: a localização preenche o endereço do relato e a notificação traz os alertas da sua área.</span></div></li>
+          <li><div><strong>Permita localização, câmera e notificações</strong><span>A localização preenche o endereço do relato e a notificação traz os alertas da sua área.</span></div></li>
         </ol>
       </div>
     </div>
-    <div class="col-lg-6">
+    <div class="col-lg-6 app-dl-col" id="col-ios">
       <div class="app-dl-card">
+        <span class="app-dl-mine">Para o seu aparelho</span>
         <h2><i class="bi bi-apple" aria-hidden="true"></i> iPhone e iPad</h2>
-        <p class="app-dl-sub">Versão do aplicativo para iPhone com instalação direta, disponibilizada enquanto a publicação na App Store está em análise pela Apple. Tem as mesmas telas e funções do aplicativo Android (relatos com foto e localização, alertas, Azul e área do agente) e abre em tela cheia, com ícone próprio. Não é a mesma coisa que acessar o site pelo navegador: a interface do aplicativo só aparece depois de instalado.</p>
+        {% if testflight_url %}
+        <p class="app-dl-sub">Aplicativo para iPhone distribuído pelo TestFlight da Apple, enquanto a publicação na App Store está em análise. É o mesmo aplicativo do Android (versão {{ versao }}). Requer iOS 15 ou superior.</p>
+        <p class="mb-3"><a class="app-dl-btn" href="{{ testflight_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-apple" aria-hidden="true"></i> Instalar pelo TestFlight</a></p>
+        <ol class="app-dl-steps">
+          <li><div><strong>Instale o TestFlight</strong><span>É o aplicativo oficial da Apple para testar aplicativos. Se ainda não tiver, o botão acima leva à App Store para baixá-lo.</span></div></li>
+          <li><div><strong>Toque em "Instalar pelo TestFlight"</strong><span>Abra este link no próprio iPhone, toque em "Aceitar" e depois em "Instalar".</span></div></li>
+          <li><div><strong>Abra o IJA Vigilância e permita os acessos</strong><span>Aceite localização, câmera e notificações. O aplicativo se atualiza sozinho pelo TestFlight a cada nova versão.</span></div></li>
+        </ol>
+        <p class="small text-muted mt-3 mb-0">Sem o TestFlight? Dá para instalar direto pelo Safari: abra <a href="{{ url_for('main.portal_cidadao', _external=True) }}">{{ url_for('main.portal_cidadao', _external=True) }}</a>, toque em Compartilhar <span class="app-dl-ios-icon"><i class="bi bi-box-arrow-up" aria-hidden="true"></i></span> → "Adicionar à Tela de Início" (iOS 16.4 ou superior).</p>
+        {% else %}
+        <p class="app-dl-sub">Versão do aplicativo para iPhone com instalação direta, disponibilizada enquanto a publicação na App Store está em análise pela Apple. Tem as mesmas telas e funções do aplicativo Android e abre em tela cheia, com ícone próprio. A interface do aplicativo só aparece depois de instalado.</p>
         <ol class="app-dl-steps">
           <li><div><strong>Abra este endereço no Safari</strong><span>Acesse <a href="{{ url_for('main.portal_cidadao', _external=True) }}">{{ url_for('main.portal_cidadao', _external=True) }}</a> pelo Safari. A instalação direta só funciona pelo Safari (não pelo Chrome, Instagram ou WhatsApp).</span></div></li>
           <li><div><strong>Toque em Compartilhar</strong><span>É o ícone <span class="app-dl-ios-icon"><i class="bi bi-box-arrow-up" aria-hidden="true"></i></span> na barra inferior do Safari.</span></div></li>
-          <li><div><strong>Toque em "Adicionar à Tela de Início" e confirme</strong><span>O ícone "IJA Vigilância" é instalado junto dos seus outros aplicativos. Esse é o passo de instalação.</span></div></li>
-          <li><div><strong>Abra o aplicativo pelo ícone</strong><span>A partir daí a interface é a do aplicativo, não a do site. Na primeira abertura, toque em "Receber alertas" e aceite as notificações e a localização.</span></div></li>
+          <li><div><strong>Toque em "Adicionar à Tela de Início" e confirme</strong><span>O ícone "IJA Vigilância" é instalado junto dos seus outros aplicativos.</span></div></li>
+          <li><div><strong>Abra o aplicativo pelo ícone</strong><span>Na primeira abertura, toque em "Receber alertas" e aceite as notificações e a localização.</span></div></li>
         </ol>
         <p class="small text-muted mt-3 mb-0">Requer iOS 16.4 ou superior. Quando a versão da App Store for liberada, basta instalá-la pela loja; os dados ficam no servidor e nada se perde.</p>
+        {% endif %}
       </div>
     </div>
-    <div class="col-12">
-      <div class="app-dl-note"><strong>Sobre o aviso de "fonte desconhecida" no Android.</strong> O sistema mostra esse aviso para qualquer aplicativo instalado fora da Play Store. O arquivo é distribuído diretamente pela Oceano Azul neste endereço e assinado digitalmente; confira que o download veio de <strong>{{ request.host }}</strong>.
-      <br><strong>Agentes de endemias:</strong> use o mesmo usuário e senha do sistema na opção "Sou agente de endemias" dentro do aplicativo.</div>
-    </div>
   </div>
-  <p class="text-center text-muted small mt-4"><a href="{{ url_for('main.portal_cidadao') }}">Voltar ao Portal do Cidadão</a> · Oceano Azul · IJA Drones</p>
+
+  <h2 class="h5 mt-4 mb-3">As mesmas funções nos dois sistemas</h2>
+  <div class="app-dl-card mb-4" style="padding:18px 22px">
+    <table class="app-dl-table">
+      <thead><tr><th>Função</th><th><i class="bi bi-android2"></i> Android</th><th><i class="bi bi-apple"></i> iPhone</th></tr></thead>
+      <tbody>
+        {% for f in ['Relatar foco com fotos, GPS e endereço preenchido pela localização', 'Relatar caso suspeito', 'Funciona sem internet e envia depois, com protocolo', 'Alertas da vigilância e notificação no celular', 'Assistente Azul (inteligência artificial) e Telegram', 'Compartilhar alertas e relatos em redes sociais', 'Área do agente: quarteirões, visitas com fotos e vídeos, jornada com GPS'] %}
+        <tr><td>{{ f }}</td><td class="ok">✔</td><td class="ok">✔</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="h5 mb-3">Veja nos dois aparelhos</h2>
+  <div class="app-dl-shots mb-4">
+    {% for titulo, arq in [('Tela inicial', 'inicio'), ('Relatar foco', 'relatar-foco'), ('Alertas', 'alertas')] %}
+    <div class="app-dl-pair"><h3>{{ titulo }}</h3>
+      <div class="phones">
+        <figure><img src="{{ url_for('static', filename='img/app-prints/android-' ~ arq ~ '.jpg') }}" alt="{{ titulo }} no Android" loading="lazy"><figcaption>Android</figcaption></figure>
+        <figure><img src="{{ url_for('static', filename='img/app-prints/ios-' ~ arq ~ '.jpg') }}" alt="{{ titulo }} no iPhone" loading="lazy"><figcaption>iPhone</figcaption></figure>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="app-dl-note"><strong>Sobre o aviso de "fonte desconhecida" no Android.</strong> O sistema mostra esse aviso para qualquer aplicativo instalado fora da Play Store. O arquivo é distribuído diretamente pela Oceano Azul neste endereço e assinado digitalmente; confira que o download veio de <strong>{{ request.host }}</strong>.
+    <br><strong>Agentes de endemias:</strong> use o mesmo usuário e senha do sistema na opção "Sou agente de endemias" dentro do aplicativo.</div>
+  <p class="text-center text-muted small mt-4"><a href="{{ url_for('main.portal_cidadao') }}">Voltar ao Portal do Cidadão</a> · <a href="/privacidade">Política de Privacidade</a> · Oceano Azul · IJA Drones</p>
+  <script>
+  (function () {
+    var ua = navigator.userAgent || '';
+    var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var android = /Android/.test(ua);
+    var key = ios ? 'ios' : (android ? 'android' : null);
+    if (!key) return;
+    var col = document.getElementById('col-' + key);
+    if (col) { col.classList.add('is-mine'); col.style.order = '-1'; }
+  })();
+  </script>
 </main>
 {% endmacro %}
 {% block content %}{{ page_content() }}{% endblock %}

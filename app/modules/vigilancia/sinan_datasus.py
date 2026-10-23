@@ -87,11 +87,19 @@ def _code(value):
     return sinan._code(value)
 
 
-def iter_rows(dbf_path, *, ibge, year):
-    """Linhas do município de notificação, só com campos públicos agregáveis."""
+def iter_rows(dbf_path, *, ibge, year, tick=None):
+    """Linhas do município de notificação, só com campos públicos agregáveis.
+
+    tick() é chamado a cada 20 mil linhas lidas (mesmo sem encontrar o município), para o lote
+    mostrar que está vivo e não ser marcado como interrompido em arquivos grandes.
+    """
     from dbfread import DBF
     code = ibge[:6]
+    scanned = 0
     for row in DBF(dbf_path, encoding="latin-1", load=False, ignore_missing_memofile=True):
+        scanned += 1
+        if tick and scanned % 20000 == 0:
+            tick()
         if _code(row.get("ID_MUNICIP")) != code:
             continue
         notified = row.get("DT_NOTIFIC")
@@ -132,7 +140,12 @@ def run(store, job_id, scope, *, max_seconds=900):
         dbf_path = to_dbf(dbc_path)
         store.progress(job_id, 0, 2)
         count = 0
-        for row in iter_rows(dbf_path, ibge=ibge, year=year):
+        def tick():
+            if store.stopped(job_id):
+                raise _Cancelled()
+            store.progress(job_id, count, 3)
+
+        for row in iter_rows(dbf_path, ibge=ibge, year=year, tick=tick):
             groups[(row["week"], row["classification"], row["residence"])] += 1
             count += 1
             if count % 500 == 0:

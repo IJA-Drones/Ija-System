@@ -206,8 +206,19 @@ def painel_agentes(pid, de, ate, only_user=None):
         visitas.append({"data": dia, "usuario_id": uid, "agente": names.get(uid, visita.autor), "plano": visita.plano, "quarteirao": visita.quarteirao,
                         "imovel": payload.get("imovel_codigo"), "situacao": payload.get("situacao"), "positivo": payload.get("positivo_aedes") or "",
                         "bairro": payload.get("bairro"), "latitude": _finite(payload.get("latitude"), -34, 6), "longitude": _finite(payload.get("longitude"), -74, -28),
-                        "demo": visita.demo})
+                        "demo": visita.demo, "origin": visita.origin, "inspecao": visita.code})
     visitas.sort(key=lambda v: (v["data"], v["agente"]), reverse=True)
+    # fotos e vídeos enviados pelo app (imóveis pendentes e demais visitas)
+    from flask import url_for
+    from .pending import InspecaoMidia
+    codes = {v["inspecao"] for v in visitas}
+    midias = {}
+    if codes:
+        for m in InspecaoMidia.query.filter(InspecaoMidia.prefeitura == pid, InspecaoMidia.inspecao_code.in_(codes)).order_by(InspecaoMidia.criado_em).all():
+            midias.setdefault((m.demo, m.origin, m.inspecao_code), []).append(
+                {"tipo": m.tipo, "url": url_for("main.vigilancia_pendentes_midia", midia_id=m.id)})
+    for v in visitas:
+        v["midias"] = midias.get((v["demo"], v.pop("origin"), v.pop("inspecao")), [])
     # posições agrupadas por agente e dia
     by_day = {}
     for p in positions:

@@ -3505,6 +3505,7 @@ from app.modules.vigilancia.planning_models import (
 )
 
 from app.modules.vigilancia.risk_models import RiscoAnalise  
+from app.modules.vigilancia.migracao_models import Migracao  
 from app.modules.acoes_publicas.models import AcaoPublica, AcaoPublicaMidia, AcaoPublicaEvento  
 
 

@@ -7,6 +7,33 @@
   data-sample-url="{{ url_for('main.vigilancia_sinan_cases_sample') }}"
   data-csrf="{{ sinan_csrf_token }}">
   <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
+    <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-3" role="note">
+      <div><strong>Arquivo do sistema legado (DBF, CSV ou planilha)?</strong><br>
+        <span class="small">Se a importação ao vivo não estiver disponível, a vigilância pode importar o arquivo exportado do sistema antigo pela <strong>Migração de dados</strong>, que valida, corrige e carrega os casos aqui no SINAN.</span></div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary btn-sm" href="{{ url_for('main.vigilancia_migracao') }}"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Abrir Migração de dados</a>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_migracao_exemplo', destino='sinan') }}"><i class="bi bi-download" aria-hidden="true"></i> Baixar arquivo de exemplo</a>
+      </div>
+    </div>
+    {% set mirror = 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN' %}
+    {% set oficiais = [('dengue', 'Dengue', 'Dengue', 'DENG'), ('chikungunya', 'Chikungunya', 'Chikungunya', 'CHIK'), ('zika', 'Zika', 'Zikavirus', 'ZIKA')] %}
+    <details class="mb-3 border rounded-3 p-3 bg-light">
+      <summary class="fw-semibold">Arquivos oficiais do Ministério da Saúde (download direto)</summary>
+      <p class="small text-muted mt-2 mb-2">Notificações nacionais de arboviroses do SINAN, em CSV compactado (.zip), publicadas pelo Ministério da Saúde. Os arquivos são grandes (de menos de 1 MB a cerca de 190 MB) e contêm o país inteiro; filtre pelo município de notificação. Para importar direto para o sistema sem baixar nada, use a origem <strong>DATASUS</strong> abaixo.</p>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-2">
+        <thead><tr><th>Doença</th>{% for y in [current_year, current_year - 1, current_year - 2, current_year - 3] %}<th>{{ y }}</th>{% endfor %}<th>Dicionário</th><th>Portal</th></tr></thead>
+        <tbody>
+        {% for key, label, folder, prefix in oficiais %}
+        <tr><td>{{ label }}</td>
+          {% for y in [current_year, current_year - 1, current_year - 2, current_year - 3] %}
+          <td><a href="{{ mirror }}/{{ folder }}/csv/{{ prefix }}BR{{ '%02d'|format(y % 100) }}.csv.zip" target="_blank" rel="noopener noreferrer"><i class="bi bi-download" aria-hidden="true"></i> CSV</a></td>
+          {% endfor %}
+          <td><a href="{{ diseases[key].dictionary_url }}" target="_blank" rel="noopener noreferrer">PDF</a></td>
+          <td><a href="{{ diseases[key].source_url }}" target="_blank" rel="noopener noreferrer">Dados abertos</a></td></tr>
+        {% endfor %}
+        </tbody></table></div>
+      <p class="small text-muted mb-0">Fonte: Ministério da Saúde / SINAN (dados abertos). O DATASUS também publica os arquivos .dbc por ano em <a href="https://datasus.saude.gov.br/transferencia-de-arquivos/" target="_blank" rel="noopener noreferrer">datasus.saude.gov.br → Transferência de arquivos → SINAN</a>.</p>
+    </details>
     <div class="sinan-new-import" {% if not can_import_api and not can_import_csv %}hidden{% endif %}>
       <h2 class="h5 mb-3">Nova importação</h2>
       <label class="form-label" for="sinan-import-source">Origem da importação</label>

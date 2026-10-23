@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Imóveis pendentes | Oceano Azul{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.pd-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.pd-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px}
+.pd-kpi b{display:block;font-size:1.6rem;color:#1c2b3f;line-height:1.1}.pd-kpi span{color:#4a5568;font-size:.85rem}
+.pd-kpi.warn b{color:#b45309}.pd-kpi.ok b{color:#15803d}
+.pd-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:16px}
+#pd-mapa{height:52vh;min-height:340px;border-radius:12px}
+.pd-sit{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600}
+.pd-sit.FECHADO{background:#fef3c7;color:#92400e}.pd-sit.RECUSADO{background:#fee2e2;color:#991b1b}.pd-sit.DESABITADO{background:#e2e8f0;color:#334155}
+.pd-imovel{border-top:1px solid #e2e8f0;padding:12px 0}.pd-imovel:first-child{border-top:0}
+.pd-imovel.sel{background:#e8f8fb}
+.pd-gal{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pd-thumb{position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;border:1px solid #cbd5e1;background:#f1f5f9;padding:0;cursor:pointer}
+.pd-thumb img,.pd-thumb video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.pd-thumb .bi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;text-shadow:0 0 6px rgba(0,0,0,.7)}
+.pd-thumb .pd-heic{display:flex;align-items:center;justify-content:center;height:100%;font-size:.8rem;color:#334155}
+.pd-bar{height:8px;background:#e2e8f0;border-radius:4px;min-width:80px}.pd-bar i{display:block;height:100%;background:#b45309;border-radius:4px}
+dialog.pd-view{border:0;border-radius:14px;padding:0;max-width:min(96vw,1100px);background:#0f172a}
+dialog.pd-view::backdrop{background:rgba(15,23,42,.8)}
+dialog.pd-view img,dialog.pd-view video{display:block;max-width:min(96vw,1100px);max-height:86vh}
+dialog.pd-view .pd-close{position:absolute;top:8px;right:8px}
+</style>{% endblock %}
+{% block content %}
+<main class="container-fluid py-4">
+  <header class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div><h1 class="h3 mb-1">Imóveis pendentes</h1>
+      <p class="text-muted mb-0">Imóveis cuja última visita ficou fechada, recusada ou desabitada, com as fotos e vídeos do ambiente peri e extradomiciliar registrados pelo agente.</p></div>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left"></i> Central de Vigilância</a>
+  </header>
+  <form method="get" class="row g-2 align-items-end mb-3">
+    {% if global_user %}<div class="col-md-3"><label class="form-label w-100">Prefeitura<select class="form-select" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>{% endif %}
+    <div class="col-md-2"><label class="form-label w-100">Levantamento<select class="form-select" name="levantamento"><option value="">Todos</option>{% for c in levantamentos %}<option {% if filtros.levantamento == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label></div>
+    <div class="col-6 col-md-2"><label class="form-label w-100">Quarteirão<select class="form-select" name="quarteirao"><option value="">Todos</option>{% for c in (report.opcoes.quarteiroes if report else []) %}<option {% if filtros.quarteirao == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label></div>
+    <div class="col-6 col-md-2"><label class="form-label w-100">Bairro<select class="form-select" name="bairro"><option value="">Todos</option>{% for c in (report.opcoes.bairros if report else []) %}<option {% if filtros.bairro == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label></div>
+    <div class="col-6 col-md-1"><label class="form-label w-100">De<input class="form-control" type="date" name="de" value="{{ filtros.de }}"></label></div>
+    <div class="col-6 col-md-1"><label class="form-label w-100">Até<input class="form-control" type="date" name="ate" value="{{ filtros.ate }}"></label></div>
+    <div class="col-6 col-md-1"><label class="form-label w-100">Situação<select class="form-select" name="situacao"><option value="">Todas</option>{% for s in pending %}<option value="{{ s }}" {% if filtros.situacao == s %}selected{% endif %}>{{ situacoes[s] }}</option>{% endfor %}</select></label></div>
+    <div class="col-6 col-md-1"><label class="form-label w-100">Dados<select class="form-select" name="demo"><option value="false">Autorizados</option><option value="true" {% if demo %}selected{% endif %}>Demonstração</option></select></label></div>
+    <div class="col-auto"><button class="btn btn-primary">Filtrar</button> <a class="btn btn-link" href="{{ url_for('main.vigilancia_pendentes', prefeitura_id=prefeitura_id if global_user else None) }}">Limpar</a></div>
+  </form>
+  {% if not prefeitura_id %}<p class="alert alert-info">Selecione uma prefeitura.</p>{% else %}
+  {% set r = report.resumo %}
+  <div class="pd-kpis">
+    <div class="pd-kpi warn"><b>{{ r.pendentes }}</b><span>Imóveis pendentes</span></div>
+    <div class="pd-kpi"><b>{{ r.percentual|string|replace('.', ',') }}%</b><span>Pendência geral ({{ r.visitados }} imóveis visitados)</span></div>
+    <div class="pd-kpi ok"><b>{{ r.com_midia }}</b><span>Pendentes com registro fotográfico ou vídeo</span></div>
+    <div class="pd-kpi"><b>{{ r.pendentes - r.com_midia }}</b><span>Pendentes sem registro</span></div>
+  </div>
+  <div class="row g-3">
+    <div class="col-xl-7"><div class="pd-card p-2">
+      <div id="pd-mapa" aria-label="Mapa dos imóveis pendentes"></div>
+      <div class="small text-muted px-2 pt-2">● laranja = fechado · ● vermelho = recusado · ● cinza = desabitado. Clique no ponto para ver o imóvel na lista.</div>
+    </div></div>
+    <div class="col-xl-5"><div class="pd-card">
+      <h2 class="h6">Pendência por quarteirão <span class="text-muted fw-normal">(pendentes ÷ visitados)</span></h2>
+      <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Quarteirão</th><th>Visitados</th><th>Pendentes</th><th colspan="2">% pendência</th></tr></thead><tbody>
+        {% for q in report.quarteiroes %}<tr><td>{{ q.quarteirao }}</td><td>{{ q.visitados }}</td><td>{{ q.pendentes }}</td><td>{{ q.percentual|string|replace('.', ',') }}%</td><td class="align-middle"><div class="pd-bar"><i style="width:{{ q.percentual }}%"></i></div></td></tr>
+        {% else %}<tr><td colspan="5" class="text-muted">Nenhuma visita registrada com estes filtros.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div></div>
+  </div>
+  <div class="pd-card"><h2 class="h6">Imóveis pendentes ({{ report.imoveis|length }})</h2>
+    {% for x in report.imoveis %}
+    <div class="pd-imovel" id="imovel-{{ loop.index0 }}">
+      <div class="d-flex flex-wrap justify-content-between gap-2">
+        <div><strong>Imóvel {{ x.imovel }}</strong> · Quarteirão {{ x.quarteirao }} · {{ x.bairro }}{% if x.levantamento %} · <span class="text-muted">{{ x.levantamento }}</span>{% endif %}</div>
+        <span class="pd-sit {{ x.situacao }}">{{ situacoes.get(x.situacao, x.situacao) }}</span>
+      </div>
+      <div class="small text-muted">Última visita: {{ x.data.split('-')|reverse|join('/') }} · {{ x.tentativas }} tentativa(s) de visita · Agente: {{ x.agente }}{% if x.latitude is none %} · sem coordenadas{% endif %}</div>
+      {% if x.midias %}<div class="pd-gal">{% for m in x.midias %}{% set url = url_for('main.vigilancia_pendentes_midia', midia_id=m.id) %}
+        <button type="button" class="pd-thumb" data-url="{{ url }}" data-tipo="{{ m.tipo }}" data-ct="{{ m.content_type }}" title="{{ 'Vídeo' if m.tipo == 'video' else 'Foto' }} · {{ m.data }} · inspeção {{ m.inspecao }}" aria-label="Abrir {{ 'vídeo' if m.tipo == 'video' else 'foto' }} de {{ m.data }}">
+          {% if m.tipo == 'video' %}<video src="{{ url }}#t=0.5" preload="metadata" muted></video><i class="bi bi-play-circle-fill" aria-hidden="true"></i>
+          {% elif m.content_type == 'image/heic' %}<span class="pd-heic"><i class="bi bi-file-earmark-image" style="position:static;color:#334155;text-shadow:none;font-size:1.2rem"></i>&nbsp;HEIC</span>
+          {% else %}<img src="{{ url }}" alt="Foto do imóvel {{ x.imovel }}" loading="lazy">{% endif %}
+        </button>{% endfor %}</div>
+      {% else %}<div class="small text-danger mt-1"><i class="bi bi-camera-video-off"></i> Sem fotos ou vídeos desta pendência.</div>{% endif %}
+    </div>
+    {% else %}<p class="text-muted mb-0">Nenhum imóvel pendente com estes filtros.</p>{% endfor %}
+  </div>
+  <dialog class="pd-view" id="pd-view"><button type="button" class="btn btn-light btn-sm pd-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button><div id="pd-view-body"></div></dialog>
+  <script type="application/json" id="pd-pontos">{{ report.imoveis|tojson }}</script>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const data = document.getElementById('pd-pontos'); if (!data) return;
+  const imoveis = JSON.parse(data.textContent || '[]') || [];
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const cor = {FECHADO: '#d97706', RECUSADO: '#dc2626', DESABITADO: '#64748b'};
+  const map = L.map('pd-mapa').setView([-8.3558, -36.6978], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
+  const bounds = [];
+  imoveis.forEach((x, i) => {
+    if (x.latitude == null || x.longitude == null) return;
+    bounds.push([x.latitude, x.longitude]);
+    L.circleMarker([x.latitude, x.longitude], {radius: 8, color: '#fff', weight: 2, fillColor: cor[x.situacao] || '#64748b', fillOpacity: 1})
+      .bindPopup(`<strong>Imóvel ${esc(x.imovel)}</strong><br>Quarteirão ${esc(x.quarteirao)} · ${esc(x.situacao)}<br>${x.tentativas} tentativa(s) · ${x.midias.length} mídia(s)`)
+      .on('click', () => { const el = document.getElementById('imovel-' + i); document.querySelectorAll('.pd-imovel').forEach(e => e.classList.toggle('sel', e === el)); el.scrollIntoView({behavior: 'smooth', block: 'center'}); })
+      .addTo(map);
+  });
+  if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 17});
+  const dlg = document.getElementById('pd-view'), body = document.getElementById('pd-view-body');
+  document.querySelectorAll('.pd-thumb').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.ct === 'image/heic') { window.open(b.dataset.url, '_blank'); return; }
+    body.innerHTML = b.dataset.tipo === 'video' ? `<video src="${esc(b.dataset.url)}" controls autoplay playsinline></video>` : `<img src="${esc(b.dataset.url)}" alt="Foto em tamanho real">`;
+    dlg.showModal();
+  }));
+  const close = () => { body.innerHTML = ''; if (dlg.open) dlg.close(); };
+  dlg.querySelector('.pd-close').addEventListener('click', close);
+  dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+  dlg.addEventListener('close', () => { body.innerHTML = ''; });
+})();
+</script>
+{% endblock %}

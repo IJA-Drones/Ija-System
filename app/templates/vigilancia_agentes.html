@@ -48,7 +48,20 @@
     <div class="table-responsive"><table class="table table-sm ag-table mb-0"><thead><tr><th>Data</th><th>Agente</th><th>Início</th><th>Fim</th><th>Pontos GPS</th><th>Km</th><th>Visitas</th><th>Inspecionados</th><th>Fechados/recusados</th><th>Positivos</th><th></th></tr></thead><tbody id="ag-historico"><tr><td colspan="11" class="text-muted">Carregando…</td></tr></tbody></table></div>
   </div>
   <div class="ag-card"><h2 class="h6">Visitas do período</h2>
-    <div class="table-responsive"><table class="table table-sm ag-table mb-0"><thead><tr><th>Data</th><th>Agente</th><th>Quarteirão</th><th>Imóvel</th><th>Situação</th><th>Positivo</th><th>Bairro</th></tr></thead><tbody id="ag-visitas"><tr><td colspan="7" class="text-muted">Carregando…</td></tr></tbody></table></div>
+    <div class="table-responsive"><table class="table table-sm ag-table mb-0"><thead><tr><th>Data</th><th>Agente</th><th>Quarteirão</th><th>Imóvel</th><th>Situação</th><th>Positivo</th><th>Bairro</th><th>Fotos/vídeos</th></tr></thead><tbody id="ag-visitas"><tr><td colspan="8" class="text-muted">Carregando…</td></tr></tbody></table></div>
+  </div>
+  <div class="ag-card" id="ag-esus" data-url="/api/vigilancia/agentes/esus" data-tela="/integracoes/esus">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+      <h2 class="h6 mb-0">Visitas do e-SUS (ACS/ACE)</h2>
+      <a class="small" id="ag-esus-link" href="#">Integração e-SUS APS <i class="bi bi-box-arrow-up-right"></i></a>
+    </div>
+    <p class="small text-muted mb-2" id="ag-esus-status">Carregando…</p>
+    <div class="ag-kpis" id="ag-esus-kpis"></div>
+    <div class="row g-3">
+      <div class="col-xl-7"><div class="table-responsive"><table class="table table-sm ag-table mb-0"><thead><tr><th>Profissional</th><th>Cat.</th><th>Microárea</th><th>Visitas</th><th>Realizadas</th><th>Recusadas</th><th>Ausentes</th><th>Aedes</th><th>Dias</th><th>Média/dia</th><th>Com GPS</th></tr></thead><tbody id="ag-esus-prof"><tr><td colspan="11" class="text-muted">Carregando…</td></tr></tbody></table></div></div>
+      <div class="col-xl-5"><div id="ag-esus-mapa" style="height:420px;border-radius:14px"></div>
+        <div class="small text-muted pt-2">● verde = realizada · ● vermelho = recusada · ● âmbar = ausente · contorno preto = motivo controle de vetores/Aedes.</div></div>
+    </div>
   </div>
   {% endif %}
 </main>
@@ -63,6 +76,9 @@
   const fmt = d => d ? d.split('-').reverse().join('/') : '';
   const colors = ['#2563eb','#dc2626','#15803d','#d97706','#7c3aed','#0891b2','#be185d','#4b5563'];
   const statusLabel = {em_campo: 'Em campo', parado: 'Parado', sem_gps: 'Sem GPS hoje'};
+  const midiaLinks = (ms) => (ms && ms.length) ? ms.map((m, i) => m.tipo === 'video'
+    ? `<a href="${m.url}" target="_blank" rel="noopener" title="Vídeo ${i + 1}"><i class="bi bi-camera-video"></i></a>`
+    : `<a href="${m.url}" target="_blank" rel="noopener" title="Foto ${i + 1}"><img src="${m.url}" alt="Foto ${i + 1}" style="width:34px;height:34px;object-fit:cover;border-radius:6px;margin-right:4px" loading="lazy"></a>`).join('') : '—';
   const map = L.map(el).setView([-8.3558, -36.6978], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
   let layer = L.layerGroup().addTo(map), colorOf = {};
@@ -90,7 +106,7 @@
     document.getElementById('ag-historico').innerHTML = d.historico.length ? d.historico.map(h => `<tr><td>${fmt(h.data)}</td><td><span class="ag-dot" style="background:${colorOf[h.usuario_id]}"></span>${esc(h.agente)}</td><td>${h.inicio || '—'}</td><td>${h.fim || '—'}</td><td>${h.pontos}</td><td>${String(h.km).replace('.', ',')}</td><td>${h.visitas}</td><td>${h.inspecionados}</td><td>${h.nao_inspecionados}</td><td>${h.positivos ? '<b class="text-danger">' + h.positivos + '</b>' : 0}</td><td><button class="btn btn-link btn-sm p-0" data-dia="${h.data}" data-uid="${h.usuario_id}">ver no mapa</button></td></tr>`).join('') : '<tr><td colspan="11" class="text-muted">Sem registros no período.</td></tr>';
     document.querySelectorAll('#ag-historico [data-dia]').forEach(b => b.addEventListener('click', () => { document.getElementById('ag-dia').value = b.dataset.dia; loadMapa(b.dataset.uid); el.scrollIntoView({behavior: 'smooth'}); }));
     const sit = {INSPECIONADO: 'Inspecionado', FECHADO: 'Fechado', RECUSADO: 'Recusado', DESABITADO: 'Desabitado'};
-    document.getElementById('ag-visitas').innerHTML = d.visitas.length ? d.visitas.map(v => `<tr><td>${fmt(v.data)}</td><td>${esc(v.agente)}</td><td>${esc(v.quarteirao)}</td><td>${esc(v.imovel)}</td><td>${sit[v.situacao] || esc(v.situacao)}</td><td>${v.positivo === 'SIM' ? '<b class="text-danger">Sim</b>' : v.positivo === 'NAO' ? 'Não' : '—'}</td><td>${esc(v.bairro)}</td></tr>`).join('') : '<tr><td colspan="7" class="text-muted">Nenhuma visita no período.</td></tr>';
+    document.getElementById('ag-visitas').innerHTML = d.visitas.length ? d.visitas.map(v => `<tr><td>${fmt(v.data)}</td><td>${esc(v.agente)}</td><td>${esc(v.quarteirao)}</td><td>${esc(v.imovel)}</td><td>${sit[v.situacao] || esc(v.situacao)}</td><td>${v.positivo === 'SIM' ? '<b class="text-danger">Sim</b>' : v.positivo === 'NAO' ? 'Não' : '—'}</td><td>${esc(v.bairro)}</td><td>${midiaLinks(v.midias)}</td></tr>`).join('') : '<tr><td colspan="8" class="text-muted">Nenhuma visita no período.</td></tr>';
   }
 
   async function loadMapa(uid) {
@@ -110,7 +126,7 @@
     (d.visitas || []).forEach(v => {
       const fill = v.positivo === 'SIM' ? '#dc2626' : v.situacao === 'INSPECIONADO' ? '#15803d' : '#64748b';
       L.circleMarker([v.latitude, v.longitude], {radius: 7, color: '#fff', weight: 2, fillColor: fill, fillOpacity: 1})
-        .bindPopup(`<strong>${esc(v.quarteirao)} · ${esc(v.imovel)}</strong><br>${esc(v.agente)}<br>${esc(v.situacao)}${v.positivo === 'SIM' ? ' · <b style="color:#dc2626">foco positivo</b>' : ''}`).addTo(layer);
+        .bindPopup(`<strong>${esc(v.quarteirao)} · ${esc(v.imovel)}</strong><br>${esc(v.agente)}<br>${esc(v.situacao)}${v.positivo === 'SIM' ? ' · <b style="color:#dc2626">foco positivo</b>' : ''}${v.midias && v.midias.length ? '<div style="margin-top:6px">' + midiaLinks(v.midias) + '</div>' : ''}`).addTo(layer);
       bounds.push([v.latitude, v.longitude]);
     });
     if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 17});
@@ -118,6 +134,36 @@
   document.getElementById('ag-dia').addEventListener('change', () => loadMapa());
   loadPainel().then(() => loadMapa()).catch(() => { document.getElementById('ag-kpis').innerHTML = '<div class="alert alert-danger">Não foi possível carregar o painel.</div>'; });
   setInterval(loadPainel, 60000);
+})();
+</script>
+<script>
+(function () {
+  const box = document.getElementById('ag-esus'), el = document.getElementById('agentes-mapa'); if (!box || !el) return;
+  const params = new URLSearchParams(location.search); params.set('prefeitura_id', el.dataset.prefeitura); params.delete('usuario_id');
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const fmt = d => d ? d.split('-').reverse().join('/') : '';
+  document.getElementById('ag-esus-link').href = box.dataset.tela + '?prefeitura_id=' + encodeURIComponent(el.dataset.prefeitura);
+  const map = L.map('ag-esus-mapa').setView([-8.3558, -36.6978], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
+  const layer = L.layerGroup().addTo(map), cor = {realizada: '#15803d', recusada: '#dc2626', ausente: '#d97706'};
+  fetch(box.dataset.url + '?' + params.toString(), {headers: {Accept: 'application/json'}}).then(r => r.json()).then(d => {
+    const status = document.getElementById('ag-esus-status');
+    if (d.error) { status.textContent = d.error; return; }
+    if (!d.configurado) { status.innerHTML = 'Integração com o e-SUS APS não configurada para esta prefeitura.'; document.getElementById('ag-esus-prof').innerHTML = ''; return; }
+    status.textContent = `Ficha de Visita Domiciliar e Territorial · ${fmt(d.de)}–${fmt(d.ate)} · ${d.modo === 'simulado' ? 'ambiente simulado' : 'banco do PEC'} · última sincronização: ${d.ultima_sincronizacao ? d.ultima_sincronizacao.replace('T', ' ') : 'nunca'}`;
+    const k = d.kpis, kpi = (v, l, cls) => `<div class="ag-kpi ${cls || ''}"><b>${esc(v)}</b><span>${l}</span></div>`;
+    document.getElementById('ag-esus-kpis').innerHTML = kpi(k.profissionais, 'ACS/ACE com visitas') + kpi(k.visitas, 'Visitas no período') + kpi(k.realizadas, 'Realizadas', 'ok')
+      + kpi(k.recusadas, 'Recusadas', 'bad') + kpi(k.ausentes, 'Ausentes', 'warn') + kpi(k.aedes, 'Motivo controle de vetores/Aedes');
+    document.getElementById('ag-esus-prof').innerHTML = d.profissionais.length ? d.profissionais.map(p => `<tr><td>${esc(p.nome)}<div class="text-muted small">${esc(p.equipe || '')}</div></td><td>${esc(p.categoria || '')}</td><td>${esc(p.microarea || '—')}</td><td><b>${p.visitas}</b></td><td>${p.realizadas}</td><td>${p.recusadas}</td><td>${p.ausentes}</td><td>${p.aedes}</td><td>${p.dias}</td><td>${String(p.media_dia).replace('.', ',')}</td><td>${p.visitas ? Math.round(100 * p.com_gps / p.visitas) : 0}%</td></tr>`).join('') : '<tr><td colspan="11" class="text-muted">Nenhuma visita do e-SUS no período. Sincronize a integração.</td></tr>';
+    const bounds = [];
+    d.pontos.forEach(p => {
+      L.circleMarker([p[0], p[1]], {radius: 5, color: p[6] ? '#111827' : '#fff', weight: p[6] ? 2 : 1, fillColor: cor[p[5]] || '#64748b', fillOpacity: .9})
+        .bindPopup(`<strong>${esc(p[2])}</strong><br>${fmt(p[3])} ${esc(p[4] || '')}<br>Microárea ${esc(p[7] || '—')} · ${esc(p[5])}${p[6] ? '<br><b>Controle de vetores/Aedes</b>' : ''}`).addTo(layer);
+      bounds.push([p[0], p[1]]);
+    });
+    map.invalidateSize();
+    if (bounds.length) map.fitBounds(bounds, {padding: [20, 20], maxZoom: 16});
+  }).catch(() => { document.getElementById('ag-esus-status').textContent = 'Não foi possível carregar as visitas do e-SUS.'; });
 })();
 </script>
 {% endblock %}

@@ -69,7 +69,7 @@ def _rate_ok(key, limit, window=3600):
         return True
 
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 
 def register_routes(bp):
@@ -78,7 +78,14 @@ def register_routes(bp):
         import os
         path = os.path.join(current_app.static_folder, "downloads", "ija-vigilancia.apk")
         size = round(os.path.getsize(path) / (1024 * 1024)) if os.path.exists(path) else 0
-        return render_template("app_download.html", versao=APP_VERSION, tamanho_mb=size)
+        testflight = (current_app.config.get("TESTFLIGHT_URL") or "").strip()
+        if not testflight.startswith("https://testflight.apple.com/"):
+            testflight = ""
+        return render_template("app_download.html", versao=APP_VERSION, tamanho_mb=size, testflight_url=testflight)
+
+    @bp.get("/privacidade", endpoint="privacidade")
+    def privacidade():
+        return render_template("privacidade.html")
 
     @bp.get("/app/ija-vigilancia.apk", endpoint="app_apk")
     def app_apk():
@@ -93,7 +100,8 @@ def register_routes(bp):
         import io
         import qrcode
         from qrcode.image.svg import SvgPathImage
-        image = qrcode.make(url_for("main.app_apk", _external=True), image_factory=SvgPathImage, box_size=10, border=2)
+        # O QR abre a página (não o APK), que já destaca o passo certo para Android ou iPhone.
+        image = qrcode.make(url_for("main.app_download", _external=True), image_factory=SvgPathImage, box_size=10, border=2)
         buffer = io.BytesIO(); image.save(buffer)
         return Response(buffer.getvalue(), mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
 
@@ -278,3 +286,14 @@ def register_routes(bp):
         except (FieldInputError, FieldConflict, FieldStoreError) as exc:
             return jsonify(error=str(exc)), 400
         return jsonify(ok=True, lote=batch["id"], inspecao_codigo=form["inspecao_codigo"], status=batch.get("status")), 201
+
+    @bp.post("/api/mobile/agente/visitas/<inspecao_codigo>/midias", endpoint="mobile_agente_visita_midias")
+    @bearer_required
+    def mobile_agente_visita_midias(inspecao_codigo):
+        from app.modules.vigilancia.pending import MidiaError, save_media
+        try:
+            rows = save_media(g.mobile_user, inspecao_codigo[:80], request.files.getlist("midias"),
+                              request.form.get("latitude"), request.form.get("longitude"))
+        except MidiaError as exc:
+            return jsonify(error=str(exc)), exc.status
+        return jsonify(ok=True, midias=[{"id": m.id, "tipo": m.tipo} for m in rows]), 201

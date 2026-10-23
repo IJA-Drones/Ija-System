@@ -39,8 +39,8 @@ def test_disabled_modules_have_no_unavailable_links(client):
                                      VIGILANCIA_PREVIEW_ENABLED=False)
     response = client.get('/vigilancia')
     assert response.status_code == 200
-    assert response.text.count('Aguardando ativação neste ambiente') == 5
-    for path in ('/vigilancia/sinan', '/vigilancia/campo', '/vigilancia/importacoes', '/vigilancia/validacao'):
+    assert response.text.count('Aguardando ativação neste ambiente') == 6
+    for path in ('/vigilancia/sinan', '/vigilancia/campo', '/vigilancia/importacoes', '/vigilancia/validacao', '/vigilancia/migracao'):
         assert f'href="{path}"' not in response.text
 
 

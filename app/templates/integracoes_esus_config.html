@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Configurar e-SUS APS | Oceano Azul{% endblock %}
+{% block content %}
+<main class="container py-4" style="max-width:960px">
+  <a href="{{ url_for('main.integracoes_esus', prefeitura_id=prefeitura.id if prefeitura else None) }}" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> Voltar à integração</a>
+  <h1 class="h3">Integração e-SUS APS (PEC) · configuração</h1>
+  <p class="text-muted">Conector das visitas domiciliares de ACS/ACE e do cadastro de domicílios. A senha fica cifrada no banco e nunca é exibida; a conexão com o PEC é somente leitura.</p>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, text in messages %}<div class="alert alert-{{ category }}" role="alert">{{ text }}</div>{% endfor %}{% endwith %}
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  <form method="get" class="mb-3"><label class="form-label fw-bold">Prefeitura<select class="form-select" name="prefeitura_id" onchange="this.form.submit()">{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura and prefeitura.id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></form>
+  {% if prefeitura %}
+  <section class="card p-4 mb-4">
+    <h2 class="h5">Conexão</h2>
+    <form method="post" class="row g-3" id="esus-config">
+      <input type="hidden" name="_csrf_token" value="{{ csrf }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura.id }}">
+      <div class="col-12">
+        <div class="form-check"><input class="form-check-input" type="radio" name="modo" value="pec" id="modo-pec" {% if cfg and cfg.modo == 'pec' %}checked{% endif %}><label class="form-check-label" for="modo-pec"><b>Banco do PEC (PostgreSQL)</b> — leitura direta das tabelas do e-SUS APS do município (tb_fat_visita_domiciliar, tb_fat_cad_domiciliar, tb_dim_*).</label></div>
+        <div class="form-check"><input class="form-check-input" type="radio" name="modo" value="simulado" id="modo-sim" {% if not cfg or cfg.modo == 'simulado' %}checked{% endif %}><label class="form-check-label" for="modo-sim"><b>Ambiente simulado</b> — conjunto de dados de exemplo no layout do PEC (schema <code>{{ sim_schema }}</code> do banco local), lido pela mesma consulta.</label></div>
+      </div>
+      <div class="col-md-4"><label class="form-label fw-bold">Código IBGE do município<input class="form-control" name="ibge" required pattern="\d{7}" maxlength="7" value="{{ cfg.ibge if cfg else ibge_padrao }}"></label></div>
+      <div class="col-md-4"><label class="form-label fw-bold">Sincronização automática (min)<input class="form-control" type="number" name="intervalo_min" min="0" max="1440" value="{{ cfg.intervalo_min if cfg else 0 }}"><span class="form-text">0 = só manual; mínimo 5.</span></label></div>
+      <div class="col-md-4 d-flex align-items-center"><div class="form-check"><input class="form-check-input" type="checkbox" name="ativo" id="esus-ativo" {% if not cfg or cfg.ativo %}checked{% endif %}><label class="form-check-label" for="esus-ativo">Integração ativa (API e agendamento)</label></div></div>
+      <fieldset class="col-12 row g-3 m-0 p-0" id="esus-pec-campos">
+        <div class="col-md-6"><label class="form-label fw-bold">Host<input class="form-control" name="host" maxlength="200" value="{{ cfg.host or '' if cfg else '' }}" placeholder="10.0.0.5"></label></div>
+        <div class="col-md-2"><label class="form-label fw-bold">Porta<input class="form-control" type="number" name="porta" min="1" max="65535" value="{{ cfg.porta if cfg else 5433 }}"></label></div>
+        <div class="col-md-4"><label class="form-label fw-bold">Base<input class="form-control" name="base" maxlength="120" value="{{ cfg.base or '' if cfg else '' }}" placeholder="esus"></label></div>
+        <div class="col-md-6"><label class="form-label fw-bold">Usuário (somente leitura)<input class="form-control" name="usuario" maxlength="120" autocomplete="off" value="{{ cfg.usuario or '' if cfg else '' }}"></label></div>
+        <div class="col-md-6"><label class="form-label fw-bold">Senha<input class="form-control" type="password" name="senha" autocomplete="new-password" placeholder="{{ 'deixe em branco para manter a atual' if tem_senha else '' }}"></label></div>
+      </fieldset>
+      <div class="col-12 d-flex gap-2"><button class="btn btn-primary" name="acao" value="salvar">Salvar configuração</button>
+        {% if cfg %}<button class="btn btn-outline-secondary" name="acao" value="testar" formnovalidate>Testar conexão</button>{% endif %}</div>
+    </form>
+  </section>
+  {% if cfg %}
+  <section class="card p-4 mb-4">
+    <h2 class="h5">Ambiente simulado · gerar conjunto de exemplo</h2>
+    <p class="text-muted small mb-3">Recria o PEC simulado com profissionais ACS/ACE (CNS fictício), equipes/INE, microáreas, domicílios com coordenadas em torno do centro informado e visitas com data/hora, desfecho (realizada/recusada/ausente), motivo (inclusive controle de vetores/Aedes) e geolocalização. Os dados sincronizados do conjunto anterior são descartados.</p>
+    <form method="post" class="row g-2 align-items-end">
+      <input type="hidden" name="_csrf_token" value="{{ csrf }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura.id }}"><input type="hidden" name="acao" value="gerar_simulado">
+      <div class="col-4 col-md-1"><label class="form-label small">ACS<input class="form-control form-control-sm" type="number" name="acs" min="1" max="12" value="6"></label></div>
+      <div class="col-4 col-md-1"><label class="form-label small">ACE<input class="form-control form-control-sm" type="number" name="ace" min="0" max="6" value="2"></label></div>
+      <div class="col-4 col-md-2"><label class="form-label small">Domicílios<input class="form-control form-control-sm" type="number" name="domicilios" min="10" max="5000" value="300"></label></div>
+      <div class="col-4 col-md-2"><label class="form-label small">Visitas<input class="form-control form-control-sm" type="number" name="visitas" min="10" max="20000" value="1500"></label></div>
+      <div class="col-4 col-md-1"><label class="form-label small">Dias<input class="form-control form-control-sm" type="number" name="dias" min="1" max="90" value="30"></label></div>
+      <div class="col-6 col-md-2"><label class="form-label small">Centro lat<input class="form-control form-control-sm" name="lat" value="-8.3558"></label></div>
+      <div class="col-6 col-md-2"><label class="form-label small">Centro lng<input class="form-control form-control-sm" name="lng" value="-36.6978"></label></div>
+      <div class="col-12"><button class="btn btn-outline-primary btn-sm">Gerar conjunto simulado</button></div>
+    </form>
+  </section>
+  <section class="card p-4 mb-4">
+    <h2 class="h5">Token da API para terceiros</h2>
+    <p class="text-muted small">Use no cabeçalho <code>Authorization: Bearer &lt;token&gt;</code> em <code>GET /api/integracoes/esus/visitas</code> e <code>GET /api/integracoes/esus/status</code>. Só o hash é guardado: o token aparece uma única vez.</p>
+    {% if novo_token %}<div class="alert alert-success"><b>Novo token (copie agora):</b><br><code id="esus-token" style="word-break:break-all">{{ novo_token }}</code></div>{% endif %}
+    <p class="mb-2">{% if cfg.token_hash %}Token ativo <code>{{ cfg.token_prefixo }}…</code> criado em {{ cfg.token_criado_em.strftime('%d/%m/%Y %H:%M') }}.{% else %}Nenhum token ativo.{% endif %}</p>
+    <form method="post" class="d-flex gap-2">
+      <input type="hidden" name="_csrf_token" value="{{ csrf }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura.id }}">
+      <button class="btn btn-outline-primary btn-sm" name="acao" value="gerar_token">{{ 'Gerar novo token (substitui o atual)' if cfg.token_hash else 'Gerar token' }}</button>
+      {% if cfg.token_hash %}<button class="btn btn-outline-danger btn-sm" name="acao" value="revogar_token">Revogar</button>{% endif %}
+    </form>
+  </section>
+  {% endif %}
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const form = document.getElementById('esus-config'); if (!form) return;
+  const campos = document.getElementById('esus-pec-campos');
+  const sync = () => { campos.disabled = !document.getElementById('modo-pec').checked; };
+  form.querySelectorAll('input[name=modo]').forEach(r => r.addEventListener('change', sync)); sync();
+})();
+</script>
+{% endblock %}

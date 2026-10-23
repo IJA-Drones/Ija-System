@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}e-SUS APS (PEC) | Oceano Azul{% endblock %}
+{% block extra_styles %}<style>
+.es-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.es-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px}
+.es-kpi b{display:block;font-size:1.5rem;color:#1c2b3f;line-height:1.1}.es-kpi span{color:#718096;font-size:.85rem}
+.es-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:16px}
+.es-table td,.es-table th{font-size:.88rem;white-space:nowrap}.es-table td.wrap{white-space:normal;min-width:220px}
+.es-badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600}
+.es-badge.concluida,.es-badge.realizada{background:#dcfce7;color:#166534}.es-badge.falhou,.es-badge.recusada{background:#fee2e2;color:#991b1b}
+.es-badge.executando,.es-badge.ausente{background:#fef3c7;color:#92400e}.es-badge.nao_informado,.es-badge.simulado{background:#e2e8f0;color:#334155}
+.es-badge.pec{background:#dbeafe;color:#1e40af}
+</style>{% endblock %}
+{% block content %}
+<main class="container-fluid py-4">
+  <header class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div>
+      <a href="{{ url_for('main.vigilancia') }}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Central de Vigilância</a>
+      <h1 class="h3 mb-1">Integrações · e-SUS APS (PEC)</h1>
+      <p class="text-muted mb-0">Visitas domiciliares de ACS/ACE (Ficha de Visita Domiciliar e Territorial) e cadastro de domicílios importados do PEC do município.</p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if prefeitura_id %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.vigilancia_agentes', prefeitura_id=prefeitura_id) }}"><i class="bi bi-people"></i> Agentes em campo</a>{% endif %}
+      {% if global_user %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.integracoes_esus_config', prefeitura_id=prefeitura_id) }}"><i class="bi bi-gear"></i> Configurar</a>{% endif %}
+    </div>
+  </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, text in messages %}<div class="alert alert-{{ category }}" role="alert">{{ text }}</div>{% endfor %}{% endwith %}
+  {% if global_user %}
+  <form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" onchange="this.form.submit()"><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
+  </form>
+  {% endif %}
+  {% if not cfg %}
+  <div class="alert alert-warning">A integração com o e-SUS APS ainda não foi configurada{% if prefeitura_nome %} para {{ prefeitura_nome }}{% endif %}.{% if global_user %} <a href="{{ url_for('main.integracoes_esus_config', prefeitura_id=prefeitura_id) }}">Configurar agora</a>.{% else %} Solicite ao administrador do sistema.{% endif %}</div>
+  {% else %}
+  {% set t = status.totais %}
+  <div class="es-kpis">
+    <div class="es-kpi"><b><span class="es-badge {{ cfg.modo }}">{{ 'Banco do PEC' if cfg.modo == 'pec' else 'Ambiente simulado' }}</span></b><span>Modo de conexão{% if not cfg.ativo %} · <b class="text-danger">inativa</b>{% endif %}</span></div>
+    <div class="es-kpi"><b>{{ '{:,}'.format(t.visitas).replace(',', '.') }}</b><span>Visitas sincronizadas</span></div>
+    <div class="es-kpi"><b>{{ t.profissionais }}</b><span>Profissionais (ACS/ACE)</span></div>
+    <div class="es-kpi"><b>{{ '{:,}'.format(t.domicilios).replace(',', '.') }}</b><span>Domicílios cadastrados</span></div>
+    <div class="es-kpi"><b class="fs-6">{{ status.ultima_sincronizacao.visitas|replace('T', ' ') if status.ultima_sincronizacao.visitas else '—' }}</b><span>Última sincronização de visitas</span></div>
+    <div class="es-kpi"><b class="fs-6">{{ 'a cada %d min'|format(cfg.intervalo_min) if cfg.intervalo_min else 'manual' }}</b><span>Sincronização automática</span></div>
+  </div>
+  <div class="es-card">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h2 class="h6 mb-0">Sincronização</h2>
+      <form method="post" action="{{ url_for('main.integracoes_esus_sincronizar') }}" class="d-flex gap-2" id="es-sync">
+        <input type="hidden" name="_csrf_token" value="{{ csrf }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
+        <button class="btn btn-primary btn-sm" name="forma" value="sincrona" {% if status.em_execucao %}disabled{% endif %}><i class="bi bi-arrow-repeat"></i> Sincronizar agora</button>
+        <button class="btn btn-outline-primary btn-sm" name="forma" value="assincrona" {% if status.em_execucao %}disabled{% endif %}><i class="bi bi-hourglass-split"></i> Sincronizar em segundo plano</button>
+      </form>
+    </div>
+    <p class="small text-muted mt-2 mb-2">Processos: <b>cadastro de domicílios</b> (tb_fat_cad_domiciliar) e <b>visitas de ACS/ACE</b> (tb_fat_visita_domiciliar, últimos 90 dias). Mesma consulta nos dois modos.</p>
+    <div class="table-responsive"><table class="table table-sm es-table mb-0">
+      <thead><tr><th>#</th><th>Início</th><th>Fim</th><th>Processo</th><th>Forma</th><th>Modo</th><th>Status</th><th>Lidos</th><th>Novos</th><th>Atualizados</th><th>Removidos</th><th>Erros</th><th>Mensagem</th></tr></thead>
+      <tbody id="es-execucoes" data-em-execucao="{{ 1 if status.em_execucao else 0 }}">
+      {% for e in status.execucoes %}<tr><td>{{ e.id }}</td><td>{{ e.iniciado_em|replace('T', ' ') }}</td><td>{{ (e.finalizado_em or '—')|replace('T', ' ') }}</td><td>{{ 'Visitas ACS/ACE' if e.processo == 'visitas' else 'Domicílios' }}</td><td>{{ {'sincrona': 'Síncrona', 'assincrona': 'Segundo plano', 'agendada': 'Agendada'}[e.forma] }}</td><td>{{ e.modo }}</td><td><span class="es-badge {{ e.status }}">{{ e.status }}</span></td><td>{{ e.lidos }}</td><td>{{ e.inseridos }}</td><td>{{ e.atualizados }}</td><td>{{ e.removidos }}</td><td>{{ e.erros }}</td><td class="wrap">{{ e.mensagem or '' }}</td></tr>
+      {% else %}<tr><td colspan="13" class="text-muted">Nenhuma execução ainda. Use "Sincronizar agora".</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <div class="es-card">
+    <h2 class="h6">Visitas sincronizadas</h2>
+    <form method="get" class="row g-2 align-items-end mb-2">
+      {% if global_user %}<input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">{% endif %}
+      <div class="col-6 col-md-2"><label class="form-label small">De<input class="form-control form-control-sm" type="date" name="de" value="{{ de.isoformat() }}"></label></div>
+      <div class="col-6 col-md-2"><label class="form-label small">Até<input class="form-control form-control-sm" type="date" name="ate" value="{{ ate.isoformat() }}"></label></div>
+      <div class="col-md-3"><label class="form-label small">Profissional<select class="form-select form-select-sm" name="profissional"><option value="">Todos</option>{% for p in profissionais %}<option {% if request.args.get('profissional') == p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></label></div>
+      <div class="col-6 col-md-1"><label class="form-label small">Categoria<select class="form-select form-select-sm" name="categoria"><option value="">Todas</option>{% for c in ['ACS', 'ACE'] %}<option {% if request.args.get('categoria') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label></div>
+      <div class="col-6 col-md-2"><label class="form-label small">Desfecho<select class="form-select form-select-sm" name="desfecho"><option value="">Todos</option>{% for k, v in desfechos.items() %}<option value="{{ k }}" {% if request.args.get('desfecho') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label></div>
+      <div class="col-6 col-md-1"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="aedes" value="1" id="es-aedes" {% if request.args.get('aedes') %}checked{% endif %}><label class="form-check-label small" for="es-aedes">Só Aedes</label></div></div>
+      <div class="col-auto"><button class="btn btn-primary btn-sm">Filtrar</button></div>
+    </form>
+    <p class="small mb-2">{{ visitas.total }} visita(s) no filtro · realizadas <b>{{ resumo.get('realizada', 0) }}</b> · recusadas <b>{{ resumo.get('recusada', 0) }}</b> · ausentes <b>{{ resumo.get('ausente', 0) }}</b> · motivo controle de vetores/Aedes <b>{{ resumo.aedes }}</b></p>
+    <div class="table-responsive"><table class="table table-sm es-table mb-0">
+      <thead><tr><th>Data</th><th>Hora</th><th>Profissional</th><th>Cat.</th><th>Equipe (INE)</th><th>Microárea</th><th>Imóvel</th><th>Desfecho</th><th>Motivos</th><th>Lat/Lng</th></tr></thead>
+      <tbody>
+      {% for v in visitas.items %}<tr><td>{{ v.data.strftime('%d/%m/%Y') }}</td><td>{{ v.hora or v.turno or '—' }}</td><td>{{ v.profissional_nome }}<div class="text-muted small">CNS {{ v.profissional_cns or '—' }}</div></td><td>{{ v.categoria or v.cbo }}</td><td>{{ v.equipe_nome or '—' }}<div class="text-muted small">{{ v.equipe_ine or '' }}</div></td><td>{{ v.microarea or '—' }}</td><td>{{ v.tipo_imovel or '—' }}</td><td><span class="es-badge {{ v.desfecho }}">{{ desfechos[v.desfecho] }}</span></td><td class="wrap">{% if v.motivo_aedes %}<i class="bi bi-bug text-danger" title="Controle de vetores/Aedes"></i> {% endif %}{{ v.motivos or '—' }}</td><td>{% if v.latitude is not none %}{{ '%.5f'|format(v.latitude) }}, {{ '%.5f'|format(v.longitude) }}{% else %}<span class="text-muted">sem GPS</span>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="10" class="text-muted">Nenhuma visita no filtro. Sincronize ou amplie o período.</td></tr>{% endfor %}
+      </tbody></table></div>
+    {% if visitas.pages > 1 %}
+    <nav class="mt-2 d-flex gap-2 align-items-center small">
+      {% set args = request.args.to_dict() %}
+      {% if visitas.has_prev %}{% set _ = args.update(pagina=visitas.prev_num) %}<a class="btn btn-outline-secondary btn-sm" href="?{{ args|urlencode }}">Anterior</a>{% endif %}
+      <span>Página {{ visitas.page }} de {{ visitas.pages }}</span>
+      {% if visitas.has_next %}{% set _ = args.update(pagina=visitas.next_num) %}<a class="btn btn-outline-secondary btn-sm" href="?{{ args|urlencode }}">Próxima</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const body = document.getElementById('es-execucoes');
+  if (body && body.dataset.emExecucao === '1') setTimeout(() => location.reload(), 3000);
+  const form = document.getElementById('es-sync');
+  if (form) form.addEventListener('submit', () => setTimeout(() => form.querySelectorAll('button').forEach(b => b.disabled = true), 0));
+})();
+</script>
+{% endblock %}
