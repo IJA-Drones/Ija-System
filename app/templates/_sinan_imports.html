@@ -7,6 +7,14 @@
   data-sample-url="{{ url_for('main.vigilancia_sinan_cases_sample') }}"
   data-csrf="{{ sinan_csrf_token }}">
   <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
+    <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-3" role="note">
+      <div><strong>Arquivo do sistema legado (DBF, CSV ou planilha)?</strong><br>
+        <span class="small">Se a importação ao vivo não estiver disponível, a vigilância pode importar o arquivo exportado do sistema antigo pela <strong>Migração de dados</strong>, que valida, corrige e carrega os casos aqui no SINAN.</span></div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary btn-sm" href="{{ url_for('main.vigilancia_migracao') }}"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Abrir Migração de dados</a>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_migracao_exemplo', destino='sinan') }}"><i class="bi bi-download" aria-hidden="true"></i> Baixar arquivo de exemplo</a>
+      </div>
+    </div>
     <div class="sinan-new-import" {% if not can_import_api and not can_import_csv %}hidden{% endif %}>
       <h2 class="h5 mb-3">Nova importação</h2>
       <label class="form-label" for="sinan-import-source">Origem da importação</label>
