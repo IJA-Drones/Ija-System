@@ -28,7 +28,7 @@
     <div class="col-lg-6">
       <div class="app-dl-card">
         <h2><i class="bi bi-android2" aria-hidden="true"></i> Android</h2>
-        <p class="app-dl-sub">Aplicativo nativo instalado por arquivo APK (versão {{ versao }} · {{ tamanho_mb }} MB · Android 8 ou superior).</p>
+        <p class="app-dl-sub">Aplicativo nativo instalado por arquivo APK, disponibilizado diretamente pela Oceano Azul enquanto a publicação na Google Play está em análise (versão {{ versao }} · {{ tamanho_mb }} MB · Android 8 ou superior).</p>
         <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
           <a class="app-dl-btn" href="{{ url_for('main.app_apk') }}" download="ija-vigilancia.apk"><i class="bi bi-download" aria-hidden="true"></i> Baixar APK</a>
           <div class="text-center"><img class="app-dl-qr" src="{{ url_for('main.app_qr') }}" alt="QR Code para baixar o aplicativo"><div class="small text-muted mt-1">Aponte a câmera do celular</div></div>
@@ -44,13 +44,14 @@
     <div class="col-lg-6">
       <div class="app-dl-card">
         <h2><i class="bi bi-apple" aria-hidden="true"></i> iPhone e iPad</h2>
-        <p class="app-dl-sub">No iPhone o aplicativo é instalado direto do Safari, sem loja, com ícone próprio, tela cheia e notificações (iOS 16.4 ou superior).</p>
+        <p class="app-dl-sub">Versão do aplicativo para iPhone com instalação direta, disponibilizada enquanto a publicação na App Store está em análise pela Apple. Tem as mesmas telas e funções do aplicativo Android (relatos com foto e localização, alertas, Azul e área do agente) e abre em tela cheia, com ícone próprio. Não é a mesma coisa que acessar o site pelo navegador: a interface do aplicativo só aparece depois de instalado.</p>
         <ol class="app-dl-steps">
-          <li><div><strong>Abra o portal no Safari</strong><span>Acesse <a href="{{ url_for('main.portal_cidadao', _external=True) }}">{{ url_for('main.portal_cidadao', _external=True) }}</a> pelo Safari (não funciona pelo Chrome ou Instagram).</span></div></li>
+          <li><div><strong>Abra este endereço no Safari</strong><span>Acesse <a href="{{ url_for('main.portal_cidadao', _external=True) }}">{{ url_for('main.portal_cidadao', _external=True) }}</a> pelo Safari. A instalação direta só funciona pelo Safari (não pelo Chrome, Instagram ou WhatsApp).</span></div></li>
           <li><div><strong>Toque em Compartilhar</strong><span>É o ícone <span class="app-dl-ios-icon"><i class="bi bi-box-arrow-up" aria-hidden="true"></i></span> na barra inferior do Safari.</span></div></li>
-          <li><div><strong>Adicionar à Tela de Início</strong><span>Role a lista e toque em "Adicionar à Tela de Início", depois em "Adicionar". O ícone "IJA Vigilância" aparece junto dos outros apps.</span></div></li>
-          <li><div><strong>Abra pelo ícone e ative os alertas</strong><span>Abra o app pelo ícone novo (não pelo Safari), toque em "Receber alertas no celular" e aceite a notificação.</span></div></li>
+          <li><div><strong>Toque em "Adicionar à Tela de Início" e confirme</strong><span>O ícone "IJA Vigilância" é instalado junto dos seus outros aplicativos. Esse é o passo de instalação.</span></div></li>
+          <li><div><strong>Abra o aplicativo pelo ícone</strong><span>A partir daí a interface é a do aplicativo, não a do site. Na primeira abertura, toque em "Receber alertas" e aceite as notificações e a localização.</span></div></li>
         </ol>
+        <p class="small text-muted mt-3 mb-0">Requer iOS 16.4 ou superior. Quando a versão da App Store for liberada, basta instalá-la pela loja; os dados ficam no servidor e nada se perde.</p>
       </div>
     </div>
     <div class="col-12">
