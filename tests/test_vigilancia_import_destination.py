@@ -1,6 +1,7 @@
 """Escolha explícita do destino, original íntegro e vínculos validados em SQLite descartável."""
 import hashlib
 import io
+from datetime import date
 
 import pytest
 import sqlalchemy as sa
@@ -133,6 +134,88 @@ def test_failed_upload_keeps_selected_mode_and_destination(destination):
     assert response.status_code == 409
     assert 'value="L-2026-01" selected' in response.text
     assert 'value="true" selected' in response.text
+
+
+def extend_period(c, store, **overrides):
+    plan = store.overview(7, True, 'L-2026-01')['plano']
+    values = dict(acao='ampliar_periodo', demo='true', plano=plan['code'], versao=str(plan['versao']),
+        inicio='2026-10-18', fim='2026-10-24', justificativa='Incluir as datas originais do arquivo de visitas',
+        periodo_confirmado='sim', _csrf_token=token(c))
+    values.update(overrides)
+    return c.post('/vigilancia/planejamento', data=values)
+
+
+def test_explicit_period_extension_unblocks_csv_and_preserves_existing_visits(destination):
+    c, store = destination
+    response = upload(c, visits())
+    assert response.status_code == 303
+    first = store.history(7)[0]
+    assert confirm(c, first['id']).status_code == 303
+    previous_records = store.records(7, demo=True)
+    previous = store.overview(7, True, 'L-2026-01')
+    raw = visits(data_inspecao='2026-10-18').replace(b'2026-10-18', b'2026-10-24', 1)
+    raw = raw.replace(b'VIS-', b'NOV-VIS-').replace(b'IM-', b'NOV-IM-')
+    rejected = upload(c, raw)
+    assert rejected.status_code == 409
+    assert '18/10/2026 a 24/10/2026' in rejected.text
+    assert 'plano=L-2026-01#periodo-levantamento' in rejected.text
+    assert store.records(7, demo=True) == previous_records
+    assert len(store.history(7)) == 1
+    page = c.get('/vigilancia/planejamento?demo=true&plano=L-2026-01')
+    assert 'Salvar ampliação do período' in page.text
+    response = extend_period(c, store)
+    assert response.status_code == 303, response.text
+    current = store.overview(7, True, 'L-2026-01')
+    assert current['plano']['status'] == 'LIBERADO'
+    assert current['plano']['inicio'] == date(2026, 10, 18)
+    assert current['plano']['fim'] == date(2026, 10, 24)
+    assert current['plano']['versao'] == previous['plano']['versao'] + 1
+    assert current['quarteiroes'] == previous['quarteiroes']
+    assert current['estratos'] == previous['estratos']
+    event = current['plano']['historico'][-1]
+    assert event['acao'] == 'ampliar_periodo' and event['autor'] == 'a'
+    assert event['periodo_anterior'] == {'inicio':'2026-10-19', 'fim':'2026-10-23'}
+    assert event['periodo_novo'] == {'inicio':'2026-10-18', 'fim':'2026-10-24'}
+    assert event['justificativa']
+    assert store.records(7, demo=True) == previous_records
+    assert upload(c, raw).status_code == 303
+    second = store.history(7)[0]
+    assert confirm(c, second['id']).status_code == 303
+    assert store.original(second['id'], 7) == raw
+    assert len(store.records(7, demo=True)) == 4
+    assert {r['data_inspecao'] for r in store.records(7, demo=True) if r['inspecao_codigo'].startswith('NOV-')} == {'2026-10-18','2026-10-24'}
+
+
+@pytest.mark.parametrize('overrides', [
+    {'periodo_confirmado':''}, {'justificativa':''}, {'inicio':'2026-10-20'}, {'fim':'2026-10-22'},
+    {'inicio':'2026-10-19','fim':'2026-10-23'}, {'inicio':'invalido'}, {'versao':'1'},
+])
+def test_invalid_period_extension_is_atomic(destination, overrides):
+    c, store = destination
+    previous = store.overview(7, True, 'L-2026-01')['plano']
+    response = extend_period(c, store, **overrides)
+    assert response.status_code == 400
+    assert store.overview(7, True, 'L-2026-01')['plano'] == previous
+
+
+@pytest.mark.parametrize('status', ['RASCUNHO','ENCERRADO'])
+def test_period_extension_keeps_draft_and_closed_rules(destination, status):
+    c, store = destination
+    with store.connection(write_prefeitura=7) as conn:
+        conn.execute(CampoPlano.__table__.update().values(status=status))
+    previous = store.overview(7, True, 'L-2026-01')['plano']
+    response = extend_period(c, store)
+    assert response.status_code == 400
+    assert store.overview(7, True, 'L-2026-01')['plano'] == previous
+
+
+def test_period_extension_requires_csrf_and_same_municipality(destination):
+    c, store = destination
+    previous = store.overview(7, True, 'L-2026-01')['plano']
+    assert extend_period(c, store, _csrf_token='invalid').status_code == 403
+    login(c, 'b')
+    assert extend_period(c, store, prefeitura_id='7').status_code == 403
+    assert store.overview(7, True, 'L-2026-01')['plano'] == previous
 
 
 def test_released_plan_opens_import_with_explicit_destination(destination):

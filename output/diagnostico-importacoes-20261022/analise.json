@@ -1,0 +1,1069 @@
+{
+  "data": "2026-10-22",
+  "escopo": "Analise dos CSVs da biblioteca de treinamentos e dos CSVs SINAN/LIRAa encontrados em Downloads e no pacote POC-Pesqueira-Tutoriais-e-CSVs-20261020. Nenhuma carga na base operacional.",
+  "arquivos_encontrados": 22,
+  "conteudos_unicos": 16,
+  "ordem_recomendada_liraa": [
+    "Cadastrar/importar quarteiroes e contornos — CSV 01",
+    "Criar ou abrir levantamento em rascunho",
+    "Importar amostra — CSV 02",
+    "Conferir agente, estratos e metas e liberar levantamento",
+    "Importar visitas — CSV 03 e confirmar lote",
+    "Consultar resultados e mapa"
+  ],
+  "conclusoes": [
+    "CSV territorial atual importou 3 quarteiroes e 3 poligonos em base vazia, exigindo confirmacao de contornos. Nao exige desenho manual previo.",
+    "Pacote atual importou 24 visitas e pacote anterior 20 em cenarios independentes; reenvio nao duplicou; dados persistiram depois de reabrir o banco descartavel.",
+    "A amostra da biblioteca atual usa agente_id 167. No ensaio, esse agente foi criado de forma ficticia; existencia e permissao na base real nao foram confirmadas.",
+    "Dois conteudos unicos SINAN de casos passaram: 6 casos dengue e 2 zika, em lotes separados.",
+    "Quatro conteudos unicos sao exportacoes SINAN agregadas e nao sao aceitos pelo importador de casos. Nao converter indicadores em casos nem inventar coordenadas.",
+    "A exportacao SINAN de casos tambem nao retorna no mesmo layout da entrada; reimportacao exige tratamento explicito dos metadados.",
+    "Os testes mantiveram o limite de 100 casos SINAN por carga.",
+    "O CSV legado de visitas sem coordenadas pode ser importado, mas seus 20 registros nao geram pontos individuais no mapa.",
+    "A tela de planejamento inicia em levantamentos; cadastro territorial fica em painel separado e importador CSV recolhido. Priorizar a etapa territorial ajuda a seguir a dependencia."
+  ],
+  "limitacoes": [
+    "Ensaios de persistencia em SQLite descartavel com servicos reais da aplicacao, sem homologacao PostgreSQL de concorrencia.",
+    "Tentativa de consulta somente leitura ao PostgreSQL configurado falhou com OperationalError; nao foi possivel verificar conflitos com cadastros atuais.",
+    "Nenhum teste no navegador, migracao ou importacao no banco configurado nesta analise.",
+    "Nenhum arquivo fonte foi corrigido, sobrescrito ou convertido."
+  ],
+  "validacao_por_arquivo": [
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/01_Cadastro_territorial_Centro_Pesqueira_poligonos_DEMO.csv",
+      "rows": 3,
+      "sha256": "3b531be5ec021a806cce5c0fc5b3e4c130f60b785f7f831d9aa70971e329216c",
+      "kind": "LIRAA_TERRITORIO",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 3
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/02_Amostra_Centro_Pesqueira_agente_DEMO.csv",
+      "rows": 3,
+      "sha256": "2d93bcb1737b7ff03916d4afb964379a69bead3ae647ba9dda09332db0cdc249",
+      "kind": "LIRAA_AMOSTRA",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 3,
+      "agent_ids": [
+        "167"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/03_Visitas_LIRAa_Centro_Pesqueira_coordenadas_reais_DEMO.csv",
+      "rows": 24,
+      "sha256": "56f9e6eede29a3b0fdf6c9dd6e5e1ad3325b0cae0d978c5979f28379ebc13586",
+      "kind": "LIRAA_VISITAS",
+      "status": "VALIDADO",
+      "summary": {
+        "linhas": 24,
+        "aceitas": 24,
+        "duplicadas": 0,
+        "rejeitadas": 0,
+        "imoveis": 24,
+        "inspecoes": 24,
+        "sem_coordenadas": 0
+      },
+      "errors": [],
+      "surveys": [
+        "teste-1"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/01_Cadastro_territorial_com_poligonos_Pesqueira_DEMO.csv",
+      "rows": 3,
+      "sha256": "e7584c6912ae413bbc3b14876706ada0af5d56b9db083fd544698a9824974cb6",
+      "kind": "LIRAA_TERRITORIO",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 3
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/02_Amostra_LIRAa_Pesqueira_DEMO.csv",
+      "rows": 3,
+      "sha256": "08d42c8c30357a165a040f24c0fa0dce2ee30b57468d7ee9c79e8f62ae41fff0",
+      "kind": "LIRAA_AMOSTRA",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 3,
+      "agent_ids": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/03_Visitas_LIRAa_vinculadas_Pesqueira_DEMO.csv",
+      "rows": 20,
+      "sha256": "b012463e29b168ee0baede7d96b7de26610f474c278a9554fbdff047a7bf1691",
+      "kind": "LIRAA_VISITAS",
+      "status": "VALIDADO",
+      "summary": {
+        "linhas": 20,
+        "aceitas": 20,
+        "duplicadas": 0,
+        "rejeitadas": 0,
+        "imoveis": 20,
+        "inspecoes": 20,
+        "sem_coordenadas": 0
+      },
+      "errors": [],
+      "surveys": [
+        "DEMO-POC-PESQUEIRA-2026"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/04_SINAN_Dengue_2026_Pesqueira_DEMO.csv",
+      "rows": 6,
+      "sha256": "9fbc34e172b6f6cc07c92b1e6453a604bd1bc321c927fbcf1b55b4d276c8eb87",
+      "kind": "SINAN_CASOS",
+      "status": "VALIDADO",
+      "scope": {
+        "disease": "dengue",
+        "ibge": "2610905",
+        "year": 2026
+      },
+      "count": 6
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/liraa-demo-geolocalizado-prefeitura-14.csv",
+      "rows": 20,
+      "sha256": "b066e9953e9b5cabd24198523bd6ed6710f790c2b3fb8e0e5bcfcb08747a9b17",
+      "kind": "LIRAA_VISITAS",
+      "status": "VALIDADO",
+      "summary": {
+        "linhas": 20,
+        "aceitas": 20,
+        "duplicadas": 0,
+        "rejeitadas": 0,
+        "imoveis": 20,
+        "inspecoes": 20,
+        "sem_coordenadas": 0
+      },
+      "errors": [],
+      "surveys": [
+        "DEMO-MAPA-2610905-20261020"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/liraa-demo-pesqueira-prefeitura-14.csv",
+      "rows": 20,
+      "sha256": "9c0e8ee917a1a203d3053f45f68d86647cff643060561ce589e1a41c123ef54c",
+      "kind": "LIRAA_VISITAS",
+      "status": "VALIDADO",
+      "summary": {
+        "linhas": 20,
+        "aceitas": 20,
+        "duplicadas": 0,
+        "rejeitadas": 0,
+        "imoveis": 20,
+        "inspecoes": 20,
+        "sem_coordenadas": 20
+      },
+      "errors": [],
+      "surveys": [
+        "LEV-DEMO-PESQ-CSV-20261020"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-plano-liraa (1).csv",
+      "rows": 1,
+      "sha256": "167fc74a9858830d35999ce9a1e21956337fe57e8813de8acadeab96a7ce1046",
+      "kind": "LIRAA_AMOSTRA",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 1,
+      "agent_ids": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-plano-liraa.csv",
+      "rows": 1,
+      "sha256": "167fc74a9858830d35999ce9a1e21956337fe57e8813de8acadeab96a7ce1046",
+      "kind": "LIRAA_AMOSTRA",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 1,
+      "agent_ids": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-territorio-liraa (1).csv",
+      "rows": 1,
+      "sha256": "d4c569a7b26a74e9b34649842d1ed09bc94b675774a597a9c7a1c83e5e3d88f3",
+      "kind": "LIRAA_TERRITORIO",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 1
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-territorio-liraa.csv",
+      "rows": 1,
+      "sha256": "d4c569a7b26a74e9b34649842d1ed09bc94b675774a597a9c7a1c83e5e3d88f3",
+      "kind": "LIRAA_TERRITORIO",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 1
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-chikungunya-2600609-2026-completed.csv",
+      "rows": 23,
+      "sha256": "7c3fce54055e91b26834272f3e559fa4b34603da3b317e7cbdef271b88244019",
+      "kind": "SINAN_EXPORTACAO_AGREGADA",
+      "status": "INCOMPATIVEL_IMPORTADOR_CASOS",
+      "cases": 42,
+      "scope": {
+        "disease": "chikungunya",
+        "ibge": "2600609",
+        "year": "2026"
+      }
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-chikungunya-2610905-2026-completed.csv",
+      "rows": 3,
+      "sha256": "aa37aaf61c19428cf2017f8e53caa984df5ca85ca5c876b1fbc27c7881718e1b",
+      "kind": "SINAN_EXPORTACAO_AGREGADA",
+      "status": "INCOMPATIVEL_IMPORTADOR_CASOS",
+      "cases": 3,
+      "scope": {
+        "disease": "chikungunya",
+        "ibge": "2610905",
+        "year": "2026"
+      }
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-dengue-3550308-2026-partial.csv",
+      "rows": 16,
+      "sha256": "c8b76dce8a320060e2d4c0152fc1ea05f0926beeb28bed1c3e8ea411e51ca46e",
+      "kind": "SINAN_EXPORTACAO_AGREGADA",
+      "status": "INCOMPATIVEL_IMPORTADOR_CASOS",
+      "cases": 100,
+      "scope": {
+        "disease": "dengue",
+        "ibge": "3550308",
+        "year": "2026"
+      }
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-modelo-DEMONSTRACAO.csv",
+      "rows": 2,
+      "sha256": "e908bf8536d49bc2ad86bd63e63bb72504699d131f652c282b675c71a456f37f",
+      "kind": "SINAN_CASOS",
+      "status": "VALIDADO",
+      "scope": {
+        "disease": "zika",
+        "ibge": "2610905",
+        "year": 2025
+      },
+      "count": 2
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-zika-2610905-2025-completed.csv",
+      "rows": 2,
+      "sha256": "830f61cd422b1aa02002ade52c21305787ee85a07c44eff764c8faf99aa051b1",
+      "kind": "SINAN_EXPORTACAO_AGREGADA",
+      "status": "INCOMPATIVEL_IMPORTADOR_CASOS",
+      "cases": 2,
+      "scope": {
+        "disease": "zika",
+        "ibge": "2610905",
+        "year": "2025"
+      }
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/01_Cadastro_territorial_Centro_Pesqueira_poligonos_DEMO.csv",
+      "rows": 3,
+      "sha256": "3b531be5ec021a806cce5c0fc5b3e4c130f60b785f7f831d9aa70971e329216c",
+      "kind": "LIRAA_TERRITORIO",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 3
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/02_Amostra_Centro_Pesqueira_agente_DEMO.csv",
+      "rows": 3,
+      "sha256": "2d93bcb1737b7ff03916d4afb964379a69bead3ae647ba9dda09332db0cdc249",
+      "kind": "LIRAA_AMOSTRA",
+      "status": "ESTRUTURA_VALIDA",
+      "count": 3,
+      "agent_ids": [
+        "167"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/03_Visitas_LIRAa_Centro_Pesqueira_coordenadas_reais_DEMO.csv",
+      "rows": 24,
+      "sha256": "56f9e6eede29a3b0fdf6c9dd6e5e1ad3325b0cae0d978c5979f28379ebc13586",
+      "kind": "LIRAA_VISITAS",
+      "status": "VALIDADO",
+      "summary": {
+        "linhas": 24,
+        "aceitas": 24,
+        "duplicadas": 0,
+        "rejeitadas": 0,
+        "imoveis": 24,
+        "inspecoes": 24,
+        "sem_coordenadas": 0
+      },
+      "errors": [],
+      "surveys": [
+        "teste-1"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/04_SINAN_Dengue_2026_Pesqueira_DEMO.csv",
+      "rows": 6,
+      "sha256": "9fbc34e172b6f6cc07c92b1e6453a604bd1bc321c927fbcf1b55b4d276c8eb87",
+      "kind": "SINAN_CASOS",
+      "status": "VALIDADO",
+      "scope": {
+        "disease": "dengue",
+        "ibge": "2610905",
+        "year": 2026
+      },
+      "count": 6
+    }
+  ],
+  "ensaios_de_persistencia": [
+    {
+      "label": "Biblioteca atual — Centro",
+      "files": [
+        "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/01_Cadastro_territorial_Centro_Pesqueira_poligonos_DEMO.csv",
+        "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/02_Amostra_Centro_Pesqueira_agente_DEMO.csv",
+        "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/03_Visitas_LIRAa_Centro_Pesqueira_coordenadas_reais_DEMO.csv"
+      ],
+      "geometry_confirmation_required": true,
+      "without_confirmation": "Confira os polígonos do CSV e marque a confirmação dos contornos antes de importar.",
+      "territory_created_from_empty": 3,
+      "polygons_imported": 3,
+      "plan_released": true,
+      "inserted": 24,
+      "reimport_no_duplicates": true,
+      "persisted_after_reopen": true,
+      "original_preserved": true,
+      "status": "PASS"
+    },
+    {
+      "label": "Pacote anterior da POC",
+      "files": [
+        "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/01_Cadastro_territorial_com_poligonos_Pesqueira_DEMO.csv",
+        "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/02_Amostra_LIRAa_Pesqueira_DEMO.csv",
+        "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/03_Visitas_LIRAa_vinculadas_Pesqueira_DEMO.csv"
+      ],
+      "geometry_confirmation_required": true,
+      "without_confirmation": "Confira os polígonos do CSV e marque a confirmação dos contornos antes de importar.",
+      "territory_created_from_empty": 3,
+      "polygons_imported": 3,
+      "plan_released": true,
+      "inserted": 20,
+      "reimport_no_duplicates": true,
+      "persisted_after_reopen": true,
+      "original_preserved": true,
+      "status": "PASS"
+    },
+    {
+      "label": "Modelos de planejamento",
+      "files": [
+        "/Users/pedrohenriquevb/Downloads/modelo-territorio-liraa.csv",
+        "/Users/pedrohenriquevb/Downloads/modelo-plano-liraa.csv"
+      ],
+      "territory_created_from_empty": 1,
+      "polygons_imported": 0,
+      "plan_released": true,
+      "status": "PASS"
+    },
+    {
+      "label": "liraa-demo-pesqueira-prefeitura-14.csv",
+      "files": [
+        "/Users/pedrohenriquevb/Downloads/liraa-demo-pesqueira-prefeitura-14.csv"
+      ],
+      "inserted": 20,
+      "reimport_no_duplicates": true,
+      "persisted_after_reopen": true,
+      "original_preserved": true,
+      "status": "PASS"
+    },
+    {
+      "label": "liraa-demo-geolocalizado-prefeitura-14.csv",
+      "files": [
+        "/Users/pedrohenriquevb/Downloads/liraa-demo-geolocalizado-prefeitura-14.csv"
+      ],
+      "inserted": 20,
+      "reimport_no_duplicates": true,
+      "persisted_after_reopen": true,
+      "original_preserved": true,
+      "status": "PASS"
+    },
+    {
+      "label": "SINAN",
+      "files": [
+        "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/04_SINAN_Dengue_2026_Pesqueira_DEMO.csv"
+      ],
+      "scope": {
+        "disease": "dengue",
+        "ibge": "2610905",
+        "year": 2026
+      },
+      "export_reimport_supported": false,
+      "export_reimport_error": "Use as colunas e a ordem do modelo CSV. Não inclua nomes, documentos ou endereços.",
+      "status": "PASS",
+      "inserted": 6,
+      "reimport_no_duplicates": true,
+      "persisted_after_reopen": true
+    },
+    {
+      "label": "SINAN",
+      "files": [
+        "/Users/pedrohenriquevb/Downloads/sinan-modelo-DEMONSTRACAO.csv"
+      ],
+      "scope": {
+        "disease": "zika",
+        "ibge": "2610905",
+        "year": 2025
+      },
+      "export_reimport_supported": false,
+      "export_reimport_error": "Use as colunas e a ordem do modelo CSV. Não inclua nomes, documentos ou endereços.",
+      "status": "PASS",
+      "inserted": 2,
+      "reimport_no_duplicates": true,
+      "persisted_after_reopen": true
+    }
+  ],
+  "inventario": [
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/01_Cadastro_territorial_Centro_Pesqueira_poligonos_DEMO.csv",
+      "size": 1918,
+      "sha256": "3b531be5ec021a806cce5c0fc5b3e4c130f60b785f7f831d9aa70971e329216c",
+      "rows": 3,
+      "columns": [
+        "quarteirao",
+        "bairro",
+        "area",
+        "imoveis",
+        "referencia",
+        "geometria"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/02_Amostra_Centro_Pesqueira_agente_DEMO.csv",
+      "size": 449,
+      "sha256": "2d93bcb1737b7ff03916d4afb964379a69bead3ae647ba9dda09332db0cdc249",
+      "rows": 3,
+      "columns": [
+        "estrato",
+        "imoveis_estrato",
+        "meta_estrato",
+        "criterio",
+        "quarteirao",
+        "meta_quarteirao",
+        "agente_id"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/03_Visitas_LIRAa_Centro_Pesqueira_coordenadas_reais_DEMO.csv",
+      "size": 4708,
+      "sha256": "56f9e6eede29a3b0fdf6c9dd6e5e1ad3325b0cae0d978c5979f28379ebc13586",
+      "rows": 24,
+      "columns": [
+        "municipio_id",
+        "origem",
+        "imovel_codigo",
+        "inspecao_codigo",
+        "data_inspecao",
+        "bairro",
+        "area_codigo",
+        "levantamento_codigo",
+        "estrato_codigo",
+        "situacao",
+        "positivo_aedes",
+        "latitude",
+        "longitude",
+        "depositos_a1",
+        "depositos_a2",
+        "depositos_b",
+        "depositos_c",
+        "depositos_d1",
+        "depositos_d2",
+        "depositos_e",
+        "quarteirao_codigo"
+      ],
+      "municipios": [
+        "14"
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/01_Cadastro_territorial_com_poligonos_Pesqueira_DEMO.csv",
+      "size": 938,
+      "sha256": "e7584c6912ae413bbc3b14876706ada0af5d56b9db083fd544698a9824974cb6",
+      "rows": 3,
+      "columns": [
+        "quarteirao",
+        "bairro",
+        "area",
+        "imoveis",
+        "referencia",
+        "geometria"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/02_Amostra_LIRAa_Pesqueira_DEMO.csv",
+      "size": 358,
+      "sha256": "08d42c8c30357a165a040f24c0fa0dce2ee30b57468d7ee9c79e8f62ae41fff0",
+      "rows": 3,
+      "columns": [
+        "estrato",
+        "imoveis_estrato",
+        "meta_estrato",
+        "criterio",
+        "quarteirao",
+        "meta_quarteirao",
+        "agente_id"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/03_Visitas_LIRAa_vinculadas_Pesqueira_DEMO.csv",
+      "size": 4073,
+      "sha256": "b012463e29b168ee0baede7d96b7de26610f474c278a9554fbdff047a7bf1691",
+      "rows": 20,
+      "columns": [
+        "municipio_id",
+        "origem",
+        "imovel_codigo",
+        "inspecao_codigo",
+        "data_inspecao",
+        "bairro",
+        "area_codigo",
+        "levantamento_codigo",
+        "estrato_codigo",
+        "situacao",
+        "positivo_aedes",
+        "latitude",
+        "longitude",
+        "depositos_a1",
+        "depositos_a2",
+        "depositos_b",
+        "depositos_c",
+        "depositos_d1",
+        "depositos_d2",
+        "depositos_e",
+        "quarteirao_codigo"
+      ],
+      "municipios": [
+        "14"
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/POC-Pesqueira-Tutoriais-e-CSVs-20261020/CSVs/04_SINAN_Dengue_2026_Pesqueira_DEMO.csv",
+      "size": 539,
+      "sha256": "9fbc34e172b6f6cc07c92b1e6453a604bd1bc321c927fbcf1b55b4d276c8eb87",
+      "rows": 6,
+      "columns": [
+        "referencia",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "semana",
+        "classificacao",
+        "latitude",
+        "longitude"
+      ],
+      "municipios": [
+        "2610905"
+      ],
+      "diseases": [
+        "dengue"
+      ],
+      "years": [
+        "2026"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/liraa-demo-geolocalizado-prefeitura-14.csv",
+      "size": 4930,
+      "sha256": "b066e9953e9b5cabd24198523bd6ed6710f790c2b3fb8e0e5bcfcb08747a9b17",
+      "rows": 20,
+      "columns": [
+        "municipio_id",
+        "origem",
+        "imovel_codigo",
+        "inspecao_codigo",
+        "data_inspecao",
+        "bairro",
+        "area_codigo",
+        "levantamento_codigo",
+        "estrato_codigo",
+        "situacao",
+        "positivo_aedes",
+        "latitude",
+        "longitude",
+        "depositos_a1",
+        "depositos_a2",
+        "depositos_b",
+        "depositos_c",
+        "depositos_d1",
+        "depositos_d2",
+        "depositos_e"
+      ],
+      "municipios": [
+        "14"
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/liraa-demo-pesqueira-prefeitura-14.csv",
+      "size": 4154,
+      "sha256": "9c0e8ee917a1a203d3053f45f68d86647cff643060561ce589e1a41c123ef54c",
+      "rows": 20,
+      "columns": [
+        "municipio_id",
+        "origem",
+        "imovel_codigo",
+        "inspecao_codigo",
+        "data_inspecao",
+        "bairro",
+        "area_codigo",
+        "levantamento_codigo",
+        "estrato_codigo",
+        "situacao",
+        "positivo_aedes",
+        "latitude",
+        "longitude",
+        "depositos_a1",
+        "depositos_a2",
+        "depositos_b",
+        "depositos_c",
+        "depositos_d1",
+        "depositos_d2",
+        "depositos_e"
+      ],
+      "municipios": [
+        "14"
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-plano-liraa (1).csv",
+      "size": 144,
+      "sha256": "167fc74a9858830d35999ce9a1e21956337fe57e8813de8acadeab96a7ce1046",
+      "rows": 1,
+      "columns": [
+        "estrato",
+        "imoveis_estrato",
+        "meta_estrato",
+        "criterio",
+        "quarteirao",
+        "meta_quarteirao",
+        "agente_id"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-plano-liraa.csv",
+      "size": 144,
+      "sha256": "167fc74a9858830d35999ce9a1e21956337fe57e8813de8acadeab96a7ce1046",
+      "rows": 1,
+      "columns": [
+        "estrato",
+        "imoveis_estrato",
+        "meta_estrato",
+        "criterio",
+        "quarteirao",
+        "meta_quarteirao",
+        "agente_id"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-territorio-liraa (1).csv",
+      "size": 100,
+      "sha256": "d4c569a7b26a74e9b34649842d1ed09bc94b675774a597a9c7a1c83e5e3d88f3",
+      "rows": 1,
+      "columns": [
+        "quarteirao",
+        "bairro",
+        "area",
+        "imoveis",
+        "referencia"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/modelo-territorio-liraa.csv",
+      "size": 100,
+      "sha256": "d4c569a7b26a74e9b34649842d1ed09bc94b675774a597a9c7a1c83e5e3d88f3",
+      "rows": 1,
+      "columns": [
+        "quarteirao",
+        "bairro",
+        "area",
+        "imoveis",
+        "referencia"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-chikungunya-2600609-2026-completed.csv",
+      "size": 5114,
+      "sha256": "7c3fce54055e91b26834272f3e559fa4b34603da3b317e7cbdef271b88244019",
+      "rows": 23,
+      "columns": [
+        "lote",
+        "origem",
+        "situacao",
+        "demonstracao",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "importado_em_utc",
+        "fonte",
+        "semana",
+        "classificacao_original",
+        "residencia",
+        "quantidade"
+      ],
+      "municipios": [
+        "2600609"
+      ],
+      "diseases": [
+        "chikungunya"
+      ],
+      "years": [
+        "2026"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-chikungunya-2610905-2026-completed.csv",
+      "size": 788,
+      "sha256": "aa37aaf61c19428cf2017f8e53caa984df5ca85ca5c876b1fbc27c7881718e1b",
+      "rows": 3,
+      "columns": [
+        "lote",
+        "origem",
+        "situacao",
+        "demonstracao",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "importado_em_utc",
+        "fonte",
+        "semana",
+        "classificacao_original",
+        "residencia",
+        "quantidade"
+      ],
+      "municipios": [
+        "2610905"
+      ],
+      "diseases": [
+        "chikungunya"
+      ],
+      "years": [
+        "2026"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-dengue-3550308-2026-partial.csv",
+      "size": 3419,
+      "sha256": "c8b76dce8a320060e2d4c0152fc1ea05f0926beeb28bed1c3e8ea411e51ca46e",
+      "rows": 16,
+      "columns": [
+        "lote",
+        "origem",
+        "situacao",
+        "demonstracao",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "importado_em_utc",
+        "fonte",
+        "semana",
+        "classificacao_original",
+        "residencia",
+        "quantidade"
+      ],
+      "municipios": [
+        "3550308"
+      ],
+      "diseases": [
+        "dengue"
+      ],
+      "years": [
+        "2026"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-modelo-DEMONSTRACAO.csv",
+      "size": 205,
+      "sha256": "e908bf8536d49bc2ad86bd63e63bb72504699d131f652c282b675c71a456f37f",
+      "rows": 2,
+      "columns": [
+        "referencia",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "semana",
+        "classificacao",
+        "latitude",
+        "longitude"
+      ],
+      "municipios": [
+        "2610905"
+      ],
+      "diseases": [
+        "zika"
+      ],
+      "years": [
+        "2025"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Downloads/sinan-zika-2610905-2025-completed.csv",
+      "size": 429,
+      "sha256": "830f61cd422b1aa02002ade52c21305787ee85a07c44eff764c8faf99aa051b1",
+      "rows": 2,
+      "columns": [
+        "lote",
+        "origem",
+        "situacao",
+        "demonstracao",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "importado_em_utc",
+        "semana",
+        "classificacao_original",
+        "residencia",
+        "quantidade"
+      ],
+      "municipios": [
+        "2610905"
+      ],
+      "diseases": [
+        "zika"
+      ],
+      "years": [
+        "2025"
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/01_Cadastro_territorial_Centro_Pesqueira_poligonos_DEMO.csv",
+      "size": 1918,
+      "sha256": "3b531be5ec021a806cce5c0fc5b3e4c130f60b785f7f831d9aa70971e329216c",
+      "rows": 3,
+      "columns": [
+        "quarteirao",
+        "bairro",
+        "area",
+        "imoveis",
+        "referencia",
+        "geometria"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/02_Amostra_Centro_Pesqueira_agente_DEMO.csv",
+      "size": 449,
+      "sha256": "2d93bcb1737b7ff03916d4afb964379a69bead3ae647ba9dda09332db0cdc249",
+      "rows": 3,
+      "columns": [
+        "estrato",
+        "imoveis_estrato",
+        "meta_estrato",
+        "criterio",
+        "quarteirao",
+        "meta_quarteirao",
+        "agente_id"
+      ],
+      "municipios": [
+        ""
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/03_Visitas_LIRAa_Centro_Pesqueira_coordenadas_reais_DEMO.csv",
+      "size": 4708,
+      "sha256": "56f9e6eede29a3b0fdf6c9dd6e5e1ad3325b0cae0d978c5979f28379ebc13586",
+      "rows": 24,
+      "columns": [
+        "municipio_id",
+        "origem",
+        "imovel_codigo",
+        "inspecao_codigo",
+        "data_inspecao",
+        "bairro",
+        "area_codigo",
+        "levantamento_codigo",
+        "estrato_codigo",
+        "situacao",
+        "positivo_aedes",
+        "latitude",
+        "longitude",
+        "depositos_a1",
+        "depositos_a2",
+        "depositos_b",
+        "depositos_c",
+        "depositos_d1",
+        "depositos_d2",
+        "depositos_e",
+        "quarteirao_codigo"
+      ],
+      "municipios": [
+        "14"
+      ],
+      "diseases": [
+        ""
+      ],
+      "years": [
+        ""
+      ]
+    },
+    {
+      "path": "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/resources/treinamentos/testes/04_SINAN_Dengue_2026_Pesqueira_DEMO.csv",
+      "size": 539,
+      "sha256": "9fbc34e172b6f6cc07c92b1e6453a604bd1bc321c927fbcf1b55b4d276c8eb87",
+      "rows": 6,
+      "columns": [
+        "referencia",
+        "doenca",
+        "municipio_ibge",
+        "ano",
+        "semana",
+        "classificacao",
+        "latitude",
+        "longitude"
+      ],
+      "municipios": [
+        "2610905"
+      ],
+      "diseases": [
+        "dengue"
+      ],
+      "years": [
+        "2026"
+      ]
+    }
+  ],
+  "testes_automatizados": {
+    "resultado": "83 passaram",
+    "duracao_segundos": 18.12,
+    "escopo": [
+      "SINAN importacao",
+      "SINAN persistencia",
+      "LIRAa CSV planejado",
+      "LIRAa destino de levantamento",
+      "LIRAa rotas de importacao"
+    ],
+    "banco": "descartavel; sem alteracao na base operacional"
+  },
+  "correcoes_posteriores": {
+    "data": "2026-10-22",
+    "implementado": [
+      "Planejamento inicia por quarteiroes e contornos com CSV 01 aberto acima do mapa.",
+      "Amostra CSV 02 so e oferecida depois de haver territorio; criacao de rascunho nao depende de arquivo.",
+      "Importacao territorial preserva contexto do levantamento aberto.",
+      "Coordenacao pode ampliar periodo de plano LIBERADO com justificativa, confirmacao e historico anterior/novo. Nao reduz intervalo nem altera visitas ou amostra.",
+      "Erro de periodo mostra intervalo das visitas do CSV e atalho para planejamento do destino selecionado."
+    ],
+    "verificacao": {
+      "python": "75 passaram em 39.46s",
+      "javascript": "20 passaram",
+      "navegador": "Em banco descartavel: CSV 01 importado antes do levantamento, rascunho criado sem CSV 02, amostra liberada e periodo ampliado de 22–23 para 20–24/10/2026 mantendo situacao LIBERADO."
+    },
+    "implantacao": "Somente codigo local; sem alteracao no banco configurado ou deploy."
+  }
+}

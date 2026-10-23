@@ -140,10 +140,26 @@ class PlanningStore(FieldStore):
             if number(values, "versao") != previous["versao"]:
                 raise FieldConflict("O planejamento foi alterado por outra pessoa. Reabra a página antes de salvar.")
             changes = {}
+            event = dict(acao=action, autor=actor, instante=time.time())
             if action == "encerrar":
                 if previous["status"] != "LIBERADO":
                     raise FieldConflict("Somente um planejamento liberado pode ser encerrado.")
                 changes["status"] = "ENCERRADO"
+            elif action == "ampliar_periodo":
+                if previous["status"] != "LIBERADO":
+                    raise FieldConflict("A ampliação de período exige um levantamento liberado. Em rascunho, edite a identificação; levantamentos encerrados permanecem protegidos.")
+                if values.get("periodo_confirmado") != "sim":
+                    raise FieldConflict("Confira e confirme a ampliação do período do levantamento.")
+                start, end = self._period(values)
+                if start > previous["inicio"] or end < previous["fim"]:
+                    raise FieldConflict("O novo período deve incluir todo o período atual. Esta opção somente amplia as datas e preserva as visitas já registradas.")
+                if (start, end) == (previous["inicio"], previous["fim"]):
+                    raise FieldConflict("Informe uma data inicial anterior ou uma data final posterior para ampliar o período.")
+                reason = text(values, "justificativa", 200)
+                changes.update(inicio=start, fim=end)
+                event.update(justificativa=reason,
+                             periodo_anterior=dict(inicio=previous["inicio"].isoformat(), fim=previous["fim"].isoformat()),
+                             periodo_novo=dict(inicio=start.isoformat(), fim=end.isoformat()))
             else:
                 if previous["status"] != "RASCUNHO":
                     raise FieldConflict("O planejamento liberado ou encerrado está protegido contra alterações.")
@@ -177,7 +193,7 @@ class PlanningStore(FieldStore):
                 else:
                     raise FieldConflict("Ação de planejamento inválida.")
             changes.update(versao=previous["versao"] + 1,
-                historico=[*previous["historico"], dict(acao=action, autor=actor, instante=time.time())])
+                historico=[*previous["historico"], event])
             conn.execute(table.update().where(*where).values(**changes))
             return code
 
@@ -194,13 +210,18 @@ class PlanningStore(FieldStore):
                         area_codigo=block["territorio"]["area"], bairro=block["territorio"]["bairro"], origem="LIRAA")
 
     @staticmethod
-    def _metadata(values):
+    def _period(values):
         try:
             start, end = date.fromisoformat(text(values, "inicio", 10)), date.fromisoformat(text(values, "fim", 10))
         except ValueError as exc:
             raise FieldConflict("Informe datas válidas para o levantamento.") from exc
         if end < start:
             raise FieldConflict("O fim do levantamento deve ser posterior ou igual ao início.")
+        return start, end
+
+    @staticmethod
+    def _metadata(values):
+        start, end = PlanningStore._period(values)
         return dict(titulo=text(values, "titulo", 120), inicio=start, fim=end,
                     responsavel=text(values, "responsavel", 120), fonte=text(values, "fonte", 200))
 
@@ -248,7 +269,7 @@ class PlanningStore(FieldStore):
         code = text(values, "quarteirao")
         territory = rows(conn, CampoQuarteirao.__table__, prefeitura, demo, CampoQuarteirao.code == code)
         if not territory:
-            raise FieldConflict(f"Cadastre o quarteirão {code} no território desta prefeitura e origem.")
+            raise FieldConflict(f"Cadastre o quarteirão {code} em Quarteirões e contornos (CSV 01), nesta prefeitura e origem, antes de importar a amostra (CSV 02).")
         target = number(values, "meta_quarteirao")
         if target > territory[0]["imoveis"]:
             raise FieldConflict("A meta do quarteirão ultrapassa sua quantidade de imóveis.")
@@ -342,6 +363,12 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
         CampoPlanoQuarteirao.plano == reference["plano"]
     )} if reference else {}
     agents_checked = set()
+    visit_periods = {}
+    for record in records:
+        if record["origem"] == "LIRAA":
+            code, inspected = record["levantamento_codigo"], record["data_inspecao"]
+            first, last = visit_periods.get(code, (inspected, inspected))
+            visit_periods[code] = min(first, inspected), max(last, inspected)
     for record in records:
         if record["origem"] != "LIRAA":
             if reference:
@@ -373,7 +400,11 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
             raise FieldConflict("A área e o bairro devem corresponder ao quarteirão planejado.")
         inspected = date.fromisoformat(record["data_inspecao"])
         if not plan["inicio"] <= inspected <= plan["fim"]:
-            raise FieldConflict("A data da visita está fora do período do levantamento.")
+            first, last = (date.fromisoformat(value).strftime("%d/%m/%Y") for value in visit_periods[code])
+            raise FieldConflict(f'A data da visita está fora do período do levantamento "{code}" '
+                                f'({plan["inicio"]:%d/%m/%Y} a {plan["fim"]:%d/%m/%Y}). '
+                                f'O CSV contém visitas de {first} a {last}. '
+                                'Abra o planejamento e amplie o período para incluir essas datas, ou selecione outro levantamento compatível. As datas das visitas não foram alteradas.')
 
 
 def link_visits(conn, records, prefeitura, demo, reference, actor):

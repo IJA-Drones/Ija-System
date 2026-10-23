@@ -48,6 +48,44 @@ def visits(**changes):
             quarteirao_codigo=f'Q-{i}') | changes for i in (1,2)])
 
 
+def test_territory_is_first_and_sample_upload_waits_for_its_blocks(planned):
+    c, planning = planned
+    login(c)
+    page = c.get('/vigilancia/planejamento?demo=true')
+    assert 'data-vigilancia-default="territorio"' in page.text
+    assert page.text.index('1. Quarteirões e contornos') < page.text.index('2. Levantamentos')
+    assert page.text.index('id="territorio-importacao" open') < page.text.index('id="territorio-mapa"')
+    common = dict(demo='true', _csrf_token=token(c))
+    # Criar o rascunho não exige o CSV de amostra.
+    response = c.post('/vigilancia/planejamento', data=dict(common, acao='criar', plano='L-2026-01',
+        titulo='Ensaio de ordem', inicio='2026-10-19', fim='2026-10-23', responsavel='Coordenação', fonte='DEMO'))
+    assert response.status_code == 303
+    page = c.get(response.location)
+    assert 'Importar quarteirões · CSV 01' in page.text
+    assert 'id="amostra-importacao"' not in page.text
+    assert 'name="acao" value="liberar"' not in page.text
+    p = planning.overview(7, True, 'L-2026-01')['plano']
+    sample = csv_bytes(PLAN_COLUMNS, [dict(estrato='E-1', imoveis_estrato='100', meta_estrato='1',
+        criterio='DEMO', quarteirao='Q-1', meta_quarteirao='1', agente_id='')])
+    # POST direto continua protegido, mesmo sem o formulário disponível.
+    response = c.post('/vigilancia/planejamento', data=dict(common, acao='importar_plano', plano=p['code'],
+        versao=str(p['versao']), arquivo=(io.BytesIO(sample), 'amostra.csv')))
+    assert response.status_code == 400 and 'CSV 01' in response.text
+    assert planning.overview(7, True, p['code'])['estratos'] == []
+    response = c.post('/vigilancia/planejamento', data=dict(common, acao='importar_territorio',
+        retorno_plano=p['code'], geometrias_confirmadas='sim',
+        arquivo=(io.BytesIO(csv_bytes((*RG_COLUMNS, 'geometria'), territory())), 'territorio.csv')))
+    assert response.status_code == 303 and 'plano=L-2026-01' in response.location
+    page = c.get(response.location)
+    assert 'Continuar para a amostra · CSV 02' in page.text
+    assert 'id="amostra-importacao" open' in page.text
+    p = planning.overview(7, True, p['code'])['plano']
+    response = c.post('/vigilancia/planejamento', data=dict(common, acao='importar_plano', plano=p['code'],
+        versao=str(p['versao']), arquivo=(io.BytesIO(sample), 'amostra.csv')))
+    assert response.status_code == 303
+    assert len(planning.overview(7, True, p['code'])['quarteiroes']) == 1
+
+
 @pytest.mark.parametrize('plan_code,csv_code,select_destination', [
     ('L-2026-01','L-2026-01',False),
     ('teste-1','DEMO-POC-PESQUEIRA-2026',True),

@@ -4,9 +4,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('app/static/js/vigilancia-fluxo.js', 'utf8');
 
-function browser(hash = '') {
+function browser(hash = '', initialStep = 'amostra') {
   const elements = new Map(), events = [], handlers = {}, windows = {};
-  const root = {dataset: {vigilanciaDefault: 'amostra'}, contains: () => true,
+  const root = {dataset: {vigilanciaDefault: initialStep}, contains: () => true,
     addEventListener(name, fn) { handlers[name] = fn; }};
   function element(id, panel, tag = 'DIV') {
     const item = {id, tagName: tag, parentElement: root, hidden: false, open: false, attributes: {},
@@ -57,4 +57,19 @@ test('opening the territory dispatches a visibility event for lazy map initializ
   ui.click('territorio');
   assert.equal(ui.events.at(-1).type, 'vigilancia:panel-visible');
   assert.equal(ui.events.at(-1).detail.id, 'territorio');
+});
+
+test('territory can be the entry step while explicit links still open the selected step', () => {
+  const ui = browser('', 'territorio');
+  assert.deepEqual(ui.panels.map(panel => panel.hidden), [false, true, true]);
+  ui.click('levantamentos');
+  assert.deepEqual(ui.panels.map(panel => panel.hidden), [true, false, true]);
+  const linked = browser('#amostra', 'territorio');
+  assert.deepEqual(linked.panels.map(panel => panel.hidden), [true, true, false]);
+});
+
+test('a link to a collapsed details element opens the element itself', () => {
+  const ui = browser('#estrato');
+  assert.equal(ui.details.open, true);
+  assert.equal(ui.panels[2].hidden, false);
 });

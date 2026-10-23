@@ -40,7 +40,7 @@ def register_routes(bp):
                 content = _uploaded_csv() if action in {"importar_territorio", "importar_plano"} else None
                 code = PlanningStore().mutate(prefeitura, demo, str(current_user.get_id()), action, values, content)
                 block = text(values, "quarteirao", optional=True) if action == "territorio" else ""
-                if action == "territorio":
+                if action in {"territorio", "importar_territorio"}:
                     code = text(values, "retorno_plano", optional=True)
                 target = "territorio" if action in {"territorio", "importar_territorio"} else "amostra" if code else "levantamentos"
                 return redirect(url_for("main.vigilancia_planejamento", prefeitura_id=prefeitura,

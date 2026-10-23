@@ -67,6 +67,15 @@ test('failure blocks accidental fallback; a successful retry restores submission
 
 const csvFile = text => ({slice(){return {text:async()=>text};}});
 
+test('the period link follows the selected survey and resets with the selection', () => {
+  const x=ui(); x.dest.value='L-2026-01'; x.change(x.dest);
+  assert.equal(x.link.href,'/vigilancia/planejamento?demo=true&prefeitura_id=7&plano=L-2026-01#periodo-levantamento');
+  assert.match(x.link.textContent,/ampliar período/);
+  x.dest.value=''; x.change(x.dest);
+  assert.equal(x.link.href,'/vigilancia/planejamento?demo=true&prefeitura_id=7');
+  assert.equal(x.link.textContent,'Abrir planejamento');
+});
+
 test('planned visits require a deliberate destination before upload; legacy CSV stays optional', async () => {
   const x=ui(); x.dest.value='';
   x.file.files=[csvFile('\uFEFF"municipio_id";"quarteirao_codigo";"levantamento_codigo"\n7;Q1;CODIGO-ANTIGO')];

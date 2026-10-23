@@ -49,7 +49,9 @@
       if (planningLink) {
         const query = new URLSearchParams({demo: mode.value});
         if (/^[1-9]\d*$/.test(municipality.value)) query.set("prefeitura_id", municipality.value);
-        planningLink.href = `${planningLink.dataset.planningUrl}?${query}`;
+        if (destination.value) query.set("plano", destination.value);
+        planningLink.href = `${planningLink.dataset.planningUrl}?${query}${destination.value ? "#periodo-levantamento" : ""}`;
+        planningLink.textContent = destination.value ? "Conferir / ampliar período do levantamento" : "Abrir planejamento";
       }
       if (pending || failed || checkingFile || fileFailed) return;
       if (!/^[1-9]\d*$/.test(municipality.value)) {

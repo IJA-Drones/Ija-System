@@ -12,7 +12,7 @@
     return element && root.contains(element) ? element.closest("[data-vigilancia-panel]") : null;
   }
   function reveal(element) {
-    for (let ancestor = element?.parentElement; ancestor && ancestor !== root; ancestor = ancestor.parentElement) {
+    for (let ancestor = element; ancestor && ancestor !== root; ancestor = ancestor.parentElement) {
       if (ancestor.tagName === "DETAILS") ancestor.open = true;
     }
   }

@@ -123,9 +123,27 @@ vírgula, até 1 MiB e 5.000 linhas por arquivo. Não são layouts oficiais do g
   territoriais devem existir, dados repetidos do estrato precisam ser iguais e
   cada quarteirão aparece uma vez. A atribuição de conta é opcional.
 
-Planos liberados/encerrados são protegidos contra edição. Alterações concorrentes
-no rascunho são detectadas pela versão. Escritas usam o mesmo lock municipal do
-registro de campo. Cada alteração de plano preserva ação, autor e instante.
+O planejamento começa em **Quarteirões e contornos**, com o importador do CSV 01
+aberto acima do mapa. O arquivo territorial pode cadastrar os quarteirões e seus
+polígonos juntos, após a confirmação dos contornos. Depois, criar o rascunho do
+levantamento e importar o CSV 02 na amostra. A criação do rascunho não exige CSV.
+Sem cadastro territorial, a tela da amostra aponta para o CSV 01 antes de oferecer
+a importação dos estratos e quarteirões. O CSV 03 de visitas continua exigindo a
+liberação do plano e a confirmação posterior do lote.
+
+Planos liberados/encerrados são protegidos contra edição da amostra. No liberado,
+a coordenação pode **ampliar o período** para incluir as datas originais das
+visitas: informar início/fim, justificativa e confirmação. O novo intervalo deve
+conter todo o anterior; não pode reduzir datas, modificar a amostra, mudar datas
+das visitas nem reabrir um levantamento encerrado. O histórico registra período
+anterior/novo, justificativa, autor e instante. Em rascunho, usar a edição de
+identificação existente. A importação informa o intervalo das visitas do CSV
+quando ele não cabe no período selecionado, sem publicar o lote nem modificar
+automaticamente o levantamento. O atalho da importação abre o período do
+levantamento selecionado, preservando prefeitura e tipo dos dados.
+
+Alterações concorrentes são detectadas pela versão. Escritas usam o mesmo lock
+municipal do registro de campo. Cada alteração preserva ação, autor e instante.
 Atualizar o RG não altera os dados territoriais já preservados no plano.
 
 Registros legados continuam disponíveis. Não se pode transformar em plano novo
