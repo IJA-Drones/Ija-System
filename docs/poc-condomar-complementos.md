@@ -10,7 +10,7 @@ aplica as migrações automaticamente); o que depende de configuração está ma
 | 1.5 | Alerta parametrizado disparando | Menu **Alertas** (`/alertas`): regras por fonte, bairro, janela, limite e raio; disparo automático ao registrar denúncia/relato; avisa gestores no sistema, e-mail e push; botão **Testar** | SMTP para e-mail; VAPID/FCM para push |
 | 1.7 | Chatbot IA em rede social | Azul no WhatsApp via Kapso (`POST /webhooks/whatsapp/kapso`) | `KAPSO_*` no Render + webhook cadastrado na Kapso |
 | 2.1 / 2.3 | Importação ao vivo do SINAN | Nova origem **DATASUS — arquivo oficial (DBC)** em Vigilância > SINAN; a API do MS ganhou 3 tentativas com espera | Internet de saída (FTP) no servidor |
-| 2.2 / 4.1–4.3 / 7.1 | LIRAa/focal, IIP, depósitos, pendentes, migração | Já existia e funciona; falhou na POC por falta de carga prévia. Roteiro abaixo | Carregar o CSV antes |
+| 2.2 / 4.1–4.3 / 7.1 | LIRAa/focal, IIP, depósitos, pendentes, migração | Já existia e funciona com a carga inicial. Roteiro abaixo | Carregar o CSV antes |
 | 5.5 | Exportação e envio por e-mail | SMTP já existia; faltavam as variáveis. Helper único em `app/shared/mail.py` (587 STARTTLS ou 465 SSL) | `REPORT_SMTP_*` no Render |
 | Pedido do TI (Diego) | Notificação a cidadãos em zona de risco | Botão **Receber alertas no celular** no Portal do Cidadão guarda a localização; o disparo de alerta só avisa aparelhos dentro do raio da regra | VAPID (web) / Firebase (app) |
 | Pedido do TI (Diego) | Monitorar o agente de endemias | Rastro GPS do agente enquanto o app está aberto; menu **Agentes em campo** com percurso, horários e km por agente/dia | Agente logado no app |
@@ -76,7 +76,7 @@ Tela de Início"), e dentro do app mostra a mensagem de que o Firebase não est�
 
 ## Roteiro de demonstração (ordem sugerida)
 
-1. **Carga prévia (antes da comissão):** Vigilância > Importação e validação > prefeitura
+1. **Carga inicial:** Vigilância > Importação e validação > prefeitura
    Pesqueira > baixar a amostra geolocalizada > preparar > confirmar. Isso preenche
    resultados (IIP, IB, depósitos, pendentes com fotos) e o mapa de risco.
 2. **SINAN:** Vigilância > SINAN > Pesqueira / dengue / 2026 > aba Importações >
