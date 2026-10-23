@@ -3455,7 +3455,7 @@ class PrefeituraContatoPublico(db.Model):
     instagram = db.Column(db.String(30), nullable=False, default='')
     email = db.Column(db.String(254), nullable=False, default='')
     horario = db.Column(db.String(300), nullable=False, default='')
-    servicos = db.Column(db.String(1500), nullable=False, default='')
+    servicos = db.Column(db.Text, nullable=False, default='')
     versao = db.Column(db.Integer, nullable=False, default=1)
     atualizado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
