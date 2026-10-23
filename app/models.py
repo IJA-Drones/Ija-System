@@ -183,6 +183,8 @@ class Usuario(UserMixin, db.Model):
     # Piloto (já existe)
     # ----------------------------
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    telegram_chat_id = db.Column(db.String(32), nullable=True, index=True)
+    telegram_codigo = db.Column(db.String(40), nullable=True)
     piloto = db.relationship("Pilotos", lazy="joined")
     piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id"), nullable=True, index=True)
     piloto_agro = db.relationship("PilotoAgro", back_populates="usuario", lazy="joined", foreign_keys=[piloto_agro_id])
@@ -3455,7 +3457,7 @@ class PrefeituraContatoPublico(db.Model):
     instagram = db.Column(db.String(30), nullable=False, default='')
     email = db.Column(db.String(254), nullable=False, default='')
     horario = db.Column(db.String(300), nullable=False, default='')
-    servicos = db.Column(db.String(1500), nullable=False, default='')
+    servicos = db.Column(db.Text, nullable=False, default='')
     versao = db.Column(db.Integer, nullable=False, default=1)
     atualizado_por_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
@@ -3504,3 +3506,18 @@ from app.modules.vigilancia.planning_models import (
 
 from app.modules.vigilancia.risk_models import RiscoAnalise  
 from app.modules.acoes_publicas.models import AcaoPublica, AcaoPublicaMidia, AcaoPublicaEvento  
+
+
+class ConfiguracaoSmtp(db.Model):
+    """Servidor de envio configurado pelo sistema (linha única). Senha cifrada com a SECRET_KEY."""
+    __tablename__ = "configuracao_smtp"
+    id = db.Column(db.Integer, primary_key=True, default=1)
+    host = db.Column(db.String(200), nullable=False)
+    porta = db.Column(db.Integer, nullable=False, default=587)
+    seguranca = db.Column(db.String(10), nullable=False, default="starttls")  # starttls | ssl
+    remetente = db.Column(db.String(254), nullable=False)
+    usuario = db.Column(db.String(254))
+    senha_cifrada = db.Column(db.Text)
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)

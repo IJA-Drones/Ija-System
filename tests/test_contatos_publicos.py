@@ -92,7 +92,7 @@ def test_publication_and_azul_share_current_allowlist(app):
  {'instagram':'https://www.instagram.com/a?next=evil'}, {'instagram':'https://evil@instagram.com/a'},
  {'instagram':'https://instagram.com/p/123/'}, {'telefone':'123'}, {'whatsapp':'11<script>123456789'},
  {'email':'a@example.org\nBcc:x@example.org'}, {'email':'a@example.org?bcc=x@evil.org'},
- {'telefone':'','whatsapp':'','instagram':'','email':''}, {'servicos':'x'*1501}])
+ {'telefone':'','whatsapp':'','instagram':'','email':''}, {'servicos':'x'*6001}])
 def test_reject_unsafe_or_invalid_contact(changes):
     with pytest.raises(ValueError):validate(payload(**changes))
 

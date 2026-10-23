@@ -111,6 +111,8 @@ def create_report(form, submission_id, origin_key):
     db.session.flush()
     _event(row, 'REGISTRADO')
     _notify_management(row)
+    from app.modules.alertas.service import avaliar
+    avaliar(pid, 'relatos', bairro=row.bairro, commit=False)
     return row
 
 def transition(row, user, form):

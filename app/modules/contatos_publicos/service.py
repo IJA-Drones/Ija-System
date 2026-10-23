@@ -58,7 +58,7 @@ def validate(form):
     values = {}
     for field in FIELDS:
         value = (form.get(field) or '').strip()
-        if len(value) > {'horario': 300, 'servicos': 1500}.get(field, 254):
+        if len(value) > {'horario': 300, 'servicos': 6000}.get(field, 254):
             raise ValueError('Um dos campos excedeu o tamanho permitido. Confira o formulário.')
         if any(ord(c) < 32 and c not in '\n\t' for c in value):
             raise ValueError('O texto contém caracteres inválidos.')

@@ -25,17 +25,29 @@
     <title>{% block title %}{% if is_financeiro_context and empresa_financeiro %}Financeiro · {{ empresa_financeiro.nome }} | {% endif %}Oceano Azul{% endblock %}</title>
     {% block meta %}{% endblock %}
 
-    <link
-      rel="manifest"
-      href="{{ url_for('static', filename='manifest.json') }}"
-    />
+    {% if current_user and current_user.is_authenticated %}
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
     <meta name="theme-color" content="#101927" />
+    <meta name="apple-mobile-web-app-title" content="Oceano Azul" />
+    {% else %}
+    <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022b') }}" />
+    <meta name="theme-color" content="#061827" />
+    <meta name="apple-mobile-web-app-title" content="IJA Vigilância" />
+    <meta name="application-name" content="IJA Vigilância" />
+    <script>
+      // Aberto pelo ícone instalado (tela cheia) sem estar logado: vai para o aplicativo.
+      (function () {
+        var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+        if (standalone && location.pathname.indexOf("/m/") !== 0) { location.replace("/m/?pwa=1"); }
+      })();
+    </script>
+    {% endif %}
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="Oceano Azul" />
     <link
       rel="apple-touch-icon"
       href="{{ url_for('static', filename='img/icon-192.png') }}"
@@ -783,6 +795,16 @@
               href="{{ url_for('main.vigilancia') }}"
               data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-shield-check me-2" aria-hidden="true"></i><span>Vigilância</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.alertas') %}active{% endif %}" href="{{ url_for('main.alertas') }}">
+              <i class="bi bi-bell me-2" aria-hidden="true"></i><span>Alertas</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.vigilancia_agentes' %}active{% endif %}" href="{{ url_for('main.vigilancia_agentes') }}">
+              <i class="bi bi-geo-alt me-2" aria-hidden="true"></i><span>Agentes em campo</span>
             </a>
           </li>
           {% endif %}
@@ -1823,9 +1845,12 @@
   });
 
   if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+      navigator.serviceWorker.register("/sw.js", { scope: "/" });
   }
     </script>
+    {% if current_user.is_authenticated and current_user.tipo_usuario == 'agente_endemias' %}
+    <script src="{{ url_for('static', filename='js/agente-rastro.js', v='20261022') }}" defer></script>
+    {% endif %}
     {% if ija_security %}
     <script id="ija-security-config" type="application/json">{{ ija_security|tojson }}</script>
     <script src="{{ url_for('static', filename='js/session-security.js', v='20261007a') }}" defer></script>

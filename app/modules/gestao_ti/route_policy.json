@@ -1,15 +1,39 @@
 {
-  "main.acoes_listar": {"GET": "prefeitura.acoes_publicas.consultar"},
-  "main.acoes_nova": {"GET": "prefeitura.acoes_publicas.criar", "POST": "prefeitura.acoes_publicas.criar"},
-  "main.acoes_editar": {"GET": "prefeitura.acoes_publicas.consultar", "POST": "prefeitura.acoes_publicas.editar"},
-  "main.acoes_revisar": {"POST": "prefeitura.acoes_publicas.editar"},
-  "main.acoes_rascunho": {"POST": "prefeitura.acoes_publicas.editar"},
-  "main.acoes_publicar": {"POST": "prefeitura.acoes_publicas.publicar"},
-  "main.acoes_retirar": {"POST": "prefeitura.acoes_publicas.publicar"},
-  "main.acoes_midias_adicionar": {"POST": "prefeitura.acoes_publicas.editar"},
-  "main.acoes_midias_remover": {"POST": "prefeitura.acoes_publicas.editar"},
-  "main.acoes_midia": {"GET": "prefeitura.acoes_publicas.consultar"},
-  "main.acoes_previa": {"GET": "prefeitura.acoes_publicas.consultar"},
+  "main.acoes_listar": {
+    "GET": "prefeitura.acoes_publicas.consultar"
+  },
+  "main.acoes_nova": {
+    "GET": "prefeitura.acoes_publicas.criar",
+    "POST": "prefeitura.acoes_publicas.criar"
+  },
+  "main.acoes_editar": {
+    "GET": "prefeitura.acoes_publicas.consultar",
+    "POST": "prefeitura.acoes_publicas.editar"
+  },
+  "main.acoes_revisar": {
+    "POST": "prefeitura.acoes_publicas.editar"
+  },
+  "main.acoes_rascunho": {
+    "POST": "prefeitura.acoes_publicas.editar"
+  },
+  "main.acoes_publicar": {
+    "POST": "prefeitura.acoes_publicas.publicar"
+  },
+  "main.acoes_retirar": {
+    "POST": "prefeitura.acoes_publicas.publicar"
+  },
+  "main.acoes_midias_adicionar": {
+    "POST": "prefeitura.acoes_publicas.editar"
+  },
+  "main.acoes_midias_remover": {
+    "POST": "prefeitura.acoes_publicas.editar"
+  },
+  "main.acoes_midia": {
+    "GET": "prefeitura.acoes_publicas.consultar"
+  },
+  "main.acoes_previa": {
+    "GET": "prefeitura.acoes_publicas.consultar"
+  },
   "main.configuracoes_contatos": {
     "GET": "prefeitura.documentos.consultar",
     "POST": "prefeitura.documentos.configurar"
@@ -457,8 +481,14 @@
     "GET": "financeiro.comercial.consultar"
   },
   "main.financeiro_empresa_cliente_novo": {
-    "GET": ["financeiro.comercial.criar", "agro.clientes.criar"],
-    "POST": ["financeiro.comercial.criar", "agro.clientes.criar"]
+    "GET": [
+      "financeiro.comercial.criar",
+      "agro.clientes.criar"
+    ],
+    "POST": [
+      "financeiro.comercial.criar",
+      "agro.clientes.criar"
+    ]
   },
   "main.financeiro_empresa_relacionamentos": {
     "GET": [
@@ -633,8 +663,12 @@
   "main.api_geocode": {
     "POST": "prefeitura.mapas.consultar"
   },
-  "main.mapa_operacional_dados": {"GET": "prefeitura.mapas.consultar"},
-  "main.mapa_operacional_historico": {"GET": "prefeitura.mapas.consultar"},
+  "main.mapa_operacional_dados": {
+    "GET": "prefeitura.mapas.consultar"
+  },
+  "main.mapa_operacional_historico": {
+    "GET": "prefeitura.mapas.consultar"
+  },
   "main.heatmap_data": {
     "GET": "prefeitura.mapas.consultar"
   },
@@ -710,14 +744,30 @@
   "main.vigilancia_sinan_api": {
     "GET": "prefeitura.vigilancia.consultar"
   },
-  "main.vigilancia_sinan_jobs": {"GET": "prefeitura.vigilancia.consultar"},
-  "main.vigilancia_sinan_import": {"POST": "prefeitura.vigilancia.editar"},
-  "main.vigilancia_sinan_cases_import": {"POST": "prefeitura.vigilancia.editar"},
-  "main.vigilancia_sinan_job": {"GET": "prefeitura.vigilancia.consultar"},
-  "main.vigilancia_sinan_job_cancel": {"POST": "prefeitura.vigilancia.editar"},
-  "main.vigilancia_sinan_job_map": {"GET": "prefeitura.vigilancia.consultar"},
-  "main.vigilancia_sinan_export": {"GET": "prefeitura.relatorios.exportar"},
-  "main.vigilancia_sinan_cases_sample": {"GET": "prefeitura.vigilancia.consultar"},
+  "main.vigilancia_sinan_jobs": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_sinan_import": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_sinan_cases_import": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_sinan_job": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_sinan_job_cancel": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_sinan_job_map": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_sinan_export": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.vigilancia_sinan_cases_sample": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
   "main.vigilancia_validacao": {
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
@@ -726,16 +776,29 @@
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
   },
-  "main.vigilancia_import_levantamentos": {"GET": "prefeitura.vigilancia.consultar"},
+  "main.vigilancia_import_levantamentos": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
   "main.vigilancia_campo": {
     "GET": "prefeitura.vigilancia.consultar",
     "POST": "prefeitura.vigilancia.editar"
   },
-  "main.vigilancia_risco": {"GET": "prefeitura.vigilancia.consultar", "POST": "prefeitura.vigilancia.editar"},
-  "main.vigilancia_risco_modelo": {"GET": "prefeitura.vigilancia.consultar"},
-  "main.vigilancia_risco_export": {"GET": "prefeitura.relatorios.exportar"},
-  "main.vigilancia_resultados": {"GET": "prefeitura.vigilancia.consultar"},
-  "main.vigilancia_resultados_export": {"GET": "prefeitura.relatorios.exportar"},
+  "main.vigilancia_risco": {
+    "GET": "prefeitura.vigilancia.consultar",
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_risco_modelo": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_risco_export": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
+  "main.vigilancia_resultados": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_resultados_export": {
+    "GET": "prefeitura.relatorios.exportar"
+  },
   "main.vigilancia_excluir": {
     "GET": "prefeitura.vigilancia.excluir",
     "POST": "prefeitura.vigilancia.excluir"
@@ -1279,5 +1342,42 @@
   },
   "main.relatos_saude_pdf": {
     "GET": "prefeitura.relatos_saude.exportar"
+  },
+  "main.alertas": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.alertas_nova": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.alertas_alternar": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.alertas_testar": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.alertas_excluir": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.alertas_push_teste": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_agentes": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_agentes_rastro": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.configuracoes_smtp": {
+    "GET": "prefeitura.documentos.configurar",
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.configuracoes_smtp_testar": {
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.vigilancia_agentes_painel": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_agentes_export": {
+    "GET": "prefeitura.vigilancia.consultar"
   }
 }

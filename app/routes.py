@@ -10,6 +10,7 @@ from app.modules.admin_checklists import register_routes as register_admin_check
 from app.modules.admin_dashboard import register_routes as register_admin_dashboard_routes
 from app.modules.admin_uvis import register_routes as register_admin_uvis_routes
 from app.modules.agro import register_routes as register_agro_routes
+from app.modules.alertas import register_routes as register_alertas_routes
 from app.modules.auditoria import register_routes as register_auditoria_routes
 from app.modules.agenda_notificacoes import register_routes as register_agenda_notificacoes_routes
 from app.modules.anexos import register_routes as register_anexos_routes
@@ -33,6 +34,7 @@ from app.modules.feedback import register_routes as register_feedback_routes
 from app.modules.financeiro import register_routes as register_financeiro_routes
 from app.modules.gestao_ti import register_routes as register_gestao_ti_routes
 from app.modules.mapas import register_routes as register_mapas_routes
+from app.modules.mobile import register_routes as register_mobile_routes
 from app.modules.ortomosaicos import register_routes as register_ortomosaicos_routes
 from app.modules.painel_operacional import register_routes as register_painel_operacional_routes
 from app.modules.piloto_checklists import register_routes as register_piloto_checklists_routes
@@ -62,6 +64,8 @@ register_admin_checklists_routes(bp)
 register_admin_dashboard_routes(bp)
 register_admin_uvis_routes(bp)
 register_agro_routes(bp)
+register_alertas_routes(bp)
+register_mobile_routes(bp)
 register_auditoria_routes(bp)
 register_agenda_notificacoes_routes(bp)
 register_anexos_routes(bp)

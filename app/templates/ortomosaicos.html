@@ -2,10 +2,10 @@
 {% block title %}Ortomosaicos e curvas | IJA System{% endblock %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/openlayers/ol.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css', v='20261020-agua') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css', v='20261022-exportar') }}">
 {% endblock %}
 {% block content %}
-<section id="ortho-app" class="ortho" data-list-url="{{ url_for('main.ortomosaicos_listar') }}" data-upload-url="{{ url_for('main.ortomosaico_upload') }}" data-max-mb="{{ limite_mb }}">
+<section id="ortho-app" class="ortho" data-list-url="{{ url_for('main.ortomosaicos_listar') }}" data-upload-url="{{ url_for('main.ortomosaico_upload') }}" data-max-mb="{{ limite_mb }}" data-request-url="{{ url_for('main.novo') }}">
   <header class="ortho-header">
     <div><span class="ortho-eyebrow">INTELIGÊNCIA TERRITORIAL</span><h1>Ortomosaicos e curvas de nível</h1><p>Seu levantamento, na posição certa.</p></div>
     <button id="ortho-new" class="ortho-primary" type="button"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Enviar levantamento</button>
@@ -28,6 +28,7 @@
         <button id="ortho-layers-toggle" type="button" title="Mostrar ou ocultar camadas" aria-label="Mostrar ou ocultar camadas" aria-expanded="true" aria-controls="ortho-layers-panel"><i class="bi bi-layers" aria-hidden="true"></i></button>
       </div>
       <button id="ortho-water-toggle" class="ortho-water-toggle" type="button" disabled aria-expanded="false" aria-controls="ortho-water-panel"><i class="bi bi-droplet" aria-hidden="true"></i> Estimar água</button>
+      <button id="ortho-request-toggle" class="ortho-water-toggle ortho-request-toggle" type="button" aria-pressed="false"><i class="bi bi-pin-map" aria-hidden="true"></i> Criar solicitação aqui</button>
       {% include 'ortomosaicos_agua.html' %}
       <section id="ortho-layers-panel" class="ortho-layers" aria-label="Camadas do mapa">
         <h2><i class="bi bi-layers" aria-hidden="true"></i> Camadas</h2>
@@ -45,6 +46,13 @@
           <label for="ortho-color">Cor das curvas <input id="ortho-color" type="color" value="#f5cf7b"></label>
           <label for="ortho-width">Espessura</label><input id="ortho-width" type="range" min="0.25" max="4" step="0.25" value="0.75">
           <label>Mostrar cotas <input id="ortho-labels" type="checkbox" checked></label>
+        </div>
+        <div id="ortho-export" class="ortho-export" hidden>
+          <hr><h3><i class="bi bi-download" aria-hidden="true"></i> Exportar camadas</h3>
+          <a id="ortho-export-original" download>GeoTIFF original</a>
+          <p id="ortho-export-curvas"><span>Curvas de nível</span><a data-export="curvas_geojson" download>GeoJSON</a><a data-export="curvas_zip" download>Shapefile</a></p>
+          <p><span>Medições de água</span><a data-export="medicoes_geojson" download>GeoJSON</a><a data-export="medicoes_zip" download>Shapefile</a></p>
+          <small class="ortho-muted">Vetores em WGS 84 (EPSG:4326).</small>
         </div>
         <hr><h3 id="ortho-detail-name">Detalhes do levantamento</h3>
         <dl id="ortho-details"><dt>Formato</dt><dd>GeoTIFF RGB</dd></dl>
@@ -92,6 +100,6 @@
 <script id="ortho-basemap-config" type="application/json">{{ {'key': ortho_google_key | default('')} | tojson }}</script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261020-agua') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261020-agua') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261022-exportar') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261022-exportar') }}"></script>
 {% endblock %}

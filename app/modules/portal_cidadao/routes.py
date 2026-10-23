@@ -25,6 +25,11 @@ def list_public_prefeituras():
 
 
 def register_routes(bp):
+    from .whatsapp import register_routes as register_whatsapp_routes
+    register_whatsapp_routes(bp)
+    from .telegram import register_routes as register_telegram_routes
+    register_telegram_routes(bp)
+
     @bp.route("/portal-cidadao/chatbot", methods=["POST"], endpoint="portal_cidadao_chatbot")
     def portal_cidadao_chatbot():
         response = current_app.make_response(reply())

@@ -144,7 +144,7 @@
 
       <div class="tab-content">
         <div class="tab-pane fade show active" id="tabCalor">
-          <div id="mapHeatmap" class="map-container"></div>
+          <div id="mapHeatmap" class="map-container"{% if ortomosaicos_url %} data-ortomosaicos-url="{{ ortomosaicos_url }}"{% endif %}></div>
 
           <div class="map-legend-overlay glass-panel border-0">
             <h6 class="fw-bold mb-2 text-uppercase">Densidade de registros</h6>
@@ -216,6 +216,10 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/mapa-operacional.js') }}"></script>
+{% if ortomosaicos_url %}
+<script src="{{ url_for('static', filename='vendor/geotiff/geotiff.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mapa-ortomosaicos.js', v='20261022') }}"></script>
+{% endif %}
 <script>
   let mapHeat, mapArea, mapLogistics, heatmap;
   let markers = [];
@@ -249,6 +253,7 @@
 
     if (elHeat) {
       mapHeat = new google.maps.Map(elHeat, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid" });
+      if (elHeat.dataset?.ortomosaicosUrl) window.initMapaOrtomosaicos(mapHeat, elHeat.dataset.ortomosaicosUrl);
     }
 
     if (elPoly) {

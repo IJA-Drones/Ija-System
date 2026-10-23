@@ -134,12 +134,13 @@ def run_cases(store, job_id, scope, content, demo):
         store.finish(job_id, "failed", message=message)
 
 
-def start(store, owner, scope, *, content=None, demo=False):
-    kind = "csv" if content is not None else "api"
+def start(store, owner, scope, *, content=None, demo=False, source="api"):
+    from . import sinan_datasus
+    kind = "csv" if content is not None else ("datasus" if source == "datasus" else "api")
     fingerprint = hashlib.sha256(content).hexdigest() if content is not None else ""
     job_id, existing = store.create(owner, kind=kind, **scope, demo=demo, fingerprint=fingerprint)
     if not existing:
-        target = run_cases if kind == "csv" else run_api
+        target = {"csv": run_cases, "api": run_api, "datasus": sinan_datasus.run}[kind]
         args = (store, job_id, scope, content, demo) if kind == "csv" else (store, job_id, scope)
         try:
             threading.Thread(target=target, args=args, name="sinan-import", daemon=True).start()
@@ -177,8 +178,8 @@ def export_rows(job, cases=()):
     yield "\ufeff"
     prefix = ["lote", "origem", "situacao", "demonstracao", "doenca", "municipio_ibge", "ano", "importado_em_utc", "fonte"]
     from datetime import datetime, timezone
-    meta = [job["id"], "SINAN_API_municipio_notificacao" if job["kind"] == "api" else "CSV_usuario_coordenadas", job["status"], "sim" if job["demo"] else "nao", job["disease"], job["ibge"], job["year"], datetime.fromtimestamp(job["updated"], timezone.utc).isoformat(), job["summary"].get("source_url", "arquivo_fornecido_pelo_usuario")]
-    if job["kind"] == "api":
+    meta = [job["id"], {"api": "SINAN_API_municipio_notificacao", "datasus": "SINAN_DATASUS_DBC_municipio_notificacao"}.get(job["kind"], "CSV_usuario_coordenadas"), job["status"], "sim" if job["demo"] else "nao", job["disease"], job["ibge"], job["year"], datetime.fromtimestamp(job["updated"], timezone.utc).isoformat(), job["summary"].get("source_url", "arquivo_fornecido_pelo_usuario")]
+    if job["kind"] != "csv":
         yield line(prefix + ["semana", "classificacao_original", "residencia", "quantidade"])
         for row in job["summary"].get("groups", []):
             yield line(meta + [row["week"], row["classification"], row["residence"], row["count"]])

@@ -17,10 +17,11 @@
         {% if city.telefone %}<a class="btn btn-outline-primary" href="tel:+{{ city.telefone }}"><i class="bi bi-telephone" aria-hidden="true"></i> {{ city.telefone_exibicao }}</a>{% endif %}
         {% if city.whatsapp %}<a class="btn btn-outline-success" href="{{ city.whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i> WhatsApp {{ city.whatsapp_exibicao }}</a>{% endif %}
         {% if city.instagram %}<a class="btn btn-outline-primary" href="{{ city.instagram_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-instagram" aria-hidden="true"></i> @{{ city.instagram }}</a>{% endif %}
+        <a class="btn btn-outline-info" href="{{ telegram_bot_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-telegram" aria-hidden="true"></i> Azul no Telegram</a>
         {% if city.email %}<a class="btn btn-outline-primary text-break" href="{{ city.email_url }}"><i class="bi bi-envelope" aria-hidden="true"></i> {{ city.email }}</a>{% endif %}
       </div>
       {% if city.horario %}<h3 class="h6 mt-3">Horário de atendimento</h3><p class="contact-text">{{ city.horario }}</p>{% endif %}
-      {% if city.servicos %}<h3 class="h6 mt-2">Serviços e orientações</h3><p class="contact-text">{{ city.servicos }}</p>{% endif %}
+      {% if city.servicos %}<h3 class="h6 mt-2">Serviços e orientações</h3><p class="contact-text" style="white-space:pre-line">{{ city.servicos }}</p>{% endif %}
       {% else %}<p class="text-muted my-3">Esta prefeitura ainda não publicou seus canais de atendimento neste portal.</p>{% endif %}
     </article></div>
   {% endfor %}

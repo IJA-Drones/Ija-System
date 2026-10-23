@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Agentes em campo | Oceano Azul{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.ag-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.ag-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px}
+.ag-kpi b{display:block;font-size:1.6rem;color:#1c2b3f;line-height:1.1}.ag-kpi span{color:#718096;font-size:.85rem}
+.ag-kpi.ok b{color:#15803d}.ag-kpi.warn b{color:#b45309}.ag-kpi.bad b{color:#b91c1c}
+#agentes-mapa{height:58vh;min-height:380px;border-radius:14px}
+.ag-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:16px}
+.ag-status{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600}
+.ag-status.em_campo{background:#dcfce7;color:#166534}.ag-status.parado{background:#fef3c7;color:#92400e}.ag-status.sem_gps{background:#fee2e2;color:#991b1b}
+.ag-table td,.ag-table th{white-space:nowrap;font-size:.9rem}.ag-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.ag-row{cursor:pointer}.ag-row.sel{background:#e8f8fb}
+</style>{% endblock %}
+{% block content %}
+<main class="container-fluid py-4">
+  <header class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div><h1 class="h3 mb-1">Agentes em campo</h1><p class="text-muted mb-0">Situação agora, percurso, histórico de localização e produção dos agentes de endemias.</p></div>
+    {% if prefeitura_id %}<a class="btn btn-outline-secondary btn-sm" id="ag-export" href="#"><i class="bi bi-download"></i> Exportar CSV</a>{% endif %}
+  </header>
+  <form method="get" class="row g-2 align-items-end mb-3" id="ag-filtros">
+    {% if global_user %}<div class="col-md-3"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
+    {% else %}<input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">{% endif %}
+    <div class="col-6 col-md-2"><label class="form-label">De<input class="form-control" type="date" name="de" value="{{ request.args.get('de', '') }}"></label></div>
+    <div class="col-6 col-md-2"><label class="form-label">Até<input class="form-control" type="date" name="ate" value="{{ request.args.get('ate', dia.isoformat()) }}"></label></div>
+    <div class="col-md-3"><label class="form-label">Agente<select class="form-select" name="usuario_id"><option value="">Todos</option>{% for a in agentes %}<option value="{{ a.id }}" {% if request.args.get('usuario_id') == a.id|string %}selected{% endif %}>{{ a.nome_uvis }}</option>{% endfor %}</select></label></div>
+    <div class="col-auto"><button class="btn btn-primary">Consultar</button></div>
+  </form>
+  {% if prefeitura_id %}
+  <div class="ag-kpis" id="ag-kpis"><div class="ag-kpi"><b>…</b><span>Carregando</span></div></div>
+  <div class="row g-3">
+    <div class="col-xl-8">
+      <div class="ag-card p-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-center px-2 pt-1 pb-2 gap-2">
+          <strong id="ag-mapa-titulo">Percurso e visitas</strong>
+          <label class="small text-muted d-flex align-items-center gap-2">Dia do mapa<input class="form-control form-control-sm" type="date" id="ag-dia" value="{{ dia.isoformat() }}" style="width:auto"></label>
+        </div>
+        <div id="agentes-mapa" data-rastro="{{ url_for('main.vigilancia_agentes_rastro') }}" data-painel="{{ url_for('main.vigilancia_agentes_painel') }}" data-export="{{ url_for('main.vigilancia_agentes_export') }}" data-prefeitura="{{ prefeitura_id }}"></div>
+        <div class="small text-muted px-2 pt-2">Linha = percurso do GPS do aplicativo · ● verde = visita inspecionada · ● vermelho = foco positivo · ● cinza = fechado/recusado · ★ = última posição.</div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="ag-card"><h2 class="h6">Agentes agora</h2><div id="ag-lista" class="small text-muted">Carregando…</div></div>
+    </div>
+  </div>
+  <div class="ag-card"><h2 class="h6">Histórico por dia (localização e produção)</h2>
+    <div class="table-responsive"><table class="table table-sm ag-table mb-0"><thead><tr><th>Data</th><th>Agente</th><th>Início</th><th>Fim</th><th>Pontos GPS</th><th>Km</th><th>Visitas</th><th>Inspecionados</th><th>Fechados/recusados</th><th>Positivos</th><th></th></tr></thead><tbody id="ag-historico"><tr><td colspan="11" class="text-muted">Carregando…</td></tr></tbody></table></div>
+  </div>
+  <div class="ag-card"><h2 class="h6">Visitas do período</h2>
+    <div class="table-responsive"><table class="table table-sm ag-table mb-0"><thead><tr><th>Data</th><th>Agente</th><th>Quarteirão</th><th>Imóvel</th><th>Situação</th><th>Positivo</th><th>Bairro</th></tr></thead><tbody id="ag-visitas"><tr><td colspan="7" class="text-muted">Carregando…</td></tr></tbody></table></div>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const el = document.getElementById('agentes-mapa'); if (!el) return;
+  const params = new URLSearchParams(location.search); params.set('prefeitura_id', el.dataset.prefeitura);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const fmt = d => d ? d.split('-').reverse().join('/') : '';
+  const colors = ['#2563eb','#dc2626','#15803d','#d97706','#7c3aed','#0891b2','#be185d','#4b5563'];
+  const statusLabel = {em_campo: 'Em campo', parado: 'Parado', sem_gps: 'Sem GPS hoje'};
+  const map = L.map(el).setView([-8.3558, -36.6978], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
+  let layer = L.layerGroup().addTo(map), colorOf = {};
+  document.getElementById('ag-export').href = el.dataset.export + '?' + params.toString();
+
+  async function loadPainel() {
+    const d = await (await fetch(el.dataset.painel + '?' + params.toString(), {headers: {Accept: 'application/json'}})).json();
+    if (d.error) { document.getElementById('ag-kpis').innerHTML = '<div class="alert alert-danger">' + esc(d.error) + '</div>'; return; }
+    d.agentes.forEach((a, i) => colorOf[a.id] = colors[i % colors.length]);
+    const k = d.kpis, kpi = (v, l, cls) => `<div class="ag-kpi ${cls || ''}"><b>${esc(v)}</b><span>${l}</span></div>`;
+    document.getElementById('ag-kpis').innerHTML = kpi(k.atribuidos, 'Agentes') + kpi(k.em_campo, 'Em campo agora', 'ok') + kpi(k.parados, 'Parados (sem sinal há +15 min)', 'warn')
+      + kpi(k.sem_gps_hoje, 'Sem GPS hoje', 'bad') + kpi(k.visitas_hoje, 'Visitas hoje') + kpi(k.positivos_hoje, 'Focos positivos hoje', 'bad')
+      + kpi(k.visitas_periodo, `Visitas ${fmt(d.de)}–${fmt(d.ate)}`) + kpi(String(k.km_periodo).replace('.', ',') + ' km', 'Percorridos no período');
+    document.getElementById('ag-lista').innerHTML = d.agentes.length ? d.agentes.map(a => `
+      <div class="ag-row border-bottom py-2" data-id="${a.id}">
+        <div class="d-flex justify-content-between align-items-center"><strong><span class="ag-dot" style="background:${colorOf[a.id]}"></span>${esc(a.nome)}</strong><span class="ag-status ${a.status}">${statusLabel[a.status]}${a.parado_min ? ' · ' + a.parado_min + ' min' : ''}</span></div>
+        <div class="text-muted">Último sinal: ${esc(a.ultimo_ping || '—')} · ${a.quarteiroes} quarteirão(ões)${a.telegram ? ' · <i class="bi bi-telegram"></i>' : ''}</div>
+        <div>Hoje: <b>${a.visitas_hoje}</b> visitas · <b>${a.positivos_hoje}</b> positivos · <b>${String(a.km_hoje).replace('.', ',')}</b> km · ${a.pontos_hoje} pontos</div>
+        <div class="text-muted">Período: ${a.visitas_periodo} visitas · ${String(a.km_periodo).replace('.', ',')} km · ${a.dias_ativos} dia(s) ativos</div>
+      </div>`).join('') : '<p class="mb-0">Nenhum agente de endemias cadastrado nesta prefeitura.</p>';
+    document.querySelectorAll('.ag-row').forEach(r => r.addEventListener('click', () => {
+      document.querySelectorAll('.ag-row').forEach(x => x.classList.toggle('sel', x === r));
+      const a = d.agentes.find(x => String(x.id) === r.dataset.id); if (a && a.ultima_posicao) map.setView(a.ultima_posicao, 16);
+    }));
+    document.getElementById('ag-historico').innerHTML = d.historico.length ? d.historico.map(h => `<tr><td>${fmt(h.data)}</td><td><span class="ag-dot" style="background:${colorOf[h.usuario_id]}"></span>${esc(h.agente)}</td><td>${h.inicio || '—'}</td><td>${h.fim || '—'}</td><td>${h.pontos}</td><td>${String(h.km).replace('.', ',')}</td><td>${h.visitas}</td><td>${h.inspecionados}</td><td>${h.nao_inspecionados}</td><td>${h.positivos ? '<b class="text-danger">' + h.positivos + '</b>' : 0}</td><td><button class="btn btn-link btn-sm p-0" data-dia="${h.data}" data-uid="${h.usuario_id}">ver no mapa</button></td></tr>`).join('') : '<tr><td colspan="11" class="text-muted">Sem registros no período.</td></tr>';
+    document.querySelectorAll('#ag-historico [data-dia]').forEach(b => b.addEventListener('click', () => { document.getElementById('ag-dia').value = b.dataset.dia; loadMapa(b.dataset.uid); el.scrollIntoView({behavior: 'smooth'}); }));
+    const sit = {INSPECIONADO: 'Inspecionado', FECHADO: 'Fechado', RECUSADO: 'Recusado', DESABITADO: 'Desabitado'};
+    document.getElementById('ag-visitas').innerHTML = d.visitas.length ? d.visitas.map(v => `<tr><td>${fmt(v.data)}</td><td>${esc(v.agente)}</td><td>${esc(v.quarteirao)}</td><td>${esc(v.imovel)}</td><td>${sit[v.situacao] || esc(v.situacao)}</td><td>${v.positivo === 'SIM' ? '<b class="text-danger">Sim</b>' : v.positivo === 'NAO' ? 'Não' : '—'}</td><td>${esc(v.bairro)}</td></tr>`).join('') : '<tr><td colspan="7" class="text-muted">Nenhuma visita no período.</td></tr>';
+  }
+
+  async function loadMapa(uid) {
+    const q = new URLSearchParams({prefeitura_id: el.dataset.prefeitura, data: document.getElementById('ag-dia').value});
+    const sel = uid || params.get('usuario_id'); if (sel) q.set('usuario_id', sel);
+    const d = await (await fetch(el.dataset.rastro + '?' + q.toString(), {headers: {Accept: 'application/json'}})).json();
+    layer.clearLayers(); const bounds = [];
+    document.getElementById('ag-mapa-titulo').textContent = 'Percurso e visitas · ' + fmt(d.dia);
+    (d.agentes || []).forEach((a, i) => {
+      const color = colorOf[a.usuario_id] || colors[i % colors.length];
+      const latlngs = a.pontos.map(p => [p[0], p[1]]); bounds.push(...latlngs);
+      L.polyline(latlngs, {color, weight: 4, opacity: .8}).addTo(layer);
+      a.pontos.forEach(p => L.circleMarker([p[0], p[1]], {radius: 2.5, color, fillOpacity: .9}).bindTooltip(a.nome + ' · ' + p[2]).addTo(layer));
+      const last = latlngs[latlngs.length - 1];
+      if (last) L.marker(last, {icon: L.divIcon({className: '', html: `<div style="color:${color};font-size:22px;text-shadow:0 0 3px #fff">★</div>`})}).bindPopup(`<strong>${esc(a.nome)}</strong><br>${a.inicio} → ${a.fim}<br>${a.pontos.length} pontos · ${String(a.distancia_km).replace('.', ',')} km`).addTo(layer);
+    });
+    (d.visitas || []).forEach(v => {
+      const fill = v.positivo === 'SIM' ? '#dc2626' : v.situacao === 'INSPECIONADO' ? '#15803d' : '#64748b';
+      L.circleMarker([v.latitude, v.longitude], {radius: 7, color: '#fff', weight: 2, fillColor: fill, fillOpacity: 1})
+        .bindPopup(`<strong>${esc(v.quarteirao)} · ${esc(v.imovel)}</strong><br>${esc(v.agente)}<br>${esc(v.situacao)}${v.positivo === 'SIM' ? ' · <b style="color:#dc2626">foco positivo</b>' : ''}`).addTo(layer);
+      bounds.push([v.latitude, v.longitude]);
+    });
+    if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 17});
+  }
+  document.getElementById('ag-dia').addEventListener('change', () => loadMapa());
+  loadPainel().then(() => loadMapa()).catch(() => { document.getElementById('ag-kpis').innerHTML = '<div class="alert alert-danger">Não foi possível carregar o painel.</div>'; });
+  setInterval(loadPainel, 60000);
+})();
+</script>
+{% endblock %}

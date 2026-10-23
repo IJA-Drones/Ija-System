@@ -23,7 +23,7 @@ class SinanJob(db.Model):
     fingerprint = db.Column(db.String(64), nullable=False, default="")
     __table_args__ = (
         db.CheckConstraint("status IN ('running','completed','partial','failed','cancelled')", name="ck_sinan_lote_status"),
-        db.CheckConstraint("kind IN ('api','csv')", name="ck_sinan_lote_kind"),
+        db.CheckConstraint("kind IN ('api','csv','datasus')", name="ck_sinan_lote_kind"),
         db.Index("ix_sinan_owner_scope", "owner", "disease", "ibge", "year", "created"),
         db.Index("uq_sinan_worker", "status", unique=True,
                  postgresql_where=db.text("status = 'running'"), sqlite_where=db.text("status = 'running'")),

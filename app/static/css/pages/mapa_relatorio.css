@@ -190,3 +190,39 @@
   position: absolute;
   pointer-events: none;
 }
+
+.mapa-relatorio-page .mapa-orto {
+  margin: 10px;
+  padding: 8px 10px;
+  max-width: 260px;
+  font-size: 0.8rem;
+}
+
+.mapa-relatorio-page .mapa-orto-toggle {
+  border: 0;
+  background: none;
+  font-weight: 700;
+  color: inherit;
+}
+
+.mapa-relatorio-page .mapa-orto-body label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.mapa-relatorio-page .mapa-orto-opacity input {
+  width: 100%;
+}
+
+.mapa-relatorio-page .mapa-orto-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mapa-relatorio-page .mapa-orto-erro {
+  flex-basis: 100%;
+  color: #b42318;
+}

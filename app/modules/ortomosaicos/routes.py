@@ -1,3 +1,4 @@
+import json
 import re
 from functools import wraps
 
@@ -241,6 +242,50 @@ def register_routes(bp):
     @restricted
     def jpeg(oid):
         return contour_output(oid, 'jpeg_path', 'image/jpeg', True)
+
+    @bp.get('/ortomosaicos/<int:oid>/original.tif', endpoint='ortomosaico_original')
+    @restricted
+    def original(oid):
+        row = get_record(oid)
+        try:
+            response = skybox.stream_skybox_file(row.original_path, as_attachment=True)
+        except skybox.SkyboxError:
+            return jsonify(error='Não foi possível recuperar o arquivo original. Tente novamente.'), 502
+        response.headers['Content-Disposition'] = f'attachment; filename="{row.arquivo_nome}"'
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
+
+    @bp.get('/ortomosaicos/<int:oid>/exportar/<any(curvas, medicoes):camada>.<any(geojson, zip):formato>',
+            endpoint='ortomosaico_exportar')
+    @restricted
+    def export_layer(oid, camada, formato):
+        from . import export
+        row = get_record(oid)
+        if row.status != 'pronto':
+            abort(404)
+        if camada == 'curvas':
+            if row.tipo != 'dem' or not row.curvas_path:
+                abort(404)
+            try:
+                features = json.loads(skybox.download_skybox_bytes(row.curvas_path, max_bytes=512*1024*1024))['features']
+            except skybox.SkyboxError:
+                return jsonify(error='Não foi possível recuperar as curvas. Tente novamente.'), 502
+            fields = export.CURVE_FIELDS
+        else:
+            records = OrtomosaicoEstimativaAgua.query.filter_by(ortomosaico_id=oid).order_by(OrtomosaicoEstimativaAgua.id).all()
+            features = export.water_features(records)
+            fields = export.WATER_FIELDS
+        if not features:
+            return jsonify(error='Não há feições nesta camada para exportar.'), 404
+        name = f'{"curvas-nivel" if camada == "curvas" else "medicoes"}-{oid}'
+        if formato == 'zip':
+            body, mime = export.shapefile_zip(features, fields, name), 'application/zip'
+        else:
+            body = json.dumps(dict(type='FeatureCollection', features=features), ensure_ascii=False)
+            mime = 'application/geo+json'
+        return Response(body, mimetype=mime, headers={
+            'Content-Disposition': f'attachment; filename="{name}.{formato}"',
+            'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'})
 
     @bp.cli.command('processar-ortomosaicos')
     @click.option('--limite', default=5, type=click.IntRange(1, 100))

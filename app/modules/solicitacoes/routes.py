@@ -11,6 +11,7 @@ from app.modules.solicitacoes.service import (
     NovoCadastroValidationError,
     build_novo_cadastro_context,
     build_novo_cadastro_context_with_form,
+    build_novo_cadastro_context_from_coordinates,
     build_editar_solicitacao_context,
     create_nova_solicitacao,
     deletar_solicitacao_admin,
@@ -57,6 +58,8 @@ def register_routes(bp):
 
         google_maps_key = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")
         context = build_novo_cadastro_context(current_user, google_maps_key)
+        if request.method == "GET" and request.args.get("latitude"):
+            context = build_novo_cadastro_context_from_coordinates(current_user, google_maps_key, request.args)
 
         if request.method == "POST":
             try:

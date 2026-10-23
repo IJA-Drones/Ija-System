@@ -41,6 +41,21 @@ class Config:
     REPORT_SMTP_FROM = os.getenv("REPORT_SMTP_FROM", "")
     REPORT_SMTP_USERNAME = os.getenv("REPORT_SMTP_USERNAME", "")
     REPORT_SMTP_PASSWORD = os.getenv("REPORT_SMTP_PASSWORD", "")
+    # Push web (VAPID) e FCM (conta de serviço Firebase em JSON). Vazios = push desligado.
+    # URL pública usada em links de e-mail/push (vazio = origem da requisição ou domínio de produção).
+    PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "")
+    VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "")
+    VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
+    VAPID_CLAIMS_EMAIL = os.getenv("VAPID_CLAIMS_EMAIL", "")
+    FCM_SERVICE_ACCOUNT_JSON = os.getenv("FCM_SERVICE_ACCOUNT_JSON", "")
+    # WhatsApp via Kapso (API compatível com a Meta Cloud API).
+    KAPSO_API_KEY = os.getenv("KAPSO_API_KEY", "")
+    KAPSO_PHONE_NUMBER_ID = os.getenv("KAPSO_PHONE_NUMBER_ID", "")
+    KAPSO_WEBHOOK_SECRET = os.getenv("KAPSO_WEBHOOK_SECRET", "")
+    # Telegram (Bot API): token do @BotFather e um segredo longo usado na URL do webhook.
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+    TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "ija_vigilancia_bot")
     SKYBOX_BASE_DIR = os.environ.get("SKYBOX_BASE_DIR", "dados ordens de serviço")
     CORREIOS_API_TOKEN = os.environ.get("CORREIOS_API_TOKEN")
     CORREIOS_CEP_TOKEN = os.environ.get("CORREIOS_CEP_TOKEN")

@@ -617,10 +617,12 @@
     const uvisResponsavelInput = document.querySelector('[name="uvis_responsavel_id"]');
 
     let geocodeTimer = null;
+    // A point chosen on the orthomosaic map is more precise than the address geocode: keep it.
+    const coordenadaFixa = {{ (request.args.get('origem') == 'ortomosaico' and (form.latitude or '') != '') | tojson }};
 
     function limparLatLng() {
-      if (latInput) latInput.value = "";
-      if (lngInput) lngInput.value = "";
+      if (latInput && !coordenadaFixa) latInput.value = "";
+      if (lngInput && !coordenadaFixa) lngInput.value = "";
       if (placeIdInput) placeIdInput.value = "";
     }
 
@@ -694,8 +696,8 @@
         }
 
         // (opcional) feedback visual
-        if (latInput) latInput.value = "buscando...";
-        if (lngInput) lngInput.value = "buscando...";
+        if (latInput && !coordenadaFixa) latInput.value = "buscando...";
+        if (lngInput && !coordenadaFixa) lngInput.value = "buscando...";
 
         const res = await fetch("/api/geocode", {
           method: "POST",
@@ -707,8 +709,10 @@
         console.log("GEOCODE response:", data);
 
         if (data.ok) {
-          latInput.value = data.lat;
-          lngInput.value = data.lng;
+          if (!coordenadaFixa) {
+            latInput.value = data.lat;
+            lngInput.value = data.lng;
+          }
 
           // 🔒 1. SE O BACKEND RETORNAR O PLACE_ID, SALVA NO INPUT HIDDEN
           if (data.place_id) {

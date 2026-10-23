@@ -122,10 +122,13 @@ def register_routes(bp):
     @_guard
     def import_api():
         values = request.get_json(silent=True)
-        if not isinstance(values, dict) or set(values) != {"disease", "ibge", "year"}:
+        if not isinstance(values, dict) or set(values) - {"source"} != {"disease", "ibge", "year"}:
             raise ValueError("Informe doença, município e ano.")
+        source = values.pop("source", "api")
+        if source not in {"api", "datasus"}:
+            raise ValueError("Origem inválida. Use a API do Ministério da Saúde ou o DATASUS.")
         scope, store = _scope(values), _store()
-        job_id, _ = sinan_import.start(store, _owner(), scope)
+        job_id, _ = sinan_import.start(store, _owner(), scope, source=source)
         return jsonify(job=_compact(store.get(job_id, _owner()))), 202
 
     @bp.post("/api/vigilancia/sinan/casos", endpoint="vigilancia_sinan_cases_import")

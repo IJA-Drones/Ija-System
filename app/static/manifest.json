@@ -25,13 +25,13 @@
       "name": "Início",
       "short_name": "Início",
       "url": "/?shortcut=home",
-      "icons": [{ "src": "/static/img/icon-192.png.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Admin",
       "short_name": "Admin",
       "url": "/admin?shortcut=admin",
-      "icons": [{ "src": "/static/img/icon-192.png.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

@@ -299,6 +299,14 @@
       }
 
       showFeedback("Relato registrado com sucesso. Protocolo: " + payload.protocolo, "success");
+      if (window.ijaShare) {
+        const shareBtn = document.createElement("button");
+        shareBtn.type = "button"; shareBtn.className = "btn btn-outline-success btn-sm ms-2";
+        shareBtn.innerHTML = '<i class="bi bi-share" aria-hidden="true"></i> Compartilhar';
+        const cidade = (document.querySelector("#portalPrefeitura option:checked") || {}).textContent || "";
+        shareBtn.addEventListener("click", () => window.ijaShare({ text: window.ijaShareTexts.foco(cidade.replace("Prefeitura de ", "").trim()) }));
+        feedback.appendChild(shareBtn);
+      }
       form.reset();
       selectedType = "";
       selectedTypeInput.value = "";
@@ -313,6 +321,15 @@
       form.dispatchEvent(new CustomEvent("portal:report-success", {detail: {protocolo: payload.protocolo}}));
     } catch (error) {
       console.error("Erro ao enviar relato cidadão.", error);
+      // Sem rede: guarda o relato no aparelho e reenvia sozinho quando a conexão voltar.
+      if (error instanceof TypeError && window.PortalOffline) {
+        const saved = await window.PortalOffline.save(form);
+        if (saved) {
+          showFeedback("Sem conexão. O relato foi salvo neste aparelho e será enviado automaticamente quando a internet voltar.", "success");
+          form.dispatchEvent(new CustomEvent("portal:report-queued", {detail: {}}));
+          return;
+        }
+      }
       const message = "Não foi possível confirmar o envio. O relato pode ter sido recebido. Evite reenviar imediatamente para não duplicar o registro.";
       showFeedback(message, "error");
       form.dispatchEvent(new CustomEvent("portal:report-error", {detail: {errors: {}, message}}));

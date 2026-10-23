@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>IJA Vigilância</title>
+  <meta name="description" content="Relate focos do mosquito, casos suspeitos e receba alertas da vigilância em saúde do seu município.">
+  <meta name="theme-color" content="#061827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IJA Vigilância">
+  <meta name="application-name" content="IJA Vigilância">
+  <meta name="csrf-token" content="{{ csrf }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022-m') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
+  <script>
+    // Interface exclusiva do aplicativo instalado na tela inicial (modo standalone). No navegador comum vai para o portal.
+    (function () {
+      var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      var params = new URLSearchParams(window.location.search);
+      var preview = params.get('preview') === '1';
+      try { if (preview) sessionStorage.setItem('ija-preview', '1'); else preview = sessionStorage.getItem('ija-preview') === '1'; } catch (e) { /* privado */ }
+      if (!standalone && !preview) window.location.replace('/portal-cidadao');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-movel.css') }}">
+</head>
+<body>
+  <div id="app" class="app"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="dialog" class="dialog"></dialog>
+  <script src="{{ url_for('static', filename='js/compartilhar.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app-movel.js') }}"></script>
+</body>
+</html>

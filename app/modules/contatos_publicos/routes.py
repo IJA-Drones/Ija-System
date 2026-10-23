@@ -37,7 +37,7 @@ def register_routes(bp):
                 error, status = 'Outra pessoa alterou estes contatos. Recarregue antes de salvar.', 409
             except ValueError as exc:
                 db.session.rollback()
-                values = {key: request.form.get(key, '')[:1500] for key in FIELDS}
+                values = {key: request.form.get(key, '')[:6000] for key in FIELDS}
                 values['publicado'] = request.form.get('publicado') == '1'
                 error, status = str(exc), 400
             except SQLAlchemyError:

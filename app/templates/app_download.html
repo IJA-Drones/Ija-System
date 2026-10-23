@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Baixar o aplicativo | IJA Vigilância{% endblock %}
+{% block meta %}<meta name="description" content="Instale o IJA Vigilância no Android (APK) ou no iPhone (Adicionar à Tela de Início).">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
+<style>
+.app-dl-hero{background:linear-gradient(135deg,#061827 0%,#083348 48%,#087088 100%);color:#fff;border-radius:24px;padding:40px 32px;margin:16px 0 28px}
+.app-dl-hero h1{font-weight:600;font-size:2rem;margin:0 0 8px}.app-dl-hero p{color:#cfeff5;max-width:640px;margin:0}
+.app-dl-kicker{color:#9ef4ff;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:10px}
+.app-dl-card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;height:100%}
+.app-dl-card h2{font-size:1.25rem;font-weight:600;color:#1c2b3f;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.app-dl-card h2 i{color:#087088;font-size:1.5rem}.app-dl-sub{color:#718096;font-size:.9rem;margin-bottom:18px}
+.app-dl-steps{list-style:none;padding:0;margin:0;counter-reset:s}.app-dl-steps li{display:flex;gap:14px;padding:12px 0;border-top:1px solid #edf2f7;counter-increment:s}
+.app-dl-steps li::before{content:counter(s);flex:0 0 32px;height:32px;border-radius:50%;background:#087088;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center}
+.app-dl-steps strong{display:block;color:#1c2b3f}.app-dl-steps span{color:#4a5568;font-size:.92rem}
+.app-dl-btn{background:#087088;color:#fff;border:0;border-radius:14px;padding:14px 24px;font-weight:600;font-size:1rem;display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+.app-dl-btn:hover{background:#06596c;color:#fff}.app-dl-qr{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:10px;width:176px;height:176px}
+.app-dl-note{border-left:4px solid #42f5c8;background:#f7fcfd;border-radius:12px;padding:16px 18px;color:#2d3748;font-size:.92rem}
+.app-dl-ios-icon{display:inline-block;background:#e8f8fb;border-radius:8px;padding:2px 8px;color:#087088;font-weight:600}
+</style>{% endblock %}
+{% macro page_content() %}
+<main class="container py-3" style="max-width:1080px">
+  <section class="app-dl-hero">
+    <div class="app-dl-kicker"><i class="bi bi-phone" aria-hidden="true"></i> Aplicativo do cidadão e do agente</div>
+    <h1>IJA Vigilância no seu celular</h1>
+    <p>Relate focos do mosquito com foto e localização, registre casos suspeitos, receba alertas da vigilância e, se você é agente de endemias, registre suas visitas em campo. Funciona sem internet e envia tudo quando a conexão voltar.</p>
+  </section>
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="app-dl-card">
+        <h2><i class="bi bi-android2" aria-hidden="true"></i> Android</h2>
+        <p class="app-dl-sub">Aplicativo nativo instalado por arquivo APK, disponibilizado diretamente pela Oceano Azul enquanto a publicação na Google Play está em análise (versão {{ versao }} · {{ tamanho_mb }} MB · Android 8 ou superior).</p>
+        <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
+          <a class="app-dl-btn" href="{{ url_for('main.app_apk') }}" download="ija-vigilancia.apk"><i class="bi bi-download" aria-hidden="true"></i> Baixar APK</a>
+          <div class="text-center"><img class="app-dl-qr" src="{{ url_for('main.app_qr') }}" alt="QR Code para baixar o aplicativo"><div class="small text-muted mt-1">Aponte a câmera do celular</div></div>
+        </div>
+        <ol class="app-dl-steps">
+          <li><div><strong>Baixe o aplicativo</strong><span>Toque em "Baixar APK" no próprio celular ou escaneie o QR Code.</span></div></li>
+          <li><div><strong>Autorize a instalação</strong><span>Ao abrir o arquivo, o Android pergunta se permite instalar desta origem. Toque em Configurações e ative "Permitir desta fonte" (só na primeira vez).</span></div></li>
+          <li><div><strong>Instale e abra</strong><span>Toque em Instalar. O ícone "IJA Vigilância" aparece na tela inicial.</span></div></li>
+          <li><div><strong>Permita localização, câmera e notificações</strong><span>Na primeira abertura, aceite as permissões: a localização preenche o endereço do relato e a notificação traz os alertas da sua área.</span></div></li>
+        </ol>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="app-dl-card">
+        <h2><i class="bi bi-apple" aria-hidden="true"></i> iPhone e iPad</h2>
+        <p class="app-dl-sub">Versão do aplicativo para iPhone com instalação direta, disponibilizada enquanto a publicação na App Store está em análise pela Apple. Tem as mesmas telas e funções do aplicativo Android (relatos com foto e localização, alertas, Azul e área do agente) e abre em tela cheia, com ícone próprio. Não é a mesma coisa que acessar o site pelo navegador: a interface do aplicativo só aparece depois de instalado.</p>
+        <ol class="app-dl-steps">
+          <li><div><strong>Abra este endereço no Safari</strong><span>Acesse <a href="{{ url_for('main.portal_cidadao', _external=True) }}">{{ url_for('main.portal_cidadao', _external=True) }}</a> pelo Safari. A instalação direta só funciona pelo Safari (não pelo Chrome, Instagram ou WhatsApp).</span></div></li>
+          <li><div><strong>Toque em Compartilhar</strong><span>É o ícone <span class="app-dl-ios-icon"><i class="bi bi-box-arrow-up" aria-hidden="true"></i></span> na barra inferior do Safari.</span></div></li>
+          <li><div><strong>Toque em "Adicionar à Tela de Início" e confirme</strong><span>O ícone "IJA Vigilância" é instalado junto dos seus outros aplicativos. Esse é o passo de instalação.</span></div></li>
+          <li><div><strong>Abra o aplicativo pelo ícone</strong><span>A partir daí a interface é a do aplicativo, não a do site. Na primeira abertura, toque em "Receber alertas" e aceite as notificações e a localização.</span></div></li>
+        </ol>
+        <p class="small text-muted mt-3 mb-0">Requer iOS 16.4 ou superior. Quando a versão da App Store for liberada, basta instalá-la pela loja; os dados ficam no servidor e nada se perde.</p>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="app-dl-note"><strong>Sobre o aviso de "fonte desconhecida" no Android.</strong> O sistema mostra esse aviso para qualquer aplicativo instalado fora da Play Store. O arquivo é distribuído diretamente pela Oceano Azul neste endereço e assinado digitalmente; confira que o download veio de <strong>{{ request.host }}</strong>.
+      <br><strong>Agentes de endemias:</strong> use o mesmo usuário e senha do sistema na opção "Sou agente de endemias" dentro do aplicativo.</div>
+    </div>
+  </div>
+  <p class="text-center text-muted small mt-4"><a href="{{ url_for('main.portal_cidadao') }}">Voltar ao Portal do Cidadão</a> · Oceano Azul · IJA Drones</p>
+</main>
+{% endmacro %}
+{% block content %}{{ page_content() }}{% endblock %}
+{% block auth_container_class %}container-fluid p-0{% endblock %}
+{% block auth_content %}{{ page_content() }}{% endblock %}

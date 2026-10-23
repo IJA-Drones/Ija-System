@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 from collections import Counter
 from datetime import datetime, timezone
 
@@ -132,6 +133,17 @@ def fetch_page(*, ibge, year, offset=0, disease="dengue"):
     if not isinstance(offset, int) or isinstance(offset, bool) or not 0 <= offset < MAX_RECORDS or offset % PAGE_SIZE:
         raise SinanError("Posição de consulta inválida.")
     params = {"id_municip": ibge[:6], "nu_ano": year, "limit": PAGE_SIZE, "offset": offset, "campos": FIELDS}
+    # A API pública derruba conexões com frequência; três tentativas curtas antes de desistir.
+    for attempt in range(3):
+        try:
+            return _fetch_once(source, params, ibge=ibge, year=year, offset=offset, disease=disease)
+        except SinanError as exc:
+            if attempt == 2 or "conectar" not in str(exc) and "tempo de espera" not in str(exc):
+                raise
+            time.sleep(2 * (attempt + 1))
+
+
+def _fetch_once(source, params, *, ibge, year, offset, disease):
     try:
         with requests.get(source["api_url"], params=params, timeout=(5, 45), stream=True, allow_redirects=False) as response:
             if response.status_code != 200:
