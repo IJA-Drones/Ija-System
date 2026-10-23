@@ -1,0 +1,17 @@
+.git
+.venv
+venv
+**/__pycache__
+**/*.pyc
+.env
+*.env
+/instance
+/upload-files
+/output
+/tmp
+/backups
+/*.pdf
+*.db
+*.sqlite
+.vscode
+.idea
