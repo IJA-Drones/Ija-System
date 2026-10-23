@@ -47,6 +47,13 @@ A chave pública acima foi gerada em 22/10/2026 para esta POC (a privada fica fo
 - Base de demonstração: `python scripts/poc_seed.py --prefeitura-id 14 --usuario-demo <login> --agente-login agente.pesqueira --agente-senha '<senha>' --email-alertas <email>`
   (Shell do Render). Cria plano LIRAa com quarteirões do agente, carga de campo, regras de alerta, relatos, rastro e SINAN DATASUS.
 
+## Telegram (Azul 24/7 em rede social, sem aprovação)
+
+1. No Telegram, @BotFather → `/newbot` → nome "IJA Vigilância" → usuário `ija_vigilancia_bot` → copiar o token.
+2. No Render: `TELEGRAM_BOT_TOKEN=<token>` e `TELEGRAM_WEBHOOK_SECRET=<texto longo aleatório>`.
+3. Registrar o webhook (uma vez): `curl "https://api.telegram.org/bot<token>/setWebhook?url=https://www.system.oceanoazuldrones.com.br/webhooks/telegram/<segredo>&secret_token=<segredo>"`.
+O bot responde com a mesma Azul do portal (histórico curto por chat, 40 mensagens/hora por chat).
+
 ## Kapso (WhatsApp)
 
 1. No painel da Kapso, número conectado → Webhooks → novo webhook:
