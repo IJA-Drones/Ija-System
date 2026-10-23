@@ -5,7 +5,7 @@
   const el = name => document.getElementById(`ortho-${name}`);
   const labels = {pendente:'Na fila',processando:'Processando',pronto:'Disponível',falha:'Falha no processamento'};
   let items = [], selected = null, layer = null, map = null, source = null, uploading = false, pollBusy = false;
-  let referenceLayer = null, vectorRequest = null;
+  let referenceLayer = null, vectorRequest = null, picking = false;
   const base = new ol.layer.Tile({source:new ol.source.OSM()});
   const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
   function message(text, error=false) {el('message').textContent=text;el('message').classList.toggle('error',error);}
@@ -21,6 +21,7 @@
     el('layers-panel').hidden=map.getSize()[0]<650;
     el('layers-toggle').setAttribute('aria-expanded',String(!el('layers-panel').hidden));
     map.on('singleclick', event=>{
+      if(picking){event.stopPropagation();setPicking(false);openRequest(ol.proj.toLonLat(event.coordinate));return;}
       if(selected?.tipo!=='dem')return;
       const feature=map.forEachFeatureAtPixel(event.pixel, f=>f, {layerFilter:l=>l===layer,hitTolerance:6});
       el('elevation').textContent=feature?`Cota: ${Number(feature.get('cota')).toLocaleString('pt-BR')} m${feature.get('mestra')?' · Curva mestra':''}`:'Clique em uma curva para consultar sua cota.';
@@ -28,7 +29,35 @@
     map.on('pointermove',event=>{const point=ol.proj.toLonLat(event.coordinate);el('coordinates').textContent=`${point[1].toFixed(6)}°, ${point[0].toFixed(6)}° · WGS 84`;});
   } catch (_) {message('Não foi possível iniciar o mapa neste navegador.',true);}
   const rasterCache = map ? window.createOrthoRasterCache({map, onStatus: rasterStatus}) : null;
-  const water = map ? window.createOrthoWater({map,api}) : null;
+  const water = map ? window.createOrthoWater({map,api,onRequest:item=>{
+    const geometry=item.geometria.type==='Point'?new ol.geom.Point(item.geometria.coordinates):new ol.geom.Polygon(item.geometria.coordinates).getInteriorPoint();
+    const result=item.resultado, number=(n,unit)=>n==null?null:`${n.toLocaleString('pt-BR',{maximumFractionDigits:2})} ${unit}`;
+    openRequest(geometry.getCoordinates(),[`Medição "${item.nome}" (${item.tipo})`,number(result.area_m2,'m²')&&`área ${number(result.area_m2,'m²')}`,
+      `capacidade ${number(result.capacidade_l,'L')}`,number(result.agua_l,'L')&&`água presente ${number(result.agua_l,'L')}`].filter(Boolean).join(', '));
+  }}) : null;
+  // Opens the existing request form, prefilled by querystring, in a new tab so the map keeps its state.
+  function openRequest(lonLat, note='') {
+    const origin=selected?`Ponto marcado no ortomosaico "${selected.nome}" (#${selected.id})`:'Ponto marcado no mapa de ortomosaicos';
+    const params=new URLSearchParams({latitude:lonLat[1].toFixed(7),longitude:lonLat[0].toFixed(7),origem:'ortomosaico',
+      observacao:[origin,note].filter(Boolean).join('. ')});
+    if(!window.open(`${app.dataset.requestUrl}?${params}`,'_blank'))message('Permita pop-ups deste site para abrir o cadastro da solicitação.',true);
+  }
+  function setPicking(value) {
+    picking=value;el('request-toggle').setAttribute('aria-pressed',String(value));
+    if(map)map.getTargetElement().style.cursor=value?'crosshair':'';
+    if(value){water?.close();message('Clique no ponto do mapa onde a solicitação deve ser criada. Esc cancela.');}
+  }
+  el('request-toggle').onclick=()=>setPicking(!picking);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&picking){setPicking(false);message('');}});
+  el('export').addEventListener('click',event=>{
+    const link=event.target.closest('[data-export^="medicoes"]');
+    if(link&&!water?.count()){event.preventDefault();message('Não há medições salvas neste levantamento para exportar.',true);}
+  });
+  function exportLinks(item) {
+    el('export').hidden=!item;if(!item)return;
+    el('export-original').href=item.original_url;el('export-curvas').hidden=item.tipo!=='dem';
+    el('export').querySelectorAll('[data-export]').forEach(link=>{const url=item.exportar?.[link.dataset.export];link.hidden=!url;if(url)link.href=url;else link.removeAttribute('href');});
+  }
   function referenceStatus(entry) {
     const notice=el('reference-status');notice.hidden=false;
     const item=items.find(i=>String(i.id)===el('reference').value);
@@ -103,7 +132,7 @@
     el('jpeg').removeAttribute('href');if(item.jpeg_url)el('jpeg').href=item.jpeg_url;
     el('layer-label').textContent=item.tipo==='dem'?'Curvas de nível':'Ortomosaico RGB';
     if(item.tipo==='dem')referenceOptions(item);else clearReference();
-    selected=item;water?.select(item);renderList();details(item);el('active-title').textContent=item.nome;
+    selected=item;water?.select(item);renderList();details(item);exportLinks(item);el('active-title').textContent=item.nome;
     if(item.tipo!=='dem'||item.status!=='pronto')clearReference();
     el('empty').hidden=item.status==='pronto';
     if(item.status!=='pronto'){
@@ -150,7 +179,7 @@
     const wanted=items.find(i=>i.id===preferId)||items.find(i=>i.id===selected?.id)||items[0];
     if(wanted)select(wanted,discardApproved);else{
       vectorRequest?.abort();clearReference();el('dem-controls').hidden=true;el('jpeg').removeAttribute('href');
-      selected=null;water?.select(null);releaseMainLayer();
+      selected=null;water?.select(null);exportLinks(null);releaseMainLayer();
       el('empty').hidden=false;el('empty').querySelector('h2').textContent='Selecione um levantamento';
       el('empty').querySelector('p').textContent='Envie um ortomosaico ou escolha outra prefeitura para visualizar os mapas.';
       el('active-title').textContent='Selecione um levantamento';el('detail-name').textContent='Detalhes do levantamento';

@@ -6,9 +6,11 @@
   <p>Seu relato foi registrado para avaliação da <strong>COVISA de {{ recibo.prefeitura }}</strong>.</p>
   <div class="alert alert-success"><span class="d-block">Guarde seu protocolo</span><strong class="fs-4">{{ recibo.protocolo }}</strong></div>
   <p>A COVISA fará a triagem e poderá encaminhar à UVIS. O envio não confirma diagnóstico nem agendamento. Se precisar de atendimento, procure um serviço de saúde.</p>
+  <p><button type="button" class="btn btn-outline-primary btn-sm" data-share="caso"><i class="bi bi-share" aria-hidden="true"></i> Compartilhar orientação com conhecidos</button></p>
   <p class="small text-muted">O protocolo identifica seu relato quando você entrar em contato com a vigilância. Não há consulta pública de dados de saúde pelo número do protocolo.</p>
   <a class="btn btn-primary" href="{{ url_for('main.portal_cidadao') }}">Voltar ao portal</a>
 </div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/compartilhar.js') }}"></script>{% endblock %}
 
 {% block content %}{{ self.auth_content() }}{% endblock %}

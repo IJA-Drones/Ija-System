@@ -12,6 +12,8 @@
   "main.ortomosaico_status": "Fixed role guard and municipality access checks",
   "main.ortomosaico_retry": "Fixed role guard and municipality access checks",
   "main.ortomosaico_arquivo": "Private GeoTIFF range access, fixed diretor/dev role guard",
+  "main.ortomosaico_original": "Original GeoTIFF download; fixed diretor/dev guard and municipality access checks",
+  "main.ortomosaico_exportar": "GeoJSON/Shapefile layer export; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaico_agua_calcular": "Water estimate calculation; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaico_agua": "Private water estimates; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaico_agua_item": "Water estimate updates and deletion; fixed diretor/dev guard and survey access checks",

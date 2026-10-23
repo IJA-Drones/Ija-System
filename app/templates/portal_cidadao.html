@@ -40,7 +40,8 @@
         <a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">
           <i class="bi bi-heart-pulse" aria-hidden="true"></i> Relatar suspeita de adoecimento
         </a>
-        <a class="btn btn-outline-primary" href="{{ url_for('main.app_download') }}">
+        <button type="button" class="btn btn-outline-primary" data-share="app" data-cidade="{{ portal_city }}"><i class="bi bi-share" aria-hidden="true"></i> Convidar vizinhos</button>
+        <a class="btn btn-outline-primary" href="/app">
           <i class="bi bi-phone" aria-hidden="true"></i> Baixar o aplicativo
         </a>
         <a class="btn btn-success portal-cidadao-primary-action" href="#portal-relato">
@@ -96,7 +97,7 @@
       </div>
       <p class="small mb-0 mt-2" id="portal-push-status" role="status">Avisos da vigilância quando houver aumento de focos ou casos perto de você.</p>
       <p class="small mb-0 mt-1">Prefere o Telegram? <a href="{{ telegram_bot_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-telegram" aria-hidden="true"></i> Fale com a Azul no Telegram</a> e receba orientações por lá.</p>
-      <p class="small mb-0 mt-1" id="portal-install-hint" hidden>No iPhone: toque em Compartilhar <i class="bi bi-box-arrow-up" aria-hidden="true"></i> no Safari e em "Adicionar à Tela de Início"; depois abra pelo ícone e ative os alertas aqui. <a href="{{ url_for('main.app_download') }}">Ver passo a passo</a>.</p>
+      <p class="small mb-0 mt-1" id="portal-install-hint" hidden>No iPhone: toque em Compartilhar <i class="bi bi-box-arrow-up" aria-hidden="true"></i> no Safari e em "Adicionar à Tela de Início"; depois abra pelo ícone e ative os alertas aqui. <a href="/app">Ver passo a passo</a>.</p>
     </div>
 
     <form class="portal-cidadao-municipality-filter" method="get" action="{{ url_for('main.portal_cidadao', _anchor='boletim-saude') }}">
@@ -135,6 +136,7 @@
           <strong><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ infodengue_alert.alert_label }}</strong>
         </div>
         {% endif %}
+        <button type="button" class="btn btn-outline-primary btn-sm align-self-start" data-share="boletim" data-cidade="{{ infodengue_alert.city if infodengue_alert else portal_city }}" data-nivel="{{ infodengue_alert.alert_label if infodengue_alert else '' }}" data-url="{{ url_for('main.portal_cidadao', municipio=selected_municipality.ibge, _external=True, _anchor='boletim-saude') }}"><i class="bi bi-share" aria-hidden="true"></i> Compartilhar boletim</button>
       </div>
 
       {% if infodengue_alert %}
@@ -428,6 +430,7 @@
 {% block auth_content %}{{ portal_content() }}{% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/compartilhar.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-offline.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-push.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-mobile.js') }}"></script>

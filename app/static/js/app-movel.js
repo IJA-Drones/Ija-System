@@ -188,10 +188,11 @@
     $toast.textContent = text; $toast.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { $toast.hidden = true; }, 6000);
   }
-  function dialog({ icon, iconClass, title, text, ok = 'OK' }) {
+  function dialog({ icon, iconClass, title, text, ok = 'OK', share }) {
     return new Promise((resolve) => {
-      $dialog.innerHTML = `${icon ? svg(icon, iconClass) : ''}<h2>${esc(title)}</h2><p>${esc(text)}</p><button class="btn primary" type="button">${esc(ok)}</button>`;
-      $dialog.querySelector('button').onclick = () => { $dialog.close(); resolve(); };
+      $dialog.innerHTML = `${icon ? svg(icon, iconClass) : ''}<h2>${esc(title)}</h2><p>${esc(text)}</p>${share ? `<button class="btn outline" type="button" id="dlgShare" style="margin-bottom:8px">${svg('send')} Compartilhar</button>` : ''}<button class="btn primary" type="button" id="dlgOk">${esc(ok)}</button>`;
+      $dialog.querySelector('#dlgOk').onclick = () => { $dialog.close(); resolve(); };
+      if (share) $dialog.querySelector('#dlgShare').onclick = () => window.ijaShare && window.ijaShare({ text: share });
       $dialog.showModal();
     });
   }
@@ -366,9 +367,11 @@
           ${card('chat', 'chat', 'Fale com a Azul', 'Tire dúvidas sobre dengue, zika e chikungunya.', false)}
           ${card('agente', 'badge', 'Sou agente de endemias', 'Área restrita: jornada de campo.', false)}
           <button class="btn outline mt" type="button" data-go="enviados">${svg('history')} ${pend > 0 ? `Enviados / pendentes (${pend} pendente(s))` : 'Enviados / pendentes'}</button>
+          <div class="card item mt" style="align-items:center"><div class="tx"><b>Convide sua vizinhança</b><span class="muted small">Quanto mais gente relatando, mais rápido os focos são eliminados.</span></div><button class="btn outline sm" type="button" id="btnConvite" style="width:auto">${svg('send')} Compartilhar</button></div>
           <p class="footer">Oceano Azul · IJA Drones</p>
         </main>`;
       $app.querySelector('#municipio').addEventListener('change', (e) => { setPrefeitura(Number(e.target.value)); draw(); });
+      const conv = $app.querySelector('#btnConvite'); if (conv) conv.addEventListener('click', () => window.ijaShare && window.ijaShare({ text: window.ijaShareTexts.app(nomePrefeitura(state.prefeituraId)) }));
       $app.querySelectorAll('[data-card]').forEach((b) => b.addEventListener('click', () => {
         if (b.hasAttribute('data-needs') && !has) { toast('Escolha o município primeiro.'); return; }
         go(b.dataset.card);
@@ -495,7 +498,7 @@
       Object.assign(fields, { latitude: pos ? String(pos.coords.latitude) : '', longitude: pos ? String(pos.coords.longitude) : '', place_id: placeId, consentimento: 'on' });
       try {
         const protocolo = await outbox.send('foco', fields, fotos.slice());
-        await dialog(protocolo ? { icon: 'check', iconClass: 'icon-ok', title: 'Relato enviado', text: `Obrigado! Seu protocolo é ${protocolo}. Guarde este número para acompanhar.` }
+        await dialog(protocolo ? { icon: 'check', iconClass: 'icon-ok', title: 'Relato enviado', text: `Obrigado! Seu protocolo é ${protocolo}. Guarde este número para acompanhar.`, share: window.ijaShareTexts && window.ijaShareTexts.foco(nomePrefeitura(state.prefeituraId)) }
           : { icon: 'cloudOff', iconClass: 'icon-warn', title: 'Salvo no aparelho', text: 'Sem internet agora. O relato foi salvo no aparelho e será enviado automaticamente quando houver conexão.' });
         go('inicio');
       } catch (err) {
@@ -566,7 +569,7 @@
       if (val(form, 'inicio_sintomas')) fields.inicio_sintomas = val(form, 'inicio_sintomas');
       try {
         const protocolo = await outbox.send('caso', fields, []);
-        await dialog(protocolo ? { icon: 'check', iconClass: 'icon-ok', title: 'Relato enviado', text: `Obrigado! Seu protocolo é ${protocolo}. A equipe de saúde poderá entrar em contato.` }
+        await dialog(protocolo ? { icon: 'check', iconClass: 'icon-ok', title: 'Relato enviado', text: `Obrigado! Seu protocolo é ${protocolo}. A equipe de saúde poderá entrar em contato.`, share: window.ijaShareTexts && window.ijaShareTexts.caso() }
           : { icon: 'cloudOff', iconClass: 'icon-warn', title: 'Salvo no aparelho', text: 'Sem internet agora. O relato foi salvo no aparelho e será enviado automaticamente quando houver conexão.' });
         go('inicio');
       } catch (err) {
@@ -634,8 +637,9 @@
       try {
         const r = await api.get('/api/mobile/alertas?prefeitura_id=' + encodeURIComponent(state.prefeituraId));
         const list = r.alertas || [];
-        lista.innerHTML = list.length ? list.map((a) => `<div class="card item">${svg('warning', 'icon-warn')}<div class="tx"><b>${esc(a.titulo || 'Alerta')}</b><p>${esc(a.mensagem || '')}</p><small>${[a.bairro ? 'Bairro ' + a.bairro : '', a.quando ? fmtDataHora(a.quando) : ''].filter(Boolean).join(' · ')}</small></div></div>`).join('')
+        lista.innerHTML = list.length ? list.map((a, i) => `<div class="card item">${svg('warning', 'icon-warn')}<div class="tx"><b>${esc(a.titulo || 'Alerta')}</b><p>${esc(a.mensagem || '')}</p><small>${[a.bairro ? 'Bairro ' + a.bairro : '', a.quando ? fmtDataHora(a.quando) : ''].filter(Boolean).join(' · ')}</small><button class="btn text sm share-alert" type="button" data-i="${i}" style="min-height:36px;padding:0;justify-content:flex-start">${svg('send')} Compartilhar</button></div></div>`).join('')
           : '<p class="center">Nenhum alerta recente para este município.</p>';
+        lista.querySelectorAll('.share-alert').forEach((b) => b.addEventListener('click', () => { const a = list[Number(b.dataset.i)]; window.ijaShare && window.ijaShare({ text: window.ijaShareTexts.alerta(nomePrefeitura(state.prefeituraId), a.titulo || 'Alerta', a.mensagem) }); }));
       } catch (e) { lista.innerHTML = `<p class="center">Não foi possível carregar os alertas.<br>${esc(e.message)}</p>`; }
     })();
   }

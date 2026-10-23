@@ -1,5 +1,6 @@
 """Envio SMTP único e explícito (REPORT_SMTP_*). Sem fila nem reenvio automático."""
 
+import logging
 import re
 import smtplib
 import ssl
@@ -9,6 +10,14 @@ from email.utils import formataddr, formatdate, make_msgid
 from html import escape
 
 from flask import current_app, has_request_context, request
+
+log = logging.getLogger("ija.email")
+if not log.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("[email] %(levelname)s %(message)s"))
+    log.addHandler(_h)
+    log.setLevel(logging.INFO)
+    log.propagate = False
 
 _ADDRESS = re.compile(r"[^\s@<>;,\r\n]+@[^\s@<>;,\r\n]+\.[^\s@<>;,\r\n]+")
 
@@ -121,15 +130,31 @@ def send(recipients, subject, body, attachments=(), html=None):
     for content, filename, subtype in attachments:
         message.add_attachment(content, maintype="application", subtype=subtype, filename=filename)
     context = ssl.create_default_context()
-    smtp = smtplib.SMTP_SSL(conf["host"], conf["port"], timeout=20, context=context) if conf["ssl"] else smtplib.SMTP(conf["host"], conf["port"], timeout=20)
-    with smtp as conn:
-        conn.ehlo()
-        if not conf["ssl"]:
-            conn.starttls(context=context)
+    destinos = ", ".join(recipients)
+    log.info("enviando assunto=%r para=%s servidor=%s:%s (%s) origem=%s message_id=%s",
+             subject, destinos, conf["host"], conf["port"], "ssl" if conf["ssl"] else "starttls", conf["source"], message["Message-ID"])
+    try:
+        smtp = smtplib.SMTP_SSL(conf["host"], conf["port"], timeout=20, context=context) if conf["ssl"] else smtplib.SMTP(conf["host"], conf["port"], timeout=20)
+        with smtp as conn:
             conn.ehlo()
-        if conf["username"]:
-            conn.login(conf["username"], conf["password"])
-        refused = conn.send_message(message)
-        if refused:
-            raise smtplib.SMTPRecipientsRefused(refused)
+            if not conf["ssl"]:
+                conn.starttls(context=context)
+                conn.ehlo()
+            if conf["username"]:
+                conn.login(conf["username"], conf["password"])
+            original_data = conn.data
+
+            def data_com_registro(msg):
+                code, resp = original_data(msg)
+                conn._ija_ultima_resposta = f"{code} {resp.decode(errors='ignore') if isinstance(resp, bytes) else resp}"
+                return code, resp
+            conn.data = data_com_registro
+            refused = conn.send_message(message)
+            if refused:
+                raise smtplib.SMTPRecipientsRefused(refused)
+    except Exception as exc:
+        log.error("falha assunto=%r para=%s servidor=%s erro=%s: %s", subject, destinos, conf["host"], type(exc).__name__, str(exc)[:300])
+        raise
+    aceite = getattr(conn, "_ija_ultima_resposta", "")
+    log.info("aceito assunto=%r para=%s message_id=%s resposta=%s", subject, destinos, message["Message-ID"], aceite or "250 OK")
     return len(recipients)

@@ -20,3 +20,6 @@
 .ortho-water-drawing{position:absolute;left:60px;right:62px;top:125px;display:flex;justify-content:space-between;align-items:center;gap:14px;background:#103336f5;border:1px solid #39847f;border-radius:8px;padding:12px;color:#c3f6eb;font-size:12px}.ortho-water-drawing button{border:1px solid #82b8b1;border-radius:5px;background:#1c4447;color:white;padding:6px}
 @media(min-width:1001px){.ortho-stage:has(.ortho-water-panel:not([hidden])){min-height:820px}}
 @media(max-width:700px){.ortho-water-panel{right:12px;left:12px;top:125px;bottom:90px;width:auto;max-width:none;padding:14px}.ortho-water-drawing{left:12px;right:12px;font-size:11px}.ortho-water-toggle{font-size:11px}.ortho-water-grid{gap:8px}}
+.ortho-request-toggle{left:185px}.ortho-request-toggle[aria-pressed=true]{background:#39d6ca;color:#08292d}.ortho-water-request{width:100%;margin-top:8px}
+.ortho-export a{color:var(--o-accent);font-size:12px;margin-left:10px}.ortho-export #ortho-export-original{display:block;margin:0 0 10px}.ortho-export p{display:flex;flex-wrap:wrap;align-items:center;font-size:11px;margin:0 0 8px}.ortho-export p span{flex:1 0 100%;color:#d1dfe7;margin-bottom:3px}.ortho-export p a:first-of-type{margin-left:0}
+@media(max-width:700px){.ortho-request-toggle{left:12px;top:125px}}

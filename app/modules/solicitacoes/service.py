@@ -4,7 +4,10 @@ import re
 import unicodedata
 from datetime import date, datetime
 
+from flask import current_app
 from sqlalchemy.orm import joinedload
+
+from app.clients.google_maps_client import reverse_geocode_lat_lng_google_details
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
@@ -297,6 +300,25 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
         "observacao": (form_source.get("observacao") or "").strip(),
     }
     return context
+
+
+def build_novo_cadastro_context_from_coordinates(user, google_maps_key, args):
+    """Prefill from a map point (e.g. an orthomosaic); the clicked point stays authoritative."""
+    try:
+        lat, lng = float(args.get("latitude", "")), float(args.get("longitude", ""))
+    except ValueError:
+        return build_novo_cadastro_context(user, google_maps_key)
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return build_novo_cadastro_context(user, google_maps_key)
+    values = {"latitude": f"{lat:.7f}", "longitude": f"{lng:.7f}",
+              "observacao": (args.get("observacao") or "").strip()[:1000]}
+    try:
+        address = reverse_geocode_lat_lng_google_details(lat=lat, lng=lng) or {}
+    except Exception:
+        current_app.logger.warning("Geocodificacao reversa indisponivel para a nova solicitacao.", exc_info=True)
+        address = {}
+    values.update({key: address.get(key) or "" for key in ("cep", "logradouro", "numero", "bairro", "cidade", "uf", "place_id")})
+    return build_novo_cadastro_context_with_form(user, google_maps_key, values)
 
 
 def create_nova_solicitacao(user, form_data, *, commit=True):

@@ -292,7 +292,9 @@ def app(tmp_path,monkeypatch):
     register_storage(app)
     db.init_app(app);manager=LoginManager(app)
     manager.user_loader(lambda uid:db.session.get(Usuario,int(uid)))
-    bp=Blueprint('main',__name__);register_routes(bp);app.register_blueprint(bp)
+    bp=Blueprint('main',__name__);register_routes(bp)
+    bp.add_url_rule('/novo_cadastro','novo',lambda:'')  # The viewer links to the existing request form.
+    app.register_blueprint(bp)
     register_csrf_security(app)
     app.jinja_loader=ChoiceLoader([DictLoader({'base.html':'{% block extra_styles %}{% endblock %}{% block content %}{% endblock %}{% block scripts %}{% endblock %}'}),app.jinja_loader])
     with app.app_context():

@@ -1,10 +1,11 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from flask import current_app, jsonify, render_template, request
+from flask import current_app, jsonify, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.clients.google_maps_client import geocode_endereco_google
+from app.shared.access import normalize_role
 from app.modules.mapas.service import (
     build_heatmap_points,
     build_uvis_disponiveis,
@@ -122,6 +123,9 @@ def register_routes(bp):
             "mapa_relatorio.html",
             uvis_disponiveis=build_uvis_disponiveis(current_user),
             google_maps_key=google_maps_key,
+            # Same fixed guard as the orthomosaic module: only diretor and dev see private surveys.
+            ortomosaicos_url=url_for("main.ortomosaicos_listar")
+            if normalize_role(current_user.tipo_usuario) in {"dev", "diretor"} else None,
             mes_atual=hoje_brasil.month,
             ano_atual=hoje_brasil.year,
         )

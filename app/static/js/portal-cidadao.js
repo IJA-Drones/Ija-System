@@ -299,6 +299,14 @@
       }
 
       showFeedback("Relato registrado com sucesso. Protocolo: " + payload.protocolo, "success");
+      if (window.ijaShare) {
+        const shareBtn = document.createElement("button");
+        shareBtn.type = "button"; shareBtn.className = "btn btn-outline-success btn-sm ms-2";
+        shareBtn.innerHTML = '<i class="bi bi-share" aria-hidden="true"></i> Compartilhar';
+        const cidade = (document.querySelector("#portalPrefeitura option:checked") || {}).textContent || "";
+        shareBtn.addEventListener("click", () => window.ijaShare({ text: window.ijaShareTexts.foco(cidade.replace("Prefeitura de ", "").trim()) }));
+        feedback.appendChild(shareBtn);
+      }
       form.reset();
       selectedType = "";
       selectedTypeInput.value = "";
