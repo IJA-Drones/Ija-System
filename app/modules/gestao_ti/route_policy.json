@@ -1373,5 +1373,11 @@
   },
   "main.configuracoes_smtp_testar": {
     "POST": "prefeitura.documentos.configurar"
+  },
+  "main.vigilancia_agentes_painel": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_agentes_export": {
+    "GET": "prefeitura.vigilancia.consultar"
   }
 }
