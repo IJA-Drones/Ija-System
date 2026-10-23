@@ -1,7 +1,35 @@
-// static/sw.js — servido em /sw.js (escopo raiz). Sem cache de páginas: só instalação e push.
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
-self.addEventListener("fetch", (event) => { event.respondWith(fetch(event.request)); });
+// static/sw.js — servido em /sw.js (escopo raiz). Push em qualquer página + cache do shell do aplicativo (/m/).
+const CACHE = "ija-app-movel-v1";
+const SHELL = ["/m/", "/static/css/app-movel.css", "/static/js/app-movel.js", "/static/img/logo_oceano_azul_light.png",
+  "/static/img/icon-192.png", "/static/img/icon-512.png", "/static/manifest-portal.json"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => {}).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== "GET" || url.origin !== self.location.origin) { event.respondWith(fetch(event.request)); return; }
+  if (url.pathname === "/m/" || url.pathname === "/m") {
+    // Shell: rede primeiro (token CSRF e versão novos), cache quando sem rede.
+    event.respondWith(fetch(event.request).then((response) => {
+      if (response.ok) { const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put("/m/", copy)); }
+      return response;
+    }).catch(() => caches.match("/m/")));
+    return;
+  }
+  if (SHELL.includes(url.pathname)) {
+    // Arquivos do shell: cache primeiro; a constante CACHE invalida tudo ao mudar de versão.
+    event.respondWith(caches.match(url.pathname).then((hit) => hit || fetch(event.request).then((response) => {
+      if (response.ok) { const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put(url.pathname, copy)); }
+      return response;
+    })));
+    return;
+  }
+  event.respondWith(fetch(event.request)); // /api/ e demais rotas: só rede
+});
 
 self.addEventListener("push", (event) => {
   let data = {};

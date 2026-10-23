@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import jwt
-from flask import Response, current_app, g, jsonify, render_template, request, send_from_directory, url_for
+from flask import Response, current_app, g, jsonify, make_response, render_template, request, send_from_directory, url_for
 from openai import OpenAIError
 
 from app.extensions import db
@@ -96,6 +96,15 @@ def register_routes(bp):
         image = qrcode.make(url_for("main.app_apk", _external=True), image_factory=SvgPathImage, box_size=10, border=2)
         buffer = io.BytesIO(); image.save(buffer)
         return Response(buffer.getvalue(), mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
+
+    @bp.get("/m/", endpoint="app_movel")
+    def app_movel():
+        # Shell do aplicativo web instalável (PWA). O próprio shell redireciona para o portal
+        # quando não está em modo standalone (sem ?preview=1).
+        from app.shared.csrf_security import csrf_token
+        response = make_response(render_template("app_movel.html", csrf=csrf_token()))
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @bp.get("/api/mobile/config", endpoint="mobile_config")
     def mobile_config():
