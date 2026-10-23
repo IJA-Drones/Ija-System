@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Política de Privacidade | IJA Vigilância{% endblock %}
+{% block meta %}<meta name="description" content="Como o aplicativo e o portal IJA Vigilância tratam dados pessoais, conforme a LGPD.">{% endblock %}
+{% macro page_content() %}
+<main class="container py-4" style="max-width:860px;line-height:1.7">
+  <h1 class="h3 mb-1">Política de Privacidade — IJA Vigilância</h1>
+  <p class="text-muted">Última atualização: 23 de outubro de 2026</p>
+
+  <h2 class="h5 mt-4">1. Quem somos</h2>
+  <p>O IJA Vigilância (aplicativo e Portal do Cidadão) é operado por <strong>Oceano Azul Comércio Internacional Ltda.</strong> (CNPJ 11.475.489/0001-74) e <strong>IJA Drones Brasil</strong> (CNPJ 59.826.603/0001-90), em apoio à vigilância em saúde dos municípios contratantes. Os dados registrados pelos cidadãos são tratados em nome da prefeitura do município escolhido, que é a controladora para fins de saúde pública.</p>
+
+  <h2 class="h5 mt-4">2. Dados que coletamos e para quê</h2>
+  <ul>
+    <li><strong>Relato de foco do mosquito:</strong> tipo de ocorrência, descrição, fotos, endereço, localização do aparelho (quando você permite), nome, CPF, RG e telefone. Usados para a vigilância avaliar e atender o relato e entrar em contato, se necessário.</li>
+    <li><strong>Relato de caso suspeito:</strong> nome, telefone, endereço, descrição dos sintomas e data de início. Usados pela vigilância epidemiológica. Não substitui atendimento médico.</li>
+    <li><strong>Alertas no celular:</strong> um identificador do aparelho para notificações e, se você permitir, a localização aproximada para avisar apenas quem está perto da área de risco.</li>
+    <li><strong>Conversa com a assistente Azul:</strong> as mensagens enviadas, para gerar a resposta. Não digite dados pessoais ou de saúde na conversa.</li>
+    <li><strong>Agentes de endemias (uso profissional):</strong> login, percurso do GPS durante a jornada, registros de visita e fotos/vídeos de imóveis, para acompanhamento do trabalho de campo pela gestão municipal.</li>
+  </ul>
+
+  <h2 class="h5 mt-4">3. Permissões do aparelho</h2>
+  <p>Localização (para registrar onde fica o foco e, no caso dos agentes, o percurso), câmera e fotos (para anexar imagens ao relato) e notificações (para receber alertas). Cada permissão é pedida no momento do uso e pode ser retirada a qualquer momento nos ajustes do aparelho.</p>
+
+  <h2 class="h5 mt-4">4. Com quem compartilhamos</h2>
+  <p>Com a prefeitura responsável pelo município escolhido e seus servidores autorizados da vigilância em saúde. Usamos fornecedores de infraestrutura (hospedagem, envio de notificações e de e-mails e processamento da assistente de inteligência artificial) que tratam os dados apenas para prestar o serviço. Não vendemos dados pessoais e não usamos os dados para publicidade nem para rastreamento entre aplicativos.</p>
+
+  <h2 class="h5 mt-4">5. Por quanto tempo guardamos</h2>
+  <p>Pelo tempo necessário para a ação de vigilância e para cumprir obrigações legais e de auditoria definidas pela prefeitura. Dados de localização de agentes são mantidos para o acompanhamento da produção do ciclo de trabalho.</p>
+
+  <h2 class="h5 mt-4">6. Seus direitos (LGPD, Lei 13.709/2018)</h2>
+  <p>Você pode pedir confirmação do tratamento, acesso, correção, anonimização, eliminação, portabilidade e informações sobre compartilhamento, além de revogar o consentimento. Para exercer esses direitos ou pedir a exclusão dos seus dados, escreva para <a href="mailto:suporte@ijadrones.com.br">suporte@ijadrones.com.br</a> informando o protocolo do relato, ou procure a ouvidoria da sua prefeitura.</p>
+
+  <h2 class="h5 mt-4">7. Segurança</h2>
+  <p>As conexões usam criptografia (HTTPS), o acesso da gestão exige login e permissões por perfil, e as ações dos usuários ficam registradas em trilha de auditoria. Em caso de incidente que afete dados pessoais, a prefeitura e os titulares serão comunicados nos prazos da lei.</p>
+
+  <h2 class="h5 mt-4">8. Crianças</h2>
+  <p>O aplicativo não é direcionado a menores de 13 anos. Relatos de menores devem ser feitos por um responsável.</p>
+
+  <h2 class="h5 mt-4">9. Alterações e contato</h2>
+  <p>Esta política pode ser atualizada; a data no topo indica a versão vigente. Dúvidas: <a href="mailto:suporte@ijadrones.com.br">suporte@ijadrones.com.br</a>.</p>
+</main>
+{% endmacro %}
+{% block content %}{{ page_content() }}{% endblock %}
+{% block auth_container_class %}container-fluid p-0{% endblock %}
+{% block auth_content %}{{ page_content() }}{% endblock %}

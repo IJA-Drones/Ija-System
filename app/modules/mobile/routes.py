@@ -80,6 +80,10 @@ def register_routes(bp):
         size = round(os.path.getsize(path) / (1024 * 1024)) if os.path.exists(path) else 0
         return render_template("app_download.html", versao=APP_VERSION, tamanho_mb=size)
 
+    @bp.get("/privacidade", endpoint="privacidade")
+    def privacidade():
+        return render_template("privacidade.html")
+
     @bp.get("/app/ija-vigilancia.apk", endpoint="app_apk")
     def app_apk():
         response = send_from_directory(os.path.join(current_app.static_folder, "downloads"), "ija-vigilancia.apk",

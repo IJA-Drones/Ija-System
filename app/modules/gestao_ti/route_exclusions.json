@@ -62,5 +62,6 @@
   "main.telegram_webhook": "external webhook authenticated by a secret path segment and the Telegram secret header",
   "main.alertas_telegram": "authenticated self-service: redirects the logged-in user to the Telegram bot with their own link code",
   "main.api_esus_visitas": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only",
-  "main.api_esus_status": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only"
+  "main.api_esus_status": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only",
+  "main.privacidade": "public privacy policy page required by the app stores"
 }
