@@ -1,3 +1,4 @@
+html, body { max-width: 100%; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
 /* IJA Vigilância — aplicativo web instalável (mesma identidade do app Android). */
 :root {
   --grad: linear-gradient(135deg, #061827 0%, #083348 48%, #087088 100%);
@@ -208,3 +209,12 @@ button { cursor: pointer; }
 .offline-banner svg { width: 20px; height: 20px; fill: var(--warn); }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* iOS: campos nativos (data/hora/arquivo) têm largura intrínseca e estouram a tela sem isto */
+.fld input[type="date"], .fld input[type="time"], .fld input[type="datetime-local"], .fld input[type="file"], .fld select {
+  width: 100%; min-width: 0; max-width: 100%; display: block; -webkit-appearance: none; appearance: none; }
+.fld input[type="date"] { text-align: left; -webkit-min-logical-width: 0; }
+.fld input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; }
+.chip { max-width: 100%; }
+img, video, canvas, svg { max-width: 100%; }

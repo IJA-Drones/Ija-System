@@ -24,6 +24,7 @@ from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.models import Prefeitura, Usuario  # noqa: E402
 
+MESES = {1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril", 5: "maio", 6: "junho", 7: "julho", 8: "agosto", 9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro"}
 QUARTEIROES = [
     ("Q-001", "Centro", "A01", 120, "Entre a Rua Dom Pedro e a Av. Principal", 12),
     ("Q-002", "Centro", "A01", 95, "Ao lado da Praça da Matriz", 10),
@@ -82,7 +83,7 @@ def seed_plan(prefeitura, agente, demo):
         db.session.add(CampoLevantamento(prefeitura=pid, demo=demo, code=code))
     db.session.flush()
     if not db.session.get(CampoPlano, (pid, demo, code)):
-        db.session.add(CampoPlano(prefeitura=pid, demo=demo, code=code, titulo=f"LIRAa {date.today():%B/%Y} · {prefeitura.nome}".replace("Prefeitura de ", ""),
+        db.session.add(CampoPlano(prefeitura=pid, demo=demo, code=code, titulo=f"LIRAa {MESES[date.today().month]}/{date.today():%Y} · {prefeitura.nome}".replace("Prefeitura de ", ""),
                                   inicio=inicio, fim=fim, responsavel="Coordenação de Endemias", fonte="Base de demonstração POC",
                                   status="LIBERADO", versao=1, historico=[]))
     db.session.flush()

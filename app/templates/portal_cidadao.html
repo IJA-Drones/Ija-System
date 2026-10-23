@@ -1,10 +1,4 @@
 {% extends "base.html" %}
-{% block meta %}
-    <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022') }}">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="IJA Vigilância">
-    <meta name="application-name" content="IJA Vigilância">
-{% endblock %}
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_chatbot.css') }}">

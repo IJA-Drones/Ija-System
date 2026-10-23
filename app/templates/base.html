@@ -25,17 +25,29 @@
     <title>{% block title %}{% if is_financeiro_context and empresa_financeiro %}Financeiro · {{ empresa_financeiro.nome }} | {% endif %}Oceano Azul{% endblock %}</title>
     {% block meta %}{% endblock %}
 
-    <link
-      rel="manifest"
-      href="{{ url_for('static', filename='manifest.json') }}"
-    />
+    {% if current_user and current_user.is_authenticated %}
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
     <meta name="theme-color" content="#101927" />
+    <meta name="apple-mobile-web-app-title" content="Oceano Azul" />
+    {% else %}
+    <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022b') }}" />
+    <meta name="theme-color" content="#061827" />
+    <meta name="apple-mobile-web-app-title" content="IJA Vigilância" />
+    <meta name="application-name" content="IJA Vigilância" />
+    <script>
+      // Aberto pelo ícone instalado (tela cheia) sem estar logado: vai para o aplicativo.
+      (function () {
+        var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+        if (standalone && location.pathname.indexOf("/m/") !== 0) { location.replace("/m/?pwa=1"); }
+      })();
+    </script>
+    {% endif %}
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="Oceano Azul" />
     <link
       rel="apple-touch-icon"
       href="{{ url_for('static', filename='img/icon-192.png') }}"
