@@ -69,7 +69,7 @@ def _rate_ok(key, limit, window=3600):
         return True
 
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 
 
 def register_routes(bp):
