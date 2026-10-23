@@ -145,6 +145,11 @@
         }
       }
     });
+    destination.closest("form").addEventListener("invalid", event => {
+      for (let parent = event.target.parentElement; parent; parent = parent.parentElement) {
+        if (parent.tagName === "DETAILS") parent.open = true;
+      }
+    }, true);
     destination.closest("form").addEventListener("submit", event => {
       if (checkingFile || fileFailed || (plannedFile && !destination.value)) {
         event.preventDefault();

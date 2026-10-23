@@ -83,6 +83,9 @@ def main():
     story += [paragraph("Se você já importou as 24 visitas, não registre novamente os mesmos imóveis para comparar os totais acima. Para praticar o preenchimento manual, use um levantamento separado com a sua própria amostra. A limpeza de testes deve respeitar as permissões e a origem dos registros."),
               paragraph("Base cartográfica: © OpenStreetMap contributors, ODbL 1.0. Contornos não oficiais e dados de saúde sintéticos.", "TrainingCaption")]
     build("tutorial-liraa.pdf", "LIRAa e focal - Treinamento", story)
+    # Mantém o manual e o kit atualizados ao reconstruir os materiais gerais.
+    from build_liraa_manual import build_manual
+    build_manual()
 
     story = [paragraph("Mapa de risco: roteiro de treinamento", "TrainingTitle"),
              paragraph("Conferência dos dados internos e da versão pública agregada"),

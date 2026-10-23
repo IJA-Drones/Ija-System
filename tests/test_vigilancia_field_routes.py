@@ -40,6 +40,8 @@ def client(tmp_path):
     register_csrf_security(app)
     bp=Blueprint('main',__name__)
     register_routes(bp)
+    from app.modules.treinamentos.routes import register_routes as register_training_routes
+    register_training_routes(bp)
     app.register_blueprint(bp)
     with app.app_context():
         Prefeitura.__table__.create(db.engine)

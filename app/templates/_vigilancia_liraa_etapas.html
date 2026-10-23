@@ -1,0 +1,15 @@
+{% set etapa_plano = plan.code if plan is defined and plan else import_plan|default('') if import_plan is defined else filters.get('levantamento', '') if filters is defined else '' %}
+{% set etapa_local = request.endpoint == 'main.vigilancia_planejamento' %}
+{% set etapa_amostra = 'amostra' if plan is defined and plan else 'levantamentos' %}
+{% macro passo(numero, titulo, descricao, destino, painel='') %}
+  <li>{% if destino.startswith('#') or central_ti_url_allowed is not defined or central_ti_url_allowed(destino) %}<a href="{{ destino }}" {% if painel %}data-vigilancia-target="{{ painel }}"{% endif %} {% if liraa_etapa == numero %}aria-current="step"{% endif %}>{% else %}<span class="liraa-step-disabled" aria-disabled="true">{% endif %}<span>{{ numero }}</span><div><strong>{{ titulo }}</strong><small>{{ descricao }}</small></div>{% if destino.startswith('#') or central_ti_url_allowed is not defined or central_ti_url_allowed(destino) %}</a>{% else %}</span>{% endif %}</li>
+{% endmacro %}
+<nav aria-label="Etapas do LIRAa" class="liraa-journey">
+  <ol>
+    {{ passo(1, 'Quarteirões', 'Cadastro e contornos', '#territorio' if etapa_local else url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo|default(import_demo|default(true)) else 'false', plano=etapa_plano or none, _anchor='territorio'), 'territorio' if etapa_local else '') }}
+    {{ passo(2, 'Levantamento e amostra', 'Estratos e metas', '#' + etapa_amostra if etapa_local else url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo|default(import_demo|default(true)) else 'false', plano=etapa_plano or none, _anchor='amostra' if etapa_plano else 'levantamentos'), etapa_amostra if etapa_local else '') }}
+    {{ passo(3, 'Visitas', 'Importação ou registro', url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, demo='true' if demo|default(import_demo|default(true)) else 'false', levantamento_destino=etapa_plano or none)) }}
+    {{ passo(4, 'Resultados', 'Indicadores e mapa', url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo='true' if demo|default(import_demo|default(true)) else 'false', levantamento=etapa_plano or none)) }}
+  </ol>
+  <div class="liraa-help-link"><a href="{{ url_for('main.treinamentos_arquivo', material_id='kit-liraa-atual') }}">CSVs de demonstração</a><a href="{{ url_for('main.treinamentos_arquivo', material_id='manual-liraa') }}" target="_blank" rel="noopener">Manual do LIRAa <span class="visually-hidden">(abre em outra aba)</span></a></div>
+</nav>

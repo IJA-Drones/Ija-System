@@ -53,7 +53,8 @@ def test_territory_is_first_and_sample_upload_waits_for_its_blocks(planned):
     login(c)
     page = c.get('/vigilancia/planejamento?demo=true')
     assert 'data-vigilancia-default="territorio"' in page.text
-    assert page.text.index('1. Quarteirões e contornos') < page.text.index('2. Levantamentos')
+    assert page.text.index('<strong>Quarteirões</strong>') < page.text.index('<strong>Levantamento e amostra</strong>')
+    assert '<strong>Visitas</strong>' in page.text and '<strong>Resultados</strong>' in page.text
     assert page.text.index('id="territorio-importacao" open') < page.text.index('id="territorio-mapa"')
     common = dict(demo='true', _csrf_token=token(c))
     # Criar o rascunho não exige o CSV de amostra.
@@ -61,7 +62,7 @@ def test_territory_is_first_and_sample_upload_waits_for_its_blocks(planned):
         titulo='Ensaio de ordem', inicio='2026-10-19', fim='2026-10-23', responsavel='Coordenação', fonte='DEMO'))
     assert response.status_code == 303
     page = c.get(response.location)
-    assert 'Importar quarteirões · CSV 01' in page.text
+    assert 'Importar quarteirões' in page.text
     assert 'id="amostra-importacao"' not in page.text
     assert 'name="acao" value="liberar"' not in page.text
     p = planning.overview(7, True, 'L-2026-01')['plano']
@@ -77,7 +78,7 @@ def test_territory_is_first_and_sample_upload_waits_for_its_blocks(planned):
         arquivo=(io.BytesIO(csv_bytes((*RG_COLUMNS, 'geometria'), territory())), 'territorio.csv')))
     assert response.status_code == 303 and 'plano=L-2026-01' in response.location
     page = c.get(response.location)
-    assert 'Continuar para a amostra · CSV 02' in page.text
+    assert 'Continuar para a amostra' in page.text
     assert 'id="amostra-importacao" open' in page.text
     p = planning.overview(7, True, p['code'])['plano']
     response = c.post('/vigilancia/planejamento', data=dict(common, acao='importar_plano', plano=p['code'],
@@ -110,7 +111,7 @@ def test_three_csv_http_flow_links_multiple_blocks_and_renders_iip_polygons(plan
     assert overview['plano']['status']=='RASCUNHO'
     assert len(overview['estratos'])==2 and len(overview['quarteiroes'])==2
     page=c.get('/vigilancia/planejamento?demo=true&plano='+plan_code)
-    assert f'Importar amostra em {plan_code}' in page.text
+    assert 'Importar amostra</button>' in page.text
     planning.mutate(7,True,'a','liberar',{'plano':plan_code,
         'versao':str(overview['plano']['versao']),'amostra_validada':'sim'})
     original=visits(levantamento_codigo=csv_code)

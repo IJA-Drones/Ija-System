@@ -1,0 +1,29 @@
+<input type="hidden" name="acao" value="preparar">
+<div class="liraa-import-destination">
+  <label for="campo-levantamento-destino" class="form-label">Levantamento de destino</label>
+  <select id="campo-levantamento-destino" name="levantamento_destino" class="form-select" data-list-url="{{ url_for('main.vigilancia_import_levantamentos') }}" aria-describedby="campo-levantamento-status">
+    <option value="">Usar o código do CSV / tratamento focal</option>
+    {% for row in import_plans %}<option value="{{ row.code }}" {% if import_plan == row.code %}selected{% endif %}>{{ row.titulo }} · {{ row.code }} · {{ row.inicio.strftime('%d/%m/%Y') }} a {{ row.fim.strftime('%d/%m/%Y') }}</option>{% endfor %}
+  </select>
+  <p class="vigilancia-preview-help" id="campo-levantamento-status" role="status" aria-live="polite">{% if not import_plans %}Complete a amostra e libere um levantamento antes de importar visitas planejadas.{% endif %}</p>
+  <a id="campo-planejamento-link" class="liraa-period-link" data-planning-url="{{ url_for('main.vigilancia_planejamento') }}" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if import_demo else 'false', plano=import_plan or none, _anchor='periodo-levantamento' if import_plan else none) }}">{{ 'Conferir / ampliar período do levantamento' if import_plan else 'Abrir planejamento' }}</a>
+</div>
+<div class="liraa-primary-task">
+  <label for="arquivo-csv" class="form-label">Arquivo de visitas</label>
+  <div class="liraa-file-controls"><input class="form-control" type="file" id="arquivo-csv" name="arquivo" accept=".csv,text/csv" required aria-describedby="arquivo-help visitas-demo-help"><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='csv-liraa-visitas-demo') }}" aria-label="Baixar CSV demo de visitas">Baixar CSV demo</a></div>
+  <p class="vigilancia-preview-help liraa-demo-note" id="visitas-demo-help">CSV de demonstração de Pesqueira/PE, com 24 visitas e resultados fictícios de 22/10/2026. Use a origem <strong>Demonstração</strong>.</p>
+  <p class="vigilancia-preview-help" id="arquivo-help">Até {{ max_file_bytes // 1024 }} KB. Revise os registros antes de confirmar a importação.</p>
+</div>
+<details class="vigilancia-preview-layout liraa-secondary-options" {% if erro or not prefeitura_id %}open{% endif %}>
+  <summary>{{ prefeitura_nome|default('Prefeitura', true) }} · {{ 'Demonstração' if import_demo else 'Dados autorizados' }} · Alterar identificação</summary>
+  <div class="vigilancia-campo-grid mt-3">
+    <div><label for="campo-fonte" class="form-label">Fonte do arquivo</label><input id="campo-fonte" name="fonte" class="form-control" maxlength="120" required value="{{ request.form.get('fonte', '') if erro else 'CSV de visitas' }}"></div>
+    <div><label for="campo-demo" class="form-label">Origem dos dados</label><select id="campo-demo" name="demo" class="form-select"><option value="true" {% if import_demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not import_demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
+    <div>
+      {% if municipio_editavel %}<label for="prefeitura-id" class="form-label">Prefeitura do arquivo</label><select class="form-select" id="prefeitura-id" name="prefeitura_id" required><option value="">Selecione uma prefeitura</option>{% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}</select>
+      {% else %}<label for="prefeitura-nome" class="form-label">Prefeitura</label><input type="hidden" id="prefeitura-id" name="prefeitura_id" value="{{ prefeitura_id }}"><input class="form-control" id="prefeitura-nome" value="{{ prefeitura_nome }}" readonly>{% endif %}
+      <p class="vigilancia-preview-help">O municipio_id do CSV deve corresponder à prefeitura selecionada.</p>
+    </div>
+  </div>
+  <p id="campo-autorizacao"><label><input type="checkbox" id="campo-autorizado" name="autorizado" value="sim"> Confirmo a autorização para uso destes dados reais.</label></p>
+</details>

@@ -17,6 +17,10 @@ MATERIALS = {
     "imagem-acao": ("testes/05_Imagem_Acao_Demonstrativa.jpg", "image/jpeg"),
     "texto-acao": ("testes/06_Texto_Acao_Demonstrativa.txt", "text/plain"),
     "kit-testes": ("kit-testes-pesqueira-demo.zip", "application/zip"),
+    "kit-liraa-atual": ("kits/liraa-pesqueira-20261022.zip", "application/zip"),
+    "csv-liraa-territorio-demo": ("testes/liraa-atual/01_quarteiroes.csv", "text/csv"),
+    "csv-liraa-amostra-demo": ("testes/liraa-atual/02_amostra.csv", "text/csv"),
+    "csv-liraa-visitas-demo": ("testes/liraa-atual/03_visitas.csv", "text/csv"),
 }
 
 SECTIONS = (

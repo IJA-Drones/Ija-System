@@ -2,9 +2,11 @@
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261022-3') }}">{% endblock %}
 
 {% block content %}
+{% set liraa_guided = field_mode %}
+{% set liraa_etapa = 3 %}
 <div class="vigilancia-preview-page py-4">
   {% include '_vigilancia_navegacao.html' %}
   <header class="vigilancia-preview-header">
@@ -14,8 +16,7 @@
     </div>
     {% if field_mode and batch and batch.report.get('vinculo_os') %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if batch.demo else 'false', os_id=batch.report.vinculo_os.id) }}">Voltar à visita</a>{% endif %}
   </header>
-
-  <p class="vigilancia-preview-help mb-3">{% if field_mode %}As visitas entram nos resultados e no mapa após confirmar a carga.{% else %}Esta validação não grava os dados no sistema.{% endif %}</p>
+  {% if field_mode %}{% include '_vigilancia_liraa_etapas.html' %}{% else %}<p class="vigilancia-preview-help mb-3">Esta validação não grava os dados no sistema.</p>{% endif %}
 
   {% if erro %}
   <div class="alert alert-danger" role="alert">{{ erro }}</div>
@@ -31,51 +32,10 @@
     {% set sample_endpoint = 'main.vigilancia_import_modelo' if field_mode else 'main.vigilancia_modelo_csv' %}
     <form method="post" action="{{ url_for(form_endpoint) }}" enctype="multipart/form-data" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(form_endpoint), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
       <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
-      {% if field_mode %}
-      <input type="hidden" name="acao" value="preparar">
-      <div class="vigilancia-preview-form-grid mb-3">
-        <div><label for="campo-fonte" class="form-label">Fonte do arquivo</label><input id="campo-fonte" name="fonte" class="form-control" maxlength="120" required placeholder="Ex.: levantamento sintético para demonstração" value="{{ request.form.get('fonte', '') if erro else '' }}"></div>
-        <div><label for="campo-demo" class="form-label">Origem dos dados</label><select id="campo-demo" name="demo" class="form-select"><option value="true" {% if import_demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not import_demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
-      </div>
-      <p id="campo-autorizacao"><label><input type="checkbox" id="campo-autorizado" name="autorizado" value="sim"> Confirmo a autorização para uso destes dados reais.</label></p>
-      {% endif %}
+      {% if field_mode %}{% include '_vigilancia_importar_visitas.html' %}{% else %}
       <div class="vigilancia-preview-form-grid">
-        <div>
-          {% if field_mode and municipio_editavel %}
-          <label for="prefeitura-id" class="form-label">Prefeitura do arquivo</label>
-          <select class="form-select" id="prefeitura-id" name="prefeitura_id" required aria-describedby="prefeitura-help">
-            <option value="">Selecione uma prefeitura</option>
-            {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
-          </select>
-          <p class="vigilancia-preview-help" id="prefeitura-help"><code>municipio_id</code> deve coincidir com a prefeitura selecionada.</p>
-          {% elif field_mode %}
-          <label for="prefeitura-nome" class="form-label">Prefeitura</label>
-          <input type="hidden" id="prefeitura-id" name="prefeitura_id" value="{{ prefeitura_id }}">
-          <input class="form-control" id="prefeitura-nome" value="{{ prefeitura_nome }}" readonly>
-          {% else %}
-          <label for="prefeitura-id" class="form-label">Código da prefeitura</label>
-          <input class="form-control" type="number" id="prefeitura-id" name="prefeitura_id" min="1" step="1" required
-            value="{{ prefeitura_id if prefeitura_id is not none else '' }}" {% if not municipio_editavel %}readonly{% endif %}
-            aria-describedby="prefeitura-help">
-          <p class="vigilancia-preview-help" id="prefeitura-help">Deve coincidir com <code>municipio_id</code> no CSV.</p>
-          {% endif %}
-        </div>
-        <div>
-          <label for="arquivo-csv" class="form-label">Arquivo CSV</label>
-          <input class="form-control" type="file" id="arquivo-csv" name="arquivo" accept=".csv,text/csv" required aria-describedby="arquivo-help">
-          <p class="vigilancia-preview-help" id="arquivo-help">Até {{ max_file_bytes // 1024 }} KB · UTF-8 · vírgula ou ponto e vírgula.</p>
-        </div>
-      </div>
-      {% if field_mode %}
-      <div class="mt-3">
-        <label for="campo-levantamento-destino" class="form-label">Levantamento de destino</label>
-        <select id="campo-levantamento-destino" name="levantamento_destino" class="form-select" data-list-url="{{ url_for('main.vigilancia_import_levantamentos') }}" aria-describedby="campo-levantamento-help campo-levantamento-status">
-          <option value="">Usar o código do CSV / tratamento focal</option>
-          {% for row in import_plans %}<option value="{{ row.code }}" {% if import_plan == row.code %}selected{% endif %}>{{ row.titulo }} · {{ row.code }} · {{ row.inicio.strftime('%d/%m/%Y') }} a {{ row.fim.strftime('%d/%m/%Y') }}</option>{% endfor %}
-        </select>
-        <p class="vigilancia-preview-help" id="campo-levantamento-help">Para visitas LIRAa, escolha o levantamento liberado. A seleção substitui o código de levantamento do CSV; quarteirões, estratos e datas continuam sendo conferidos.</p>
-        <p class="vigilancia-preview-help" id="campo-levantamento-status" role="status" aria-live="polite">{% if not import_plans %}Para importar visitas LIRAa planejadas, complete a amostra e libere um levantamento nesta prefeitura e origem de dados.{% endif %}</p>
-        <a id="campo-planejamento-link" class="btn btn-outline-primary btn-sm" data-planning-url="{{ url_for('main.vigilancia_planejamento') }}" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if import_demo else 'false', plano=import_plan or none, _anchor='periodo-levantamento' if import_plan else none) }}">{{ 'Conferir / ampliar período do levantamento' if import_plan else 'Abrir planejamento' }}</a>
+        <div><label for="prefeitura-id" class="form-label">Código da prefeitura</label><input class="form-control" type="number" id="prefeitura-id" name="prefeitura_id" min="1" step="1" required value="{{ prefeitura_id if prefeitura_id is not none else '' }}" {% if not municipio_editavel %}readonly{% endif %}><p class="vigilancia-preview-help">Deve coincidir com municipio_id no CSV.</p></div>
+        <div><label for="arquivo-csv" class="form-label">Arquivo CSV</label><input class="form-control" type="file" id="arquivo-csv" name="arquivo" accept=".csv,text/csv" required><p class="vigilancia-preview-help">Até {{ max_file_bytes // 1024 }} KB · UTF-8 · vírgula ou ponto e vírgula.</p></div>
       </div>
       {% endif %}
       <div class="vigilancia-preview-actions">
@@ -111,8 +71,9 @@
     {% endif %}
   </section>
 
-  <section class="vigilancia-preview-panel" aria-labelledby="indicadores-heading">
-    <h2 id="indicadores-heading">IIP preliminar por levantamento</h2>
+  <details class="vigilancia-preview-panel" aria-labelledby="indicadores-heading">
+    <summary id="indicadores-heading">Indicadores deste lote</summary>
+    <h2>IIP preliminar por levantamento</h2>
     <p class="vigilancia-preview-muted">Considera imóveis únicos inspecionados no LIRAa. Registros focais e visitas fechadas ou recusadas não participam do denominador.</p>
     {% if result.erros %}<p class="vigilancia-preview-notice">O IIP fica indisponível enquanto houver inconsistências no arquivo, para evitar apresentar um percentual calculado com dados incompletos.</p>{% endif %}
     {% if result.indicadores %}
@@ -131,10 +92,10 @@
     {% else %}<p class="vigilancia-preview-empty">Nenhum levantamento LIRAa válido neste arquivo.</p>{% endif %}
     {% include '_vigilancia_recipientes.html' %}
     <p class="vigilancia-preview-help">Fórmula preliminar: 100 × imóveis positivos ÷ imóveis inspecionados. O resultado não valida a amostragem nem substitui a homologação técnica.</p>
-  </section>
+  </details>
 
-  <section class="vigilancia-preview-panel" aria-labelledby="registros-heading">
-    <h2 id="registros-heading">Registros aceitos</h2>
+  <details class="vigilancia-preview-panel" aria-labelledby="registros-heading">
+    <summary id="registros-heading">Registros aceitos · {{ result.registros|length }}</summary>
     <p class="vigilancia-preview-muted">{{ result.registros|length }} registros disponíveis no relatório. A tabela mostra os primeiros 100.</p>
     {% if result.registros %}
     <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Registros normalizados aceitos">
@@ -147,7 +108,7 @@
     </div>
     {% else %}<p class="vigilancia-preview-empty">Nenhum registro aceito. Corrija o arquivo e valide novamente.</p>{% endif %}
     <details class="vigilancia-preview-layout"><summary>Identificação do arquivo</summary><p class="vigilancia-preview-help">SHA-256: <code class="vigilancia-preview-hash">{{ result.arquivo_sha256 }}</code></p></details>
-  </section>
+  </details>
   <script type="application/json" id="preview-report">{{ result|tojson }}</script>
   {% endif %}
 {% if field_mode %}{% include '_vigilancia_cargas_historico.html' %}{% endif %}
@@ -155,5 +116,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/vigilancia-validacao.js', v='20261022-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/vigilancia-validacao.js', v='20261022-3') }}" defer></script>
 {% endblock %}

@@ -6,7 +6,7 @@
 {% if vigilancia_navigation %}
 <div class="vigilancia-workspace" aria-label="Navegação da vigilância">
   <div class="vigilancia-workspace-context"><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Central de Vigilância</a></div>
-  {% if current != 'sinan' %}
+  {% if current != 'sinan' and not liraa_guided|default(false) %}
   <nav class="vigilancia-workspace-tabs" aria-label="Tarefas do LIRAa e focal">
     {% for key, target, label in [('planejamento', 'main.vigilancia_planejamento', 'Planejar'), ('campo', 'main.vigilancia_campo', 'Registrar visitas'), ('resultados', 'main.vigilancia_resultados', 'Ver resultados')] %}
     {% set params = dict(prefeitura_id=scope_id, demo=mode) %}

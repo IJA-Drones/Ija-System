@@ -20,7 +20,8 @@
     if (!panel) return;
     for (const item of panels) item.hidden = item !== panel;
     for (const link of links) {
-      const active = link.dataset.vigilanciaTarget === panel.id;
+      const active = link.dataset.vigilanciaTarget === panel.id ||
+        (panel.id === "levantamentos" && link.dataset.vigilanciaTarget === "amostra");
       link.setAttribute("aria-current", active ? "step" : "false");
       link.setAttribute("aria-expanded", String(active));
     }

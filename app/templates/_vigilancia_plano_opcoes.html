@@ -1,0 +1,20 @@
+<details class="vigilancia-preview-layout liraa-secondary-options" id="levantamento-opcoes" {% if form.get('acao') in ['metadados', 'ampliar_periodo', 'encerrar'] %}open{% endif %}>
+  <summary>Mais opções do levantamento</summary>
+  <p class="vigilancia-preview-help">Coordenação: {{ plan.responsavel }} · {{ plan.fonte }}</p>
+    {% if can_write and plan.status == 'LIBERADO' %}
+    <details class="vigilancia-preview-layout" id="periodo-levantamento" {% if form.get('acao') == 'ampliar_periodo' %}open{% endif %}><summary>Ampliar período para importar visitas</summary>
+      <p class="vigilancia-preview-help">Inclua as datas do CSV no período do levantamento. Esta alteração mantém a amostra e as datas das visitas; não reduz o período atual.</p>
+      <form method="post" class="mt-3" data-ti-allowed="true">{{ security('ampliar_periodo', plan) }}
+        <div class="vigilancia-campo-grid">{{ control('inicio', 'Novo início', 'date', form.get('inicio', plan.inicio) if form.get('acao') == 'ampliar_periodo' else plan.inicio) }}{{ control('fim', 'Novo fim', 'date', form.get('fim', plan.fim) if form.get('acao') == 'ampliar_periodo' else plan.fim) }}{{ control('justificativa', 'Motivo da ampliação', value=form.get('justificativa', '') if form.get('acao') == 'ampliar_periodo' else '', limit=200) }}</div>
+        <label class="d-block mt-3"><input type="checkbox" name="periodo_confirmado" value="sim" required> Conferi as datas e confirmo a ampliação do período deste levantamento.</label>
+        <div class="vigilancia-preview-actions"><button class="btn btn-outline-primary">Salvar ampliação do período</button></div>
+      </form>
+    </details>
+    {% endif %}
+    {% if can_write and plan.status == 'RASCUNHO' %}
+    <details class="vigilancia-preview-layout" id="periodo-levantamento" {% if form.get('acao') == 'metadados' %}open{% endif %}><summary>Editar período e identificação do levantamento</summary><form method="post" class="mt-3" data-ti-allowed="true">{{ security('metadados', plan) }}<div class="vigilancia-campo-grid">{{ control('titulo', 'Nome do levantamento', value=plan.titulo, limit=120) }}{{ control('inicio', 'Início', 'date', plan.inicio) }}{{ control('fim', 'Fim', 'date', plan.fim) }}{{ control('responsavel', 'Responsável técnico / coordenação', value=plan.responsavel, limit=120) }}{{ control('fonte', 'Referência do plano amostral', value=plan.fonte, limit=200) }}</div><div class="vigilancia-preview-actions"><button class="btn btn-outline-primary">Salvar identificação</button></div></form></details>
+    {% endif %}
+    <details class="vigilancia-preview-layout"><summary>Histórico do planejamento</summary><ul>{% for event in plan.historico %}<li>{{ event.acao }} · Conta {{ event.autor }}{% if event.acao == 'ampliar_periodo' and event.periodo_anterior is defined %} · {{ event.periodo_anterior.inicio }} a {{ event.periodo_anterior.fim }} → {{ event.periodo_novo.inicio }} a {{ event.periodo_novo.fim }} · {{ event.justificativa }}{% endif %}</li>{% endfor %}</ul></details>
+    {% if can_write and plan.status == 'LIBERADO' %}<form method="post" class="mt-4" data-ti-allowed="true">{{ security('encerrar', plan) }}<p class="vigilancia-preview-help">Encerrar interrompe novos registros planejados. Confira as metas e pendências antes de encerrar.</p><button class="btn btn-outline-primary">Encerrar levantamento</button></form>{% endif %}
+  {% if vigilancia_can_delete %}<div class="vigilancia-preview-actions"><a class="btn btn-outline-danger" href="{{ url_for('main.vigilancia_excluir', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', tipo='levantamento', codigo=plan.code) }}">Excluir levantamento</a></div>{% endif %}
+</details>

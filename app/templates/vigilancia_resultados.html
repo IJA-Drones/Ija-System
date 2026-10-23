@@ -3,11 +3,14 @@
 {% macro bar(label, value, maximum=100, unit='') %}
 <div class="resultado-barra"><div><span>{{ label }}</span><strong>{{ number(value, unit) }}</strong></div><div class="resultado-trilho" aria-hidden="true"><span style="width:{{ 100 * value / maximum if value is not none and maximum > 0 else 0 }}%"></span></div></div>
 {% endmacro %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_resultados.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_mapa_territorial.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_resultados.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_mapa_territorial.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261022-3') }}">{% endblock %}
 {% block content %}
+{% set liraa_guided = true %}
+{% set liraa_etapa = 4 %}
 <main class="vigilancia-preview-page resultados-page py-4">
   {% include '_vigilancia_navegacao.html' %}
   <header class="vigilancia-preview-header"><div><h1>Resultados da vigilância</h1><p class="vigilancia-preview-muted">Índices, gráficos e comparação com o SINAN.</p></div><a class="btn btn-outline-primary resultado-navegacao" href="{{ url_for('main.vigilancia_risco', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', levantamento=filters.levantamento, inicio=filters.inicio, fim=filters.fim) }}">Mapa de risco</a></header>
+  {% include '_vigilancia_liraa_etapas.html' %}
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
   <section class="vigilancia-preview-panel resultado-filtros" aria-label="Filtros dos resultados">
     <form method="get" id="resultados-filtros">

@@ -1,0 +1,37 @@
+LIRAa · Pesqueira/PE · Demonstração · 22/10/2026
+
+Use DEMONSTRAÇÃO em todas as etapas. As ruas existem; os imóveis, metas,
+visitas, resultados de Aedes e contornos de quarteirões são ilustrativos.
+Os pontos são posições de referência em vias, não domicílios confirmados.
+
+1. Importe 01_quarteiroes.csv em Quarteirões e contornos.
+   Marque a confirmação dos contornos. São 3 quarteirões do Centro.
+2. Crie um levantamento em rascunho:
+   código: PES-DEMO-2026; nome: LIRAa · Centro de Pesqueira · Demonstração.
+   período: 22/10/2026 a 23/10/2026 (deve incluir as visitas de 22/10/2026).
+   Responsável: informe a coordenação de demonstração, sem inventar servidor.
+   Fonte: Demonstração com vias reais e resultados fictícios.
+3. No rascunho, importe 02_amostra.csv. São 3 estratos e meta de 8 por quadra.
+   Sem agente fixo para evitar vínculo inválido; atribua uma conta da prefeitura
+   se for demonstrar a área do agente. A importação substitui a amostra atual.
+4. Confira a amostra, marque a revisão e libere o levantamento.
+5. Em Visitas, selecione o levantamento, importe 03_visitas.csv, valide e confirme.
+   O CSV usa municipio_id=14, confirmado no cadastro atual de Pesqueira.
+   Em outro ambiente, ajuste esse ID. Pode escolher outro levantamento liberado
+   compatível pelo seletor, desde que tenha os mesmos quarteirões e estratos.
+6. Resultados esperados: 24 visitas, 21 inspecionadas, 3 positivas, 3 pendências.
+   IIP por quarteirão: DEMO-Q01 16,67%; DEMO-Q02 28,57%; DEMO-Q03 0%.
+
+LOCAIS E FONTES PÚBLICAS (consultadas em 22/10/2026)
+Rua Adalberto de Freitas; Rua Duque de Caxias; Praça Dom José Lopes:
+https://pesqueira.pe.gov.br/wp-content/uploads/2026/01/edital-volte-2026.pdf
+Rua Treze de Maio:
+https://pesqueira.pe.gov.br/novas-obras-do-asfalto-em-pesqueira/
+Rua Zeferino Galvão, Centro:
+https://transparencia.pesqueira.pe.gov.br/app/pe/pesqueira/1/institucional/18
+
+Geometria: reaproveitada do kit de treinamento do repositório, atribuída a
+© OpenStreetMap contributors. Licença ODbL 1.0:
+https://www.openstreetmap.org/copyright
+https://opendatacommons.org/licenses/odbl/1-0/
+Não representa malha oficial de quarteirões ou levantamento epidemiológico real.

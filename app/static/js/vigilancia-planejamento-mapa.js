@@ -89,6 +89,8 @@
   }
   const unavailableRecordMessage = item => `Quarteirão ${item.code} carregado. O mapa está indisponível neste momento. Você pode editar os dados abaixo; o contorno existente será mantido.`;
   function loadRecord(item) {
+    const tools = document.getElementById("territorio-ferramentas");
+    if (tools) tools.open = true;
     if (!form) {
       if (state.ready) fit(pointsFromPolygon(item.geometria));
       else message("O mapa está indisponível neste momento. O cadastro do quarteirão permanece disponível na tabela.");
@@ -166,6 +168,7 @@
   function initialize() {
     if (state.map || !config.configurado || !root.google?.maps?.Map || root.__GOOGLE_MAPS_AUTH_FAILED__) return;
     if (byId("mapa-canvas").closest?.("[data-vigilancia-panel]")?.hidden) return;
+    if (document.getElementById("territorio-ferramentas")?.open === false) return;
     try {
       state.map = new root.google.maps.Map(byId("mapa-canvas"), { center: { lat: -8.5, lng: -37 }, zoom: 7,
         mapTypeId: "hybrid", streetViewControl: false, fullscreenControl: true, gestureHandling: "cooperative" });
@@ -247,6 +250,12 @@
     }
   }));
   document.addEventListener("googlemaps:ready", initialize);
+  document.getElementById("territorio-ferramentas")?.addEventListener("toggle", event => {
+    if (event.target.open) {
+      if (state.map) root.google?.maps?.event?.trigger?.(state.map, "resize");
+      else initialize();
+    }
+  });
   document.addEventListener("vigilancia:panel-visible", event => {
     if (event.detail.id === "territorio") {
       if (state.map) root.google?.maps?.event?.trigger?.(state.map, "resize");
