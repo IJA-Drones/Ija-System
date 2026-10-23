@@ -3504,3 +3504,18 @@ from app.modules.vigilancia.planning_models import (
 
 from app.modules.vigilancia.risk_models import RiscoAnalise  
 from app.modules.acoes_publicas.models import AcaoPublica, AcaoPublicaMidia, AcaoPublicaEvento  
+
+
+class ConfiguracaoSmtp(db.Model):
+    """Servidor de envio configurado pelo sistema (linha única). Senha cifrada com a SECRET_KEY."""
+    __tablename__ = "configuracao_smtp"
+    id = db.Column(db.Integer, primary_key=True, default=1)
+    host = db.Column(db.String(200), nullable=False)
+    porta = db.Column(db.Integer, nullable=False, default=587)
+    seguranca = db.Column(db.String(10), nullable=False, default="starttls")  # starttls | ssl
+    remetente = db.Column(db.String(254), nullable=False)
+    usuario = db.Column(db.String(254))
+    senha_cifrada = db.Column(db.Text)
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)

@@ -62,7 +62,9 @@ def register_routes(bp):
             (DispositivoPush.prefeitura_id == pid) | (DispositivoPush.prefeitura_id.is_(None))).count() if pid else 0
         contagens = {regra.id: service.contar(regra) for regra in regras}
         from app.shared import mail
-        return render_template("alertas.html", prefeitura_id=pid, prefeituras=prefeituras, regras=regras, disparos=disparos,
+        from app.models import PrefeituraEmailConfig
+        padrao = db.session.get(PrefeituraEmailConfig, pid) if pid else None
+        return render_template("alertas.html", email_padrao=(padrao.destinatario if padrao else ""), prefeitura_id=pid, prefeituras=prefeituras, regras=regras, disparos=disparos,
                                dispositivos=dispositivos, contagens=contagens, fontes=AlertaRegra.FONTES,
                                global_user=is_admin_global_user(current_user), csrf=csrf_token(),
                                push_ok=service.push_configurado(), email_ok=mail.available(),

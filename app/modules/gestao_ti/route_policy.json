@@ -1366,5 +1366,12 @@
   },
   "main.vigilancia_agentes_rastro": {
     "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.configuracoes_smtp": {
+    "GET": "prefeitura.documentos.configurar",
+    "POST": "prefeitura.documentos.configurar"
+  },
+  "main.configuracoes_smtp_testar": {
+    "POST": "prefeitura.documentos.configurar"
   }
 }

@@ -9,7 +9,7 @@
     </div>
     <div class="text-end small">
       <div><span class="badge {{ 'text-bg-success' if push_ok else 'text-bg-secondary' }}">Push {{ 'configurado' if push_ok else 'sem chave VAPID' }}</span>
-      <span class="badge {{ 'text-bg-success' if email_ok else 'text-bg-secondary' }}">E-mail {{ 'configurado' if email_ok else 'sem SMTP' }}</span></div>
+      {% if global_user %}<a class="badge text-decoration-none {{ 'text-bg-success' if email_ok else 'text-bg-secondary' }}" href="{{ url_for('main.configuracoes_smtp') }}">E-mail {{ 'configurado' if email_ok else 'sem SMTP · configurar' }}</a>{% else %}<span class="badge {{ 'text-bg-success' if email_ok else 'text-bg-secondary' }}">E-mail {{ 'configurado' if email_ok else 'sem SMTP' }}</span>{% endif %}</div>
       {% if prefeitura_id %}<div class="mt-1">{{ dispositivos }} dispositivo(s) inscrito(s) para alertas</div>{% endif %}
     </div>
   </header>
@@ -40,7 +40,7 @@
             <div class="form-check"><input class="form-check-input" type="checkbox" name="notificar_push" id="n-push" checked><label class="form-check-label" for="n-push">Notificação push nos celulares da área</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" name="notificar_email" id="n-email"><label class="form-check-label" for="n-email">E-mail para os endereços abaixo</label></div>
           </div>
-          <div class="col-12"><label class="form-label">E-mails (separados por vírgula)<input class="form-control" name="emails" maxlength="1000"></label></div>
+          <div class="col-12"><label class="form-label">E-mails (separados por vírgula)<input class="form-control" name="emails" maxlength="1000" value="{{ email_padrao or '' }}"></label>{% if email_padrao %}<div class="form-text">Sugerido: e-mail dos relatórios cadastrado para esta prefeitura.</div>{% endif %}</div>
           <div class="col-12"><button class="btn btn-primary">Salvar regra</button></div>
         </form>
       </div>

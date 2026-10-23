@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Servidor de e-mail | Oceano Azul{% endblock %}
+{% block content %}
+<main class="container py-4" style="max-width:900px">
+  <a href="{{ url_for('main.configuracoes') }}" class="btn btn-outline-secondary mb-3">Voltar às configurações</a>
+  <h1 class="h3">Servidor de e-mail (SMTP)</h1>
+  <p class="text-muted">Usado para enviar relatórios por e-mail e os alertas epidemiológicos. A senha fica cifrada no banco e nunca é exibida.</p>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, text in messages %}<div class="alert alert-{{ category }}" role="alert">{{ text }}</div>{% endfor %}{% endwith %}
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  <div class="alert {{ 'alert-success' if conf.host else 'alert-warning' }}">
+    {% if conf.host %}Envio ativo pelo servidor <strong>{{ conf.host }}:{{ conf.port }}</strong> ({{ 'SSL' if conf.ssl else 'STARTTLS' }}) · remetente <strong>{{ conf['from'] }}</strong> · origem: {{ 'configuração do sistema' if conf.source == 'sistema' else 'variáveis do ambiente (REPORT_SMTP_*)' }}.
+    {% else %}Nenhum servidor configurado: os e-mails de relatórios e alertas não são enviados.{% endif %}
+  </div>
+  <section class="card p-4 mb-4">
+    <form method="post" class="row g-3">
+      <input type="hidden" name="_csrf_token" value="{{ config_csrf_token }}">
+      <div class="col-md-8"><label class="form-label fw-bold">Servidor (host)<input class="form-control" name="host" required maxlength="200" value="{{ row.host if row else '' }}" placeholder="smtp.hostinger.com"></label></div>
+      <div class="col-md-4"><label class="form-label fw-bold">Porta<input class="form-control" type="number" name="porta" min="1" max="65535" value="{{ row.porta if row else 465 }}"></label></div>
+      <div class="col-md-4"><label class="form-label fw-bold">Segurança<select class="form-select" name="seguranca"><option value="ssl" {% if row and row.seguranca == 'ssl' or not row %}selected{% endif %}>SSL (porta 465)</option><option value="starttls" {% if row and row.seguranca == 'starttls' %}selected{% endif %}>STARTTLS (porta 587)</option></select></label></div>
+      <div class="col-md-8"><label class="form-label fw-bold">Remetente (e-mail "De")<input class="form-control" type="email" name="remetente" required maxlength="254" value="{{ row.remetente if row else '' }}" placeholder="nao-responda@seudominio.com.br"></label></div>
+      <div class="col-md-6"><label class="form-label fw-bold">Usuário<input class="form-control" name="usuario" maxlength="254" value="{{ row.usuario if row else '' }}" placeholder="normalmente o mesmo e-mail"></label></div>
+      <div class="col-md-6"><label class="form-label fw-bold">Senha<input class="form-control" type="password" name="senha" autocomplete="new-password" placeholder="{{ 'deixe em branco para manter a atual' if tem_senha else '' }}"></label></div>
+      <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="ativo" id="smtp-ativo" {% if not row or row.ativo %}checked{% endif %}><label class="form-check-label" for="smtp-ativo">Usar esta configuração (desmarque para voltar às variáveis do ambiente)</label></div></div>
+      <div class="col-12"><button class="btn btn-primary">Salvar servidor</button></div>
+    </form>
+  </section>
+  <section class="card p-4">
+    <h2 class="h5">Enviar e-mail de teste</h2>
+    <form method="post" action="{{ url_for('main.configuracoes_smtp_testar') }}" class="d-flex flex-wrap gap-2 align-items-end">
+      <input type="hidden" name="_csrf_token" value="{{ config_csrf_token }}">
+      <label class="form-label mb-0 flex-grow-1">Destinatário<input class="form-control" type="email" name="destinatario" required placeholder="voce@exemplo.com"></label>
+      <button class="btn btn-outline-primary" {% if not conf.host %}disabled{% endif %}>Enviar teste</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

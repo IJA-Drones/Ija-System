@@ -12,8 +12,46 @@ from flask import current_app, has_request_context, request
 _ADDRESS = re.compile(r"[^\s@<>;,\r\n]+@[^\s@<>;,\r\n]+\.[^\s@<>;,\r\n]+")
 
 
+def _fernet():
+    import base64
+    import hashlib
+    from cryptography.fernet import Fernet
+    return Fernet(base64.urlsafe_b64encode(hashlib.sha256(str(current_app.secret_key).encode()).digest()))
+
+
+def cifrar(texto):
+    return _fernet().encrypt((texto or "").encode()).decode() if texto else None
+
+
+def decifrar(cifrado):
+    try:
+        return _fernet().decrypt((cifrado or "").encode()).decode() if cifrado else ""
+    except Exception:
+        return None  # chave trocada: tratar como senha indisponível
+
+
+def settings():
+    """Configuração salva pelo sistema tem prioridade; o ambiente (REPORT_SMTP_*) é o fallback."""
+    try:
+        from app.models import ConfiguracaoSmtp
+        row = ConfiguracaoSmtp.query.get(1)
+    except Exception:
+        row = None
+    if row is not None and row.ativo and row.host and row.remetente:
+        senha = decifrar(row.senha_cifrada)
+        if senha is not None:
+            return {"host": row.host, "port": int(row.porta or 587), "from": row.remetente, "username": row.usuario or "",
+                    "password": senha, "ssl": row.seguranca == "ssl", "source": "sistema"}
+    cfg = current_app.config
+    port = int(cfg.get("REPORT_SMTP_PORT", 587) or 587)
+    return {"host": cfg.get("REPORT_SMTP_HOST") or "", "port": port, "from": cfg.get("REPORT_SMTP_FROM") or "",
+            "username": cfg.get("REPORT_SMTP_USERNAME") or "", "password": cfg.get("REPORT_SMTP_PASSWORD") or "",
+            "ssl": port == 465, "source": "ambiente"}
+
+
 def available():
-    return bool(current_app.config.get("REPORT_SMTP_HOST") and current_app.config.get("REPORT_SMTP_FROM"))
+    conf = settings()
+    return bool(conf["host"] and conf["from"])
 
 
 def valid_address(value):
@@ -66,8 +104,9 @@ def send(recipients, subject, body, attachments=(), html=None):
     recipients = [r for r in recipients if valid_address(r)]
     if not recipients:
         raise ValueError("Informe ao menos um endereço de e-mail válido.")
+    conf = settings()
     message = EmailMessage()
-    message["From"] = current_app.config["REPORT_SMTP_FROM"]
+    message["From"] = conf["from"]
     message["To"] = ", ".join(recipients)
     message["Subject"] = subject
     message.set_content(body)
@@ -75,20 +114,15 @@ def send(recipients, subject, body, attachments=(), html=None):
         message.add_alternative(html, subtype="html")
     for content, filename, subtype in attachments:
         message.add_attachment(content, maintype="application", subtype=subtype, filename=filename)
-    host = current_app.config["REPORT_SMTP_HOST"]
-    port = int(current_app.config.get("REPORT_SMTP_PORT", 587))
     context = ssl.create_default_context()
-    if port == 465:
-        smtp = smtplib.SMTP_SSL(host, port, timeout=20, context=context)
-    else:
-        smtp = smtplib.SMTP(host, port, timeout=20)
+    smtp = smtplib.SMTP_SSL(conf["host"], conf["port"], timeout=20, context=context) if conf["ssl"] else smtplib.SMTP(conf["host"], conf["port"], timeout=20)
     with smtp as conn:
         conn.ehlo()
-        if port != 465:
+        if not conf["ssl"]:
             conn.starttls(context=context)
             conn.ehlo()
-        if current_app.config.get("REPORT_SMTP_USERNAME"):
-            conn.login(current_app.config["REPORT_SMTP_USERNAME"], current_app.config.get("REPORT_SMTP_PASSWORD", ""))
+        if conf["username"]:
+            conn.login(conf["username"], conf["password"])
         refused = conn.send_message(message)
         if refused:
             raise smtplib.SMTPRecipientsRefused(refused)
