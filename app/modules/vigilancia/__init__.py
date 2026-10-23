@@ -23,6 +23,10 @@ def register_routes(bp):
     from .agent_tracking import register_routes as register_agent_tracking_routes
     register_risk_routes(bp)
     register_agent_tracking_routes(bp)
+    from .migracao_routes import register_routes as register_migracao_routes
+    register_migracao_routes(bp)
+    from .pending import register_routes as register_pending_routes
+    register_pending_routes(bp)
 
 
 __all__ = ["register_routes"]

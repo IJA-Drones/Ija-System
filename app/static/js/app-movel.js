@@ -102,11 +102,11 @@
   const api = {
     get: (path, token) => request(path, { token, timeout: 20000 }),
     post: (path, body, token, timeout) => request(path, { method: 'POST', body, token, timeout }),
-    multipart(path, fields, files) {
+    multipart(path, fields, files, token) {
       const fd = new FormData();
       Object.entries(fields).forEach(([k, v]) => fd.append(k, v == null ? '' : String(v)));
       (files || []).forEach((f) => fd.append('midias', f, f.name || 'foto.jpg'));
-      return request(path, { method: 'POST', body: fd, json: false, timeout: 90000 });
+      return request(path, { method: 'POST', body: fd, json: false, token, timeout: 180000 });
     },
   };
 
@@ -147,7 +147,17 @@
     },
     async post(item) {
       if (item.kind === 'foco') return String((await api.multipart('/portal-cidadao/denuncias', item.fields, item.files)).protocolo || '');
-      if (item.kind === 'visita') return String((await api.post('/api/mobile/agente/visitas', item.fields, state.token)).inspecao_codigo || '');
+      if (item.kind === 'visita') {
+        // 1) a visita (código gerado no aparelho: reenvio é idempotente); 2) as fotos e vídeos dela
+        if (!item.inspecao) { item.inspecao = String((await api.post('/api/mobile/agente/visitas', item.fields, state.token)).inspecao_codigo || ''); await this.save(item); }
+        if (item.files.length && !item.midiasOk) {
+          try {
+            await api.multipart(`/api/mobile/agente/visitas/${encodeURIComponent(item.inspecao)}/midias`, { latitude: item.fields.latitude, longitude: item.fields.longitude }, item.files, state.token);
+            item.midiasOk = true;
+          } catch (e) { if (e instanceof ApiError) item.erroMidia = e.display; else throw e; }
+        }
+        return item.inspecao;
+      }
       return String((await api.post('/api/mobile/relato-saude', item.fields)).protocolo || '');
     },
     // Tenta enviar agora. Devolve o protocolo, ou null se ficou na fila (sem rede). 400 sobe como ApiError.
@@ -308,8 +318,8 @@
     return `<header class="bar ${flat ? 'flat' : ''}"><button class="iconbtn" type="button" data-go="${back}" aria-label="Voltar">${svg('back')}</button><h1>${esc(title)}</h1>${actions}</header>`;
   }
   const locCard = (pos, status) => `<div class="card softer loc ${pos ? 'ok' : ''}">${svg(pos ? 'gps' : 'gpsOff')}<div><b>${pos ? pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5) : 'Sem coordenadas'}</b><span>${esc(status || '')}</span></div></div>`;
-  function readFiles(input, limit, current) {
-    const files = Array.from(input.files || []).filter((f) => f.type.startsWith('image/'));
+  function readFiles(input, limit, current, video) {
+    const files = Array.from(input.files || []).filter((f) => f.type.startsWith('image/') || (video && f.type.startsWith('video/')));
     const room = limit - current.length;
     input.value = '';
     return files.slice(0, Math.max(room, 0));
@@ -808,7 +818,10 @@
     const depositos = p.depositos || [];
     const inicio = String(q.inicio || '').slice(0, 10), fim = String(q.fim || '').slice(0, 10);
     const clamp = (d) => (inicio && d < inicio ? inicio : fim && d > fim ? fim : d);
-    let situacao = null, positivo = null, pos = agentPos, locating = false, foto = null, sending = false;
+    let situacao = null, positivo = null, pos = agentPos, locating = false, sending = false;
+    const midias = [];
+    const MIDIA_EXT = ['jpg', 'jpeg', 'png', 'heic', 'mp4', 'mov'];
+    const fotoObrigatoria = () => situacao === 'FECHADO' || situacao === 'RECUSADO';
     const SIT = { INSPECIONADO: 'Inspecionado', FECHADO: 'Fechado', RECUSADO: 'Recusado', DESABITADO: 'Desabitado' };
     $app.innerHTML = `${bar('Registrar visita', { back: 'agente', flat: true })}
       <main class="page"><form id="f" novalidate>
@@ -828,13 +841,15 @@
         </div>
         <p class="subsection">Localização</p>
         <div id="loc"></div>
-        <p class="subsection">Foto do imóvel (opcional)</p>
-        <div class="row" style="align-items:center">
-          <button class="btn outline" type="button" id="btnFoto">${svg('camera')} <span>Tirar foto</span></button>
-          <div class="thumb sm" id="fotoThumb" hidden style="flex:0 0 64px"><img alt=""></div>
+        <p class="subsection" id="midiaTitle">Fotos e vídeos do imóvel <b class="req" id="midiaReq" hidden>*</b><span class="err" hidden>Pelo menos 1 foto</span></p>
+        <div class="row">
+          <button class="btn outline" type="button" id="btnCam">${svg('camera')} Câmera</button>
+          <button class="btn outline" type="button" id="btnGal">${svg('gallery')} Galeria</button>
         </div>
-        <input type="file" id="inFoto" accept="image/*" capture="environment" hidden>
-        <p class="muted small" style="margin-top:6px">A foto fica guardada no aparelho junto do registro.</p>
+        <input type="file" id="inCam" accept="image/*,video/*" capture="environment" hidden>
+        <input type="file" id="inGal" accept="image/*,video/*" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
+        <p class="muted small" style="margin-top:6px">Até 5 arquivos (fotos JPG/PNG/HEIC ou vídeos MP4/MOV de até 50 MB) do ambiente peri e extradomiciliar. Obrigatória pelo menos 1 foto se o imóvel estiver fechado ou recusado.</p>
         <button class="btn primary mt2" type="submit" id="btnSend">${svg('save')} <span>Registrar visita</span></button>
       </form></main>`;
     const form = $app.querySelector('#f'); wire(form);
@@ -848,6 +863,8 @@
       form.querySelector('#sitTitle').classList.remove('error'); form.querySelector('#sitTitle .err').hidden = true;
       if (situacao !== 'INSPECIONADO') { positivo = null; form.querySelectorAll('[data-pos]').forEach((x) => x.classList.remove('on', 'plain')); }
       form.querySelector('#posWrap').hidden = situacao !== 'INSPECIONADO'; form.querySelector('#depWrap').hidden = !(situacao === 'INSPECIONADO' && positivo === 'SIM');
+      form.querySelector('#midiaReq').hidden = !fotoObrigatoria();
+      if (!fotoObrigatoria()) { form.querySelector('#midiaTitle').classList.remove('error'); form.querySelector('#midiaTitle .err').hidden = true; }
     });
     form.querySelector('#posChips').addEventListener('click', (e) => {
       const b = e.target.closest('[data-pos]'); if (!b) return;
@@ -855,26 +872,43 @@
       form.querySelector('#posTitle').classList.remove('error'); form.querySelector('#posTitle .err').hidden = true;
       form.querySelector('#depWrap').hidden = positivo !== 'SIM';
     });
-    form.querySelector('#btnFoto').addEventListener('click', () => form.querySelector('#inFoto').click());
-    form.querySelector('#inFoto').addEventListener('change', (e) => { const f = readFiles(e.target, 1, [])[0]; if (!f) return; foto = f; const t = form.querySelector('#fotoThumb'); t.hidden = false; t.querySelector('img').src = fileUrl(f); form.querySelector('#btnFoto span').textContent = 'Trocar foto'; });
+    const thumbs = form.querySelector('#thumbs');
+    function drawThumbs() {
+      thumbs.innerHTML = midias.map((f, i) => `<div class="thumb">${f.type.startsWith('video/') ? `<video src="${fileUrl(f)}" muted preload="metadata" style="width:100%;height:100%;object-fit:cover;border-radius:10px"></video>` : `<img src="${fileUrl(f)}" alt="">`}<button type="button" data-rm="${i}" aria-label="Remover arquivo">${svg('close')}</button></div>`).join('');
+      form.querySelector('#btnCam').disabled = form.querySelector('#btnGal').disabled = midias.length >= 5;
+    }
+    thumbs.addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (b) { midias.splice(Number(b.dataset.rm), 1); drawThumbs(); } });
+    form.querySelector('#btnCam').addEventListener('click', () => form.querySelector('#inCam').click());
+    form.querySelector('#btnGal').addEventListener('click', () => form.querySelector('#inGal').click());
+    ['#inCam', '#inGal'].forEach((id) => form.querySelector(id).addEventListener('change', (e) => {
+      const novos = readFiles(e.target, 5, midias, true);
+      const ok = novos.filter((f) => MIDIA_EXT.includes(String(f.name || '').split('.').pop().toLowerCase()) && f.size <= 50 * 1024 * 1024);
+      if (ok.length < novos.length) toast('Use fotos JPG, PNG ou HEIC, ou vídeos MP4 ou MOV de até 50 MB.');
+      midias.push(...ok); drawThumbs();
+      if (midias.some((f) => f.type.startsWith('image/'))) { form.querySelector('#midiaTitle').classList.remove('error'); form.querySelector('#midiaTitle .err').hidden = true; }
+    }));
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); if (sending) return;
       form.querySelector('#depWrap [data-validate]') && form.querySelectorAll('#depWrap [data-validate]').forEach((el) => { if (form.querySelector('#depWrap').hidden) el.removeAttribute('data-validate'); else el.setAttribute('data-validate', 'int'); });
       const ok = validate(form);
       const erroSit = situacao === null, erroPos = situacao === 'INSPECIONADO' && positivo === null;
+      const erroFoto = fotoObrigatoria() && !midias.some((f) => f.type.startsWith('image/'));
       form.querySelector('#sitTitle').classList.toggle('error', erroSit); form.querySelector('#sitTitle .err').hidden = !erroSit;
       form.querySelector('#posTitle').classList.toggle('error', erroPos); form.querySelector('#posTitle .err').hidden = !erroPos;
-      if (!ok || erroSit || erroPos) { if (ok) form.querySelector(erroSit ? '#sitTitle' : '#posTitle').scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('Preencha os campos obrigatórios destacados.'); return; }
+      form.querySelector('#midiaTitle').classList.toggle('error', erroFoto); form.querySelector('#midiaTitle .err').hidden = !erroFoto;
+      if (!ok || erroSit || erroPos || erroFoto) { if (ok) form.querySelector(erroSit ? '#sitTitle' : erroPos ? '#posTitle' : '#midiaTitle').scrollIntoView({ behavior: 'smooth', block: 'center' }); toast(erroFoto && !erroSit && !erroPos && ok ? 'Imóvel fechado ou recusado: anexe pelo menos 1 foto.' : 'Preencha os campos obrigatórios destacados.'); return; }
       sending = true; form.querySelector('#btnSend').disabled = true; form.querySelector('#btnSend span').textContent = 'Enviando…';
-      const fields = { plano: q.plano, quarteirao: q.quarteirao, imovel_codigo: val(form, 'imovel_codigo'), data_inspecao: val(form, 'data_inspecao'), situacao, demo: false };
+      const hex = Array.from(crypto.getRandomValues(new Uint8Array(5)), (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const fields = { plano: q.plano, quarteirao: q.quarteirao, inspecao_codigo: 'APP-' + hex, imovel_codigo: val(form, 'imovel_codigo'), data_inspecao: val(form, 'data_inspecao'), situacao, demo: false };
       if (situacao === 'INSPECIONADO') fields.positivo_aedes = positivo;
       if (situacao === 'INSPECIONADO' && positivo === 'SIM') fields.depositos = Object.fromEntries(depositos.map((d) => [d.codigo, parseInt(val(form, 'dep_' + d.codigo), 10) || 0]));
       if (pos) { fields.latitude = pos.coords.latitude; fields.longitude = pos.coords.longitude; }
       try {
-        // a foto fica só no aparelho (dentro da fila local): o servidor ainda não recebe mídia de visita
-        const codigo = await outbox.send('visita', fields, foto ? [foto] : []);
-        await dialog(codigo ? { icon: 'check', iconClass: 'icon-ok', title: 'Visita registrada', text: `Inspeção ${codigo} registrada no quarteirão ${q.quarteirao}.` }
-          : { icon: 'cloudOff', iconClass: 'icon-warn', title: 'Salva no aparelho', text: 'Sem internet agora. A visita foi salva no aparelho e será enviada automaticamente quando houver conexão.' });
+        // sem rede, a visita e os arquivos ficam na fila (IndexedDB) e são enviados depois
+        const codigo = await outbox.send('visita', fields, midias.slice());
+        const erroMidia = codigo && outbox.items[0] && outbox.items[0].erroMidia;
+        await dialog(codigo ? { icon: erroMidia ? 'error' : 'check', iconClass: erroMidia ? 'icon-warn' : 'icon-ok', title: 'Visita registrada', text: `Inspeção ${codigo} registrada no quarteirão ${q.quarteirao}.` + (erroMidia ? `\nAs fotos/vídeos não foram aceitos: ${erroMidia}` : midias.length ? ` ${midias.length} foto(s)/vídeo(s) enviados.` : '') }
+          : { icon: 'cloudOff', iconClass: 'icon-warn', title: 'Salva no aparelho', text: 'Sem internet agora. A visita e as fotos/vídeos foram salvos no aparelho e serão enviados automaticamente quando houver conexão.' });
         go('agente');
       } catch (err) {
         sending = false; form.querySelector('#btnSend').disabled = false; form.querySelector('#btnSend span').textContent = 'Registrar visita';
@@ -914,7 +948,8 @@
       const items = outbox.items;
       $app.innerHTML = `${bar('Enviados / pendentes', { actions: `<button class="iconbtn" type="button" id="btnSync" aria-label="Reenviar pendentes">${svg('sync')}</button>` })}
         <main class="page" style="padding-top:16px">${items.length ? items.map((it) => {
-          const [icon, cls, status] = it.protocolo ? ['check', 'icon-ok', (it.kind === 'visita' ? 'Inspeção ' : 'Protocolo ') + it.protocolo] : it.erro ? ['error', 'icon-danger', 'Rejeitado: ' + it.erro] : ['schedule', 'icon-warn', 'Pendente: será enviado quando houver internet'];
+          const [icon, cls, status] = it.protocolo ? [it.erroMidia ? 'error' : 'check', it.erroMidia ? 'icon-warn' : 'icon-ok', (it.kind === 'visita' ? 'Inspeção ' : 'Protocolo ') + it.protocolo + (it.erroMidia ? ' · fotos/vídeos não enviados: ' + it.erroMidia : '')]
+            : it.inspecao ? ['schedule', 'icon-warn', 'Visita ' + it.inspecao + ' registrada; fotos/vídeos serão enviados quando houver internet'] : it.erro ? ['error', 'icon-danger', 'Rejeitado: ' + it.erro] : ['schedule', 'icon-warn', 'Pendente: será enviado quando houver internet'];
           return `<div class="card item">${svg(icon, cls)}<div class="tx"><b style="font-size:16px">${esc(outbox.titulo(it))}</b><span class="muted small">${fmtDataHora(it.createdAt)}</span><br><span class="small">${esc(status)}</span></div></div>`;
         }).join('') : '<p class="center">Nenhum relato feito neste aparelho.</p>'}</main>`;
       $app.querySelector('#btnSync').addEventListener('click', () => { toast('Reenviando pendentes…'); outbox.flush(); });

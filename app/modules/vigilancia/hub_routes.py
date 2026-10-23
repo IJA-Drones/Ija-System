@@ -83,6 +83,20 @@ def register_routes(bp):
                 "endpoint": "main.vigilancia_risco" if current_app.config.get("VIGILANCIA_IMPORT_ENABLED", False) else None,
                 "action": "Consultar mapa de risco", "secondary": None,
             })
+        if allowed("main.vigilancia_pendentes"):
+            cards.append({
+                "id": "pendentes", "eyebrow": "Redução de pendências", "title": "Imóveis pendentes",
+                "icon": "bi-house-exclamation",
+                "description": "Imóveis fechados, recusados ou desabitados, com fotos e vídeos da tentativa de inspeção.",
+                "endpoint": "main.vigilancia_pendentes", "action": "Ver imóveis pendentes", "secondary": None,
+            })
+        if "main.integracoes_esus" in current_app.view_functions and allowed("main.integracoes_esus"):
+            cards.append({
+                "id": "esus", "eyebrow": "Integração Ministério da Saúde", "title": "e-SUS APS (PEC)",
+                "icon": "bi-hospital",
+                "description": "Visitas de ACS/ACE e cadastro de domicílios sincronizados do PEC, com API para terceiros.",
+                "endpoint": "main.integracoes_esus", "action": "Abrir integração e-SUS", "secondary": None,
+            })
         can_import = allowed("main.vigilancia_importacoes")
         can_preview = allowed("main.vigilancia_validacao", administration)
         if can_import or can_preview:
@@ -96,6 +110,14 @@ def register_routes(bp):
                 "endpoint": endpoint,
                 "action": "Acessar arquivos" if import_enabled else "Validar arquivo",
                 "secondary": "main.vigilancia_validacao" if import_enabled and preview_enabled else None,
+            })
+        if allowed("main.vigilancia_migracao"):
+            cards.append({
+                "id": "migracao", "eyebrow": "Gestão dos dados", "title": "Migração de dados",
+                "icon": "bi-database-up",
+                "description": "Extrair, validar e carregar dados dos sistemas legados (SISPNCD, SISLOC, SINAN e planilhas da SMS).",
+                "endpoint": "main.vigilancia_migracao" if current_app.config.get("VIGILANCIA_IMPORT_ENABLED", False) else None,
+                "action": "Migrar dados", "secondary": None,
             })
         if current_app.config.get('ACOES_PUBLICAS_ENABLED', False):
             from app.modules.acoes_publicas.service import allowed as actions_allowed, ready

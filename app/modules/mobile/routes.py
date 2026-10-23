@@ -69,7 +69,7 @@ def _rate_ok(key, limit, window=3600):
         return True
 
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 
 def register_routes(bp):
@@ -278,3 +278,14 @@ def register_routes(bp):
         except (FieldInputError, FieldConflict, FieldStoreError) as exc:
             return jsonify(error=str(exc)), 400
         return jsonify(ok=True, lote=batch["id"], inspecao_codigo=form["inspecao_codigo"], status=batch.get("status")), 201
+
+    @bp.post("/api/mobile/agente/visitas/<inspecao_codigo>/midias", endpoint="mobile_agente_visita_midias")
+    @bearer_required
+    def mobile_agente_visita_midias(inspecao_codigo):
+        from app.modules.vigilancia.pending import MidiaError, save_media
+        try:
+            rows = save_media(g.mobile_user, inspecao_codigo[:80], request.files.getlist("midias"),
+                              request.form.get("latitude"), request.form.get("longitude"))
+        except MidiaError as exc:
+            return jsonify(error=str(exc)), exc.status
+        return jsonify(ok=True, midias=[{"id": m.id, "tipo": m.tipo} for m in rows]), 201

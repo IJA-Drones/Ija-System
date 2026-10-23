@@ -823,6 +823,16 @@
   "main.vigilancia_import_modelo": {
     "GET": "prefeitura.vigilancia.consultar"
   },
+  "main.vigilancia_migracao": {
+    "GET": "prefeitura.vigilancia.consultar",
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.vigilancia_migracao_arquivo": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_migracao_exemplo": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
   "main.vigilancia_validacao_api": {
     "POST": "prefeitura.vigilancia.editar"
   },
@@ -1378,6 +1388,25 @@
     "GET": "prefeitura.vigilancia.consultar"
   },
   "main.vigilancia_agentes_export": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_pendentes": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.vigilancia_pendentes_midia": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.integracoes_esus": {
+    "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.integracoes_esus_sincronizar": {
+    "POST": "prefeitura.vigilancia.editar"
+  },
+  "main.integracoes_esus_config": {
+    "GET": "sistema.tecnico.consultar",
+    "POST": "sistema.tecnico.operar"
+  },
+  "main.vigilancia_agentes_esus": {
     "GET": "prefeitura.vigilancia.consultar"
   }
 }

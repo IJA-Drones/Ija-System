@@ -292,8 +292,8 @@ def _normalize_and_validate(data, linha, prefeitura_id):
     except ValueError:
         row.add_error("data_inspecao", "DATA_INVALIDA", "Informe uma data válida no formato AAAA-MM-DD.")
 
-    if data["situacao"] not in {"INSPECIONADO", "FECHADO", "RECUSADO", "NAO_INSPECIONADO"}:
-        row.add_error("situacao", "SITUACAO_INVALIDA", "Use INSPECIONADO, FECHADO, RECUSADO ou NAO_INSPECIONADO.")
+    if data["situacao"] not in {"INSPECIONADO", "FECHADO", "RECUSADO", "DESABITADO", "NAO_INSPECIONADO"}:
+        row.add_error("situacao", "SITUACAO_INVALIDA", "Use INSPECIONADO, FECHADO, RECUSADO, DESABITADO ou NAO_INSPECIONADO.")
     elif data["situacao"] == "INSPECIONADO":
         if data["positivo_aedes"] not in {"SIM", "NAO"}:
             row.add_error("positivo_aedes", "POSITIVIDADE_OBRIGATORIA", "Use SIM ou NAO para um imóvel inspecionado.")

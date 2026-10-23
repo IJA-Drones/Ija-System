@@ -33,6 +33,7 @@ from app.modules.estoque import register_routes as register_estoque_routes
 from app.modules.feedback import register_routes as register_feedback_routes
 from app.modules.financeiro import register_routes as register_financeiro_routes
 from app.modules.gestao_ti import register_routes as register_gestao_ti_routes
+from app.modules.integracoes import register_routes as register_integracoes_routes
 from app.modules.mapas import register_routes as register_mapas_routes
 from app.modules.mobile import register_routes as register_mobile_routes
 from app.modules.ortomosaicos import register_routes as register_ortomosaicos_routes
@@ -103,6 +104,7 @@ register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)
 register_veiculos_routes(bp)
 register_vigilancia_routes(bp)
+register_integracoes_routes(bp)
 register_treinamentos_routes(bp)
 
 

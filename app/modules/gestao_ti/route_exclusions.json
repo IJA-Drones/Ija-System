@@ -54,10 +54,13 @@
   "main.mobile_chat": "public chatbot for the app; validated input and quota",
   "main.mobile_agente_painel": "bearer-authenticated agent dashboard restricted to the token owner's prefeitura",
   "main.mobile_agente_visita": "bearer-authenticated field visit by the assigned agent; same validation as the web form",
+  "main.mobile_agente_visita_midias": "bearer-authenticated photo/video upload restricted to the author of the visit",
   "main.app_download": "public page explaining how to install the app",
   "main.app_movel": "public PWA shell",
   "main.app_apk": "public APK download",
   "main.app_qr": "public QR code of the APK link",
   "main.telegram_webhook": "external webhook authenticated by a secret path segment and the Telegram secret header",
-  "main.alertas_telegram": "authenticated self-service: redirects the logged-in user to the Telegram bot with their own link code"
+  "main.alertas_telegram": "authenticated self-service: redirects the logged-in user to the Telegram bot with their own link code",
+  "main.api_esus_visitas": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only",
+  "main.api_esus_status": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only"
 }
