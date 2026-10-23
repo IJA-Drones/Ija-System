@@ -5,6 +5,7 @@ import smtplib
 import ssl
 from datetime import datetime
 from email.message import EmailMessage
+from email.utils import formataddr, formatdate, make_msgid
 from html import escape
 
 from flask import current_app, has_request_context, request
@@ -106,9 +107,14 @@ def send(recipients, subject, body, attachments=(), html=None):
         raise ValueError("Informe ao menos um endereço de e-mail válido.")
     conf = settings()
     message = EmailMessage()
-    message["From"] = conf["from"]
+    sender_domain = conf["from"].rsplit("@", 1)[-1]
+    # Date, Message-ID e nome do remetente: sem eles o Microsoft 365/Outlook costuma colocar em quarentena.
+    message["From"] = formataddr((current_app.config.get("MAIL_FROM_NAME") or "IJA Vigilância · Oceano Azul", conf["from"]))
     message["To"] = ", ".join(recipients)
     message["Subject"] = subject
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid(domain=sender_domain)
+    message["Auto-Submitted"] = "auto-generated"
     message.set_content(body)
     if html:
         message.add_alternative(html, subtype="html")
