@@ -44,6 +44,8 @@ class Config:
     # Push web (VAPID) e FCM (conta de serviço Firebase em JSON). Vazios = push desligado.
     # URL pública usada em links de e-mail/push (vazio = origem da requisição ou domínio de produção).
     PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "")
+    # Convite público do TestFlight (https://testflight.apple.com/join/...). Vazio = só instalação pelo Safari.
+    TESTFLIGHT_URL = os.getenv("TESTFLIGHT_URL", "")
     VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "")
     VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
     VAPID_CLAIMS_EMAIL = os.getenv("VAPID_CLAIMS_EMAIL", "")

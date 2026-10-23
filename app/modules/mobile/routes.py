@@ -78,7 +78,10 @@ def register_routes(bp):
         import os
         path = os.path.join(current_app.static_folder, "downloads", "ija-vigilancia.apk")
         size = round(os.path.getsize(path) / (1024 * 1024)) if os.path.exists(path) else 0
-        return render_template("app_download.html", versao=APP_VERSION, tamanho_mb=size)
+        testflight = (current_app.config.get("TESTFLIGHT_URL") or "").strip()
+        if not testflight.startswith("https://testflight.apple.com/"):
+            testflight = ""
+        return render_template("app_download.html", versao=APP_VERSION, tamanho_mb=size, testflight_url=testflight)
 
     @bp.get("/privacidade", endpoint="privacidade")
     def privacidade():
@@ -97,7 +100,8 @@ def register_routes(bp):
         import io
         import qrcode
         from qrcode.image.svg import SvgPathImage
-        image = qrcode.make(url_for("main.app_apk", _external=True), image_factory=SvgPathImage, box_size=10, border=2)
+        # O QR abre a página (não o APK), que já destaca o passo certo para Android ou iPhone.
+        image = qrcode.make(url_for("main.app_download", _external=True), image_factory=SvgPathImage, box_size=10, border=2)
         buffer = io.BytesIO(); image.save(buffer)
         return Response(buffer.getvalue(), mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
 
