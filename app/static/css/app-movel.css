@@ -218,3 +218,5 @@ button { cursor: pointer; }
 .chips { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; }
 .chip { max-width: 100%; }
 img, video, canvas, svg { max-width: 100%; }
+.tg-link { width: auto; display: inline-flex; margin: 8px 16px 0; align-self: flex-start; }
+.chat { display: flex; flex-direction: column; }

@@ -239,6 +239,10 @@ def disparar(regra, valor, *, bairro=None, latitude=None, longitude=None, teste=
             resultado["email"] = mail.send(recipients, titulo, mensagem + f"\n\nAcesse o IJA System para detalhes: {link}", html=html) if recipients else 0
         except Exception as exc:
             resultado["email_erro"] = str(exc)[:200]
+    if getattr(regra, "notificar_telegram", True):
+        from app.modules.portal_cidadao.telegram import notify_users
+        pessoas = Usuario.query.filter(Usuario.prefeitura_id == regra.prefeitura_id, Usuario.telegram_chat_id.isnot(None)).all()
+        resultado["telegram"] = notify_users(pessoas, titulo, mensagem)
     if regra.notificar_push:
         resultado["push"] = enviar_push(regra.prefeitura_id, titulo, mensagem, latitude=latitude, longitude=longitude,
                                         raio_km=regra.raio_km, url="/portal-cidadao#boletim-saude", tag=f"alerta-{regra.id}")
@@ -292,7 +296,7 @@ def criar_regra(form, prefeitura_id, usuario):
                         janela_dias=inteiro("janela_dias", 1, 365, 7), limiar=inteiro("limiar", 1, 100000, 3),
                         raio_km=raio, intervalo_horas=inteiro("intervalo_horas", 0, 720, 24),
                         notificar_app=form.get("notificar_app") == "on", notificar_email=form.get("notificar_email") == "on",
-                        notificar_push=form.get("notificar_push") == "on",
+                        notificar_push=form.get("notificar_push") == "on", notificar_telegram=form.get("notificar_telegram") == "on",
                         emails=((form.get("emails") or "").strip()[:1000] or None), criado_por_id=getattr(usuario, "id", None))
     db.session.add(regra)
     db.session.commit()

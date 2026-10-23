@@ -39,6 +39,7 @@ class AlertaRegra(db.Model):
     notificar_app = db.Column(db.Boolean, nullable=False, default=True)
     notificar_email = db.Column(db.Boolean, nullable=False, default=False)
     notificar_push = db.Column(db.Boolean, nullable=False, default=True)
+    notificar_telegram = db.Column(db.Boolean, nullable=False, default=True)
     emails = db.Column(db.Text)
     ativo = db.Column(db.Boolean, nullable=False, default=True, index=True)
     criado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))

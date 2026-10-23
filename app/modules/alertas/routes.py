@@ -122,6 +122,13 @@ def register_routes(bp):
         flash(f"Push enviado: {resultado['enviados']} de {resultado['dispositivos']} dispositivo(s). {resultado['erros'] or ''}", "info")
         return redirect(url_for("main.alertas", prefeitura_id=pid), code=303)
 
+    @bp.get("/alertas/telegram", endpoint="alertas_telegram")
+    def alertas_telegram():
+        from app.modules.portal_cidadao.telegram import bot_link, link_code_for
+        if not current_user.is_authenticated:
+            return current_app.login_manager.unauthorized()
+        return redirect(bot_link("v_" + link_code_for(current_user)), code=302)
+
     # ------------------------------------------------------------ API pública
     @bp.get("/api/push/chave-publica", endpoint="push_chave_publica")
     def push_chave_publica():

@@ -1,5 +1,5 @@
 // static/sw.js — servido em /sw.js (escopo raiz). Push em qualquer página + cache do shell do aplicativo (/m/).
-const CACHE = "ija-app-movel-v1";
+const CACHE = "ija-app-movel-v2";
 const SHELL = ["/m/", "/static/css/app-movel.css", "/static/js/app-movel.js", "/static/img/logo_oceano_azul_light.png",
   "/static/img/icon-192.png", "/static/img/icon-512.png", "/static/manifest-portal.json"];
 

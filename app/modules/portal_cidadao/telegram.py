@@ -28,6 +28,48 @@ def send_text(chat_id, text):
     return response.json()
 
 
+def bot_link(payload=""):
+    user = current_app.config.get("TELEGRAM_BOT_USERNAME") or "ija_vigilancia_bot"
+    return f"https://t.me/{user}" + (f"?start={payload}" if payload else "")
+
+
+def link_code_for(user):
+    """Código de vínculo do usuário (gera uma vez). Deep link: t.me/<bot>?start=v_<código>."""
+    import secrets
+    from app.extensions import db
+    if not user.telegram_codigo:
+        user.telegram_codigo = secrets.token_urlsafe(24).replace("-", "x").replace("_", "y")[:32]
+        db.session.commit()
+    return user.telegram_codigo
+
+
+def link_account(code, chat_id):
+    from app.extensions import db
+    from app.models import Usuario
+    user = Usuario.query.filter_by(telegram_codigo=code).first() if code else None
+    if user is None:
+        return None
+    user.telegram_chat_id = str(chat_id)
+    db.session.commit()
+    return user
+
+
+def notify_users(users, title, body):
+    """Envia a mensagem aos usuários com Telegram vinculado. Devolve quantos receberam."""
+    if not current_app.config.get("TELEGRAM_BOT_TOKEN"):
+        return 0
+    sent = 0
+    for user in users:
+        if not getattr(user, "telegram_chat_id", None):
+            continue
+        try:
+            send_text(user.telegram_chat_id, f"{title}\n\n{body}")
+            sent += 1
+        except requests.RequestException:
+            current_app.logger.warning("Telegram: falha ao notificar usuário %s", user.id)
+    return sent
+
+
 def handle(app, chat_id, text, portal_url):
     with app.app_context():
         key = f"tg:{chat_id}"
@@ -64,7 +106,21 @@ def register_routes(bp):
         if not chat_id or not text:
             return jsonify(ok=True, skipped=True)
         if text.startswith("/start"):
+            payload = text.split(maxsplit=1)[1].strip() if " " in text else ""
+            if payload.startswith("v_"):
+                user = link_account(payload[2:], chat_id)
+                reply = (f"Pronto, {user.nome_uvis}! Seu Telegram está vinculado ao IJA Vigilância. Você receberá aqui os alertas epidemiológicos do seu município."
+                         if user else "Código de vínculo inválido ou já usado. Gere um novo link no aplicativo.")
+                try:
+                    send_text(chat_id, reply)
+                except requests.RequestException:
+                    current_app.logger.warning("Telegram: falha ao responder vínculo")
+                return jsonify(ok=True, vinculado=bool(user))
             text = "Olá! O que você pode fazer por mim?"
+        elif text.startswith("/"):
+            text = {"/sintomas": "Quais são os sintomas de dengue, zika e chikungunya e os sinais de alarme?",
+                    "/atendimento": "Onde procuro atendimento de saúde no município e quais os telefones?",
+                    "/prevencao": "Como evitar focos do mosquito Aedes aegypti em casa?"}.get(text.split("@")[0].split()[0], text)
         portal_url = request.url_root.rstrip("/") + "/portal-cidadao"
         app = current_app._get_current_object()
         threading.Thread(target=handle, args=(app, chat_id, text, portal_url), name="telegram-bot", daemon=True).start()

@@ -69,7 +69,7 @@ def _rate_ok(key, limit, window=3600):
         return True
 
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 
 def register_routes(bp):
@@ -110,7 +110,8 @@ def register_routes(bp):
     def mobile_config():
         catalog = build_public_focus_catalog()
         prefeituras = [{"id": p.id, "nome": p.nome} for p in Prefeitura.query.filter_by(ativa=True).order_by(Prefeitura.nome).all()]
-        return jsonify(prefeituras=prefeituras, catalogo=catalog,
+        from app.modules.portal_cidadao.telegram import bot_link
+        return jsonify(prefeituras=prefeituras, catalogo=catalog, telegram=bot_link(),
                        push={"fcm": bool(current_app.config.get("FCM_SERVICE_ACCOUNT_JSON"))},
                        chat=bool(current_app.config.get("OPENAI_API_KEY")), versao=1)
 
@@ -131,8 +132,10 @@ def register_routes(bp):
     def mobile_me():
         user = g.mobile_user
         prefeitura = db.session.get(Prefeitura, user.prefeitura_id) if user.prefeitura_id else None
+        from app.modules.portal_cidadao.telegram import bot_link, link_code_for
         return jsonify(id=user.id, nome=user.nome_uvis, tipo=user.tipo_usuario, prefeitura_id=user.prefeitura_id,
-                       prefeitura=prefeitura.nome if prefeitura else None)
+                       prefeitura=prefeitura.nome if prefeitura else None,
+                       telegram={"vinculado": bool(user.telegram_chat_id), "link": bot_link("v_" + link_code_for(user)), "bot": bot_link()})
 
     @bp.post("/api/mobile/relato-saude", endpoint="mobile_relato_saude")
     def mobile_relato_saude():

@@ -183,6 +183,8 @@ class Usuario(UserMixin, db.Model):
     # Piloto (já existe)
     # ----------------------------
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    telegram_chat_id = db.Column(db.String(32), nullable=True, index=True)
+    telegram_codigo = db.Column(db.String(40), nullable=True)
     piloto = db.relationship("Pilotos", lazy="joined")
     piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id"), nullable=True, index=True)
     piloto_agro = db.relationship("PilotoAgro", back_populates="usuario", lazy="joined", foreign_keys=[piloto_agro_id])

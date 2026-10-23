@@ -63,6 +63,7 @@
     token: store.get('agente_token', null),
     agente: store.get('agente_usuario', null),
     painel: store.get('agente_painel', null),
+    me: store.get('agente_me', null),
     deviceId: store.get('device_id', null) || (() => { const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); store.set('device_id', id); return id; })(),
   };
   const prefeituras = () => (state.config && state.config.prefeituras) || [];
@@ -72,7 +73,7 @@
   const setAgente = (token, usuario) => {
     state.token = token; state.agente = usuario;
     if (token) { store.set('agente_token', token); store.set('agente_usuario', usuario); }
-    else { store.del('agente_token'); store.del('agente_usuario'); store.del('agente_painel'); state.painel = null; }
+    else { store.del('agente_token'); store.del('agente_usuario'); store.del('agente_painel'); store.del('agente_me'); state.painel = null; state.me = null; }
   };
 
   // ------------------------------------------------------------------ API
@@ -611,6 +612,7 @@
         <button class="btn portal" type="button" id="btnPush" style="margin-top:8px">${svg('bell')} <span>Receber alertas no celular</span></button>
         <button class="btn text" type="button" id="btnPushOff" hidden>Desativar alertas neste aparelho</button>
         <p class="push-status" id="pushStatus"></p>
+        <p class="muted small">Prefere o Telegram? <a href="${esc((state.config && state.config.telegram) || 'https://t.me/ija_vigilancia_bot')}" target="_blank" rel="noopener">Falar com a Azul no Telegram</a></p>
         <div id="lista" class="mt"><p class="center muted">Carregando…</p></div>
       </main>`;
     const btn = $app.querySelector('#btnPush'), off = $app.querySelector('#btnPushOff'), st = $app.querySelector('#pushStatus'), lista = $app.querySelector('#lista');
@@ -642,8 +644,9 @@
   function chat() {
     const msgs = [{ role: 'assistant', content: 'Olá! Eu sou a Azul. Posso ajudar com dúvidas sobre dengue, zika, chikungunya e como evitar focos do mosquito.', error: false }];
     let sending = false;
+    const tg = (state.config && state.config.telegram) || 'https://t.me/ija_vigilancia_bot';
     $app.innerHTML = `${bar('Fale com a Azul')}
-      <div class="chat"><div class="msgs" id="msgs"></div>
+      <div class="chat"><a class="btn outline sm tg-link" href="${esc(tg)}" target="_blank" rel="noopener">${svg('send')} Abrir no Telegram</a><div class="msgs" id="msgs"></div>
       <form class="composer" id="composer"><input type="text" id="msg" placeholder="Digite sua pergunta" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Enviar">${svg('send')}</button></form></div>`;
     const box = $app.querySelector('#msgs'), input = $app.querySelector('#msg');
     const draw = () => {
@@ -695,6 +698,7 @@
   async function loadPainel() {
     const r = await api.get('/api/mobile/agente/painel?demo=false', state.token);
     state.painel = r; store.set('agente_painel', r);
+    try { state.me = await api.get('/api/mobile/me', state.token); store.set('agente_me', state.me); } catch (e) { /* mantém o último */ }
     return r;
   }
   function agente(rest) {
@@ -739,6 +743,10 @@
         <main class="page" style="padding-top:16px">
           <div class="card item" style="align-items:center"><div class="avatar">${svg('badge')}</div><div class="tx"><b>${esc(ag.nome || '')}</b><span class="muted">${esc(nomePrefeitura(ag.prefeitura_id))}</span></div></div>
           ${erro ? `<p class="warn-text">${esc(erro)}</p>` : ''}
+          <div class="card" id="tgCard">${(state.me && state.me.telegram && state.me.telegram.vinculado)
+            ? `<div class="item" style="align-items:center"><div class="avatar" style="background:#e8f8fb;color:#229ED9">${svg('send')}</div><div class="tx"><b>Telegram vinculado</b><span class="muted small">Você recebe os alertas epidemiológicos por lá.</span></div></div>`
+            : `<div class="item" style="align-items:center"><div class="avatar" style="background:#e8f8fb;color:#229ED9">${svg('send')}</div><div class="tx"><b>Alertas no Telegram</b><span class="muted small">Abra o link, toque em Iniciar no Telegram e volte aqui.</span></div></div>
+               <a class="btn outline mt" href="${esc((state.me && state.me.telegram && state.me.telegram.link) || 'https://t.me/ija_vigilancia_bot')}" target="_blank" rel="noopener" id="btnTelegram">${svg('send')} Receber alertas no Telegram</a>`}</div>
           <div class="row">${tile('Visitas hoje', resumo.visitas ?? 0, 'home')}${tile('Pontos', resumo.posicoes ?? 0, 'route')}</div>
           <div class="row">${tile('Km hoje', resumo.km ?? 0, 'walk')}${tile('Início · último', `${resumo.inicio || '—'} · ${resumo.ultimo || '—'}`, 'schedule', true)}</div>
           <div class="card ${journey.active ? 'active' : ''}" id="jornada">

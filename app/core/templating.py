@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import g, request, url_for
+from flask import current_app, g, request, url_for
 from flask_login import current_user
 from werkzeug.routing import BuildError
 
@@ -24,6 +24,10 @@ from app.modules.admin_dashboard.service import is_solicitacao_quadra as is_admi
 
 
 def register_template_helpers(bp):
+    @bp.app_context_processor
+    def inject_public_links():
+        return {"telegram_bot_url": "https://t.me/" + (current_app.config.get("TELEGRAM_BOT_USERNAME") or "ija_vigilancia_bot")}
+
     @bp.context_processor
     def inject_globals():
         def safe_url_for(endpoint, fallback=None, **values):

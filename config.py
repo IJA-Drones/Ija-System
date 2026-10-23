@@ -55,6 +55,7 @@ class Config:
     # Telegram (Bot API): token do @BotFather e um segredo longo usado na URL do webhook.
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+    TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "ija_vigilancia_bot")
     SKYBOX_BASE_DIR = os.environ.get("SKYBOX_BASE_DIR", "dados ordens de serviço")
     CORREIOS_API_TOKEN = os.environ.get("CORREIOS_API_TOKEN")
     CORREIOS_CEP_TOKEN = os.environ.get("CORREIOS_CEP_TOKEN")

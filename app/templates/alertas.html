@@ -11,6 +11,7 @@
       <div><span class="badge {{ 'text-bg-success' if push_ok else 'text-bg-secondary' }}">Push {{ 'configurado' if push_ok else 'sem chave VAPID' }}</span>
       {% if global_user %}<a class="badge text-decoration-none {{ 'text-bg-success' if email_ok else 'text-bg-secondary' }}" href="{{ url_for('main.configuracoes_smtp') }}">E-mail {{ 'configurado' if email_ok else 'sem SMTP · configurar' }}</a>{% else %}<span class="badge {{ 'text-bg-success' if email_ok else 'text-bg-secondary' }}">E-mail {{ 'configurado' if email_ok else 'sem SMTP' }}</span>{% endif %}</div>
       {% if prefeitura_id %}<div class="mt-1">{{ dispositivos }} dispositivo(s) inscrito(s) para alertas</div>{% endif %}
+      <div class="mt-1">{% if current_user.telegram_chat_id %}<span class="badge text-bg-success"><i class="bi bi-telegram"></i> Telegram vinculado</span>{% else %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.alertas_telegram') }}" target="_blank" rel="noopener"><i class="bi bi-telegram"></i> Receber alertas no meu Telegram</a>{% endif %}</div>
     </div>
   </header>
   {% with messages = get_flashed_messages(with_categories=true) %}{% for category, text in messages %}<div class="alert alert-{{ category }}" role="alert">{{ text }}</div>{% endfor %}{% endwith %}
@@ -38,6 +39,7 @@
           <div class="col-12">
             <div class="form-check"><input class="form-check-input" type="checkbox" name="notificar_app" id="n-app" checked><label class="form-check-label" for="n-app">Notificar gestores no sistema</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" name="notificar_push" id="n-push" checked><label class="form-check-label" for="n-push">Notificação push nos celulares da área</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="notificar_telegram" id="n-telegram" checked><label class="form-check-label" for="n-telegram">Telegram dos gestores e agentes vinculados</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" name="notificar_email" id="n-email"><label class="form-check-label" for="n-email">E-mail para os endereços abaixo</label></div>
           </div>
           <div class="col-12"><label class="form-label">E-mails (separados por vírgula)<input class="form-control" name="emails" maxlength="1000" value="{{ email_padrao or '' }}"></label>{% if email_padrao %}<div class="form-text">Sugerido: e-mail dos relatórios cadastrado para esta prefeitura.</div>{% endif %}</div>
@@ -63,7 +65,7 @@
             <td><strong>{{ regra.nome }}</strong><br><small>{{ fontes[regra.fonte] }}{% if regra.bairro %} · {{ regra.bairro }}{% endif %}</small></td>
             <td>≥ {{ regra.limiar }} em {{ regra.janela_dias }} d<br><small>raio {{ regra.raio_km }} km · a cada {{ regra.intervalo_horas }} h</small></td>
             <td><span class="badge {{ 'text-bg-danger' if contagens[regra.id] >= regra.limiar else 'text-bg-light' }}">{{ contagens[regra.id] }}</span></td>
-            <td><small>{{ 'sistema ' if regra.notificar_app }}{{ 'push ' if regra.notificar_push }}{{ 'e-mail' if regra.notificar_email }}</small></td>
+            <td><small>{{ 'sistema ' if regra.notificar_app }}{{ 'push ' if regra.notificar_push }}{{ 'telegram ' if regra.notificar_telegram }}{{ 'e-mail' if regra.notificar_email }}</small></td>
             <td><small>{{ regra.ultimo_disparo_em.strftime('%d/%m %H:%M') if regra.ultimo_disparo_em else '—' }}</small></td>
             <td class="text-nowrap">
               <form method="post" action="{{ url_for('main.alertas_testar', regra_id=regra.id) }}" class="d-inline"><input type="hidden" name="_csrf_token" value="{{ csrf }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><button class="btn btn-sm btn-outline-primary" title="Dispara agora, marcado como teste">Testar</button></form>
@@ -81,7 +83,7 @@
           <li class="list-group-item px-0">
             <div class="d-flex justify-content-between gap-2"><strong>{{ d.regra.nome }}{% if d.teste %} <span class="badge text-bg-warning">teste</span>{% endif %}</strong><small class="text-muted">{{ d.criado_em.strftime('%d/%m/%Y %H:%M') }}</small></div>
             <div>{{ d.mensagem }}</div>
-            <small class="text-muted">Sistema: {{ d.resultado.get('app', 0) }} · Push: {{ d.resultado.get('push', {}).get('enviados', 0) }}/{{ d.resultado.get('push', {}).get('dispositivos', 0) }} · E-mail: {{ d.resultado.get('email', d.resultado.get('email_erro', 0)) }}</small>
+            <small class="text-muted">Sistema: {{ d.resultado.get('app', 0) }} · Telegram: {{ d.resultado.get('telegram', 0) }} · Push: {{ d.resultado.get('push', {}).get('enviados', 0) }}/{{ d.resultado.get('push', {}).get('dispositivos', 0) }} · E-mail: {{ d.resultado.get('email', d.resultado.get('email_erro', 0)) }}</small>
           </li>
           {% else %}<li class="list-group-item px-0 text-muted">Nenhum disparo ainda.</li>{% endfor %}
         </ul>
