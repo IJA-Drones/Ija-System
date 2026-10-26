@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../app/static/js/edit-control.js'), 'utf8');
 
-function browser() {
+function browser({uvis = false} = {}) {
   let clock = 100000;
   const requests = [], intervals = [], replies = [], dialogs = [], decisions = [], validation = [];
   let reloads = 0;
@@ -16,7 +16,7 @@ function browser() {
   const items = Object.fromEntries(['.edit-start','.edit-cancel','.edit-reload','.edit-dev','.edit-message','.edit-force','.edit-reason',
     '.edit-title','[name="_edit_ticket"]','[name="_edit_token"]'].map(key=>[key,element()]));
   items['[name="_edit_ticket"]'].value='signed-ticket';
-  const input=element(), fixed=element({disabled:true}), submit=element();
+  const input=element(), fixed=element({disabled:!uvis}), submit=element();
   const form=element({action:'https://ija.test/admin/os/1/formulario',dataset:{},querySelectorAll:()=>[input,fixed,submit]});
   const box=element({dataset:{editKey:'solicitacao:1',editApi:'/api/edicao'},closest:()=>form,
     contains:el=>Object.values(items).includes(el),querySelector:selector=>items[selector]});
@@ -34,7 +34,24 @@ function browser() {
       return {ok:reply.ok!==false,status:reply.status||200,json:async()=>reply,
         headers:new Headers(reply.headers||{})};
     }};
-  context.window=context;vm.runInNewContext(source,context);
+  context.window=context;
+  if (uvis) {
+    const template = fs.readFileSync(require('node:path').join(__dirname, '../app/templates/piloto_os_formulario.html'), 'utf8');
+    const readonlyScript = template.match(/<script id="os-readonly-controls">([\s\S]*?)<\/script>/)[1]
+      .replace(/\{\{ "true" if modo_visualizacao else "false" \}\}/g, 'true')
+      .replace(/\{\{ "true" if can_edit_uvis_tab else "false" \}\}/g, 'true');
+    assert(template.indexOf('id="os-readonly-controls"') < template.indexOf('{% block scripts %}'));
+    const controls = [input, fixed, submit, ...Object.values(items)];
+    for (const el of controls) {
+      el.dataset = {uvisEditable: el === input || el === submit ? 'true' : undefined};
+      el.closest = selector => selector.includes('.edit-control') && box.contains(el) ? box : null;
+      el.setAttribute = name => {if (name === 'disabled') el.disabled = true;};
+    }
+    context.document.querySelectorAll = () => controls;
+    vm.runInNewContext(readonlyScript, context);
+    context.document.querySelectorAll = () => [box];
+  }
+  vm.runInNewContext(source,context);
   return {items,input,fixed,submit,form,context,requests,replies,intervals,dialogs,decisions,validation,
     get reloads(){return reloads;},tick:ms=>{clock+=ms;}};
 }
@@ -159,4 +176,22 @@ test('duplicate clicks cannot open competing dialogs or release twice',async()=>
   const pending=b.items['.edit-cancel'].fire('click');
   await b.items['.edit-reload'].fire('click');assert.equal(b.dialogs.length,1);
   close({isConfirmed:false});await pending;assert.equal(b.requests.length,1);
+});
+
+
+test('UVIS consultation allows reserving and saving only the automatic return', async () => {
+  const b = browser({uvis:true});
+  assert.equal(b.items['.edit-start'].disabled, false);
+  assert.equal(b.input.disabled, true);
+  assert.equal(b.submit.disabled, true);
+  await b.items['.edit-start'].fire('click');
+  assert.equal(b.input.disabled, false);
+  assert.equal(b.submit.disabled, false);
+  assert.equal(b.fixed.disabled, true, 'official OS fields remain protected after reservation');
+  let blocked = false;
+  await b.form.fire('submit', {preventDefault(){blocked=true;},stopImmediatePropagation(){}});
+  assert.equal(blocked, false);
+  b.tick(130000); await b.intervals[0]();
+  assert.equal(b.input.disabled, true);
+  assert.equal(b.fixed.disabled, true);
 });

@@ -1060,6 +1060,20 @@
     </div>
   </div>
 </div>
+<script id="os-readonly-controls">
+// Apply business permissions before edit-control.js records the editable fields.
+(() => {
+  const modoVisualizacao = {{ "true" if modo_visualizacao else "false" }};
+  const canEditUvisTab = {{ "true" if can_edit_uvis_tab else "false" }};
+  if (!modoVisualizacao) return;
+
+  document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
+    if (el.type === "hidden" || el.dataset.bsToggle === "tab" || el.closest('.edit-control, [data-ti-independent="true"]')) return;
+    if (canEditUvisTab && el.dataset.uvisEditable === "true") return;
+    el.setAttribute("disabled", "disabled");
+  });
+})();
+</script>
 {% endblock %}
 
 {% block scripts %}
@@ -1234,18 +1248,6 @@ function clearSignature(tipo) {
     const canvas = document.getElementById(id);
     if (canvas && canvas.clear) canvas.clear();
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const modoVisualizacao = {{ "true" if modo_visualizacao else "false" }};
-  const canEditUvisTab = {{ "true" if can_edit_uvis_tab else "false" }};
-  if (!modoVisualizacao) return;
-
-  document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
-    if (el.type === "hidden" || el.dataset.bsToggle === "tab" || el.closest('[data-ti-independent="true"]')) return;
-    if (canEditUvisTab && el.dataset.uvisEditable === "true") return;
-    el.setAttribute("disabled", "disabled");
-  });
-});
 
 document.addEventListener("DOMContentLoaded", () => {
   const retornoSelect = document.getElementById("uvis_retornar_monitorar");
