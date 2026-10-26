@@ -494,3 +494,32 @@ def test_direct_roles_bypass_media_lease_but_background_remains_video_only(app,r
         order.identificador_os='not-a-media-field'
         with pytest.raises(EditConflict):db.session.commit()
         db.session.rollback()
+
+
+@pytest.mark.parametrize('endpoint,path', [
+    ('main.uvis_os_formulario_view', '/uvis/os/1/formulario'),
+    ('main.equipe_uvis_os_formulario_view', '/equipe-uvis/os/1/formulario'),
+])
+def test_uvis_observations_can_be_saved_updated_and_cleared(app, endpoint, path):
+    c = client(app, 5)
+    page = c.get(path)
+    assert page.status_code == 200
+    assert 'name="uvis_observacoes"' in page.get_data(as_text=True)
+    assert 'Salvar complemento UVIS' in page.get_data(as_text=True)
+
+    for observation in ['Primeira observação', 'Observação revisada', None, '']:
+        t = ticket(c, endpoint=endpoint)
+        lease = reserve(c, t)
+        assert lease.status_code == 200
+        data = {'_edit_ticket': t, '_edit_token': lease.json['token'],
+                'uvis_retornar_proxima_semana_monitorar_larvas': 'NAO',
+                'observacoes': 'Não alterar os dados oficiais'}
+        if observation is not None:
+            data['uvis_observacoes'] = observation
+        response = c.post(path, data=data)
+        assert response.status_code == 302
+        with app.app_context():
+            obj = db.session.get(Solicitacao, 1)
+            expected = 'Observação revisada' if observation is None else observation
+            assert obj.ordem_servico_equipe_uvis.observacoes == expected
+            assert obj.ordem_servico is None

@@ -301,7 +301,7 @@ def build_uvis_os_form_context(user, os_id):
         "ordem": ordem,
         "ordem_uvis": ordem_uvis,
         "can_edit_uvis_tab": True,
-        "can_edit_uvis_observacoes": False,
+        "can_edit_uvis_observacoes": True,
         "modo_visualizacao": True,
         "active_os_tab": "uvis",
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",

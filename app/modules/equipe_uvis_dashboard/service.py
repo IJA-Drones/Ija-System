@@ -420,7 +420,7 @@ def build_equipe_uvis_os_unificado_context(user, os_id):
         "ordem": ordem,
         "ordem_uvis": ordem_uvis,
         "can_edit_uvis_tab": getattr(user, "tipo_usuario", None) == "uvis",
-        "can_edit_uvis_observacoes": False,
+        "can_edit_uvis_observacoes": getattr(user, "tipo_usuario", None) == "uvis",
         "modo_visualizacao": True,
         "alerta_edicao_concluida": False,
         "active_os_tab": "uvis",
@@ -548,6 +548,8 @@ def salvar_uvis_retorno_automatico_form(user, os_id, form_data):
 
     ordem.retornar_proxima_semana_monitorar_larvas = retorno_flag
     ordem.retorno_monitoramento_em = retorno_em if retorno_flag == "SIM" else None
+    if "uvis_observacoes" in form_data:
+        ordem.observacoes = _clean_str(form_data.get("uvis_observacoes"))
 
     _sync_retorno_monitoramento_equipe_uvis(
         solicitacao,
@@ -557,7 +559,7 @@ def salvar_uvis_retorno_automatico_form(user, os_id, form_data):
     )
 
     db.session.commit()
-    return "Retorno automatico salvo com sucesso!"
+    return "Complemento da UVIS salvo com sucesso!"
 
 
 def salvar_equipe_uvis_os_form(user, os_id, form_data):
