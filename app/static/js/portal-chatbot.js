@@ -93,7 +93,7 @@
     input.focus();
   }
   function welcome() {
-    append('Olá! Sou a Azul, a assistente virtual do portal. Como posso ajudar? Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false);
+    append('Olá! Sou a Azul. Posso ajudar com saúde, prevenção, vigilância e uso do Portal do Cidadão, além dos contatos da Prefeitura e do canal institucional da Oceano Azul. Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false);
     const suggestions = document.createElement('details');
     suggestions.open = true;
     suggestions.className = 'portal-chat-suggestions';
