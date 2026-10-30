@@ -44,7 +44,7 @@
       <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
         <h2 class="text-dark m-0">{{ curriculo.nome }}</h2>
         {% if curriculo.analise_status == 'CONCLUIDA' %}
-          <span class="badge bg-success-subtle text-success border border-success-subtle">Perfil lido pelo Gemini</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Perfil lido pela Azul</span>
         {% elif curriculo.analise_status == 'ERRO' %}
           <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Falha na leitura</span>
         {% else %}
@@ -62,7 +62,7 @@
       </a>
       {% if is_editable %}
         <form method="POST" action="{{ url_for('main.agro_talento_reprocessar', curriculo_id=curriculo.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_talento_reprocessar', curriculo_id=curriculo.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-          <button class="btn btn-primary"><i class="bi bi-stars me-1"></i> Reprocessar IA</button>
+          <button class="btn btn-primary"><i class="bi bi-stars me-1"></i> Reprocessar com a Azul</button>
         </form>
       {% endif %}
     </div>
@@ -172,8 +172,8 @@
           <div class="fw-semibold text-break mb-3">{{ curriculo.arquivo_nome_original }}</div>
           <div class="small text-muted">Tamanho</div>
           <div class="mb-3">{{ '%.2f'|format(curriculo.arquivo_tamanho / 1024 / 1024) }} MB</div>
-          <div class="small text-muted">Modelo Gemini</div>
-          <div class="mb-3">{{ curriculo.gemini_modelo or "Processamento ainda não concluído" }}</div>
+          <div class="small text-muted">Inteligência artificial</div>
+          <div class="mb-3">Azul — análise de currículos</div>
           <div class="small text-muted">Cadastrado em</div>
           <div>{{ curriculo.criado_em.strftime('%d/%m/%Y às %H:%M') }}</div>
         </div>

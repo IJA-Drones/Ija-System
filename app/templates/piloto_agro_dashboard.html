@@ -373,29 +373,4 @@
   </div>
 </div>
 
-{% set chatbot_id_prefix = 'agroPilotBot' %}
-{% set chatbot_title = 'Ajuda do Piloto Agro' %}
-{% set chatbot_badge = 'FAQ Operacional' %}
-{% set chatbot_button_title = 'Ajuda do piloto Agro' %}
-{% set chatbot_placeholder = 'Pergunte sobre RD, OS, checklist ou finalizacao...' %}
-{% set chatbot_api_url = url_for('main.agro_piloto_chatbot') %}
-{% set chatbot_chips = [
-  {'label': 'Fluxo do piloto', 'question': 'Qual e o fluxo do piloto Agro?'},
-  {'label': 'Minhas OS', 'question': 'Como funciona Minhas OS?'},
-  {'label': 'RD', 'question': 'Como preencher uma RD de mapeamento?'},
-  {'label': 'Criar OS', 'question': 'Como criar ou continuar uma OS?'},
-  {'label': 'Checklist', 'question': 'Qual o checklist antes da operacao?'},
-  {'label': 'Finalizar', 'question': 'Como finalizar o servico corretamente?'}
-] %}
-{% set chatbot_welcome_html %}
-Ola! Sou o <strong>assistente do piloto Agro</strong>.<br>
-Posso te ajudar com:<br>
-- fluxo operacional do piloto<br>
-- leitura e preenchimento de RD de mapeamento<br>
-- criacao e continuidade da OS<br>
-- checklist antes da operacao<br>
-- finalizacao correta para liberar o relatorio final<br><br>
-Se quiser, pergunte pelo fluxo inteiro ou por uma etapa especifica.
-{% endset %}
-{% include "_chatbot_widget.html" %}
 {% endblock %}

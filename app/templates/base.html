@@ -1863,6 +1863,11 @@
     {% if edit_control_enabled|default(false) %}
     <script src="{{ url_for('static', filename='js/edit-control.js', v='20261017a') }}"></script>
     {% endif %}
+    {% if azul_help_url|default(none) %}
+    {% set chatbot_id_prefix = 'azulInternal' %}
+    {% set chatbot_api_url = azul_help_url %}
+    {% include "_chatbot_widget.html" %}
+    {% endif %}
     {% block scripts %}{% endblock %}
   </body>
 </html>

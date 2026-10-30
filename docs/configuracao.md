@@ -124,17 +124,24 @@ Referências: [autenticação](https://docs.redgps.com/books/webservice/page/met
 
 Fontes: [skybox.py](../app/shared/skybox.py), [rotas de OS](../app/modules/piloto_os/routes.py). Não assuma que os timeouts WebDAV de OS configuram todos os consumidores Skybox. Os arquivos locais são resolvidos em `upload-files/`; não existe variável `UPLOAD_FOLDER` lida pelo [helper atual](../app/shared/uploads.py).
 
-## Dropbox e Gemini
+## Dropbox e IA
+
+Azul é o nome da inteligência artificial apresentado aos usuários em todos os módulos. Novas funções de IA devem usar essa identidade nas telas, botões e mensagens, com instruções e permissões específicas por módulo. OpenAI e Gemini são provedores técnicos; seus nomes permanecem nas configurações e registros de diagnóstico. A restrição a saúde aplica-se à Azul do Portal do Cidadão, não à análise de currículos ou à importação de planilhas.
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN` | Ausentes | Backup e armazenamento de currículos do banco de talentos. |
 | `PROJECT_NAME` | `backup` | Prefixo do arquivo de backup. |
 | `APP_ENV` | `prod` | Parte do nome do backup. |
-| `GEMINI_API_KEY` | Ausente | Análise de currículos e normalização de importação de drones. |
+| `GEMINI_API_KEY` | Ausente | Normalização de importação de drones. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Modelo preferido no código, com tentativas alternativas implementadas no serviço. Não comprova disponibilidade do modelo no provedor. |
+| `OPENAI_API_KEY` | Ausente | Chave compartilhada pela Azul e pela análise de currículos. |
+| `OPENAI_CHAT_MODEL` | `gpt-6-luna` | Modelo da Azul e padrão para currículos. |
+| `OPENAI_TALENT_MODEL` | Vazio | Opcional: modelo próprio para currículos, compatível com PDFs e respostas JSON estruturadas na Responses API. |
 
-Currículos são enviados ao Dropbox e seu conteúdo pode ser enviado ao Gemini no processamento. A classificação de IA deve ser conferida por uma pessoa. O chatbot do sistema é um FAQ baseado em regras; ele não usa essa configuração Gemini.
+Currículos são armazenados no Dropbox e enviados à OpenAI para extrair o perfil profissional, com `store=False` e sem pesquisa web. O perfil deve ser conferido por uma pessoa; a IA não atribui nota, ranking ou decisão de contratação. As instruções desse módulo são independentes das restrições de saúde do chat público da Azul. Perfis antigos continuam disponíveis; o botão de reprocessamento usa a nova integração. A coluna histórica `gemini_modelo` guarda o modelo utilizado, inclusive OpenAI, sem exigir migração do banco. A importação de drones continua usando Gemini.
+
+A chamada tem timeout de 90 segundos, sem repetição automática. Em caso de falha, o PDF permanece salvo e pode ser reprocessado na tela do candidato. Erros do provedor são apresentados de forma genérica, sem conteúdo do currículo ou credenciais.
 
 Fontes: [backup](../app/modules/backup/service.py), [banco de talentos](../app/modules/agro/talent_bank_service.py), [importação de drones](../app/modules/drones_import/service.py).
 
@@ -180,3 +187,43 @@ O [workflow](../.github/workflows/render-watchdog.yml) usa GitHub Actions vars/s
 ## Dados de demonstração
 
 `scripts/seed_redgps_tracking_demo.py` exige `IJA_ALLOW_TEST_SEED=1` e usa `NEON_TEST_DATABASE_URL` ou `DATABASE_URL_TEST`, exigindo que o destino seja uma URL PostgreSQL. As variáveis apontam para um banco de teste escolhido pelo operador; seu nome não garante isolamento. Outros seeds não possuem a mesma proteção. Consulte a classificação dos scripts em [operação](operacao.md) antes de executá-los.
+
+
+## Azul — ajuda interna contextual
+
+O layout interno (`base.html`) apresenta a Azul aos usuários autenticados com acesso ao endpoint `/api/azul/ajuda`. A Central TI controla esse acesso por área. Os antigos endpoints de FAQ continuam funcionando, agora com exigência de consulta em vez de edição.
+
+A Azul usa `OPENAI_API_KEY` e `OPENAI_CHAT_MODEL`, sem configuração adicional. `AZUL_HELP_DAILY_LIMIT` (padrão 500) limita chamadas por dia no host; também há limite de oito chamadas por minuto por usuário. A quota fica em `instance/azul_help_quota.sqlite`, compartilhada pelos workers do host, sem armazenar mensagens. Para múltiplos hosts, as quotas são independentes.
+
+O servidor calcula perfil, capacidades efetivas da Central TI e atalhos para telas permitidas a cada pergunta. Sem um perfil configurado na Central TI, só confirma os poucos atalhos com verificações legadas explicitamente mapeadas; não apresenta a aproximação do catálogo como autorização. Links vêm do servidor, nunca da resposta do modelo. A página é identificada somente se corresponder a um atalho permitido, sem enviar parâmetros, IDs de registros ou o conteúdo da tela.
+
+A Azul consulta o conteúdo dos guias locais. Não pesquisa na web e não modifica registros nem permissões. As consultas operacionais disponíveis são a prévia de exportação e o resumo de atenção descritos abaixo. Limites de prefeitura, equipe, empresa e estado dos registros continuam nas rotas de negócio. O histórico visual mantém até 40 mensagens no sessionStorage da aba por até 24 horas, separado por usuário e sessão de login; até seis mensagens são enviadas como contexto. Login/logout rotacionam a identificação do histórico. Limpar a conversa cancela a requisição e descarta o histórico salvo. Navegação preserva mensagens, atalhos e painel aberto; prévias de download não persistem tokens e precisam ser solicitadas novamente. Uma resposta interrompida pela navegação não é reenviada automaticamente. A chamada usa `store=False`, timeout de 30 segundos e nenhuma repetição automática. Falha, resposta incompleta, ausência de chave ou quota esgotada ativam o guia local, identificado na interface, sem tratar orientações genéricas como permissões efetivas.
+
+
+### Exportação pela Azul (Diretor e DEV)
+
+Somente `diretor` e `dev` podem solicitar arquivos no chat. O servidor também exige acesso à exportação de consultas (`prefeitura.relatorios.exportar`) e à exportação da fonte: `prefeitura.solicitacoes.exportar` para solicitações ou `prefeitura.relatorios.exportar` para OS. As permissões e o papel são verificados na prévia e novamente no download. Outros perfis continuam usando a ajuda, sem receber a ferramenta de exportação ou o botão de geração.
+
+A IA pode chamar apenas `preparar_exportacao`, que recebe uma definição restrita, sem SQL, URLs, código ou fórmulas arbitrárias. São suportados Excel/PDF de solicitações e OS municipais, com filtros de início, fim, status da solicitação e bairro. O período filtra agendamento nas solicitações e aplicação nas OS. OS Agro e filtros não suportados exigem esclarecimento; não são substituídos silenciosamente. As colunas são definidas pelo servidor. Nenhum registro é enviado ao modelo.
+
+A prévia apresenta fonte, formato, período, campo de data, filtros, colunas e contagem exata. `POST /api/azul/exportar` só gera o arquivo com confirmação explícita e token assinado, vinculado ao usuário e válido por dez minutos. O servidor refaz a consulta com os limites de prefeitura/região existentes e compara o conteúdo com a prévia; alteração de dados ou de acesso exige nova prévia. Os limites existentes são 10.000 registros para Excel e 2.000 para PDF, sem truncamento. Uma consulta vazia não oferece download.
+
+Arquivos são baixados diretamente, com `Cache-Control: private, no-store`, sem e-mail, WhatsApp ou upload. A assinatura comprova a definição e o resultado aprovado, não concede permissão. O usuário pode cancelar a prévia; limpar a conversa impede downloads pendentes de serem iniciados pela interface.
+
+O download tem limite de três tentativas por minuto e 50 por dia por usuário, compartilhado pelos workers do host via SQLite. A quota é independente das chamadas à IA; falha ao verificar a quota bloqueia a geração. Em múltiplos hosts, os limites continuam independentes e exigem armazenamento central para uma quota única.
+
+Diretor e DEV são perfis globais na política atual de escopo (`GLOBAL_ADMIN_USER_TYPES`), portanto podem consultar várias prefeituras; ter `prefeitura_id` preenchido não restringe esses perfis. A Azul reutiliza essa regra, sem conceder acesso adicional. Para produção, habilite `CSRF_PROTECTION_ENABLED=1` com chave secreta fixa, desative debug e utilize o servidor de produção. O envio do cabeçalho CSRF no widget só é validado quando essa proteção está habilitada.
+
+### Resumo operacional da Azul
+
+“Minha atenção hoje” e perguntas equivalentes consultam as solicitações municipais pela mesma consulta e permissões do painel administrativo. O resumo conta pendentes/em análise de hoje, pendentes/em análise com agendamento passado e aprovadas sem equipe (qualquer data), com até dois exemplos por grupo. Usa o dia de São Paulo, pode haver sobreposição entre grupos e não infere atraso de execução. Links são criados pelo servidor para o painel filtrado por protocolo.
+
+A resposta é montada no servidor sem enviar registros ao provedor. A ferramenta `consultar_atencao_hoje` permite reconhecer outras formulações da pergunta, mas também retorna o resumo diretamente, sem segunda chamada ao modelo. O botão e as frases diretas funcionam sem chave de IA. Cada consulta verifica novamente acesso e limites de prefeitura/região, usa a quota da ajuda e não altera registros. Outros módulos, períodos e filtros ainda não são cobertos.
+
+O resumo “Minha atenção hoje” é exclusivo para cadastros com `trabalha_oceano_azul=True`, além da permissão para consultar o respectivo painel. O servidor aplica essa restrição ao botão, à ferramenta da IA e à consulta direta; um campo enviado pelo navegador não concede acesso. Para `dev`, consulta falhas HTTP nas últimas 24 horas e erros 5xx nos últimos sete dias seguindo `_failure_filter` do Painel Dev, mais bugs técnicos ativos quando houver acesso à tela de bugs. Não envia logs, descrições ou registros à IA. Outros perfis internos continuam recebendo o resumo municipal. Essa restrição não muda as regras dos relatórios ou das demais telas.
+
+Para bases grandes, o resumo municipal retorna até dois exemplos por grupo e atalhos “Ver todas (N)”. Esses atalhos abrem o painel com `atencao` e `referencia`, inicialmente em páginas de 25 registros. Contagem e listagem compartilham os mesmos critérios. A referência fica fixa no link; os dados são atualizados ao abrir. A seleção aparece em um aviso no painel, é preservada na paginação, nos filtros adicionais e no Excel do painel, e pode ser limpa. O chat não carrega milhares de registros nem os envia ao modelo.
+
+### Busca conversacional de solicitações
+
+A ferramenta `buscar_solicitacoes` transforma pedidos em filtros validados de status, bairro exato (sem diferenciar maiúsculas), endereço, protocolo/ID e datas de agendamento. Exige permissão do painel administrativo a cada execução e reutiliza o escopo municipal/regional da listagem. Retorna contagem e link local paginado, sem enviar registros à IA, executar código gerado ou alterar dados. O filtro de bairro também aparece no painel e é preservado no Excel. Esta primeira versão não busca OS, Agro, canceladas ou critérios fora da ferramenta; nesses casos a Azul deve esclarecer o alcance. A busca não concede o resumo de atenção exclusivo para funcionários da Oceano Azul e não exige permissão de exportação. Requer disponibilidade da IA para interpretar a frase; os filtros convencionais do painel continuam disponíveis.

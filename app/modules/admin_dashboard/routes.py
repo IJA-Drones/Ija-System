@@ -1,4 +1,5 @@
 from app.shared.edit_control import EditConflict
+from app.modules.admin_dashboard import attention
 from sqlalchemy.orm.exc import StaleDataError
 from app.modules.gestao_ti.permissions import route_access
 import json
@@ -309,6 +310,7 @@ def register_routes(bp):
         query = build_admin_dashboard_query(
             current_user,
             filtro_status=filtro_status,
+            filtro_bairro=(request.args.get("bairro") or "").strip()[:120],
             filtro_unidade=filtro_unidade,
             filtro_regiao=filtro_regiao,
             filtro_apoio_cet=filtro_apoio_cet,
@@ -323,6 +325,8 @@ def register_routes(bp):
             filtro_data_criacao_fim=filtro_data_criacao_fim,
             filtro_retorno_automatico=filtro_retorno_automatico,
         )
+        attention_selection = attention.parse(request.args)
+        query = attention.apply(query, attention_selection)
         paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
             page=page,
             per_page=per_page,
@@ -332,6 +336,7 @@ def register_routes(bp):
         return render_template(
             "admin.html",
             pedidos=paginacao.items,
+            attention_selection=attention_selection,
             paginacao=paginacao,
             is_editable=can_edit_admin_panel(current_user),
             now=datetime.now(),
@@ -373,7 +378,9 @@ def register_routes(bp):
 
             output = build_admin_dashboard_export(
                 user=current_user,
+                attention_selection=attention.parse(request.args),
                 filtro_status=filtro_status,
+                filtro_bairro=(request.args.get("bairro") or "").strip()[:120],
                 filtro_unidade=filtro_unidade,
                 filtro_regiao=filtro_regiao,
                 filtro_apoio_cet=filtro_apoio_cet,

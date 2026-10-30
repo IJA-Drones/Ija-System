@@ -61,7 +61,7 @@
           </select>
         </div>
         <div class="col-sm-6 col-lg-2">
-          <label class="form-label small text-muted">Leitura da IA</label>
+          <label class="form-label small text-muted">Leitura da Azul</label>
           <select name="analise_status" class="form-select">
             <option value="">Todas</option>
             <option value="CONCLUIDA" {% if filters.analise_status == 'CONCLUIDA' %}selected{% endif %}>Concluída</option>
@@ -89,7 +89,7 @@
               <th>Perfil</th>
               <th>Habilidades em destaque</th>
               <th>Etapa</th>
-              <th>IA</th>
+              <th>Azul · IA</th>
               <th>Cadastro</th>
               <th class="col-actions">Ações</th>
             </tr>
@@ -117,7 +117,7 @@
                 <td data-label="Etapa">
                   <span class="badge bg-secondary-subtle text-secondary border">{{ status_label(curriculo.status) }}</span>
                 </td>
-                <td data-label="IA">
+                <td data-label="Azul · IA">
                   {% if curriculo.analise_status == 'CONCLUIDA' %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">Concluída</span>
                   {% elif curriculo.analise_status == 'ERRO' %}

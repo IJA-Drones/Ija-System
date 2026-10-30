@@ -225,6 +225,7 @@ def build_admin_dashboard_query(
     filtro_data_criacao_ini: str = "",
     filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
+    filtro_bairro: str = "",
 ):
     query = (
         Solicitacao.query
@@ -237,6 +238,9 @@ def build_admin_dashboard_query(
     )
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
+
+    if filtro_bairro:
+        query = query.filter(func.lower(Solicitacao.bairro) == filtro_bairro.lower())
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
@@ -495,6 +499,7 @@ def build_admin_export_query(
     filtro_data_criacao_ini: str = "",
     filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
+    filtro_bairro: str = "",
 ):
     query = (
         Solicitacao.query
@@ -507,6 +512,9 @@ def build_admin_export_query(
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
     query = query.filter(Solicitacao.status != "CANCELADO")
+
+    if filtro_bairro:
+        query = query.filter(func.lower(Solicitacao.bairro) == filtro_bairro.lower())
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
@@ -563,9 +571,13 @@ def build_admin_dashboard_export(
     filtro_data_criacao_ini: str = "",
     filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
+    attention_selection=None,
+    filtro_bairro: str = "",
 ):
-    pedidos = build_admin_export_query(
+    from app.modules.admin_dashboard import attention
+    query = build_admin_export_query(
         user=user,
+        filtro_bairro=filtro_bairro,
         filtro_status=filtro_status,
         filtro_unidade=filtro_unidade,
         filtro_regiao=filtro_regiao,
@@ -580,7 +592,8 @@ def build_admin_dashboard_export(
         filtro_data_criacao_ini=filtro_data_criacao_ini,
         filtro_data_criacao_fim=filtro_data_criacao_fim,
         filtro_retorno_automatico=filtro_retorno_automatico,
-    ).all()
+    )
+    pedidos = attention.apply(query, attention_selection).all()
 
     wb = Workbook()
     ws = wb.active

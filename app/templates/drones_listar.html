@@ -24,7 +24,7 @@
             </a>
             {% if (central_ti_ui_guard(['main.cadastrar_drone', 'main.importar_planilha_drones'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
             <a href="{{ url_for('main.importar_planilha_drones') }}" class="btn btn-primary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.importar_planilha_drones')) if central_ti_url_allowed is defined else true) else 'false' }}">
-                <i class="bi bi-stars"></i> Importar com IA
+                <i class="bi bi-stars"></i> Importar com a Azul
             </a>
             <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-success shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_drone')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-plus-lg"></i> Novo Drone

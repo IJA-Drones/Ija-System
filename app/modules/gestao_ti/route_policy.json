@@ -176,16 +176,16 @@
     "POST": "prefeitura.solicitacoes.excluir"
   },
   "main.uvis_chatbot": {
-    "POST": "prefeitura.solicitacoes.editar"
+    "POST": "prefeitura.solicitacoes.consultar"
   },
   "main.admin_chatbot": {
-    "POST": "prefeitura.solicitacoes.editar"
+    "POST": "prefeitura.solicitacoes.consultar"
   },
   "main.agro_admin_chatbot": {
-    "POST": "agro.comercial.editar"
+    "POST": "agro.comercial.consultar"
   },
   "main.agro_piloto_chatbot": {
-    "POST": "agro.os.editar"
+    "POST": "agro.os.consultar"
   },
   "main.admin_dashboard": {
     "GET": "prefeitura.solicitacoes.consultar"
@@ -1412,5 +1412,16 @@
   },
   "main.vigilancia_agentes_esus": {
     "GET": "prefeitura.vigilancia.consultar"
+  },
+  "main.azul_help": {
+    "POST": [
+      "area:prefeitura",
+      "area:agro",
+      "area:financeiro",
+      "area:sistema"
+    ]
+  },
+  "main.azul_export_download": {
+    "POST": "prefeitura.relatorios.exportar"
   }
 }

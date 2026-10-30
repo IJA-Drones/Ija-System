@@ -31,6 +31,11 @@
             {% endif %}
 
             <form method="GET" action="{{ url_for('main.exportar_excel') }}" class="p-0 m-0 flex-grow-1 flex-md-grow-0 admin-toolbar-slot" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.exportar_excel'), 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+                {% if attention_selection %}
+                <input type="hidden" name="atencao" value="{{ attention_selection.group }}">
+                <input type="hidden" name="referencia" value="{{ attention_selection.day.isoformat() }}">
+                {% endif %}
+                <input type="hidden" name="bairro" value="{{ request.args.get('bairro', '') }}">
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
                 {% for unidade in filtros_multi.unidade %}
                     <input type="hidden" name="unidade" value="{{ unidade }}">
@@ -65,7 +70,15 @@
         {% endif %}
     </div>
 
-    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('data_criacao_ini') or request.args.get('data_criacao_fim') or request.args.get('retorno_automatico') %}
+    {% if attention_selection %}
+    <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
+      <div><strong>Seleção da Azul: {{ attention_selection.label }}</strong><br>
+      Referência: {{ attention_selection.day.strftime('%d/%m/%Y') }} · {{ paginacao.total }} registros · lista paginada, com dados atualizados ao abrir.</div>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.admin_dashboard') }}">Limpar seleção</a>
+    </div>
+    {% endif %}
+
+    {% set admin_has_filters = request.args.get('bairro') or request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('data_criacao_ini') or request.args.get('data_criacao_fim') or request.args.get('retorno_automatico') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
     {% call render_filter_card(
@@ -78,7 +91,15 @@
       ]
     ) %}
                 <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+                    {% if attention_selection %}
+                    <input type="hidden" name="atencao" value="{{ attention_selection.group }}">
+                    <input type="hidden" name="referencia" value="{{ attention_selection.day.isoformat() }}">
+                    {% endif %}
                     <div class="row g-2 filter-chip-row">
+                        <div class="col-md-3">
+                            <label class="small text-muted" for="azulBairro">Bairro (nome exato):</label>
+                            <input id="azulBairro" name="bairro" maxlength="120" class="form-control form-control-sm" value="{{ request.args.get('bairro', '') }}">
+                        </div>
                         <div class="col-md-3">
                             <label class="small text-muted">Status:</label>
                             <select name="status" class="form-select form-select-sm">
@@ -767,35 +788,6 @@
 
 {# --- CHATBOT (Mantido igual) --- #}
 {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'operario', 'visualizar', 'regional'] %}
-<button id="adminBotFab" class="bot-fab" title="Ajuda do painel" onclick="toggleAdminChat()">
-    <i class="bi bi-robot"></i>
-</button>
-
-<div id="adminBotWindow" class="chat-window">
-    <div class="bot-header">
-        <div class="bot-title">
-            <i class="bi bi-robot fs-5"></i>
-            <div>Ajuda do Painel <span class="bot-badge ms-1">FAQ Admin</span></div>
-        </div>
-        <div class="d-flex gap-2">
-            <button id="adminBotClear" class="btn-close-chat" title="Limpar"><i class="bi bi-trash"></i></button>
-            <button id="adminBotClose" class="btn-close-chat"><i class="bi bi-x-lg"></i></button>
-        </div>
-    </div>
-    <div class="bot-body">
-        <div id="adminBotMessages" class="d-flex flex-column gap-2 mb-3"></div>
-        <div class="chips-container mt-auto">
-            <button class="chip" data-q="Como filtrar por status/unidade?">Filtros</button>
-            <button class="chip" data-q="suporte">Suporte</button>
-            <button class="chip" data-q="Como salvar decisão?">Salvar decisão</button>
-            <button class="chip" data-q="Como exportar Excel?">Exportar Excel</button>
-        </div>
-    </div>
-    <div class="bot-footer">
-        <input id="adminBotInput" type="text" placeholder="Digite sua dúvida..." autocomplete="off">
-        <button id="adminBotSend" class="btn-send"><i class="bi bi-send-fill"></i></button>
-    </div>
-</div>
 <div class="modal fade admin-map-modal" id="mapModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 overflow-hidden">
@@ -1086,113 +1078,7 @@ document.addEventListener("DOMContentLoaded", () => {
       toggleJustificativa(select, select.dataset.jid);
     });
 
-    // --- CHATBOT ---
-    (function () {
-      if (window.ADMIN_CHAT_INIT) return;
-      window.ADMIN_CHAT_INIT = true;
 
-      const API_URL = "{{ url_for('main.admin_chatbot') }}";
-      const fab = document.getElementById("adminBotFab");
-      const chatWindow = document.getElementById("adminBotWindow");
-      const box = document.getElementById("adminBotMessages");
-      const input = document.getElementById("adminBotInput");
-      const send = document.getElementById("adminBotSend");
-      const closeBtns = document.querySelectorAll("#adminBotClose, #adminBotClear");
-
-      if (!fab || !chatWindow || !box || !input) return;
-
-      // â Mensagem inicial do FAQ
-      const FAQ_WELCOME_HTML = `
-        Olá! Sou o <b>assistente virtual</b> do <b>painel administrativo</b>.<br>
-        <b>Posso ajudar</b> com dúvidas sobre:<br>
-        - <b>Perfis e permissões</b><br>
-        - <b>Filtros no painel</b><br>
-        - <b>Salvar decisão</b><br>
-        - <b>Editar completo</b><br>
-        - <b>Excluir solicitação</b><br>
-        - <b>Anexos</b><br>
-        - <b>GPS e mapa</b><br>
-        - <b>Exportar Excel</b><br>
-        - <b>Agenda</b><br>
-        - <b>Relatórios</b><br>
-        - <b>Gestão de UVIS</b><br>
-        - <b>Mapas</b><br>
-        <b>Como posso ajudar você hoje?</b>
-      `;
-
-      // â Garante que aparece sÃ³ 1x (e reaparece se limpar)
-      function ensureWelcomeMessage() {
-        const hasAnyMessage = box.querySelector(".message");
-        if (hasAnyMessage) return;
-
-        const divBot = document.createElement("div");
-        divBot.className = "message bot";
-        divBot.innerHTML = FAQ_WELCOME_HTML;
-        box.appendChild(divBot);
-        box.scrollTop = box.scrollHeight;
-      }
-
-      function toggleChat() {
-        chatWindow.classList.toggle("active");
-
-        if (chatWindow.classList.contains("active")) {
-          ensureWelcomeMessage();
-          setTimeout(() => input.focus(), 300);
-        }
-      }
-
-      fab.addEventListener("click", toggleChat);
-
-      closeBtns.forEach((b) =>
-        b.addEventListener("click", (e) => {
-          if (e.currentTarget.id === "adminBotClear") {
-            box.innerHTML = "";
-            ensureWelcomeMessage();
-            setTimeout(() => input.focus(), 150);
-          } else {
-            toggleChat();
-          }
-        })
-      );
-
-      async function ask(txt) {
-        const msg = (txt || input.value || "").trim();
-        if (!msg) return;
-
-        const divMe = document.createElement("div");
-        divMe.className = "message user";
-        divMe.innerText = msg;
-        box.appendChild(divMe);
-        input.value = "";
-
-        const divBot = document.createElement("div");
-        divBot.className = "message bot";
-        divBot.innerHTML = "...";
-        box.appendChild(divBot);
-        box.scrollTop = box.scrollHeight;
-
-        try {
-          const r = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: msg }),
-          });
-          const d = await r.json();
-          divBot.innerHTML = d.answer || "Erro.";
-        } catch (e) {
-          divBot.innerHTML = "Erro de conexão.";
-        }
-      }
-
-      if (send) send.addEventListener("click", () => ask());
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") ask();
-      });
-
-      document.querySelectorAll(".chip").forEach((c) =>
-        c.addEventListener("click", () => ask(c.getAttribute("data-q")))
-      );
-    })();
   });
 </script>
 

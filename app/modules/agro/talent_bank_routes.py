@@ -13,7 +13,7 @@ from app.modules.agro.service import can_edit_agro_panel
 from app.modules.agro.talent_bank_service import (
     PROFILE_LIST_FIELDS,
     PROFILE_TEXT_FIELDS,
-    analyze_resume_with_gemini,
+    analyze_resume,
     build_dropbox_resume_path,
     delete_resume_from_dropbox,
     download_resume_from_dropbox,
@@ -59,6 +59,7 @@ def _apply_profile(resume, profile, model):
         setattr(resume, field, value)
     for field in PROFILE_LIST_FIELDS:
         setattr(resume, field, profile.get(field) or [])
+    # Keep the legacy column to preserve existing profiles without a DB migration.
     resume.gemini_modelo = model
     resume.analise_status = CurriculoAgro.ANALISE_CONCLUIDA
     resume.analise_erro = None
@@ -68,17 +69,18 @@ def _apply_profile(resume, profile, model):
 def _process_resume_analysis(resume, file_bytes):
     resume_id = resume.id
     try:
-        profile, model = analyze_resume_with_gemini(file_bytes)
+        profile, model = analyze_resume(file_bytes)
         _apply_profile(resume, profile, model)
         db.session.commit()
         return True, None
-    except Exception as exc:
+    except Exception:
         db.session.rollback()
         resume = db.session.get(CurriculoAgro, resume_id)
         resume.analise_status = CurriculoAgro.ANALISE_ERRO
-        resume.analise_erro = str(exc)[:4000]
+        resume.analise_erro = 'A Azul não conseguiu concluir a análise. Tente novamente ou contate o suporte.'
+        current_app.logger.warning('Falha na análise de currículo id=%s', resume_id)
         db.session.commit()
-        return False, str(exc)
+        return False, resume.analise_erro
 
 
 def register_routes(bp):
@@ -156,9 +158,9 @@ def register_routes(bp):
         dropbox_path = build_dropbox_resume_path(upload["original_name"], prefeitura_id)
         try:
             cloud_file = upload_resume_to_dropbox(upload["bytes"], dropbox_path)
-        except Exception as exc:
-            current_app.logger.exception("Falha ao enviar curriculo ao Dropbox.")
-            flash(f"Nao foi possivel armazenar o PDF no Dropbox: {exc}", "danger")
+        except Exception:
+            current_app.logger.warning("Falha ao enviar curriculo ao Dropbox.")
+            flash("Nao foi possivel armazenar o PDF. Tente novamente ou contate o suporte.", "danger")
             return render_template("agro_talento_upload.html"), 502
 
         resume = CurriculoAgro(
@@ -186,10 +188,10 @@ def register_routes(bp):
 
         success, error = _process_resume_analysis(resume, upload["bytes"])
         if success:
-            flash("Curriculo armazenado e perfil criado pelo Gemini com sucesso.", "success")
+            flash("Curriculo armazenado e perfil criado pela Azul com sucesso.", "success")
         else:
             flash(
-                "O PDF foi salvo no Dropbox, mas a analise da IA falhou. "
+                "O PDF foi salvo no Dropbox, mas a analise da Azul falhou. "
                 "Voce pode tentar novamente na tela do candidato.",
                 "warning",
             )
@@ -260,18 +262,18 @@ def register_routes(bp):
 
         try:
             _metadata, file_bytes = download_resume_from_dropbox(resume.dropbox_path)
-        except Exception as exc:
+        except Exception:
             resume.analise_status = CurriculoAgro.ANALISE_ERRO
-            resume.analise_erro = f"Falha ao recuperar PDF no Dropbox: {exc}"[:4000]
+            resume.analise_erro = "Nao foi possivel recuperar o PDF. Tente novamente ou contate o suporte."
             db.session.commit()
             flash("Nao foi possivel recuperar o PDF no Dropbox.", "danger")
             return redirect(url_for("main.agro_talento_detalhe", curriculo_id=resume.id))
 
         success, error = _process_resume_analysis(resume, file_bytes)
         if success:
-            flash("Perfil reprocessado pelo Gemini com sucesso.", "success")
+            flash("Perfil reprocessado pela Azul com sucesso.", "success")
         else:
-            flash(f"A analise do Gemini falhou novamente: {error}", "warning")
+            flash(f"A analise da Azul falhou novamente: {error}", "warning")
         return redirect(url_for("main.agro_talento_detalhe", curriculo_id=resume.id))
 
     @bp.route(
@@ -285,9 +287,9 @@ def register_routes(bp):
         resume = _get_resume_or_404(curriculo_id)
         try:
             delete_resume_from_dropbox(resume.dropbox_path)
-        except Exception as exc:
-            current_app.logger.exception("Falha ao excluir curriculo %s do Dropbox.", resume.id)
-            flash(f"Nao foi possivel excluir o PDF do Dropbox: {exc}", "danger")
+        except Exception:
+            current_app.logger.warning("Falha ao excluir curriculo %s do Dropbox.", resume.id)
+            flash("Nao foi possivel excluir o PDF. Tente novamente ou contate o suporte.", "danger")
             return redirect(url_for("main.agro_talento_detalhe", curriculo_id=resume.id))
 
         db.session.delete(resume)

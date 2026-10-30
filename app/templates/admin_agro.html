@@ -252,28 +252,4 @@
   </div>
 </div>
 
-{% set chatbot_id_prefix = 'agroAdminBot' %}
-{% set chatbot_title = 'Ajuda do Agro' %}
-{% set chatbot_badge = 'FAQ Admin Agro' %}
-{% set chatbot_button_title = 'Ajuda do Agro administrativo' %}
-{% set chatbot_placeholder = 'Pergunte sobre clientes, orcamentos, contratos ou OS...' %}
-{% set chatbot_api_url = url_for('main.agro_admin_chatbot') %}
-{% set chatbot_chips = [
-  {'label': 'Fluxo completo', 'question': 'Qual e o fluxo completo do Agro?'},
-  {'label': 'Novo cliente', 'question': 'Como cadastrar um cliente?'},
-  {'label': 'Novo orcamento', 'question': 'Como criar um orcamento?'},
-  {'label': 'RD de mapeamento', 'question': 'Quando usar RD de mapeamento?'},
-  {'label': 'Contrato', 'question': 'Como montar o contrato pelo sistema?'}
-] %}
-{% set chatbot_welcome_html %}
-Ola! Sou o <strong>assistente do Agro administrativo</strong>.<br>
-Posso te ajudar com:<br>
-- fluxo completo do Agro<br>
-- cadastro de clientes e fornecedores<br>
-- orcamentos, RD de mapeamento e contratos<br>
-- acompanhamento de OS e relatorio final<br>
-<br>
-Como posso te ajudar hoje?
-{% endset %}
-{% include "_chatbot_widget.html" %}
 {% endblock %}

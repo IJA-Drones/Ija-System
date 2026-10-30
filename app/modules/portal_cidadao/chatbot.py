@@ -272,7 +272,7 @@ def answer(messages, *, extra_instructions=""):
 
 def reply():
     if not current_app.config.get("OPENAI_API_KEY"):
-        return jsonify(error="Assistente indisponível. Você pode continuar usando o formulário."), 503
+        return jsonify(error="Azul indisponível. Você pode continuar usando o formulário."), 503
     expected = session.get("portal_chat_token", "")
     supplied = request.headers.get("X-Portal-Chat-Token", "")
     if not expected or not secrets.compare_digest(expected.encode(), supplied.encode()):
@@ -302,7 +302,7 @@ def reply():
         if not consume_quota():
             return jsonify(error="Limite de mensagens atingido. Tente mais tarde ou use o formulário."), 429
     except sqlite3.Error:
-        return jsonify(error="Assistente temporariamente indisponível."), 503
+        return jsonify(error="Azul temporariamente indisponível."), 503
     try:
         text, parts = answer(messages)
         return jsonify(answer=text, parts=parts)

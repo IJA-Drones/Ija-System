@@ -12,16 +12,13 @@ from pathlib import PurePosixPath
 from urllib.parse import urlparse
 
 import dropbox
-import requests
+from openai import OpenAI, OpenAIError
 from dotenv import dotenv_values
 from flask import current_app
 from werkzeug.utils import secure_filename
 
 
 MAX_RESUME_SIZE_BYTES = 20 * 1024 * 1024
-GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_FALLBACK_MODELS = ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 PROFILE_LIST_FIELDS = (
     "habilidades_tecnicas",
@@ -81,7 +78,7 @@ def validate_resume_pdf(file_storage):
     if "." not in original_name or original_name.rsplit(".", 1)[1].lower() != "pdf":
         raise ValueError("Formato invalido. Envie somente um arquivo PDF.")
 
-    file_bytes = file_storage.read()
+    file_bytes = file_storage.read(MAX_RESUME_SIZE_BYTES + 1)
     if not file_bytes:
         raise ValueError("O PDF enviado esta vazio.")
     if len(file_bytes) > MAX_RESUME_SIZE_BYTES:
@@ -176,7 +173,7 @@ def _clean_web_url(value):
 
 def normalize_profile_payload(payload):
     if not isinstance(payload, dict):
-        raise ValueError("A IA retornou um perfil em formato invalido.")
+        raise ValueError("A Azul retornou um perfil em formato invalido.")
 
     normalized = {field: _clean_text(payload.get(field)) for field in PROFILE_TEXT_FIELDS}
     normalized["nome"] = _clean_text(payload.get("nome"), 180)
@@ -194,36 +191,36 @@ def normalize_profile_payload(payload):
 
 
 def _resume_profile_schema():
-    list_property = {"type": "ARRAY", "items": {"type": "STRING"}}
+    list_property = {"type": "array", "items": {"type": "string"}}
     properties = {
-        "nome": {"type": "STRING", "description": "Nome completo explicitamente presente no curriculo."},
-        "email": {"type": "STRING", "description": "Email presente no curriculo ou string vazia."},
-        "telefone": {"type": "STRING", "description": "Telefone presente no curriculo ou string vazia."},
-        "cidade": {"type": "STRING", "description": "Cidade presente no curriculo ou string vazia."},
-        "uf": {"type": "STRING", "description": "UF brasileira em duas letras ou string vazia."},
-        "linkedin": {"type": "STRING", "description": "URL do LinkedIn presente no curriculo ou string vazia."},
+        "nome": {"type": "string", "description": "Nome completo explicitamente presente no curriculo."},
+        "email": {"type": "string", "description": "Email presente no curriculo ou string vazia."},
+        "telefone": {"type": "string", "description": "Telefone presente no curriculo ou string vazia."},
+        "cidade": {"type": "string", "description": "Cidade presente no curriculo ou string vazia."},
+        "uf": {"type": "string", "description": "UF brasileira em duas letras ou string vazia."},
+        "linkedin": {"type": "string", "description": "URL do LinkedIn presente no curriculo ou string vazia."},
         "titulo_profissional": {
-            "type": "STRING",
+            "type": "string",
             "description": "Titulo profissional curto baseado apenas na experiencia e formacao descritas.",
         },
         "area_principal": {
-            "type": "STRING",
+            "type": "string",
             "description": "Principal area profissional demonstrada pelo curriculo.",
         },
         "resumo_perfil": {
-            "type": "STRING",
+            "type": "string",
             "description": "Resumo profissional objetivo, em portugues, com no maximo 120 palavras.",
         },
         "objetivo_profissional": {
-            "type": "STRING",
+            "type": "string",
             "description": "Objetivo explicitado no curriculo ou sintese prudente baseada no historico.",
         },
         "habilidades_tecnicas": list_property,
         "habilidades_comportamentais": list_property,
         "areas_atuacao": list_property,
         "areas_desenvolvimento": {
-            "type": "ARRAY",
-            "items": {"type": "STRING"},
+            "type": "array",
+            "items": {"type": "string"},
             "description": "Areas plausiveis para desenvolvimento, sempre apoiadas por evidencias do curriculo.",
         },
         "experiencias": list_property,
@@ -232,44 +229,20 @@ def _resume_profile_schema():
         "idiomas": list_property,
     }
     return {
-        "type": "OBJECT",
+        "type": "object",
         "required": list(properties.keys()),
         "properties": properties,
-        "propertyOrdering": list(properties.keys()),
+        "additionalProperties": False,
     }
 
 
-def _normalize_model_name(model):
-    model = (model or "").strip()
-    return model.removeprefix("models/") or GEMINI_MODEL
-
-
-def _model_candidates():
-    configured = _normalize_model_name(_resolve_config_value("GEMINI_MODEL") or GEMINI_MODEL)
-    result = []
-    for model in (configured, *GEMINI_FALLBACK_MODELS):
-        normalized = _normalize_model_name(model)
-        if normalized not in result:
-            result.append(normalized)
-    return result
-
-
-def _extract_response_text(payload):
-    try:
-        parts = payload["candidates"][0]["content"]["parts"]
-    except (KeyError, IndexError, TypeError) as exc:
-        feedback = payload.get("promptFeedback") if isinstance(payload, dict) else None
-        raise ValueError(f"Gemini nao retornou conteudo valido. Feedback: {feedback}") from exc
-    text = "".join(part.get("text", "") for part in parts if isinstance(part, dict)).strip()
-    if not text:
-        raise ValueError("Gemini retornou uma resposta vazia.")
-    return text
-
-
-def analyze_resume_with_gemini(file_bytes):
-    api_key = _resolve_config_value("GEMINI_API_KEY")
+def analyze_resume(file_bytes):
+    """Extract a private professional profile using the shared OpenAI credentials."""
+    api_key = _resolve_config_value("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY nao configurada.")
+        raise RuntimeError("OPENAI_API_KEY nao configurada para a analise de curriculos.")
+    model = (_resolve_config_value("OPENAI_TALENT_MODEL")
+             or _resolve_config_value("OPENAI_CHAT_MODEL") or "gpt-6-luna")
 
     prompt = (
         "Leia integralmente este curriculo e extraia um perfil profissional estruturado em portugues do Brasil. "
@@ -282,70 +255,42 @@ def analyze_resume_with_gemini(file_bytes):
         "por atividades descritas. Em areas_desenvolvimento, sugira caminhos profissionais coerentes com as "
         "evidencias do curriculo, sem afirmar que a pessoa ja possui a especializacao."
     )
-    payload = {
-        "system_instruction": {
-            "parts": [
-                {
-                    "text": (
-                        "Voce e um analista de curriculos cuidadoso. Sua tarefa e extrair fatos profissionais "
-                        "e produzir uma sintese neutra para revisao humana."
-                    )
-                }
-            ]
-        },
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "inline_data": {
-                            "mime_type": "application/pdf",
-                            "data": base64.b64encode(file_bytes).decode("ascii"),
-                        }
-                    },
-                    {"text": prompt},
-                ],
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0,
-            "response_mime_type": "application/json",
-            "response_schema": _resume_profile_schema(),
-        },
-    }
-
-    not_found = []
-    for model in _model_candidates():
-        try:
-            response = requests.post(
-                GEMINI_API_URL.format(model=model),
-                params={"key": api_key},
-                headers={"Content-Type": "application/json"},
-                json=payload,
-                timeout=180,
+    try:
+        with OpenAI(api_key=api_key, timeout=90, max_retries=0) as client:
+            response = client.responses.create(
+                model=model,
+                instructions=(
+                    "Voce extrai fatos profissionais e produz uma sintese neutra para revisao humana. "
+                    "Preencha campos ausentes com string vazia ou lista vazia. " + prompt
+                ),
+                input=[{"role": "user", "content": [
+                    {"type": "input_file", "filename": "curriculo.pdf",
+                     "file_data": "data:application/pdf;base64," + base64.b64encode(file_bytes).decode("ascii")},
+                    {"type": "input_text", "text": "Extraia o perfil profissional deste curriculo."},
+                ]}],
+                text={"format": {"type": "json_schema", "name": "resume_profile",
+                                 "strict": True, "schema": _resume_profile_schema()}},
+                max_output_tokens=6000,
+                store=False,
             )
-        except requests.RequestException as exc:
-            raise RuntimeError("Falha de conexao com a API do Gemini.") from exc
+    except OpenAIError as exc:
+        # Provider messages may contain document content or credentials.
+        raise RuntimeError(
+            "A Azul nao conseguiu analisar o curriculo. "
+            "Tente novamente mais tarde ou contate o suporte do sistema."
+        ) from exc
 
-        if response.status_code == 404:
-            not_found.append(model)
-            continue
-        if response.status_code >= 400:
-            try:
-                error = response.json().get("error", {})
-                message = error.get("message") or response.text
-                status = error.get("status") or response.status_code
-            except ValueError:
-                message = response.text
-                status = response.status_code
-            raise RuntimeError(f"Gemini retornou erro ({status}): {message}")
-
-        try:
-            raw_profile = json.loads(_extract_response_text(response.json()))
-        except (json.JSONDecodeError, ValueError) as exc:
-            raise ValueError("Gemini retornou um JSON de perfil invalido.") from exc
-        return normalize_profile_payload(raw_profile), model
-
-    raise RuntimeError(
-        "Nenhum modelo Gemini configurado foi encontrado. Testados: " + ", ".join(not_found)
-    )
+    if response.status != "completed" or not response.output_text.strip():
+        raise ValueError("A Azul nao concluiu a analise do curriculo. Tente reprocessar o PDF.")
+    try:
+        raw_profile = json.loads(response.output_text)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ValueError("A Azul retornou um JSON de perfil invalido.") from exc
+    schema = _resume_profile_schema()
+    if (not isinstance(raw_profile, dict) or set(raw_profile) != set(schema["required"])
+            or any(not isinstance(raw_profile[field], str) for field in PROFILE_TEXT_FIELDS)
+            or any(not isinstance(raw_profile[field], list)
+                   or any(not isinstance(item, str) for item in raw_profile[field])
+                   for field in PROFILE_LIST_FIELDS)):
+        raise ValueError("A Azul retornou um perfil incompleto ou em formato invalido.")
+    return normalize_profile_payload(raw_profile), model
