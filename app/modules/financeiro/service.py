@@ -1,6 +1,7 @@
 """Authorized company catalog with persisted identity and branding overrides.
 
-Registration and financial-record isolation remain separate from branding.
+Explicit company registration includes independent identity, fiscal data and branding.
+Financial records remain restricted to the legacy IJA workspace.
 """
 
 from app.modules.agro.service import can_access_agro_finance_panel
@@ -42,6 +43,14 @@ def build_financeiro_empresas(user):
         "demonstracao": True,
     }]
     perfis = {perfil.empresa_slug: perfil for perfil in FinanceiroEmpresaPerfil.query.all()}
+    for perfil in perfis.values():
+        if perfil.empresa_slug != "ija" and perfil.cadastrada:
+            empresas.append({
+                "slug": perfil.empresa_slug, "nome": perfil.nome, "razao_social": perfil.razao_social,
+                "cnpj": perfil.cnpj, "sigla": (perfil.nome or "")[:3].upper(),
+                "cnpj_formatado": format_documento(perfil.cnpj), "operacao": "Cadastro da empresa",
+                "disponivel": can_access_financeiro_panel(user), "demonstracao": False,
+            })
     for empresa in empresas:
         perfil = perfis.get(empresa["slug"])
         empresa["tem_logo"] = bool(perfil and perfil.tem_logo)
@@ -59,8 +68,15 @@ def build_financeiro_menu(user, empresa):
     from app.modules.gestao_ti.permissions import active_configuration, can_access_endpoint
     # Existing Agro records are available only through IJA until company storage
     # and data scopes have been modeled; another card must not expose these data.
-    if not empresa or empresa["slug"] != "ija" or not empresa["disponivel"] or not can_access_financeiro_panel(user):
+    if not empresa or not empresa["disponivel"] or not can_access_financeiro_panel(user):
         return []
+    settings = {"label": "Configurações", "icon": "bi-sliders",
+                "endpoint": "main.financeiro_empresa_configuracoes", "params": {"empresa_slug": empresa["slug"]}}
+    configured = active_configuration(user) is not None
+    if empresa["slug"] != "ija":
+        allowed = (can_access_endpoint(user, settings["endpoint"], args=settings["params"])
+                   if configured else can_manage_financeiro_settings(user))
+        return [settings] if allowed else []
     consultas = [
         {"label": "Clientes e Fornecedores", "icon": "bi-people-fill", "endpoint": "main.financeiro_empresa_relacionamentos", "params": {"empresa_slug": empresa["slug"]},
          "collapse_id": "menuRelacionamentosFinanceiro",
@@ -72,10 +88,10 @@ def build_financeiro_menu(user, empresa):
          "children": [{"label": label, "icon": icon, "endpoint": "main.financeiro_empresa_comercial", "params": {"empresa_slug": empresa["slug"], "aba": aba}}
                       for aba, label, icon in (("orcamentos", "Orçamentos", "bi-file-earmark-text-fill"), ("mapeamentos", "Mapeamentos", "bi-map-fill"), ("contratos", "Contratos", "bi-file-earmark-text-fill"))]},
     ]
-    configured = active_configuration(user) is not None
     menu = consultas + [{"label": label, "icon": icon, "endpoint": "main." + endpoint, "params": dict(params)}
                        for label, icon, endpoint, params, admin_only in FINANCEIRO_MENU
                        if configured or not admin_only or can_manage_financeiro_settings(user)]
+    menu = [settings if item["endpoint"] == "main.agro_financeiro_configuracoes" else item for item in menu]
     if not configured:
         return menu
     visible = []

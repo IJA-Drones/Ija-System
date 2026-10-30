@@ -1,4 +1,29 @@
-# Central Financeiro — estrutura inicial
+# Central Financeiro — empresas e configurações
+
+## Estado atual (30/10/2026)
+
+O botão **Cadastrar empresa** está habilitado para os gestores financeiros autorizados.
+Cada cadastro recebe um identificador estável independente do nome e do CNPJ.
+CNPJ válido e único, nome e razão social são obrigatórios. Após o cadastro, a
+empresa aparece no catálogo e possui páginas próprias de dados, cadastro fiscal
+e logo. As URLs preservam a empresa selecionada, inclusive entre abas abertas.
+O catálogo continua acessível aos perfis com acesso ao Financeiro; não há ainda
+permissões de associação individual de usuários a empresas.
+
+As empresas novas têm somente configurações habilitadas. Clientes, contratos,
+lançamentos, categorias e competências existentes permanecem exclusivos da IJA;
+os atalhos não aparecem nas novas empresas e as rotas comerciais por empresa
+rejeitam acesso aos dados da IJA. A emissão fiscal ainda não foi implementada.
+
+A migração `a30f10c26e03` adiciona o marcador de cadastro explícito. Perfis antigos
+avulsos não passam a aparecer automaticamente no catálogo. A IJA mantém sua
+identidade e seus dados anteriores. O ramo fiscal termina nessa revisão e é unido
+ao ramo de vigilância pela revisão `a30f10c26e02`.
+
+## Histórico da estrutura inicial
+
+As seções históricas abaixo descrevem a etapa anterior ao cadastro de empresas.
+As restrições do antigo catálogo fixo foram substituídas pelo estado atual acima.
 
 ## Objetivo e escopo
 
@@ -104,3 +129,25 @@ Instalações sem logos antigas podem executar `flask --app run db upgrade` dire
 empresas nem isolamento dos lançamentos: a IJA continua sendo a única empresa
 no catálogo e a única com acesso às competências existentes. Adicionar uma linha
 de perfil por si só não concede acesso a uma empresa.
+
+## Cadastro fiscal inicial
+
+Em Configurações → Cadastro fiscal, os gestores autorizados podem salvar inscrições
+municipal/estadual, CRT, CNAE principal, contato e endereço fiscal brasileiro com
+código IBGE. Os campos são opcionais nesta preparação e podem ser preenchidos aos
+poucos. Formatos inválidos e divergência entre UF e prefixo IBGE são rejeitados sem
+alterar o registro; a tela mantém os valores digitados. Isso não consulta Receita,
+IBGE ou prefeitura nem certifica aptidão para emitir. O cadastro segue a estrutura
+básica descrita na [documentação nacional de NFS-e](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual).
+
+Não há emissão, cálculo tributário, certificado, credenciais ou integração externa
+nesta etapa. A escolha NF-e/NFS-e, município emissor, regras dos serviços/produtos e
+provedor ainda orientarão a integração. O isolamento financeiro por empresa segue
+pendente. A identidade e a logo continuam em suas seções próprias.
+
+A migração `a30f10c26e01` adiciona apenas colunas anuláveis ao perfil existente,
+sem preencher dados fiscais fictícios. Deriva de `b84f20d19a6e` para permitir sua
+aplicação isolada no banco de teste que está nessa revisão; `a30f10c26e02` une o
+ramo fiscal ao ramo de vigilância. Instalações completas devem executar o fluxo
+usual `flask --app run db upgrade`. O downgrade fiscal remove os novos campos e
+seus valores; não deve ser usado para desfazer apenas uma edição cadastral.

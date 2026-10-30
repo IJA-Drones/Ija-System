@@ -1,6 +1,7 @@
 from app.modules.gestao_ti.permissions import route_access
 from app.modules.gestao_ti.permissions import active_configuration
 from io import BytesIO
+from uuid import uuid4
 import warnings
 
 from PIL import Image, UnidentifiedImageError
@@ -16,6 +17,7 @@ from app.shared.validators import validate_cnpj
 from flask import flash, redirect, abort, current_app, g, render_template, request, url_for
 from flask_login import current_user, login_required
 
+from app.modules.financeiro.fiscal import FISCAL_FIELDS, REGIMES, UF_CODES, validate_fiscal_form, validate_municipio
 from app.modules.financeiro.service import build_financeiro_empresas, build_financeiro_menu
 from app.shared.access import can_access_financeiro_panel, can_manage_financeiro_settings, is_agro_finance_user
 from app.shared.financeiro_navigation import is_financeiro_endpoint, is_financeiro_legacy_endpoint, is_financeiro_settings_endpoint
@@ -131,10 +133,45 @@ def register_routes(bp):
             total_empresas_disponiveis=sum(empresa["disponivel"] for empresa in empresas),
         )
 
+    @bp.route("/financeiro/empresas/cadastrar", methods=["GET", "POST"], endpoint="financeiro_empresa_cadastrar")
+    @login_required
+    def financeiro_empresa_cadastrar():
+        _require_financeiro_access()
+        if not route_access(current_user, can_manage_financeiro_settings(current_user)):
+            abort(403)
+        if request.method == "GET":
+            return render_template("financeiro_empresa_cadastrar.html", valores={})
+        try:
+            nome = request.form.get("nome", "").strip()
+            razao = request.form.get("razao_social", "").strip()
+            cnpj = only_digits(request.form.get("cnpj", ""))
+            if not nome or len(nome) > 120 or not razao or len(razao) > 180:
+                raise ValueError("Preencha o nome (até 120 caracteres) e a razão social (até 180).")
+            if not validate_cnpj(cnpj):
+                raise ValueError("Informe um CNPJ válido.")
+            perfil = FinanceiroEmpresaPerfil(empresa_slug=uuid4().hex, nome=nome, razao_social=razao,
+                                             cnpj=cnpj, cadastrada=True)
+            db.session.add(perfil)
+            db.session.commit()
+        except (ValueError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            if isinstance(exc, ValueError):
+                message = str(exc)
+            elif isinstance(exc, IntegrityError):
+                message = "Este CNPJ já está cadastrado em outra empresa."
+            else:
+                current_app.logger.exception("Falha ao cadastrar empresa.")
+                message = "Não foi possível cadastrar. Tente novamente."
+            flash(message, "warning")
+            return render_template("financeiro_empresa_cadastrar.html", valores=request.form), 422
+        flash("Empresa cadastrada. Complete as configurações fiscais e a logo.", "success")
+        return redirect(url_for("main.financeiro_empresa_configuracoes", empresa_slug=perfil.empresa_slug, secao="fiscal"))
+
     @bp.route("/financeiro/empresas/<empresa_slug>", methods=["GET"], endpoint="financeiro_empresa")
     @login_required
     def financeiro_empresa(empresa_slug):
         empresa = _resolve_empresa(empresa_slug)
+        g.financeiro_empresa = empresa
         # The company is resolved on every request from the URL and permissions.
         # No shared selected-company cookie can change another tab's context.
         return render_template("financeiro_empresa.html", empresa=empresa)
@@ -163,9 +200,9 @@ def register_routes(bp):
         secao = request.args.get("secao", "dados")
         if secao == "competencias" and empresa_slug == "ija":
             return current_app.view_functions["main.agro_financeiro_configuracoes"]()
-        if secao not in {"dados", "layout"}:
+        if secao not in {"dados", "layout", "fiscal"}:
             secao = "dados"
-        return render_template("agro_financeiro_configuracoes.html", secao=secao, competencias=[], competencias_configuradas=[])
+        return render_template("agro_financeiro_configuracoes.html", secao=secao, competencias=[], competencias_configuradas=[], fiscal=db.session.get(FinanceiroEmpresaPerfil, empresa_slug), fiscal_fields=FISCAL_FIELDS, regimes=REGIMES, ufs=sorted(UF_CODES))
 
     @bp.route("/financeiro/empresas/<empresa_slug>/configuracoes", methods=["POST"], endpoint="financeiro_empresa_configuracoes_salvar")
     @login_required
@@ -194,6 +231,11 @@ def register_routes(bp):
                     raise ValueError("Informe um CNPJ válido.")
                 perfil.nome, perfil.razao_social = nome, razao
                 perfil.cnpj = None if demo else cnpj
+            elif secao == "fiscal":
+                values = validate_fiscal_form(request.form)
+                validate_municipio(values, perfil)
+                for campo, valor in values.items():
+                    setattr(perfil, campo, valor)
             elif secao == "layout":
                 arquivo = request.files.get("logo")
                 if request.form.get("remover_logo") == "1":
@@ -233,6 +275,10 @@ def register_routes(bp):
                 current_app.logger.exception("Falha ao salvar configurações da empresa.")
                 message = "Não foi possível salvar. Tente novamente."
             flash(message, "warning")
+            if secao == "fiscal" and isinstance(exc, ValueError):
+                g.financeiro_empresa = _resolve_empresa(empresa_slug)
+                return render_template("agro_financeiro_configuracoes.html", secao="fiscal", fiscal=request.form,
+                                       fiscal_fields=FISCAL_FIELDS, regimes=REGIMES, ufs=sorted(UF_CODES)), 422
             return redirect(destino)
         if secao == "layout" and old_logo_path != perfil.logo_path:
             cleanup_company_logo(old_logo_path)

@@ -23,24 +23,28 @@
       <a href="{{ url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
+      {% if financeiro_empresa_atual.slug == "ija" %}
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-cash-coin"></i> Recebíveis
       </a>
       <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-success d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_categorias_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-tags"></i> Categorias
       </a>
+      {% endif %}
     </div>
   </div>
 
   {% set empresa = financeiro_empresa_atual %}
   <nav class="finance-settings-nav mb-4" aria-label="Seções das configurações">
-    {% for chave, rotulo, icone in [('dados', 'Dados da empresa', 'bi-building'), ('layout', 'Logo e aparência', 'bi-image'), ('competencias', 'Competências', 'bi-calendar3')] %}
+    {% for chave, rotulo, icone in [('dados', 'Dados da empresa', 'bi-building'), ('fiscal', 'Cadastro fiscal', 'bi-receipt'), ('layout', 'Logo e aparência', 'bi-image'), ('competencias', 'Competências', 'bi-calendar3')] %}
     {% if chave != 'competencias' or empresa.slug == 'ija' %}
     <a class="btn {{ 'btn-primary' if secao == chave else 'btn-outline-primary' }}" href="{{ url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao=chave) }}" {% if secao == chave %}aria-current="page"{% endif %} data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao=chave)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi {{ icone }} me-2" aria-hidden="true"></i>{{ rotulo }}</a>
     {% endif %}
     {% endfor %}
   </nav>
-  {% if secao in ['dados', 'layout'] %}
+  {% if secao == 'fiscal' %}
+  {% include '_financeiro_empresa_fiscal.html' %}
+  {% elif secao in ['dados', 'layout'] %}
   <section class="card shadow-sm rounded-4 border-0 mb-4">
     <div class="card-body p-4">
       <h3 class="h5 mb-2">{{ 'Dados da empresa' if secao == 'dados' else 'Logo e aparência' }}</h3>

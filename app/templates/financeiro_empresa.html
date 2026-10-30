@@ -22,6 +22,9 @@
     <span class="finance-operation-label"><i class="bi bi-tree" aria-hidden="true"></i>{{ empresa.operacao }}</span>
   </section>
 
+  {% if empresa.slug != 'ija' %}
+  <p class="alert alert-info">Configure os dados, o cadastro fiscal e a logo desta empresa. Os lançamentos financeiros e a emissão de notas ainda não estão habilitados para ela.</p>
+  {% endif %}
   <section aria-labelledby="finance-workspace-title">
     <h2 id="finance-workspace-title" class="finance-module-title">Funcionalidades financeiras</h2>
     <div class="finance-module-grid">

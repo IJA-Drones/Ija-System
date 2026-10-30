@@ -119,14 +119,14 @@ class FinanceiroCentralTests(unittest.TestCase):
         with self.client.session_transaction() as stored:
             self.assertEqual(dict(stored), original)
 
-    def test_company_registration_is_visible_but_not_implemented(self):
+    def test_company_registration_is_available_to_managers(self):
         for role in ("financeiro_admin", "dev"):
             with self.subTest(role=role):
                 self.login(role)
                 html = self.client.get("/financeiro").get_data(as_text=True)
-                self.assertIn('disabled aria-describedby="finance-register-status"', html)
+                self.assertIn('href="/financeiro/empresas/cadastrar"', html)
                 self.assertIn("Cadastrar empresa", html)
-                self.assertIn('id="finance-register-status">Em breve', html)
+                self.assertNotIn('id="finance-register-status"', html)
                 self.assertNotIn("<form", html)
 
     def test_company_registration_preview_is_reserved_for_finance_admin_and_dev(self):
@@ -175,7 +175,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         response = self.client.get("/financeiro/empresas/ija")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('href="/agro/financeiro/configuracoes"', html)
+        self.assertIn('href="/financeiro/empresas/ija/configuracoes"', html)
         self.assertIn('href="/agro/financeiro/categorias"', html)
         # The finance exception does not grant operational Agro access.
         self.assertEqual(self.client.get("/agro/admin").status_code, 403)
@@ -354,7 +354,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.login()
         html = self.client.get("/financeiro/empresas/ija").get_data(as_text=True)
         self.assertIn("Conciliação Bancária", html)
-        self.assertNotIn('href="/agro/financeiro/configuracoes"', html)
+        self.assertNotIn('href="/financeiro/empresas/ija/configuracoes"', html)
         self.assertNotIn('href="/agro/financeiro/categorias"', html)
 
     def test_all_existing_financial_routes_reject_other_roles_before_queries(self):
@@ -637,6 +637,116 @@ class FinanceiroCentralTests(unittest.TestCase):
                 for method in rule.methods & {"GET", "POST"}:
                     with self.subTest(path=path, method=method, trabalha_agro=flag):
                         self.assertEqual(self.client.open(path, method=method).status_code, 403)
+
+    def test_fiscal_registration_persists_normalized_partial_data(self):
+        self.login("financeiro_admin")
+        path = "/financeiro/empresas/ija/configuracoes"
+        response = self.client.post(path, data={"secao": "fiscal", "cep": "01310-100",
+            "cnae_principal": "6201-5/01", "telefone_fiscal": "(11) 99999-9999",
+            "uf": "sp", "codigo_municipio_ibge": "3550308", "regime_tributario": "3",
+            "logradouro": "Avenida Teste", "numero": "S/N", "email_fiscal": "fiscal@example.com"})
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            profile = db.session.get(FinanceiroEmpresaPerfil, "ija")
+            self.assertEqual(profile.cep, "01310100")
+            self.assertEqual(profile.cnae_principal, "6201501")
+            self.assertEqual(profile.telefone_fiscal, "11999999999")
+            self.assertEqual(profile.uf, "SP")
+            self.assertIsNone(profile.cnpj)
+        html = self.client.get(path + "?secao=fiscal").get_data(as_text=True)
+        self.assertIn('value="Avenida Teste"', html)
+        self.assertIn("ainda não está habilitada", html)
+        self.client.post(path, data={"secao": "fiscal", "email_fiscal": ""})
+        with self.app.app_context():
+            profile = db.session.get(FinanceiroEmpresaPerfil, "ija")
+            self.assertIsNone(profile.email_fiscal)
+            self.assertEqual(profile.cep, "01310100")
+
+    def test_invalid_fiscal_data_does_not_overwrite_and_preserves_form(self):
+        self.login("dev")
+        path = "/financeiro/empresas/ija/configuracoes"
+        self.client.post(path, data={"secao": "fiscal", "uf": "SP", "logradouro": "Original"})
+        for invalid in ({"cep": "abcd1234"}, {"regime_tributario": "9"}, {"uf": "XX"},
+                        {"email_fiscal": "invalid"}, {"codigo_municipio_ibge": "3304557"},
+                        {"bairro": "x" * 101}, {"telefone_fiscal": "123"}):
+            with self.subTest(invalid=invalid):
+                response = self.client.post(path, data={"secao": "fiscal", "logradouro": "Digitado", **invalid})
+                self.assertEqual(response.status_code, 422)
+                self.assertIn('value="Digitado"', response.get_data(as_text=True))
+                with self.app.app_context():
+                    self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "ija").logradouro, "Original")
+
+    def test_fiscal_settings_permissions_and_csrf(self):
+        path = "/financeiro/empresas/ija/configuracoes"
+        self.login("financeiro")
+        self.assertEqual(self.client.get(path + "?secao=fiscal").status_code, 403)
+        self.assertEqual(self.client.post(path, data={"secao": "fiscal"}).status_code, 403)
+        self.login("dev")
+        self.assertEqual(self.client.post(path.replace("ija", "outra"), data={"secao": "fiscal"}).status_code, 404)
+    def test_fiscal_settings_csrf(self):
+        path = "/financeiro/empresas/ija/configuracoes"
+        self.login("dev")
+        self.app.config["CSRF_PROTECTION_ENABLED"] = True
+        register_csrf_security(self.app)
+        self.assertEqual(self.client.post(path, data={"secao": "fiscal"}).status_code, 403)
+        self.client.get(path + "?secao=fiscal")
+        with self.client.session_transaction() as stored:
+            token = stored["_ija_csrf"]
+        self.assertEqual(self.client.post(path, data={"secao": "fiscal", "_csrf_token": token}).status_code, 302)
+
+    def test_register_company_and_keep_settings_isolated_across_tabs(self):
+        self.login("financeiro_admin")
+        path = "/financeiro/empresas/ija/configuracoes"
+        self.client.post(path, data={"secao": "fiscal", "logradouro": "Endereço IJA"})
+        response = self.client.post("/financeiro/empresas/cadastrar", data={
+            "nome": "Outra empresa", "razao_social": "Outra Ltda", "cnpj": "11.222.333/0001-81"})
+        self.assertEqual(response.status_code, 302)
+        other = response.location.split("?")[0]
+        self.assertNotEqual(other, path)
+        self.assertIn("Outra empresa", self.client.get("/financeiro").get_data(as_text=True))
+        self.client.post(other, data={"secao": "fiscal", "logradouro": "Endereço Outra", "uf": "RJ"})
+        self.client.post(path, data={"secao": "fiscal", "uf": "SP"})
+        html = self.client.get(other + "?secao=fiscal").get_data(as_text=True)
+        self.assertIn("Endereço Outra", html)
+        self.assertNotIn("Endereço IJA", html)
+        self.assertNotIn('href="/agro/financeiro/listar"', html)
+        self.assertNotIn('href="/agro/financeiro/categorias"', html)
+        html_ija = self.client.get(path + "?secao=fiscal").get_data(as_text=True)
+        self.assertIn("Endereço IJA", html_ija)
+        slug = other.split("/")[-2]
+        self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/clientes").status_code, 403)
+        self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/comercial").status_code, 403)
+        with self.app.app_context():
+            self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "ija").uf, "SP")
+            self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, slug).uf, "RJ")
+        from io import BytesIO
+        from PIL import Image
+        logo = BytesIO()
+        Image.new("RGB", (10, 10)).save(logo, format="PNG")
+        logo.seek(0)
+        self.client.post(other, data={"secao": "layout", "logo": (logo, "logo.png")})
+        self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/logo").status_code, 200)
+        self.assertEqual(self.client.get("/financeiro/empresas/ija/logo").status_code, 404)
+
+    def test_registration_rejects_duplicate_invalid_cnpj_and_unauthorized_users(self):
+        path = "/financeiro/empresas/cadastrar"
+        self.login("financeiro")
+        self.assertEqual(self.client.get(path).status_code, 403)
+        self.assertEqual(self.client.post(path).status_code, 403)
+        self.login("dev")
+        data = {"nome": "Empresa", "razao_social": "Empresa Ltda", "cnpj": "11.222.333/0001-81"}
+        self.assertEqual(self.client.post(path, data={**data, "cnpj": "123"}).status_code, 422)
+        self.assertEqual(self.client.post(path, data=data).status_code, 302)
+        self.assertEqual(self.client.post(path, data=data).status_code, 422)
+        with self.app.app_context():
+            self.assertEqual(FinanceiroEmpresaPerfil.query.filter_by(cadastrada=True).count(), 1)
+
+    def test_company_registration_requires_csrf(self):
+        self.app.config["CSRF_PROTECTION_ENABLED"] = True
+        register_csrf_security(self.app)
+        self.login("dev")
+        self.assertEqual(self.client.post("/financeiro/empresas/cadastrar", data={
+            "nome": "Empresa", "razao_social": "Empresa", "cnpj": "11.222.333/0001-81"}).status_code, 403)
 
     def test_company_identity_persists_and_replaces_demo_document(self):
         self.login("financeiro_admin")

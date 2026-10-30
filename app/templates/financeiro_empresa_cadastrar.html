@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Cadastrar empresa · Financeiro{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 agro-content-width-1200">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">Cadastrar empresa</h1>
+    <a href="{{ url_for('main.financeiro_central') }}" class="btn btn-outline-secondary">Voltar às empresas</a>
+  </div>
+  <section class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <p>Cadastre a empresa para configurar seus próprios dados fiscais e sua identidade visual.</p>
+      <form method="post" class="row g-3">
+        {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+        {% for name, label, limit in [('nome', 'Nome da empresa', 120), ('razao_social', 'Razão social', 180), ('cnpj', 'CNPJ', 18)] %}
+        <div class="col-md-6">
+          <label class="form-label" for="cadastro-{{ name }}">{{ label }}</label>
+          <input id="cadastro-{{ name }}" class="form-control" name="{{ name }}" maxlength="{{ limit }}" value="{{ valores.get(name, '') }}" required>
+        </div>
+        {% endfor %}
+        <div class="col-12"><button class="btn btn-primary" type="submit">Cadastrar e configurar</button></div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -3397,11 +3397,26 @@ class FinanceiroEmpresaPerfil(db.Model):
     __tablename__ = "financeiro_empresa_perfis"
 
     empresa_slug = db.Column(db.String(80), primary_key=True)
+    cadastrada = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     nome = db.Column(db.String(120), nullable=True)
     razao_social = db.Column(db.String(180), nullable=True)
     cnpj = db.Column(db.String(14), nullable=True, unique=True)
     logo_path = db.Column(db.String(500), nullable=True)
     tem_logo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    inscricao_municipal = db.Column(db.String(30), nullable=True)
+    inscricao_estadual = db.Column(db.String(30), nullable=True)
+    regime_tributario = db.Column(db.String(1), nullable=True)
+    cnae_principal = db.Column(db.String(7), nullable=True)
+    email_fiscal = db.Column(db.String(254), nullable=True)
+    telefone_fiscal = db.Column(db.String(11), nullable=True)
+    cep = db.Column(db.String(8), nullable=True)
+    logradouro = db.Column(db.String(180), nullable=True)
+    numero = db.Column(db.String(20), nullable=True)
+    complemento = db.Column(db.String(120), nullable=True)
+    bairro = db.Column(db.String(100), nullable=True)
+    municipio = db.Column(db.String(100), nullable=True)
+    uf = db.Column(db.String(2), nullable=True)
+    codigo_municipio_ibge = db.Column(db.String(7), nullable=True)
 
 
 class EdicaoReserva(db.Model):

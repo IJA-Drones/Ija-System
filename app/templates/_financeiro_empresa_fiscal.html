@@ -1,0 +1,47 @@
+<section class="card shadow-sm rounded-4 border-0 mb-4">
+  <div class="card-body p-4">
+    <h3 class="h5">Cadastro fiscal da empresa</h3>
+    <p class="text-muted">Preencha os dados conforme o cadastro da empresa. Você pode salvar o preenchimento parcial e continuar depois.</p>
+    <div class="alert alert-info" role="note">Esta etapa prepara o cadastro. A emissão de notas fiscais ainda não está habilitada.</div>
+    {% if empresa.demonstracao %}<div class="alert alert-warning">Atualize o CNPJ fictício em <a href="{{ url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao='dados') }}">Dados da empresa</a> antes de configurar a futura emissão.</div>{% endif %}
+    <form method="post" action="{{ url_for('main.financeiro_empresa_configuracoes_salvar', empresa_slug=empresa.slug) }}">
+      {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+      <input type="hidden" name="secao" value="fiscal">
+      {% for title, fields in [
+        ('Inscrições e tributação', ['inscricao_municipal', 'inscricao_estadual', 'regime_tributario', 'cnae_principal']),
+        ('Contato fiscal', ['email_fiscal', 'telefone_fiscal']),
+        ('Endereço fiscal', ['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'municipio', 'uf', 'codigo_municipio_ibge'])
+      ] %}
+      <fieldset class="mb-4">
+        <legend class="h6">{{ title }}</legend>
+        <div class="row g-3">
+          {% for field in fields %}
+          {% set limit, label = fiscal_fields[field] %}
+          {% set value = fiscal[field] if fiscal and fiscal[field] else '' %}
+          <div class="col-md-6">
+            <label for="fiscal-{{ field }}" class="form-label">{{ label }}</label>
+            {% if field in ['regime_tributario', 'uf'] %}
+            <select id="fiscal-{{ field }}" name="{{ field }}" class="form-select">
+              <option value="">Não informado</option>
+              {% if field == 'regime_tributario' %}
+              {% for code, name in regimes.items() %}<option value="{{ code }}" {% if value == code %}selected{% endif %}>{{ code }} — {{ name }}</option>{% endfor %}
+              {% else %}
+              {% for uf in ufs %}<option value="{{ uf }}" {% if value|upper == uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
+              {% endif %}
+            </select>
+            {% else %}
+            <input id="fiscal-{{ field }}" name="{{ field }}" type="{{ 'email' if field == 'email_fiscal' else 'tel' if field == 'telefone_fiscal' else 'text' }}" class="form-control" value="{{ value }}" maxlength="{{ 18 if field == 'telefone_fiscal' else 10 if field in ['cep', 'cnae_principal'] else limit }}" {% if field in ['cep', 'cnae_principal', 'codigo_municipio_ibge'] %}inputmode="numeric"{% endif %}>
+            {% endif %}
+            {% if field == 'inscricao_estadual' %}<div class="form-text">Informe ISENTO somente quando corresponder ao cadastro da empresa.</div>{% endif %}
+            {% if field == 'numero' %}<div class="form-text">Use S/N para endereço sem número.</div>{% endif %}
+            {% if field == 'codigo_municipio_ibge' %}<div class="form-text">Código de 7 dígitos do município do endereço fiscal.</div>{% endif %}
+            {% if field == 'regime_tributario' %}<div class="form-text">Confirme o enquadramento com a contabilidade.</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </fieldset>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Salvar cadastro fiscal</button>
+    </form>
+  </div>
+</section>

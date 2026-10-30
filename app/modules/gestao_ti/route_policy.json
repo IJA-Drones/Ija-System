@@ -465,6 +465,10 @@
   "main.financeiro_central": {
     "GET": "area:financeiro"
   },
+  "main.financeiro_empresa_cadastrar": {
+    "GET": "financeiro.configuracoes.configurar",
+    "POST": "financeiro.configuracoes.configurar"
+  },
   "main.financeiro_empresa": {
     "GET": "area:financeiro"
   },
