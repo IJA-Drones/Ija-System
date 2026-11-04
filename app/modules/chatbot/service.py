@@ -517,8 +517,11 @@ def normalize_chatbot_text(text: str) -> str:
 
 
 def clean_admin_answer(text: str) -> str:
+    """Convert the legacy FAQ's formatting to plain text for the chat."""
     if not text:
         return ""
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</?b\s*>", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
     text = text.replace("`", "")
     text = re.sub(r"\n{3,}", "\n\n", text)

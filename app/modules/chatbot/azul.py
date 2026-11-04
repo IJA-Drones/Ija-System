@@ -167,6 +167,42 @@ def help_context(user, page):
             'escopo': scope + ' Nenhum registro foi consultado.'}
 
 
+def access_overview(user, context):
+    """Describe verified navigation and chat tools without a model or data query."""
+    lines = ['Posso ajudar você a entender os processos e encontrar os recursos do sistema.']
+    actions = []
+    if search.allowed(user):
+        actions.append('Buscar solicitações municipais por status, bairro, endereço, protocolo ou período de agendamento.')
+    if operations.allowed(user):
+        actions.append('Consultar o resumo de falhas e bugs do Painel Dev.' if context['perfil'] == 'dev'
+                       else 'Consultar as solicitações municipais que precisam de atenção hoje.')
+    sources = exports.allowed_sources(user)
+    if sources:
+        labels = {'solicitacoes': 'solicitações municipais', 'ordens_servico': 'OS municipais'}
+        reports = ' e '.join(labels[source] for source in sources)
+        actions.append(f'Preparar relatórios de {reports} em Excel ou PDF, com prévia e confirmação antes do download.')
+    if actions:
+        lines.append('Aqui no chat, você também pode:\n' + '\n'.join('• ' + action for action in actions))
+    else:
+        lines.append('Para seu acesso, a Azul oferece orientações e atalhos; consultas de registros e geração de arquivos pelo chat não estão disponíveis.')
+    lines.append(UVIS_SCOPES.get(context['perfil'], 'Cada consulta respeita as permissões e os vínculos da sua conta.'))
+
+    # Cover distinct modules instead of using every slot for one area's screens.
+    modules = {}
+    for link in context['atalhos']:
+        modules.setdefault(link['modulo'], link)
+    areas = {}
+    for link in modules.values():
+        areas.setdefault(link['modulo'].split('.')[0], link)
+    featured = list(areas.values())
+    links = (featured + [link for link in modules.values() if link not in featured])[:12]
+    if links:
+        lines.append('Estes são alguns atalhos para começar. As ações dentro de cada tela dependem das permissões e do registro.')
+    else:
+        lines.append('Não encontrei um atalho que possa confirmar para sua conta. Para verificar outras opções de acesso, procure o administrador.')
+    return '\n\n'.join(lines), links
+
+
 def relevant_links(message, authorized_links):
     """Select existing authorized shortcuts without filling with unrelated menus."""
     ignored = {
@@ -273,6 +309,15 @@ def reply(channel):
         return result, 409
     context = help_context(current_user, page)
     normalized_request = service.normalize_chatbot_text(message).strip(' ?!.')
+    if payload.get('intent') == 'access_overview' or (not payload.get('intent') and normalized_request in {
+        'o que posso acessar no sistema', 'meu acesso', 'meus acessos',
+        'quais recursos estao disponiveis para mim',
+    }):
+        answer, links = access_overview(current_user, context)
+        result = jsonify(answer=answer, mode='guided', links=links, profile=context['perfil'],
+                         export_preview=None, chat_key=current_key)
+        result.headers['Cache-Control'] = 'private, no-store'
+        return result
     if payload.get('intent') == 'attention_today' or normalized_request in {
         'o que precisa da minha atencao', 'o que precisa da minha atencao hoje',
         'oq precisa da minha atencao', 'oq precisa da minha atencao hoje',
