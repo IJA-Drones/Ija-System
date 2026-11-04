@@ -145,6 +145,15 @@ def test_model_only_prepares_and_never_generates_file(app):
         response=client(app).post('/api/azul/ajuda',json={'message':'Gere Excel de solicitações pendentes de outubro de 2026'})
         assert response.status_code==200
         assert response.json['export_preview']['total']==1
+        preview = response.json['export_preview']
+        answer = response.json['answer']
+        assert preview['title'] in answer
+        assert 'Excel' in answer
+        for label, value in preview['filters'].items():
+            assert f'{label}: {value}' in answer
+        assert 'quando você confirmar' in answer
+        assert preview['token'] not in answer
+        assert preview['url'] not in answer
         excel.assert_not_called()
 
 

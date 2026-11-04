@@ -39,3 +39,8 @@ body.dark-mode .azul-help {--azul-ink:#e1ecfa;--azul-bg:#172333;--azul-card:#1e2
 .azul-export button {border:1px solid var(--azul-border);border-radius:8px;padding:8px 10px;margin:4px 5px 0 0;font:inherit;font-size:12px;background:var(--azul-card);color:var(--azul-ink);}
 .azul-export button:first-of-type {background:#205c90;color:white;}
 .azul-export button:disabled {opacity:.5;}
+
+.azul-expand {display:grid;place-items:center;flex-shrink:0;width:32px;height:36px;border-radius:9px;color:#e8f3ff;text-decoration:none;}
+.azul-expand:hover {background:#ffffff20;color:#fff;}
+
+.azul-reload {display:block;margin-top:12px;padding:8px 12px;border:1px solid var(--azul-border);border-radius:8px;background:var(--azul-card);color:var(--azul-ink);font:inherit;}
