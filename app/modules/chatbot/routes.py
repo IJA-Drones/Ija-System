@@ -1,7 +1,7 @@
 from app.modules.gestao_ti.permissions import route_access, can_access_endpoint
-from flask import jsonify, request, url_for, session
+from flask import abort, jsonify, make_response, render_template, request, url_for, session
 from flask_login import current_user, login_required, user_logged_in, user_logged_out
-import secrets
+from app.modules.chatbot.scope import chat_key
 
 from app.modules.chatbot.azul import reply as azul_reply
 
@@ -29,13 +29,23 @@ def register_routes(bp):
         from app.modules.chatbot.exports import allowed_sources
         from app.modules.chatbot.operations import allowed as operations_allowed
         from app.modules.chatbot.search import allowed as search_allowed
-        if allowed and not session.get('azul_chat_id'):
-            session['azul_chat_id'] = secrets.token_urlsafe(24)
-        return {'azul_chat_key': f"{current_user.get_id()}:{session['azul_chat_id']}" if allowed else '',
+        return {'azul_chat_key': chat_key(current_user) if allowed else '',
                 'azul_help_url': url_for('main.azul_help') if allowed else None,
+                'azul_page_url': url_for('main.azul_chat') if allowed and can_access_endpoint(
+                    current_user, 'main.azul_chat', 'GET', legacy=True) else None,
                 'azul_can_export': bool(allowed_sources(current_user)) if allowed else False,
                 'azul_can_view_operations': operations_allowed(current_user) if allowed else False,
                 'azul_can_search': search_allowed(current_user) if allowed else False}
+
+    @bp.get('/azul', endpoint='azul_chat')
+    @login_required
+    def azul_chat():
+        if (not route_access(current_user, True)
+                or not can_access_endpoint(current_user, 'main.azul_help', 'POST', legacy=True)):
+            abort(403, description='Seu perfil não tem acesso à Azul nesta área.')
+        response = make_response(render_template('azul_chat.html'))
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
 
     @bp.route('/api/azul/ajuda', methods=['POST'], endpoint='azul_help')
     @login_required

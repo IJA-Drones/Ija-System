@@ -49,7 +49,7 @@ def test_authenticated_ai_uses_server_context_and_only_preview_tool(env, context
     with patch.object(azul, 'help_context', return_value=context), patch.object(azul, 'OpenAI') as sdk:
         create = sdk.return_value.__enter__.return_value.responses.create
         create.return_value = SimpleNamespace(status='completed', output_text='Use os atalhos.')
-        response = client.post('/api/admin/chatbot', json={'message':'Como usar?', 'role':'admin', 'permissions':['all']})
+        response = client.post('/api/admin/chatbot', json={'message':'Como usar o banco de talentos?', 'role':'admin', 'permissions':['all']})
         assert response.status_code == 200
         assert response.json['mode'] == 'ia'
         assert response.json['links'] == context['atalhos']
@@ -59,7 +59,7 @@ def test_authenticated_ai_uses_server_context_and_only_preview_tool(env, context
         assert all(tool['type'] == 'function' for tool in args['tools'])
         assert '"perfil": "dev"' in args['instructions']
         assert 'permissions' not in args['instructions']
-        assert args['input'] == [{'role':'user','content':'Como usar?'}]
+        assert args['input'] == [{'role':'user','content':'Como usar o banco de talentos?'}]
         assert response.headers['Cache-Control'] == 'private, no-store'
 
 
@@ -75,7 +75,7 @@ def test_invalid_payload_never_calls_provider(env, payload):
 
 def test_large_body_is_bounded(env):
     _, client, _ = env
-    assert client.post('/api/admin/chatbot', data='a'*24001, content_type='application/json').status_code == 413
+    assert client.post('/api/admin/chatbot', data='a'*(azul.MAX_REQUEST_BYTES + 1), content_type='application/json').status_code == 413
 
 
 def test_unauthenticated_and_wrong_role_do_not_call_ai(env):
@@ -104,6 +104,64 @@ def test_faq_fallback_is_explicit_and_preserves_authorized_links(env, context, f
         assert response.json['links'] == context['atalhos']
         assert 'não confirma autorização' in response.json['answer']
         if failure in ('quota', 'missing-key'): sdk.assert_not_called()
+
+
+@pytest.mark.parametrize('message', ['Obrigado!', 'Excel', 'Como usar?',
+                                     'Quero uma receita de bolo.', 'Pode me ajudar?'])
+def test_unrelated_messages_have_no_shortcuts(env, context, message):
+    _, client, _ = env
+    with patch.object(azul, 'help_context', return_value=context), patch.object(azul, 'OpenAI') as sdk:
+        sdk.return_value.__enter__.return_value.responses.create.return_value = SimpleNamespace(
+            status='completed', output_text='Posso ajudar com o sistema.')
+        response = client.post('/api/admin/chatbot', json={'message': message})
+        assert response.status_code == 200
+        assert response.json['links'] == []
+
+
+@pytest.mark.parametrize('message', ['Minhas permissões?', 'Quais recursos posso acessar?',
+                                     'O que posso fazer no sistema?', 'Mostre meus atalhos'])
+def test_explicit_access_requests_suggest_authorized_shortcuts(context, message):
+    assert azul.relevant_links(message, context['atalhos']) == context['atalhos']
+
+
+def test_shortcuts_match_topics_without_generic_or_partial_words():
+    links = [
+        {'label': 'Cadastrar cliente', 'url': '/clientes/novo', 'modulo': 'agro.clientes'},
+        {'label': 'Cadastrar piloto', 'url': '/pilotos/novo', 'modulo': 'agro.equipes'},
+        {'label': 'Solicitações', 'url': '/solicitacoes', 'modulo': 'prefeitura.solicitacoes'},
+        {'label': 'Histórico de OS', 'url': '/os', 'modulo': 'prefeitura.os'},
+    ]
+    assert azul.relevant_links('Como cadastrar um cliente?', links) == [links[0]]
+    assert azul.relevant_links('Onde vejo minha solicitação?', links) == [links[2]]
+    assert azul.relevant_links('Quero os clientes', links) == [links[0]]
+    assert azul.relevant_links('Como consultar OS?', links) == [links[3]]
+    assert azul.relevant_links('Quero cantar', links) == []
+    assert azul.relevant_links('Meu acesso aos clientes', links) == [links[0]]
+    assert azul.relevant_links('Clientes', []) == []
+
+
+def test_shortcuts_keep_the_most_relevant_first_without_padding():
+    links = [
+        {'label': 'Clientes', 'url': '/clientes', 'modulo': 'prefeitura.clientes'},
+        {'label': 'Clientes', 'url': '/agro/clientes', 'modulo': 'agro.clientes'},
+        {'label': 'Bancos', 'url': '/bancos', 'modulo': 'financeiro.bancos'},
+    ]
+    assert azul.relevant_links('Clientes Agro', links) == [links[1], links[0]]
+
+
+def test_tool_links_are_preserved_without_matching_shortcut_terms(env, context):
+    _, client, _ = env
+    result_links = [{'label': 'Abrir lista filtrada', 'url': '/admin?status=PENDENTE'}]
+    with patch.object(azul, 'help_context', return_value=context), \
+         patch.object(azul.search, 'execute', return_value=('Encontrei 2 solicitações.', result_links)), \
+         patch.object(azul, 'OpenAI') as sdk:
+        sdk.return_value.__enter__.return_value.responses.create.return_value = SimpleNamespace(
+            status='completed', output_text='', output=[SimpleNamespace(
+                type='function_call', name='buscar_solicitacoes', arguments='{}')])
+        response = client.post('/api/admin/chatbot', json={'message': 'E os pendentes?'})
+        assert response.status_code == 200
+        assert response.json['mode'] == 'busca'
+        assert response.json['links'] == result_links
 
 
 def test_permission_context_does_not_trust_page_and_updates_per_request(env):
@@ -164,3 +222,101 @@ def test_login_and_logout_rotate_chat_storage_identity(env):
         session['azul_chat_id'] = 'new-login'
         user_logged_out.send(app, user=user)
         assert 'azul_chat_id' not in session
+
+
+def test_chat_page_requires_login_and_api_permission(env):
+    _, client, user = env
+    assert env[0].test_client().get('/azul').status_code == 401
+    # The page must not become an alternative entry point for a blocked API.
+    with patch('app.modules.chatbot.routes.can_access_endpoint', return_value=False):
+        assert client.get('/azul').status_code == 403
+    user.tipo_usuario = 'agente_endemias'
+    assert client.get('/azul').status_code == 403
+
+
+def test_chat_page_policy_matches_api():
+    from app.modules.gestao_ti.permissions import POLICY
+    assert POLICY['main.azul_chat']['GET'] == POLICY['main.azul_help']['POST']
+
+
+@pytest.mark.parametrize('enabled', [False, True])
+def test_chat_page_renders_only_permitted_tools(env, enabled):
+    from pathlib import Path
+    from jinja2 import ChoiceLoader, DictLoader, FileSystemLoader
+    app, client, _ = env
+    app.jinja_loader = ChoiceLoader([
+        DictLoader({'base.html': '{% block content %}{% endblock %}'}),
+        FileSystemLoader(str(Path(__file__).resolve().parents[1] / 'app/templates')),
+    ])
+    with patch('app.modules.chatbot.exports.allowed_sources', return_value=['solicitacoes'] if enabled else []), \
+         patch('app.modules.chatbot.operations.allowed', return_value=enabled), \
+         patch('app.modules.chatbot.search.allowed', return_value=enabled):
+        response = client.get('/azul')
+    assert response.status_code == 200
+    assert response.headers['Cache-Control'] == 'private, no-store'
+    html = response.get_data(as_text=True)
+    assert 'data-view="page"' in html
+    assert 'data-url="/api/azul/ajuda"' in html
+    assert ('data-intent="start_report"' in html) == enabled
+    assert ('data-intent="attention_today"' in html) == enabled
+    assert ('Buscar solicitações' in html) == enabled
+    assert 'Entender permissões' in html
+
+
+def test_configured_profile_cannot_open_page_without_area(env):
+    app, client, user = env
+    from app.modules.gestao_ti import permissions
+    # Test both the page and the API against the same live permission snapshot.
+    with patch.object(permissions, 'active_configuration', return_value=frozenset()):
+        assert client.get('/azul').status_code == 403
+        assert client.post('/api/azul/ajuda', json={'message': 'oi'}).status_code == 403
+
+
+def test_longer_conversation_preserves_choices_as_untrusted_history(env, context):
+    _, client, _ = env
+    choices = ['Quero gerar um relatório.', 'OS municipais', 'Excel',
+               'Outubro de 2026', 'Centro', 'Todos os status']
+    history = []
+    for choice in choices:
+        history.extend([{'role': 'user', 'content': choice},
+                        {'role': 'assistant', 'content': 'Qual a próxima escolha?'}])
+    with patch.object(azul, 'help_context', return_value=context), patch.object(azul, 'OpenAI') as sdk:
+        create = sdk.return_value.__enter__.return_value.responses.create
+        create.return_value = SimpleNamespace(status='completed', output_text='Confira suas escolhas.')
+        first = client.post('/api/azul/ajuda', json={'message': 'Oi'})
+        response = client.post('/api/azul/ajuda', json={
+            'message': 'Pode preparar a prévia.', 'history': history,
+            'chat_key': first.json['chat_key']})
+        assert response.status_code == 200
+        args = create.call_args.kwargs
+        assert args['input'] == history + [{'role': 'user', 'content': 'Pode preparar a prévia.'}]
+        assert 'Outubro de 2026' not in args['instructions']
+        assert args['store'] is False
+
+
+@pytest.mark.parametrize('history', [
+    [{'role': 'user', 'content': 'x'}] * 13,
+    [{'role': 'user', 'content': 'x' * 3001}],
+    [{'role': 'user', 'content': 'x' * 3000}] * 6 + [{'role': 'assistant', 'content': 'x'}],
+])
+def test_history_limits_reject_before_provider(env, history):
+    _, client, _ = env
+    with patch.object(azul, 'OpenAI') as sdk:
+        response = client.post('/api/azul/ajuda', json={'message': 'Continue', 'history': history})
+        assert response.status_code == 400
+        sdk.assert_not_called()
+
+
+def test_escaped_unicode_history_fits_request_byte_budget(env, context):
+    _, client, _ = env
+    history = [{'role': 'user' if index % 2 == 0 else 'assistant', 'content': 'ç' * 1500}
+               for index in range(12)]
+    with patch.object(azul, 'help_context', return_value=context), patch.object(azul, 'OpenAI') as sdk:
+        create = sdk.return_value.__enter__.return_value.responses.create
+        create.return_value = SimpleNamespace(status='completed', output_text='Continuando.')
+        first = client.post('/api/azul/ajuda', json={'message': 'Oi'})
+        body = json.dumps({'message': 'Continue', 'history': history, 'chat_key': first.json['chat_key']})
+        assert 24000 < len(body.encode()) < azul.MAX_REQUEST_BYTES
+        response = client.post('/api/azul/ajuda', data=body, content_type='application/json')
+        assert response.status_code == 200
+        assert create.call_args.kwargs['input'][:-1] == history

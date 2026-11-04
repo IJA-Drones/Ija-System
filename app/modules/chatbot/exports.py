@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
 from app.modules.consultas import service, exporters
+from app.modules.chatbot.scope import access_fingerprint
 from app.modules.gestao_ti.permissions import can_access_endpoint
 from app.modules.relatorios.service import can_access_relatorios_menu
 
@@ -91,7 +92,8 @@ def prepare(user, plan):
         raise service.QueryError('O PDF aceita até 2.000 registros. Restrinja o período ou peça Excel.')
     if not result['total']:
         raise service.QueryError('Nenhum registro encontrado com esses filtros. Ajuste o período ou os filtros.')
-    token = serializer().dumps({'user': user.id, 'plan': plan, 'digest': fingerprint(result)})
+    token = serializer().dumps({'user': user.id, 'plan': plan, 'digest': fingerprint(result),
+                                'scope': access_fingerprint(user)})
     start = date.fromisoformat(plan['inicio']).strftime('%d/%m/%Y') if plan['inicio'] else 'Sem início'
     end = date.fromisoformat(plan['fim']).strftime('%d/%m/%Y') if plan['fim'] else 'Sem fim'
     period = f'{start} até {end}' if plan['inicio'] or plan['fim'] else 'Todo o período'
@@ -103,6 +105,16 @@ def prepare(user, plan):
                         'Status da solicitação': plan['status'] or 'Todos', 'Bairro': plan['bairro'] or 'Todos'},
             'columns': [column['label'] for column in result['columns']],
             'notice': 'Somente registros acessíveis ao seu usuário. Confirmação válida por 10 minutos. Se os dados mudarem, peça uma nova prévia.'}
+
+
+def preview_summary(preview):
+    """Keep report choices in the conversation, without replaying download tokens."""
+    format_label = 'Excel' if preview['format'] == 'excel' else 'PDF'
+    lines = [f"Prévia de {preview['title']} em {format_label}."]
+    lines.extend(f'{label}: {value}' for label, value in preview['filters'].items())
+    lines.append(f"Registros encontrados nesta prévia: {preview['total']}.")
+    lines.append('\nConfira a prévia abaixo. O arquivo só será gerado quando você confirmar.')
+    return '\n'.join(lines)
 
 
 def protected(fn):
@@ -143,6 +155,8 @@ def register_routes(bp):
             return jsonify(error='A prévia expirou ou é inválida. Peça uma nova.'), 400
         if preview['user'] != current_user.id:
             abort(403)
+        if preview.get('scope') != access_fingerprint(current_user):
+            return jsonify(error='Seu acesso mudou. Peça uma nova prévia antes de baixar.', code='access_changed'), 409
         plan = preview['plan']
         if plan['source'] not in allowed_sources(current_user):
             abort(403)

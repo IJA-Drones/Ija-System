@@ -1413,6 +1413,14 @@
   "main.vigilancia_agentes_esus": {
     "GET": "prefeitura.vigilancia.consultar"
   },
+  "main.azul_chat": {
+    "GET": [
+      "area:prefeitura",
+      "area:agro",
+      "area:financeiro",
+      "area:sistema"
+    ]
+  },
   "main.azul_help": {
     "POST": [
       "area:prefeitura",

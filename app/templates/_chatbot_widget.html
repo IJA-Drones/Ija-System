@@ -1,10 +1,13 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261104') }}">
 <div class="azul-help" data-azul-help data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
   <button type="button" class="azul-launcher" data-toggle aria-expanded="false" aria-controls="{{ chatbot_id_prefix }}Panel" title="Conversar com a Azul"><i class="bi bi-stars" aria-hidden="true"></i><span>Azul</span></button>
   <section id="{{ chatbot_id_prefix }}Panel" class="azul-panel" hidden aria-label="Azul, inteligência do sistema">
     <header class="azul-header">
       <span class="azul-avatar" aria-hidden="true"><i class="bi bi-stars"></i></span>
       <div class="azul-heading"><strong>Azul <span>IA</span></strong><small>Inteligência do sistema</small></div>
+      {% if azul_page_url|default(none) %}
+      <a class="azul-expand" href="{{ azul_page_url }}" title="Abrir página da Azul" aria-label="Abrir página da Azul"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
+      {% endif %}
       <button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><i class="bi bi-trash3" aria-hidden="true"></i></button>
       <button type="button" data-close title="Fechar" aria-label="Fechar conversa"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </header>
@@ -31,4 +34,4 @@
     </form>
   </section>
 </div>
-<script src="{{ url_for('static', filename='js/azul-help.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261104-3') }}" defer></script>

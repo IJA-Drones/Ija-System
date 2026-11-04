@@ -56,6 +56,27 @@ class CentralTiPermissionsTests(unittest.TestCase):
                 for code in value if isinstance(value, list) else [value]:
                     self.assertIn(code[5:], AREA_CODES) if code.startswith('area:') else self.assertIn(code, PERMISSION_CODES)
 
+    def test_azul_page_and_sidebar_follow_grants_and_revocations(self):
+        self.configure('uvis', [], areas=['prefeitura'])
+        self.login('uvis')
+        response = self.client.get('/azul')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text.count('data-azul-help'), 1)
+        self.assertIn('href="/azul"', response.text)
+        self.assertNotIn('data-intent="start_report"', response.text)
+        self.assertNotIn('data-intent="attention_today"', response.text)
+        self.configure('uvis', [], areas=[])
+        self.assertEqual(self.client.get('/azul').status_code, 403)
+        denied = self.client.post('/api/azul/ajuda', json={'message': 'oi'})
+        self.assertEqual(denied.status_code, 403)
+        with self.app.test_request_context('/inicio'):
+            # The shared layout must also stop offering the page after revocation.
+            from flask_login import login_user
+            login_user(self.users['uvis'])
+            context = {}
+            self.app.update_template_context(context)
+            self.assertIsNone(context['azul_page_url'])
+
     def test_a_new_unmapped_route_is_detected_before_activation(self):
         from app.modules.gestao_ti.permissions import validate_route_policy
         from werkzeug.routing import Rule

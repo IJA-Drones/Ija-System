@@ -1,20 +1,53 @@
 (() => {
+  // Keep these bounds aligned with app/modules/chatbot/azul.py.
+  const maxHistoryMessages = 12, maxHistoryChars = 18000, maxHistoryMessageChars = 3000;
+  function boundedHistory(items) {
+    const recent = items.slice(-maxHistoryMessages).map(item => ({
+      role: item.role, content: item.content.slice(0, maxHistoryMessageChars)
+    }));
+    let length = recent.reduce((total, item) => total + item.content.length, 0);
+    // Drop whole old exchanges, so a reply never loses its preceding question.
+    while (recent.length && (length > maxHistoryChars || recent[0].role !== 'user')) {
+      length -= recent.shift().content.length;
+    }
+    return recent;
+  }
   document.querySelectorAll('[data-azul-help]').forEach(root => {
     if (root.dataset.initialized) return;
     root.dataset.initialized = '1';
+    const isPage = root.dataset.view === 'page';
     const panel = root.querySelector('.azul-panel');
     const toggle = root.querySelector('[data-toggle]');
     const messages = root.querySelector('[data-messages]');
     const form = root.querySelector('form');
-    const input = root.querySelector('input');
-    const send = form.querySelector('button');
+    const input = root.querySelector('textarea') || root.querySelector('input');
+    const send = form.querySelector('button[type="submit"]') || form.querySelector('button');
+    const stop = root.querySelector('[data-stop]');
+    const counter = root.querySelector('[data-count]');
     const status = root.querySelector('[data-status]');
-    const idleStatus = root.dataset.export === '1' ? 'Orientações e relatórios. Downloads exigem confirmação.' : 'Orientações e atalhos. Nenhuma alteração pelo chat.';
+    const idleStatus = isPage ? 'A Azul responde com base nas permissões do seu perfil.' : root.dataset.export === '1' ? 'Orientações e relatórios. Downloads exigem confirmação.' : 'Orientações e atalhos. Nenhuma alteração pelo chat.';
     let history = [], pending = null, generation = 0;
-    let transcript = [], restoring = false;
+    let transcript = [], restoring = false, accessChanged = false;
     const storageKey = root.dataset.chatKey ? 'azul-chat:' + root.dataset.chatKey : null;
+    // Keep only this login/access context in this tab's private chat storage.
+    if (storageKey) {
+      try {
+        for (let index = sessionStorage.length - 1; index >= 0; index--) {
+          const key = sessionStorage.key(index);
+          if (key?.startsWith('azul-chat:') && key !== storageKey) sessionStorage.removeItem(key);
+        }
+      } catch (_) { /* Storage may be disabled. */ }
+    }
+    function updateView() {
+      if (!isPage) return;
+      root.dataset.conversation = (accessChanged || transcript.some(item => item.role === 'user')) ? '1' : '0';
+      root.dataset.pending = pending ? '1' : '0';
+      if (stop) stop.hidden = !pending;
+      if (counter) counter.textContent = `${input.value.length} / 1.500`;
+    }
     function save() {
-      if (!storageKey || restoring) return;
+      updateView();
+      if (!storageKey || restoring || accessChanged) return;
       try { sessionStorage.setItem(storageKey, JSON.stringify({transcript: transcript.slice(-40), history,
         opened: !panel.hidden, interrupted: !!pending, savedAt: Date.now()})); } catch (_) { /* Storage may be disabled. */ }
     }
@@ -47,9 +80,9 @@
           renderLinks(bubble, item.links);
         }
         transcript = data.transcript.slice(-40);
-        history = data.history.slice(-6).map(item => ({role:item.role, content:item.content.slice(0,3000)}));
-        panel.hidden = !data.opened;
-        toggle.setAttribute('aria-expanded', String(!panel.hidden));
+        history = boundedHistory(data.history);
+        panel.hidden = isPage ? false : !data.opened;
+        toggle?.setAttribute('aria-expanded', String(!panel.hidden));
         restoring = false;
         if (data.interrupted) append('A navegação interrompeu a resposta anterior. Envie sua pergunta novamente.', 'assistant', 'faq');
         save();
@@ -57,6 +90,7 @@
       } catch (_) { restoring = false; return false; }
     }
     function append(text, role, mode) {
+      if (role === 'assistant') text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
       const bubble = document.createElement('div');
       bubble.className = `azul-message azul-${role}`;
       if (role === 'assistant') {
@@ -67,6 +101,21 @@
       const content = document.createElement('div');
       content.textContent = text;
       bubble.append(content);
+      if (isPage && role === 'assistant') {
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'azul-copy';
+        copy.textContent = 'Copiar resposta';
+        copy.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(text);
+            copy.textContent = 'Copiado';
+          } catch (_) {
+            status.textContent = 'Não foi possível copiar. Selecione o texto da resposta para copiar.';
+          }
+        });
+        bubble.append(copy);
+      }
       messages.append(bubble);
       messages.scrollTop = messages.scrollHeight;
       if (!restoring) {
@@ -77,20 +126,24 @@
       return bubble;
     }
     function welcome() {
+      if (isPage) { updateView(); return; }
       append('Olá! Sou a Azul.\nPosso explicar como usar o sistema e ajudar você a encontrar os recursos disponíveis para seu acesso.\n\nPor onde começamos?', 'assistant');
     }
     function open(value) {
+      if (isPage) return;
       panel.hidden = !value;
       toggle.setAttribute('aria-expanded', String(value));
       save();
       if (value) input.focus(); else toggle.focus();
     }
     function reset() {
+      if (accessChanged) return;
       generation++;
       if (pending) pending.abort();
       pending = null;
       history = [];
       transcript = [];
+      input.value = '';
       try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
       send.disabled = false;
       messages.replaceChildren();
@@ -145,6 +198,10 @@
           });
           if (!response.ok) {
             const error = await response.json().catch(() => ({}));
+            if (response.status === 401 || response.status === 403 || error.code === 'access_changed') {
+              invalidateAccess();
+              return;
+            }
             throw new Error(error.error || 'Não foi possível gerar o arquivo. Confira seu acesso e peça uma nova prévia.');
           }
           const expected = preview.format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf';
@@ -171,9 +228,33 @@
       card.append(confirm, cancel, feedback);
       bubble.append(card);
     }
+    function invalidateAccess() {
+      generation++;
+      if (pending) pending.abort();
+      pending = null;
+      accessChanged = true;
+      history = [];
+      transcript = [];
+      input.value = '';
+      input.disabled = true;
+      send.disabled = true;
+      try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
+      messages.replaceChildren();
+      root.querySelector('[data-profile]').textContent = '';
+      root.querySelectorAll('[data-question], [data-clear]').forEach(button => { button.disabled = true; });
+      const bubble = append('Seu acesso ou sessão mudou. Recarregue a página para continuar com as permissões atuais.', 'assistant', 'faq');
+      const reload = document.createElement('button');
+      reload.type = 'button';
+      reload.className = 'azul-reload';
+      reload.textContent = 'Recarregar página';
+      reload.addEventListener('click', () => window.location.reload());
+      bubble.append(reload);
+      status.textContent = 'Conversa encerrada para atualizar seu acesso.';
+      updateView();
+    }
     async function ask(text, intent) {
       text = text.trim();
-      if (!text || pending || text.length > 1500) return;
+      if (!text || pending || accessChanged || text.length > 1500) return;
       open(true);
       append(text, 'user');
       input.value = '';
@@ -188,10 +269,14 @@
         const response = await fetch(root.dataset.url, {
           method: 'POST', signal: controller.signal,
           headers: {'Content-Type': 'application/json', 'X-CSRFToken': root.dataset.csrf},
-          body: JSON.stringify({message: text, history: intent === 'start_report' ? [] : history, page: root.dataset.page, intent})
+          body: JSON.stringify({message: text, history: intent === 'start_report' ? [] : history, page: root.dataset.page, intent, chat_key: root.dataset.chatKey})
         });
         const data = await response.json().catch(() => ({}));
         if (version !== generation) return;
+        if (response.status === 401 || response.status === 403 || data.code === 'access_changed') {
+          invalidateAccess();
+          return;
+        }
         if (!response.ok || !data.answer) throw new Error(data.answer || data.error || 'Sua sessão pode ter expirado. Atualize a página e tente novamente.');
         const bubble = append(data.answer, 'assistant', data.mode);
         const entry = transcript[transcript.length - 1];
@@ -204,7 +289,7 @@
           renderLinks(bubble, entry.links);
         }
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
-        history = [...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer.slice(0,3000)}].slice(-6);
+        history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);
         messages.scrollTop = messages.scrollHeight;
       } catch (error) {
         if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'faq');
@@ -219,10 +304,30 @@
         }
       }
     }
-    toggle.addEventListener('click', () => open(panel.hidden));
-    root.querySelector('[data-close]').addEventListener('click', () => open(false));
+    toggle?.addEventListener('click', () => open(panel.hidden));
+    stop?.addEventListener('click', () => {
+      if (!pending) return;
+      generation++;
+      pending.abort();
+      pending = null;
+      send.disabled = false;
+      append('Resposta interrompida. Você pode enviar outra pergunta.', 'assistant', 'faq');
+      status.textContent = idleStatus;
+      save();
+      input.focus();
+    });
+    if (isPage) {
+      input.addEventListener('input', updateView);
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+          event.preventDefault();
+          ask(input.value);
+        }
+      });
+    }
+    root.querySelector('[data-close]')?.addEventListener('click', () => open(false));
     root.querySelector('[data-clear]').addEventListener('click', reset);
-    root.addEventListener('keydown', event => { if (event.key === 'Escape' && !panel.hidden) open(false); });
+    root.addEventListener('keydown', event => { if (!isPage && event.key === 'Escape' && !panel.hidden) open(false); });
     form.addEventListener('submit', event => { event.preventDefault(); ask(input.value); });
     root.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => ask(button.dataset.question, button.dataset.intent)));
     if (!restore()) welcome();
