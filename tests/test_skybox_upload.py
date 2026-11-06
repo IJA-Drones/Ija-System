@@ -105,8 +105,76 @@ class SkyboxUploadTests(unittest.TestCase):
 
         self.assertEqual(result["severity"], "success")
         self.assertEqual([step["status"] for step in result["steps"]], ["ok", "ok", "ok"])
-        self.assertIn(("PUT", next(path for method, path in calls if method == "PUT")), calls)
-        self.assertEqual([method for method, _ in calls[-3:]], ["DELETE", "DELETE", "DELETE"])
+        uploaded_path = next(path for method, path in calls if method == "PUT")
+        self.assertEqual(
+            [path for method, path in calls if method == "DELETE"],
+            [uploaded_path, uploaded_path.rsplit("/", 1)[0]],
+        )
+
+    def test_skybox_roundtrip_distinguishes_authentication_and_permissions_at_each_stage(self):
+        stages = (
+            ("MKCOL", "Preparar pasta", 0),
+            ("PUT", "Upload de teste", 1),
+            ("PROPFIND", "Confirmação WebDAV", 2),
+        )
+        for failed_method, stage, completed_steps in stages:
+            for status in (401, 403):
+                with self.subTest(method=failed_method, status=status):
+                    calls = []
+
+                    def fake_request(method, remote_path, **kwargs):
+                        calls.append((method, remote_path))
+                        return SimpleNamespace(
+                            status_code=status if method == failed_method else
+                            {"MKCOL": 201, "PUT": 201, "PROPFIND": 207, "DELETE": 204}[method],
+                            text="upstream-sensitive-body",
+                        )
+
+                    skybox._request = fake_request
+                    with self.assertLogs(self.app.logger, level="WARNING") as logs:
+                        result = skybox.test_skybox_roundtrip()
+
+                    expected_status = "Autenticação rejeitada" if status == 401 else "Acesso negado"
+                    self.assertEqual(result["status"], expected_status)
+                    self.assertEqual(result["severity"], "danger")
+                    self.assertIn(f"HTTP {status}", result["detail"])
+                    self.assertIn(f"{stage} ({failed_method})", result["detail"])
+                    self.assertEqual(len(result["steps"]), completed_steps)
+                    self.assertIn(f"{stage} ({failed_method})", " ".join(logs.output))
+                    self.assertIn(f"HTTP {status}", " ".join(logs.output))
+                    for output in (str(result), " ".join(logs.output)):
+                        self.assertNotIn("upstream-sensitive-body", output)
+                        self.assertNotIn(self.app.config["SKYBOX_APP_PASSWORD"], output)
+                    if status == 401:
+                        self.assertIn("senha principal", result["detail"])
+                        self.assertIn("SKYBOX_APP_PASSWORD", result["detail"])
+                    else:
+                        self.assertIn("permissões", result["detail"])
+                        self.assertNotIn("SKYBOX_APP_PASSWORD", result["detail"])
+                    # A failed authentication/permission check is never retried.
+                    self.assertEqual(sum(method == failed_method for method, _ in calls), 1)
+                    if failed_method == "PROPFIND":
+                        uploaded_path = next(path for method, path in calls if method == "PUT")
+                        self.assertEqual(
+                            [path for method, path in calls if method == "DELETE"],
+                            [uploaded_path, uploaded_path.rsplit("/", 1)[0]],
+                        )
+                    else:
+                        self.assertFalse(any(method == "DELETE" for method, _ in calls))
+
+    def test_skybox_roundtrip_preserves_http_status_for_other_confirmation_failures(self):
+        def fake_request(method, remote_path, **kwargs):
+            return SimpleNamespace(status_code={
+                "MKCOL": 201, "PUT": 201, "PROPFIND": 503, "DELETE": 204,
+            }[method], text="")
+
+        skybox._request = fake_request
+        result = skybox.test_skybox_roundtrip()
+
+        self.assertEqual(result["status"], "Falha")
+        self.assertEqual(result["severity"], "danger")
+        self.assertIn("HTTP 503", result["detail"])
+        self.assertIn("Confirmação WebDAV (PROPFIND)", result["detail"])
 
 
 if __name__ == "__main__":

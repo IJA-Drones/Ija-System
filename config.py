@@ -145,6 +145,8 @@ class Config:
     AUDIT_SKYBOX_ENABLED = os.getenv("AUDIT_SKYBOX_ENABLED", "1").lower() in {"1", "true", "yes", "on"}
     AUDIT_SKYBOX_NAMESPACE = os.getenv("AUDIT_SKYBOX_NAMESPACE", "")
     AUDIT_SKYBOX_INTERVAL_SECONDS = int(os.getenv("AUDIT_SKYBOX_INTERVAL_SECONDS", "60"))
+    AUDIT_SKYBOX_BATCH_MAX_RECORDS = int(os.getenv("AUDIT_SKYBOX_BATCH_MAX_RECORDS", "1000"))
+    AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS = int(os.getenv("AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS", "300"))
     AUDIT_SYSLOG_ENABLED = os.getenv('AUDIT_SYSLOG_ENABLED', '0').lower() in {'1', 'true', 'yes', 'on'}
     AUDIT_SYSLOG_HOST = os.getenv('AUDIT_SYSLOG_HOST', '')
     AUDIT_SYSLOG_PORT = int(os.getenv('AUDIT_SYSLOG_PORT', '6514'))

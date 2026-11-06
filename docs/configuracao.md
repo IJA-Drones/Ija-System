@@ -18,6 +18,9 @@ Referência conferida em 25/09/2026 contra [config.py](../config.py), [run.py](.
 | `IJA_CREATE_ALL` | Inativo | Somente o valor `1` aciona `db.create_all()` ao executar `run.py` diretamente; não substitui Alembic. |
 | `USER_PRESENCE_UPDATE_INTERVAL_SECONDS` | `300` | Intervalo de atualização de presença. Não é o timeout da sessão. |
 | `AUDIT_RETENTION_MAX_RECORDS` | `15000` | Limita quantidade de registros de auditoria; não expressa dias de retenção. Deve ser inteiro. |
+| `AUDIT_SKYBOX_INTERVAL_SECONDS` | `60` | Intervalo de consulta da fila de auditoria no banco; consultar não implica enviar ao Skybox. |
+| `AUDIT_SKYBOX_BATCH_MAX_RECORDS` | `1000` | Máximo de eventos por lote e volume que libera o envio, separado por prefeitura e limitado também a 4 MiB. |
+| `AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS` | `300` | Espera máxima para acumular um lote menor, verificada no próximo ciclo do trabalhador. |
 
 A porta de `run.py` é fixa em **5002**. Não existe leitura de `PORT` nesse arquivo. `APP_ENV` não seleciona configuração Flask nem desliga tarefas. Não existe suporte atual a `IJA_AUTO_DB_MIGRATE`: o Procfile executa migrações em toda inicialização.
 

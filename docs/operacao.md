@@ -99,13 +99,17 @@ Aplicar a migração `a6e3f8129c40` antes de reiniciar o código novo. Ela ampli
 
 O caminho remoto é `auditoria_sistema/<instalacao>/prefeitura-<id>|sistema/AAAA/MM/DD/<lote>.jsonl`. Cada linha é um evento JSON; datas são UTC. `AUDIT_SKYBOX_NAMESPACE` pode acrescentar um prefixo como `teste` ou `producao` (letras, números, hífen e sublinhado). Bancos clonados copiam o identificador da instalação: use namespaces diferentes antes de ativar ambos. Os arquivos são privados e usam as credenciais Skybox já configuradas.
 
-Por padrão, `AUDIT_SKYBOX_ENABLED=1`; o trabalhador começa após a primeira requisição e verifica a fila a cada `AUDIT_SKYBOX_INTERVAL_SECONDS=60`. Em testes automatizados ele não inicia. A fila sobrevive a reinícios e usa reserva de 15 minutos por lote; uma reserva expirada é recuperada. Reenvios usam exatamente o mesmo conteúdo e caminho. Após confirmação de conteúdo remoto, o payload duplicado da fila é liberado e ficam os metadados. A aplicação não remove os arquivos remotos automaticamente.
+Por padrão, `AUDIT_SKYBOX_ENABLED=1`; o trabalhador começa após a primeira requisição e consulta a fila no banco a cada `AUDIT_SKYBOX_INTERVAL_SECONDS=60`. A consulta não chama o Skybox quando não há lote pronto. Os eventos são agrupados por prefeitura até `AUDIT_SKYBOX_BATCH_MAX_RECORDS=1000`, até o limite de 4 MiB ou até o evento mais antigo aguardar `AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS=300`. O prazo é verificado no ciclo seguinte, portanto o envio de um lote pequeno pode começar aproximadamente um intervalo depois dos cinco minutos, além de atrasos por fila ou falha. Eventos de uma prefeitura com pouco movimento não bloqueiam lotes prontos de outra.
+
+Em testes automatizados o trabalhador não inicia. A fila sobrevive a reinícios e usa reserva de 15 minutos por lote; uma reserva expirada é recuperada. Reenvios usam exatamente o mesmo conteúdo e caminho, inclusive para lotes pequenos preparados antes da mudança de agrupamento. Um evento individual maior que 4 MiB é preservado inteiro em um lote próprio. Após confirmação de conteúdo remoto por download e SHA-256, o payload duplicado da fila é liberado e ficam os metadados. A aplicação não remove os arquivos remotos automaticamente. A preparação de pastas tenta primeiro a pasta final; só cria os ancestrais quando ela ainda não pode ser criada. Em uma pasta existente, um lote exige uma chamada de preparação, um upload e um download de verificação.
 
 Para processar a fila sem esperar o trabalhador (ou por um agendador externo):
 
 ```bash
 flask --app run.py auditoria-enviar --max-lotes 5
 ```
+
+Para enviar também os eventos recentes que ainda não completaram um bloco, use `flask --app run.py auditoria-enviar --max-lotes 5 --force`. Essa opção antecipa apenas a formação de novos lotes; não ignora reservas nem os horários de nova tentativa dos lotes que já falharam. O agrupamento reduz tráfego, mas não revalida credenciais rejeitadas pelo Skybox.
 
 O limite `AUDIT_RETENTION_MAX_RECORDS=15000` é aplicado somente a eventos antigos já arquivados e verificados; pendentes podem excedê-lo. Não há limpeza silenciosa de pendências se a conexão remota falhar. A tela **Logs de Usuários**, exclusiva de DEV, mostra pendências, falhas de envio e última verificação, além de filtros de prefeitura/resultado e diferenças por registro. Os links de download apontam para rotas autenticadas da aplicação, nunca para URLs públicas do Skybox.
 

@@ -14,7 +14,7 @@ from alembic.operations import Operations
 from flask import Blueprint, Flask, Response, abort, request
 from flask_login import LoginManager, current_user, login_required
 from jinja2 import ChoiceLoader, DictLoader
-from sqlalchemy import create_engine, inspect, update
+from sqlalchemy import create_engine, inspect, select, update
 
 from app.extensions import db
 from app.models import AuditoriaArquivo, AuditoriaInstalacao, AuditoriaUsuario, Prefeitura, Usuario
@@ -251,13 +251,136 @@ def seed_events(count=3, tenant=1):
             conn.execute(AuditoriaUsuario.__table__.insert().values(**row))
 
 
+def test_recent_events_wait_without_creating_files_or_contacting_skybox(app):
+    with app.app_context():
+        seed_events()
+        with patch('app.modules.auditoria.archive.skybox_enabled', return_value=True), \
+             patch('app.modules.auditoria.archive.upload_file_to_skybox') as upload, \
+             patch('app.modules.auditoria.archive.download_skybox_bytes') as download:
+            assert process_archive() == {'enviados': 0, 'disponivel': True}
+        upload.assert_not_called()
+        download.assert_not_called()
+        assert AuditoriaArquivo.query.count() == 0
+        assert AuditoriaUsuario.query.filter_by(arquivo_id=None, arquivado_em=None).count() == 3
+
+
+def test_batch_flushes_at_default_record_limit_and_keeps_remainder_pending(app):
+    with app.app_context():
+        seed_events(999)
+        assert prepare_batch() is None
+        seed_events(2)
+        batch_id = prepare_batch()
+        batch = db.session.get(AuditoriaArquivo, batch_id)
+        assert batch.quantidade == 1000
+        assert len(batch.conteudo.splitlines()) == 1000
+        assert AuditoriaUsuario.query.filter_by(arquivo_id=None).count() == 1
+        assert prepare_batch() is None
+
+
+@pytest.mark.parametrize('wait_seconds', [None, 600])
+def test_small_batch_flushes_at_maximum_wait(app, wait_seconds):
+    with app.app_context():
+        if wait_seconds is not None:
+            app.config['AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS'] = wait_seconds
+        seed_events()
+        oldest = AuditoriaUsuario.query.order_by(AuditoriaUsuario.criado_em).first().criado_em
+        wait = wait_seconds if wait_seconds is not None else 300
+        with patch('app.modules.auditoria.archive._now', return_value=oldest + timedelta(seconds=wait - 1)):
+            assert prepare_batch() is None
+        with patch('app.modules.auditoria.archive._now', return_value=oldest + timedelta(seconds=wait)):
+            batch_id = prepare_batch()
+        assert db.session.get(AuditoriaArquivo, batch_id).quantidade == 3
+
+
+@pytest.mark.parametrize('ready_tenant', [2, None])
+def test_young_tenant_does_not_block_another_ready_tenant(app, ready_tenant):
+    with app.app_context():
+        seed_events(1, 1)
+        seed_events(2, ready_tenant)
+        with db.engine.begin() as conn:
+            conn.execute(update(AuditoriaUsuario).where(AuditoriaUsuario.prefeitura_id == ready_tenant)
+                         .values(criado_em=utcnow() - timedelta(minutes=6)))
+        batch_id = prepare_batch()
+        batch = db.session.get(AuditoriaArquivo, batch_id)
+        assert batch.prefeitura_id == ready_tenant
+        assert batch.quantidade == 2
+        expected_folder = f'prefeitura-{ready_tenant}' if ready_tenant is not None else 'sistema'
+        assert f'/{expected_folder}/' in batch.caminho
+        assert all(json.loads(line)['prefeitura_id'] == ready_tenant for line in batch.conteudo.splitlines())
+        assert AuditoriaUsuario.query.filter_by(prefeitura_id=1, arquivo_id=None).count() == 1
+
+
+def test_configured_record_limit_selects_a_full_block(app):
+    with app.app_context():
+        app.config['AUDIT_SKYBOX_BATCH_MAX_RECORDS'] = 3
+        seed_events(4)
+        batch_id = prepare_batch()
+        assert db.session.get(AuditoriaArquivo, batch_id).quantidade == 3
+        assert AuditoriaUsuario.query.filter_by(arquivo_id=None).count() == 1
+
+
+@pytest.mark.parametrize('extra_byte', [0, 1])
+def test_byte_limit_flushes_young_batch_without_splitting_events(app, extra_byte):
+    from app.modules.auditoria.archive import _encode
+    with app.app_context():
+        seed_events(3)
+        with db.engine.begin() as conn:
+            conn.execute(update(AuditoriaUsuario).values(detalhes={'texto': 'ação' * 10}))
+            rows = conn.execute(select(AuditoriaUsuario.__table__).order_by(AuditoriaUsuario.id)).mappings().all()
+        expected = ''.join(_encode(row) for row in rows[:2])
+        byte_limit = len(expected.encode('utf-8')) + extra_byte
+        with patch('app.modules.auditoria.archive.MAX_BATCH_BYTES', byte_limit):
+            batch_id = prepare_batch()
+        batch = db.session.get(AuditoriaArquivo, batch_id)
+        assert batch.quantidade == 2
+        assert batch.conteudo == expected
+        assert len(batch.conteudo.encode('utf-8')) <= byte_limit
+        assert AuditoriaUsuario.query.filter_by(arquivo_id=None).count() == 1
+
+
+def test_single_event_larger_than_byte_limit_is_archived_whole(app):
+    from app.modules.auditoria.archive import _encode
+    with app.app_context():
+        seed_events(2)
+        with db.engine.connect() as conn:
+            row = conn.execute(select(AuditoriaUsuario.__table__).order_by(AuditoriaUsuario.id)).mappings().first()
+        expected = _encode(row)
+        with patch('app.modules.auditoria.archive.MAX_BATCH_BYTES', 100):
+            batch_id = prepare_batch()
+        batch = db.session.get(AuditoriaArquivo, batch_id)
+        assert batch.quantidade == 1
+        assert batch.conteudo == expected
+        assert len(batch.conteudo.encode('utf-8')) > 100
+        assert AuditoriaUsuario.query.filter_by(arquivo_id=None).count() == 1
+
+
+def test_manual_force_flushes_a_young_block_and_still_verifies_its_contents(app):
+    with app.app_context():
+        seed_events()
+        payloads = []
+
+        def upload(storage, remote_path, *, recoverable):
+            assert recoverable is False
+            payloads.append(storage.stream.getvalue())
+            return 'skybox://' + remote_path
+
+        with patch('app.modules.auditoria.archive.skybox_enabled', return_value=True), \
+             patch('app.modules.auditoria.archive.upload_file_to_skybox', side_effect=upload) as send, \
+             patch('app.modules.auditoria.archive.download_skybox_bytes', side_effect=lambda *a, **kw: payloads[-1]) as verify:
+            result = app.test_cli_runner().invoke(args=['auditoria-enviar', '--force'])
+        assert result.exit_code == 0, result.output
+        assert 'Lotes enviados: 1.' in result.output
+        assert send.call_count == verify.call_count == 1
+        assert AuditoriaUsuario.query.filter(AuditoriaUsuario.arquivado_em.isnot(None)).count() == 3
+
+
 def test_skybox_batch_is_separated_verified_and_pending_records_are_never_trimmed(app):
     from app.modules.auditoria.service import trim_auditoria_usuarios
     with app.app_context():
         seed_events(3,1); seed_events(1,2)
         with db.engine.begin() as conn:
             assert trim_auditoria_usuarios(conn,1)==0
-        batch_id=prepare_batch()
+        batch_id=prepare_batch(force=True)
         batch=db.session.get(AuditoriaArquivo,batch_id)
         payload=batch.conteudo.encode()
         assert '/prefeitura-1/' in batch.caminho and batch.caminho.startswith('auditoria_sistema/')
@@ -282,7 +405,7 @@ def test_skybox_batch_is_separated_verified_and_pending_records_are_never_trimme
 def test_retry_preserves_same_payload_and_path_without_acknowledging_failed_copy(app,failure):
     with app.app_context():
         seed_events()
-        batch_id=prepare_batch()
+        batch_id=prepare_batch(force=True)
         batch=db.session.get(AuditoriaArquivo,batch_id)
         payload,path=batch.conteudo.encode(),batch.caminho
         db.session.remove()
@@ -304,7 +427,7 @@ def test_retry_preserves_same_payload_and_path_without_acknowledging_failed_copy
 
 def test_concurrent_delivery_respects_lease_and_recovers_expired_worker(app):
     with app.app_context():
-        seed_events(); batch_id=prepare_batch()
+        seed_events(); batch_id=prepare_batch(force=True)
         batch=db.session.get(AuditoriaArquivo,batch_id)
         payload=batch.conteudo.encode()
         batch.lease_token='abandoned'; batch.lease_ate=utcnow()-timedelta(seconds=1)

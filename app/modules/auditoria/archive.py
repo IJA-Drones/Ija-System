@@ -38,45 +38,59 @@ def _encode(row):
                       default=lambda value: value.isoformat(), separators=(',', ':')) + '\n'
 
 
-def prepare_batch():
+def prepare_batch(*, force=False):
     events, archives = AuditoriaUsuario.__table__, AuditoriaArquivo.__table__
     now = _now()
+    max_records = max(1, int(current_app.config.get('AUDIT_SKYBOX_BATCH_MAX_RECORDS', 1000)))
+    max_wait = max(0, int(current_app.config.get('AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS', 300)))
+    cutoff = now - timedelta(seconds=max_wait)
     with db.engine.begin() as conn:
         installation = conn.execute(select(AuditoriaInstalacao.identificador).where(AuditoriaInstalacao.id == 1)).scalar_one()
-        first = conn.execute(select(events.c.id, events.c.prefeitura_id).where(events.c.arquivo_id.is_(None))
-                             .order_by(events.c.id).limit(1).with_for_update(skip_locked=True)).first()
-        if first is None:
-            return None
-        rows = conn.execute(select(events).where(events.c.arquivo_id.is_(None),
-                            events.c.prefeitura_id == first.prefeitura_id)
-                            .order_by(events.c.id).limit(200).with_for_update(skip_locked=True)).mappings().all()
-        lines, ids, size = [], [], 0
-        for row in rows:
-            line = _encode(row)
-            length = len(line.encode('utf-8'))
-            if lines and size + length > MAX_BATCH_BYTES:
-                break
-            lines.append(line)
-            ids.append(row['id'])
-            size += length
-        if not ids:
-            return None
-        batch_id = str(uuid4())
-        namespace = current_app.config.get('AUDIT_SKYBOX_NAMESPACE', '').strip()
-        if namespace and not re.fullmatch(r'[A-Za-z0-9_-]{1,50}', namespace):
-            raise ValueError('AUDIT_SKYBOX_NAMESPACE inválido.')
-        folder = f'{namespace}-{installation}' if namespace else installation
-        tenant = f'prefeitura-{first.prefeitura_id}' if first.prefeitura_id is not None else 'sistema'
-        path = f'auditoria_sistema/{folder}/{tenant}/{now:%Y/%m/%d}/{batch_id}.jsonl'
-        content = ''.join(lines)
-        conn.execute(archives.insert().values(id=batch_id, caminho=path, conteudo=content,
-            sha256=hashlib.sha256(content.encode('utf-8')).hexdigest(), quantidade=len(ids),
-            prefeitura_id=first.prefeitura_id, criado_em=now, tentativas=0, proxima_tentativa=now))
-        changed = conn.execute(update(events).where(events.c.id.in_(ids), events.c.arquivo_id.is_(None))
-                               .values(arquivo_id=batch_id))
-        if changed.rowcount != len(ids):
-            raise RuntimeError('Lote concorrente; a seleção será repetida.')
-        return batch_id
+        tenants = conn.execute(select(events.c.prefeitura_id).where(events.c.arquivo_id.is_(None))
+                               .group_by(events.c.prefeitura_id).order_by(func.min(events.c.id))).scalars().all()
+    for prefeitura_id in tenants:
+        # Release a young tenant's locks before checking the next one. Eligibility
+        # uses only rows actually acquired, not counts from before SKIP LOCKED.
+        with db.engine.begin() as conn:
+            rows = conn.execute(select(events).where(events.c.arquivo_id.is_(None),
+                                events.c.prefeitura_id == prefeitura_id)
+                                .order_by(events.c.id).limit(max_records).with_for_update(skip_locked=True)).mappings().all()
+            lines, ids, size, oldest = [], [], 0, None
+            size_limited = False
+            for row in rows:
+                line = _encode(row)
+                length = len(line.encode('utf-8'))
+                if lines and size + length > MAX_BATCH_BYTES:
+                    size_limited = True
+                    break
+                lines.append(line)
+                ids.append(row['id'])
+                size += length
+                oldest = min(oldest, row['criado_em']) if oldest is not None else row['criado_em']
+                if size >= MAX_BATCH_BYTES:
+                    size_limited = True
+                    break
+            if not ids:
+                continue
+            if not force and len(ids) < max_records and not size_limited and oldest > cutoff:
+                continue
+            batch_id = str(uuid4())
+            namespace = current_app.config.get('AUDIT_SKYBOX_NAMESPACE', '').strip()
+            if namespace and not re.fullmatch(r'[A-Za-z0-9_-]{1,50}', namespace):
+                raise ValueError('AUDIT_SKYBOX_NAMESPACE inválido.')
+            folder = f'{namespace}-{installation}' if namespace else installation
+            tenant = f'prefeitura-{prefeitura_id}' if prefeitura_id is not None else 'sistema'
+            path = f'auditoria_sistema/{folder}/{tenant}/{now:%Y/%m/%d}/{batch_id}.jsonl'
+            content = ''.join(lines)
+            conn.execute(archives.insert().values(id=batch_id, caminho=path, conteudo=content,
+                sha256=hashlib.sha256(content.encode('utf-8')).hexdigest(), quantidade=len(ids),
+                prefeitura_id=prefeitura_id, criado_em=now, tentativas=0, proxima_tentativa=now))
+            changed = conn.execute(update(events).where(events.c.id.in_(ids), events.c.arquivo_id.is_(None))
+                                   .values(arquivo_id=batch_id))
+            if changed.rowcount != len(ids):
+                raise RuntimeError('Lote concorrente; a seleção será repetida.')
+            return batch_id
+    return None
 
 
 def deliver_batch():
@@ -124,14 +138,14 @@ def deliver_batch():
     return True
 
 
-def process_archive(max_batches=5):
+def process_archive(max_batches=5, *, force=False):
     if not current_app.config.get('AUDIT_SKYBOX_ENABLED', True) or not skybox_enabled():
         return {'enviados': 0, 'disponivel': False}
     sent = 0
     for _ in range(max_batches):
         outcome = deliver_batch()
         if outcome is None:
-            if prepare_batch() is None:
+            if prepare_batch(force=force) is None:
                 break
             outcome = deliver_batch()
         if outcome is False:
@@ -176,7 +190,8 @@ def register_archive_worker(app):
 
     @app.cli.command('auditoria-enviar')
     @click.option('--max-lotes', default=5, type=click.IntRange(1, 100))
-    def send_archive(max_lotes):
+    @click.option('--force', is_flag=True, help='Envia também blocos incompletos sem aguardar a janela de agrupamento.')
+    def send_archive(max_lotes, force):
         """Send pending audit batches to Skybox (also usable by an external scheduler)."""
-        result = process_archive(max_lotes)
+        result = process_archive(max_lotes, force=force)
         click.echo(f'Lotes enviados: {result["enviados"]}. Skybox configurado: {result["disponivel"]}.')
