@@ -586,12 +586,16 @@ def _build_os_agro_form_options(*, piloto_logado=None):
     return equipes, pilotos, equipamentos
 
 
-def _equipamento_agro_pode_ser_drone(equipamento):
+def _equipamento_agro_pode_ser_drone(equipamento, *, funcao_operacional=None):
     if equipamento is None:
         return False
 
     tipo = (equipamento.tipo or "").strip().lower()
     funcao = (equipamento.funcao_operacional or "").strip().lower()
+    if "bateria" in tipo:
+        return False
+    if funcao_operacional is not None and funcao != funcao_operacional.strip().lower():
+        return False
     return "drone" in tipo or funcao in {"pulverizacao", "mapeamento", "apoio"}
 
 
@@ -657,6 +661,14 @@ def _build_os_agro_form_context(
         "equipes": equipes,
         "pilotos": pilotos,
         "equipamentos": equipamentos,
+        "equipamentos_pulverizacao": [
+            item for item in equipamentos
+            if _equipamento_agro_pode_ser_drone(item, funcao_operacional="pulverizacao")
+        ],
+        "equipamentos_mapeamento": [
+            item for item in equipamentos
+            if _equipamento_agro_pode_ser_drone(item, funcao_operacional="mapeamento")
+        ],
         "equipamentos_meta": {item.id: _build_equipamento_agro_meta(item) for item in equipamentos},
         "status_options": AGRO_OS_STATUS_OPTIONS,
         "pilot_form_mode": pilot_form_mode,
@@ -3370,6 +3382,8 @@ def _validate_os_agro_form(form, equipes, equipamentos, *, ordem_atual=None):
         drone_pulverizacao = next((item for item in equipamentos if item.id == drone_pulverizacao_id), None)
         if not drone_pulverizacao:
             errors["drone_pulverizacao_id"] = "Selecione um drone de pulverizacao valido."
+        elif not _equipamento_agro_pode_ser_drone(drone_pulverizacao, funcao_operacional="pulverizacao"):
+            errors["drone_pulverizacao_id"] = "Selecione um drone de pulverizacao, nao uma bateria ou outro equipamento."
         elif equipe_id and drone_pulverizacao.equipe_agro_id not in (None, equipe_id):
             errors["drone_pulverizacao_id"] = "O drone de pulverizacao precisa pertencer a equipe selecionada."
 
@@ -3379,6 +3393,8 @@ def _validate_os_agro_form(form, equipes, equipamentos, *, ordem_atual=None):
         drone_mapeamento = next((item for item in equipamentos if item.id == drone_mapeamento_id), None)
         if not drone_mapeamento:
             errors["drone_mapeamento_id"] = "Selecione um drone de mapeamento valido."
+        elif not _equipamento_agro_pode_ser_drone(drone_mapeamento, funcao_operacional="mapeamento"):
+            errors["drone_mapeamento_id"] = "Selecione um drone de mapeamento, nao uma bateria ou outro equipamento."
         elif equipe_id and drone_mapeamento.equipe_agro_id not in (None, equipe_id):
             errors["drone_mapeamento_id"] = "O drone de mapeamento precisa pertencer a equipe selecionada."
 

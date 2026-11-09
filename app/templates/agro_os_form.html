@@ -154,7 +154,7 @@
             <label class="form-label fw-bold small text-muted">Drone de pulverizacao</label>
             <select name="drone_pulverizacao_id" id="drone_pulverizacao_id" class="form-select {% if errors.get('drone_pulverizacao_id') %}is-invalid{% endif %}">
               <option value="">Selecione...</option>
-              {% for equipamento in equipamentos %}
+              {% for equipamento in equipamentos_pulverizacao %}
                 <option value="{{ equipamento.id }}" data-equipe-id="{{ equipamento.equipe_agro_id or '' }}" {% if form.get('drone_pulverizacao_id')|string == equipamento.id|string %}selected{% endif %}>{{ equipamento.identificacao }} - {{ equipamento.modelo }}</option>
               {% endfor %}
             </select>
@@ -165,7 +165,7 @@
             <label class="form-label fw-bold small text-muted">Drone de mapeamento</label>
             <select name="drone_mapeamento_id" id="drone_mapeamento_id" class="form-select {% if errors.get('drone_mapeamento_id') %}is-invalid{% endif %}">
               <option value="">Selecione...</option>
-              {% for equipamento in equipamentos %}
+              {% for equipamento in equipamentos_mapeamento %}
                 <option value="{{ equipamento.id }}" data-equipe-id="{{ equipamento.equipe_agro_id or '' }}" {% if form.get('drone_mapeamento_id')|string == equipamento.id|string %}selected{% endif %}>{{ equipamento.identificacao }} - {{ equipamento.modelo }}</option>
               {% endfor %}
             </select>
