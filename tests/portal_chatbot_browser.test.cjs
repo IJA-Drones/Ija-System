@@ -80,7 +80,9 @@ for (const outcome of ['success', 'http-error', 'network-error', 'timeout']) {
 
 test('chat form opts out of the global loading handler', () => {
   const template = fs.readFileSync(path.join(__dirname, '../app/templates/_portal_chatbot.html'), 'utf8');
-  assert.match(template, /<form class="form-no-loading">/);
+  assert.ok(template.includes("include '_azul_composer.html'"));
+  const composer = fs.readFileSync(path.join(__dirname, '../app/templates/_azul_composer.html'), 'utf8');
+  assert.match(composer, /<form class="azul-compose form-no-loading"/);
   const base = fs.readFileSync(path.join(__dirname, '../app/templates/base.html'), 'utf8');
   assert.ok(base.includes(':not(.form-no-loading)'));
 });
@@ -127,6 +129,7 @@ test('quick answers avoid API calls and remain available after clearing', async 
   const {elements, requests} = setup({answer:'unused'});
   let suggestions = elements['[role="log"]'].children.at(-1);
   assert.equal(suggestions.className, 'portal-chat-suggestions');
+  assert.equal(suggestions.open, false);
   assert.equal(suggestions.children.length, 6);
   suggestions.children[3].listeners.click();
   assert.equal(requests.length, 0);

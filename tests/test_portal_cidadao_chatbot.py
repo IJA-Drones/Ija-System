@@ -33,7 +33,7 @@ def test_success_uses_private_bounded_api_request(client):
     with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
         create = sdk.return_value.__enter__.return_value.responses.create
         create.return_value = SimpleNamespace(output_text='Use Enviar relato.')
-        response = post(client, {'message': 'Como envio?', 'history': [{'role': 'user', 'content': 'Olá'}]})
+        response = post(client, {'message': 'Como envio?', 'history': [{'role': 'user', 'content': 'Como registrar um foco?'}]})
         assert response.status_code == 200
         assert response.json['answer'] == 'Use Enviar relato.'
         args = create.call_args.kwargs
@@ -64,7 +64,7 @@ def test_requires_page_session(client):
 
 def test_missing_key(app, client):
     app.config['OPENAI_API_KEY'] = ''
-    assert post(client, {'message': 'oi'}).status_code == 503
+    assert post(client, {'message': 'Como prevenir dengue?'}).status_code == 503
 
 
 def test_oversized_body(client):
@@ -74,7 +74,7 @@ def test_oversized_body(client):
 def test_provider_failure_is_sanitized(client):
     with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
         sdk.return_value.__enter__.return_value.responses.create.side_effect = OpenAIError('secret provider detail')
-        response = post(client, {'message': 'oi'})
+        response = post(client, {'message': 'Como prevenir dengue?'})
         assert response.status_code == 502
         assert 'secret provider detail' not in response.get_data(as_text=True)
 
@@ -82,7 +82,7 @@ def test_provider_failure_is_sanitized(client):
 def test_empty_answer(client):
     with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
         sdk.return_value.__enter__.return_value.responses.create.return_value = SimpleNamespace(output_text='')
-        assert post(client, {'message': 'oi'}).status_code == 502
+        assert post(client, {'message': 'Como prevenir dengue?'}).status_code == 502
 
 
 def test_daily_quota_is_atomic_across_connections(app):
@@ -106,7 +106,7 @@ def test_ip_quota_and_expiry(app):
 def test_quota_prevents_provider_call(app, client):
     app.config['PORTAL_CHATBOT_DAILY_LIMIT'] = 0
     with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
-        assert post(client, {'message': 'oi'}).status_code == 429
+        assert post(client, {'message': 'Como prevenir dengue?'}).status_code == 429
         sdk.assert_not_called()
 
 
@@ -134,7 +134,7 @@ def test_public_route_sets_token_and_prevents_caching(app):
         with client.session_transaction() as session:
             assert session['portal_chat_token'] == token
         app.config['OPENAI_API_KEY'] = ''
-        response = client.post('/portal-cidadao/chatbot', json={'message': 'oi'}, headers={'X-Portal-Chat-Token': token})
+        response = client.post('/portal-cidadao/chatbot', json={'message': 'Como prevenir dengue?'}, headers={'X-Portal-Chat-Token': token})
         assert response.status_code == 503
         assert response.headers['Cache-Control'] == 'no-store'
 
@@ -144,7 +144,7 @@ def test_model_override_and_web_disabled(app, client):
     with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
         create = sdk.return_value.__enter__.return_value.responses.create
         create.return_value = SimpleNamespace(output_text='Olá')
-        assert post(client, {'message': 'Oi'}).status_code == 200
+        assert post(client, {'message': 'Como prevenir dengue?'}).status_code == 200
         assert create.call_args.kwargs['tools'] == []
         assert create.call_args.kwargs['model'] == 'gpt-6-luna'
 
@@ -152,7 +152,7 @@ def test_model_override_and_web_disabled(app, client):
 def test_incomplete_response_is_not_presented_as_finished(client):
     with patch('app.modules.portal_cidadao.chatbot.OpenAI') as sdk:
         sdk.return_value.__enter__.return_value.responses.create.return_value = SimpleNamespace(output_text='Parcial', status='incomplete')
-        assert post(client, {'message': 'oi'}).status_code == 502
+        assert post(client, {'message': 'Como prevenir dengue?'}).status_code == 502
 
 
 def test_citations_preserve_text_and_reject_unsafe_links():

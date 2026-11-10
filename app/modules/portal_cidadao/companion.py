@@ -2,9 +2,8 @@
 import hashlib
 import hmac
 import json
-import sqlite3
 
-from flask import current_app, jsonify, request, send_file, session, url_for
+from flask import current_app, jsonify, request, session, url_for
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from app.modules.chatbot import voice
@@ -16,7 +15,7 @@ PAGES = {
     'main.portal_relato_saude', 'main.portal_relato_saude_recibo', 'main.portal_acoes',
     'main.portal_acao', 'main.app_download', 'main.privacidade', 'main.app_movel',
 }
-WELCOME = ('Olá! Sou a Azul. Posso ajudar com saúde, prevenção, vigilância e uso do Portal do Cidadão, '
+WELCOME = ('Olá! Sou a AZUL. Posso ajudar com saúde, prevenção, vigilância e uso do Portal do Cidadão, '
            'além dos contatos da Prefeitura e do canal institucional da Oceano Azul. '
            'Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.')
 QUICK_ANSWERS = {
@@ -43,8 +42,8 @@ def offer(text):
     if ('main.portal_azul_voice' not in current_app.view_functions or not available()
             or not isinstance(text, str) or not 0 < len(text) <= voice.MAX_TEXT):
         return None
-    return {'url': url_for('main.portal_azul_voice'),
-            'token': serializer().dumps({'session': session_fingerprint(), 'text': text})}
+    return voice.recordings.decorate({'url': url_for('main.portal_azul_voice'),
+            'token': serializer().dumps({'session': session_fingerprint(), 'text': text})}, text)
 
 
 def context():
@@ -90,6 +89,8 @@ def context():
         'áudio disponível, escolha Ouvir resposta. A voz é gerada por inteligência '
         'artificial e só começa quando você pede. Você pode interromper quando quiser.')
     return {'public_azul': True, 'public_azul_guide': steps,
+            'public_azul_transcribe_url': url_for('main.portal_azul_transcribe')
+                if available() and current_app.config.get('AZUL_CONVERSATION_ENABLED', True) else '',
             'public_azul_tutorial_url': url_for('main.azul_tutorial', publico='publico')
                 if 'main.azul_tutorial' in current_app.view_functions else None,
             'public_azul_has_form': request.endpoint == 'main.portal_cidadao',
@@ -128,18 +129,4 @@ def reply():
         return jsonify(error='Não foi possível preparar este áudio.'), 400
     if not available():
         return jsonify(error='A voz está indisponível. Você pode continuar lendo a resposta.'), 503
-    try:
-        if not consume_quota(voice=True):
-            return jsonify(error='Limite de áudios atingido. Tente mais tarde.'), 429
-    except sqlite3.Error:
-        return jsonify(error='A voz está temporariamente indisponível.'), 503
-    if not voice.VOICE_SLOTS.acquire(blocking=False):
-        return jsonify(error='A voz está ocupada. Tente novamente em instantes.'), 503
-    try:
-        audio = voice.synthesize(text)
-    except Exception:
-        current_app.logger.warning('Azul pública: narração indisponível')
-        return jsonify(error='Não consegui preparar a voz agora. Continue pela resposta em texto.'), 503
-    finally:
-        voice.VOICE_SLOTS.release()
-    return send_file(audio, mimetype='audio/wav', download_name='azul-voz.wav')
+    return voice.deliver(text, ['public', source['session']], lambda: consume_quota(voice=True))

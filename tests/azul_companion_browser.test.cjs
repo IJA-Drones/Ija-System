@@ -12,13 +12,13 @@ class Element {
   focus() {}
   getClientRects() { return [1]; }
 }
-function setup(fetcher, audioSupported=true, guideSteps=null) {
+function setup(fetcher, audioSupported=true, guideSteps=null, offerChanges={}) {
   const root=new Element();root.dataset.csrf='csrf-test';
   const keys=['.azul-panel','[data-guide]','[data-voice-status]','[data-guide-config]',
     '[data-guide-progress]','[data-guide-title]','[data-guide-body]','[data-guide-prev]',
     '[data-guide-next]','[data-guide-links]','[data-guide-audio]','[data-guide-question]','[data-guide-close]'];
   const parts=Object.fromEntries(keys.map(key=>[key,new Element()]));
-  const offer={url:'/api/azul/voz',token:'signed-server-text'};
+  const offer={url:'/api/azul/voz',token:'signed-server-text',...offerChanges};
   parts['[data-guide]'].hidden=true;
   parts['[data-guide-config]'].textContent=JSON.stringify(guideSteps || [
     {title:'Comece',body:'Escolha um recurso.',links:[{label:'Permitido',url:'/admin'},{label:'Inválido',url:'//evil.test'}],speech:offer,question:'Meus acessos?',intent:'access_overview'},
@@ -53,6 +53,7 @@ test('no audio is requested automatically; explicit playback animates and can re
   assert.equal(env.requests.length,0);
   await env.button.events.click();
   assert.equal(env.root.dataset.droneState,'speak');
+  assert.equal(env.sent.at(-1).type,'azul:voice-started');
   assert.equal(env.button.textContent,'Parar áudio');
   assert.equal(env.requests[0].headers['X-CSRFToken'],'csrf-test');
   assert.deepEqual(JSON.parse(env.requests[0].body),{token:'signed-server-text'});
@@ -76,6 +77,18 @@ test('clearing while generation is pending aborts it and prevents late playback'
   await pending;
   assert.equal(env.audioInstances.length,0);
   assert.equal(env.root.dataset.droneState,'idle');
+});
+
+test('pressing stop during a voice conversation ends playback without restarting the same audio',async()=>{
+  const env=setup(async()=>audioResponse());
+  await env.button.events.click();
+  let stopped=false;
+  env.root.azulVoice={isActive:()=>true,stop(){stopped=true;env.root.azulCompanion.stopVoice();}};
+  await env.button.events.click({isTrusted:true});
+  assert.equal(stopped,true);
+  assert.equal(env.audioInstances[0].paused,true);
+  assert.equal(env.audioInstances.length,1);
+  assert.equal(env.requests.length,1);
 });
 
 test('guide navigation stops narration and questions retain the explicit intent',async()=>{
@@ -144,4 +157,30 @@ test('unsupported audio leaves the guide and text controls usable',()=>{
   assert.equal(env.parts['[data-guide]'].hidden,false);
   env.parts['[data-guide-next]'].events.click();
   assert.equal(env.parts['[data-guide-progress]'].textContent,'2 de 2');
+});
+
+test('a reviewed recording uses a static GET and is reused with a renewed speech token',async()=>{
+  const clip='/static/audio/azul-falas/'+'a'.repeat(64)+'.wav?v='+'b'.repeat(12);
+  const env=setup(async()=>({...audioResponse(),headers:{get:()=> 'audio/x-wav'}}),true,null,{clip});
+  await env.button.events.click();env.root.azulCompanion.stopVoice();
+  const entry=new Element();
+  const renewed=env.root.azulCompanion.attachSpeech(entry,{url:'/api/azul/voz',token:'renewed-token',clip});
+  await renewed.events.click();
+  assert.equal(env.requests.length,1);assert.equal(env.requests[0].url,clip);assert.equal(env.requests[0].method,undefined);
+  assert.equal(env.root.dataset.droneState,'speak');
+});
+
+test('an arbitrary recording URL cannot bypass the signed voice endpoint',async()=>{
+  const env=setup(async()=>audioResponse(),true,null,{clip:'https://example.test/private.wav'});
+  await env.button.events.click();
+  assert.equal(env.requests[0].url,'/api/azul/voz');assert.equal(env.requests[0].method,'POST');
+});
+
+test('a missing recording leaves text available and does not silently spend a new generation',async()=>{
+  const clip='/static/audio/azul-falas/'+'a'.repeat(64)+'.wav';
+  const env=setup(async()=>({ok:false,status:404,json:async()=>({})}),true,null,{clip});
+  await env.button.events.click();
+  assert.equal(env.requests.length,1);assert.equal(env.requests[0].url,clip);
+  assert.equal(env.audioInstances.length,0);assert.equal(env.root.dataset.droneState,'idle');
+  assert.ok(env.sent.some(event=>event.type==='azul:voice-error'));
 });

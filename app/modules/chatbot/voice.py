@@ -1,4 +1,4 @@
-"""On-demand narration of server-signed Azul text, without microphone access."""
+"""On-demand narration of server-signed AZUL text."""
 import base64
 import hmac
 import io
@@ -18,6 +18,7 @@ from flask_login import current_user
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from app.modules.chatbot.scope import chat_key
+from app.modules.chatbot import audio_cache, recordings
 from app.modules.gestao_ti.permissions import can_access_endpoint
 
 MAX_TEXT = 3000
@@ -25,6 +26,10 @@ MAX_BODY = 24000
 MAX_AUDIO = 8 * 1024 * 1024
 TOKEN_AGE = 600
 VOICE_SLOTS = BoundedSemaphore(2)
+DIALOGUE_STYLE = ('CONVERSA POR VOZ: responda em português brasileiro, com até duas frases '
+                  'curtas e no máximo 450 caracteres. Use linguagem de conversa, sem listas longas '
+                  'ou introduções formais. Preserve informações essenciais, limites e fontes. '
+                  'Seu nome é AZUL. Não amplie o escopo nem confirme ações que não realizou.')
 
 
 def available():
@@ -39,9 +44,9 @@ def serializer():
 def offer(text, user):
     if not available() or not isinstance(text, str) or not 0 < len(text) <= MAX_TEXT:
         return None
-    return {'url': url_for('main.azul_voice'),
+    return recordings.decorate({'url': url_for('main.azul_voice'),
             'token': serializer().dumps({'user': str(user.get_id()),
-                                         'chat': chat_key(user), 'text': text})}
+                                         'chat': chat_key(user), 'text': text})}, text)
 
 
 def normalized(text):
@@ -53,13 +58,16 @@ def synthesize(text):
     from websockets.sync.client import connect
 
     model = current_app.config.get('AZUL_VOICE_MODEL', 'gpt-realtime-2.1-mini')
-    voice = current_app.config.get('AZUL_VOICE', 'coral')
+    voice = current_app.config.get('AZUL_VOICE', 'marin')
     instructions = (
-        'Você dá voz à Azul. Fale em português brasileiro, com sotaque brasileiro '
+        'Você dá voz à AZUL, uma mulher adulta de voz suave, acolhedora e serena. '
+        'Use uma voz feminina macia e delicada, com volume confortável, sem soar '
+        'infantil, sussurrada, teatral ou como uma locutora. '
+        'Fale em português brasileiro, com sotaque brasileiro '
         'neutro e estável. Soe como uma pessoa brasileira conversando de perto '
         'com alguém que está aprendendo a usar o sistema: simpática, tranquila '
         'e à vontade, com um leve sorriso na voz. '
-        'Use cadência de conversa, fluida e levemente ágil, com variação natural '
+        'Use cadência de conversa, fluida e tranquila, com variação natural '
         'de melodia, ênfase discreta nas palavras importantes e pausas curtas '
         'nos limites das ideias. Conecte as palavras naturalmente; evite '
         'soletrar sílabas, dar o mesmo peso a cada palavra ou usar entonação '
@@ -123,6 +131,50 @@ def synthesize(text):
     return output
 
 
+def audio_response(audio, source):
+    response = send_file(audio, mimetype='audio/wav', download_name='azul-voz.wav')
+    response.headers['Cache-Control'] = 'private, no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Azul-Audio-Source'] = source
+    return response
+
+
+def deliver(text, scope, consume_quota):
+    """Call only after validating the signature, session and current permissions."""
+    recorded = recordings.find(text)
+    if recorded:
+        return audio_response(recorded[0], 'recorded')
+    cache = audio_cache.current()
+    key = audio_cache.cache_key(text, scope)
+    cached = cache.get(key)
+    if cached:
+        return audio_response(io.BytesIO(cached), 'memory')
+    if not cache.claim(key):
+        return jsonify(error='Este áudio já está sendo preparado. Aguarde e tente ouvir novamente.'), 503
+    try:
+        cached = cache.get(key)
+        if cached:
+            return audio_response(io.BytesIO(cached), 'memory')
+        try:
+            if not consume_quota():
+                return jsonify(error='Limite de áudios atingido. Tente mais tarde.'), 429
+        except sqlite3.Error:
+            return jsonify(error='Não foi possível liberar o áudio agora. Tente novamente.'), 503
+        if not VOICE_SLOTS.acquire(blocking=False):
+            return jsonify(error='A voz está ocupada agora. Tente novamente em instantes.'), 503
+        try:
+            audio = synthesize(text)
+            cache.put(key, audio.getvalue())
+        except Exception:
+            current_app.logger.warning('Azul: narração indisponível')
+            return jsonify(error='Não consegui preparar a voz agora. A resposta em texto continua disponível.'), 503
+        finally:
+            VOICE_SLOTS.release()
+        return audio_response(audio, 'generated')
+    finally:
+        cache.release(key)
+
+
 def reply():
     if not can_access_endpoint(current_user, 'main.azul_help', 'POST', legacy=True):
         return jsonify(error='Seu acesso não permite usar a voz da Azul.'), 403
@@ -152,23 +204,5 @@ def reply():
     if not available():
         return jsonify(error='A voz da Azul está indisponível. Você pode continuar lendo as respostas.'), 503
     from app.modules.chatbot.azul import consume_help_quota
-    try:
-        if not consume_help_quota(current_user.id, voice=True):
-            return jsonify(error='Limite de áudios atingido. Tente mais tarde.'), 429
-    except sqlite3.Error:
-        return jsonify(error='Não foi possível liberar o áudio agora. Tente novamente.'), 503
-    if not VOICE_SLOTS.acquire(blocking=False):
-        return jsonify(error='A voz está ocupada agora. Tente novamente em instantes.'), 503
-    try:
-        try:
-            audio = synthesize(text)
-        except Exception:
-            # Provider errors may contain credentials or the narrated text.
-            current_app.logger.warning('Azul: narração indisponível')
-            return jsonify(error='Não consegui preparar a voz agora. A resposta em texto continua disponível.'), 503
-    finally:
-        VOICE_SLOTS.release()
-    response = send_file(audio, mimetype='audio/wav', download_name='azul-voz.wav')
-    response.headers['Cache-Control'] = 'private, no-store'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    return response
+    return deliver(text, ['internal', source['user'], source['chat']],
+                   lambda: consume_help_quota(current_user.id, voice=True))

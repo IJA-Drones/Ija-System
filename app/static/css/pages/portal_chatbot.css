@@ -3,7 +3,7 @@
 .portal-chat button { cursor: pointer; }
 .portal-chat-toggle, .portal-chat form button { background: #08768e; color: #fff; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 600; }
 .portal-chat-toggle { box-shadow: 0 6px 24px #08334825; }
-.portal-chat-panel { position: absolute; bottom: 60px; right: 0; width: min(420px, calc(100vw - 32px)); height: min(660px, calc(100dvh - 110px)); display: flex; flex-direction: column; overflow: hidden; background: var(--chat-bg); border: 1px solid var(--chat-line); border-radius: 20px; box-shadow: 0 16px 56px #08334830; }
+.portal-chat-panel { position: absolute; z-index:1050; bottom: 60px; right: 0; width: min(420px, calc(100vw - 32px)); height: min(660px, calc(100dvh - 110px)); display: flex; flex-direction: column; overflow: hidden; background: var(--chat-bg); border: 1px solid var(--chat-line); border-radius: 20px; box-shadow: 0 16px 56px #08334830; }
 .portal-chat-panel[hidden] { display: none; }
 .portal-chat-panel > header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; background: #083348; color: #fff; flex-shrink: 0; }
 .portal-chat-panel > header strong { font-size: 15px; }

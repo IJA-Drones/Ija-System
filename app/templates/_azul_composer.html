@@ -1,0 +1,13 @@
+<form class="azul-compose form-no-loading" data-azul-compose>
+  <label class="azul-sr-only" for="{{ composer_id }}">Mensagem para a AZUL</label>
+  <div class="azul-composer-shell">
+    <textarea id="{{ composer_id }}" data-compose-input rows="2" maxlength="1500" required autocomplete="off" placeholder="Pergunte à AZUL…" aria-describedby="{{ composer_id }}Status"></textarea>
+    <div class="azul-composer-actions">
+      {% include '_azul_voice_controls.html' %}
+      <button type="button" class="azul-composer-button azul-composer-primary" data-stop hidden title="Interromper resposta" aria-label="Interromper resposta"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+      <button type="submit" class="azul-composer-button azul-composer-primary azul-composer-send" data-icon-only="1" aria-label="Enviar mensagem" title="Enviar mensagem"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+    </div>
+  </div>
+  <small id="{{ composer_id }}Status" class="azul-composer-message azul-sr-only" data-status data-idle-status="{{ composer_status|default('') }}" role="status">{{ composer_status|default('') }}</small>
+  <small class="azul-composer-message azul-sr-only" data-microphone-status role="status"></small>
+</form>

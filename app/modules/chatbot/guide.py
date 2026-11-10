@@ -31,6 +31,23 @@ WORKFLOWS = {
         'A análise precisa de revisão humana; ela não representa uma decisão de contratação.'),
 }
 
+RECORDED_STEPS = {
+    'start': ('Comece pelos recursos do seu acesso',
+        'O menu do sistema reúne as áreas disponíveis para você. Escolha um dos '
+        'atalhos abaixo ou use “Meu acesso” para conhecer seus recursos.'),
+    'screen': ('Abra uma área e peça orientação',
+        'Entre na tela em que deseja trabalhar e escolha “Ajuda nesta tela”. '
+        'A Azul usa o guia do sistema e os recursos permitidos para orientar você. '
+        'Se um recurso não aparecer no seu acesso, procure o administrador.'),
+    'review': ('Confira antes de confirmar',
+        'Revise os dados e os campos obrigatórios antes de salvar ou enviar um formulário. '
+        'Este tutorial apenas orienta: quem confirma uma ação na tela é você.'),
+    'continue': ('Continue com a Azul',
+        'Escreva sua dúvida em linguagem simples. Nas novas respostas, “Ouvir resposta” '
+        'reproduz a voz gerada por inteligência artificial, quando disponível. '
+        'Você pode parar o áudio a qualquer momento e reabrir este guia quando precisar.'),
+}
+
 
 def build(user, page):
     context = help_context(user, page)
@@ -43,9 +60,7 @@ def build(user, page):
                       'links': choices or [], 'question': question, 'intent': intent,
                       'speech': voice.offer(title + '. ' + body, user)})
 
-    add('Comece pelos recursos do seu acesso',
-        'O menu do sistema reúne as áreas disponíveis para você. Escolha um dos '
-        'atalhos abaixo ou use “Meu acesso” para conhecer seus recursos.',
+    add(*RECORDED_STEPS['start'],
         '[data-intent="access_overview"]', links[:6],
         'O que posso acessar no sistema?', 'access_overview')
     if current and current['modulo'] in WORKFLOWS:
@@ -58,14 +73,9 @@ def build(user, page):
             'gravação dependem das permissões da sua conta.', 'screen-list',
             question='Como usar esta tela?')
     else:
-        add('Abra uma área e peça orientação',
-            'Entre na tela em que deseja trabalhar e escolha “Ajuda nesta tela”. '
-            'A Azul usa o guia do sistema e os recursos permitidos para orientar você. '
-            'Se um recurso não aparecer no seu acesso, procure o administrador.',
+        add(*RECORDED_STEPS['screen'],
             '[data-question="Como usar esta tela?"]', question='Como usar esta tela?')
-    add('Confira antes de confirmar',
-        'Revise os dados e os campos obrigatórios antes de salvar ou enviar um formulário. '
-        'Este tutorial apenas orienta: quem confirma uma ação na tela é você.', 'screen-form')
+    add(*RECORDED_STEPS['review'], 'screen-form')
     if search.allowed(user):
         add('Busque solicitações em uma frase',
             'Por exemplo: “Busque solicitações pendentes no bairro Centro”. '
@@ -90,9 +100,6 @@ def build(user, page):
         except BuildError:
             # Isolated deployments may omit the training module entirely.
             pass
-    add('Continue com a Azul',
-        'Escreva sua dúvida em linguagem simples. Nas novas respostas, “Ouvir resposta” '
-        'reproduz a voz gerada por inteligência artificial, quando disponível. '
-        'Você pode parar o áudio a qualquer momento e reabrir este guia quando precisar.',
+    add(*RECORDED_STEPS['continue'],
         '[data-compose-input]', training)
     return steps

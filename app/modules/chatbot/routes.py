@@ -33,7 +33,8 @@ def register_routes(bp):
                 and request.endpoint in {'main.azul_help', 'main.uvis_chatbot', 'main.admin_chatbot',
                                          'main.agro_admin_chatbot', 'main.agro_piloto_chatbot'}):
             payload = response.get_json(silent=True)
-            if isinstance(payload, dict) and isinstance(payload.get('answer'), str):
+            if (isinstance(payload, dict) and isinstance(payload.get('answer'), str)
+                    and payload.get('mode') not in {'blocked', 'clarify'}):
                 payload['speech'] = voice.offer(payload['answer'], current_user)
                 response.set_data(current_app.json.dumps(payload))
         return response
@@ -50,6 +51,7 @@ def register_routes(bp):
         from app.modules.chatbot.operations import allowed as operations_allowed
         from app.modules.chatbot.search import allowed as search_allowed
         from app.modules.chatbot.guide import build as build_guide
+        from app.modules.chatbot.speech_input import available as microphone_available
         return {'azul_chat_key': chat_key(current_user) if allowed else '',
                 'azul_help_url': url_for('main.azul_help') if allowed else None,
                 'azul_page_url': url_for('main.azul_chat') if allowed and can_access_endpoint(
@@ -59,6 +61,7 @@ def register_routes(bp):
                 'azul_can_search': search_allowed(current_user) if allowed else False,
                 'azul_guide': build_guide(current_user, request.path) if allowed else [],
                 'azul_tutorial_url': url_for('main.azul_tutorial', publico='sistema') if allowed else None,
+                'azul_transcribe_url': url_for('main.azul_transcribe') if allowed and microphone_available() else '',
                 'azul_voice_available': voice.available() if allowed else False}
 
     @bp.post('/api/azul/voz', endpoint='azul_voice')
@@ -66,6 +69,15 @@ def register_routes(bp):
     def azul_voice():
         response = make_response(voice.reply())
         response.headers['Cache-Control'] = 'private, no-store'
+        return response
+
+    @bp.post('/api/azul/transcrever', endpoint='azul_transcribe')
+    @login_required
+    def azul_transcribe():
+        from app.modules.chatbot.speech_input import reply
+        response = make_response(reply())
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
         return response
 
     @bp.get('/azul', endpoint='azul_chat')

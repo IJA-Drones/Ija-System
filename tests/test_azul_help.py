@@ -309,7 +309,7 @@ def test_history_limits_reject_before_provider(env, history):
 
 def test_escaped_unicode_history_fits_request_byte_budget(env, context):
     _, client, _ = env
-    history = [{'role': 'user' if index % 2 == 0 else 'assistant', 'content': 'ç' * 1500}
+    history = [{'role': 'user' if index % 2 == 0 else 'assistant', 'content': 'Solicitações ' + 'ç' * 1487}
                for index in range(12)]
     with patch.object(azul, 'help_context', return_value=context), patch.object(azul, 'OpenAI') as sdk:
         create = sdk.return_value.__enter__.return_value.responses.create

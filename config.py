@@ -12,8 +12,13 @@ class Config:
     AZUL_HELP_DAILY_LIMIT = int(os.getenv("AZUL_HELP_DAILY_LIMIT", "500"))
     AZUL_VOICE_ENABLED = os.getenv("AZUL_VOICE_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
     AZUL_VOICE_MODEL = os.getenv("AZUL_VOICE_MODEL", "gpt-realtime-2.1-mini")
-    AZUL_VOICE = os.getenv("AZUL_VOICE", "coral")
+    AZUL_VOICE = os.getenv("AZUL_VOICE", "marin")
+    AZUL_CONVERSATION_ENABLED = os.getenv("AZUL_CONVERSATION_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    AZUL_TRANSCRIBE_MODEL = os.getenv("AZUL_TRANSCRIBE_MODEL", "gpt-transcribe")
+    AZUL_TRANSCRIBE_DAILY_LIMIT = int(os.getenv("AZUL_TRANSCRIBE_DAILY_LIMIT", "200"))
+    PORTAL_AZUL_TRANSCRIBE_DAILY_LIMIT = int(os.getenv("PORTAL_AZUL_TRANSCRIBE_DAILY_LIMIT", "100"))
     AZUL_VOICE_DAILY_LIMIT = int(os.getenv("AZUL_VOICE_DAILY_LIMIT", "200"))
+    AZUL_VOICE_PER_MINUTE = int(os.getenv("AZUL_VOICE_PER_MINUTE", "6"))
     PORTAL_AZUL_VOICE_ENABLED = os.getenv("PORTAL_AZUL_VOICE_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
     PORTAL_AZUL_VOICE_DAILY_LIMIT = int(os.getenv("PORTAL_AZUL_VOICE_DAILY_LIMIT", "100"))
     OPENAI_TALENT_MODEL = os.getenv("OPENAI_TALENT_MODEL", "")

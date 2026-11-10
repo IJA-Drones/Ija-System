@@ -1,0 +1,21 @@
+{% from '_azul_drone.html' import drone %}
+<section class="azul-voice-call" data-voice-call hidden tabindex="-1" aria-label="Conversa por voz com a AZUL">
+  <div class="azul-call-stage">
+    <span class="azul-call-kicker">CONVERSA POR VOZ</span>
+    <div class="azul-call-portrait" aria-hidden="true">{{ drone('azul-drone-call') }}</div>
+    <h2 class="azul-call-title" data-call-title role="status">Conectando…</h2>
+    <p class="azul-call-description" data-call-description>Ligando o microfone…</p>
+    <div class="azul-call-signal" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+  <div class="azul-call-controls">
+    <div class="azul-call-control">
+      <button type="button" class="azul-call-button" data-call-action aria-label="Enviar fala" title="Enviar fala"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></button>
+      <span data-call-action-label>Enviar fala</span>
+    </div>
+    <div class="azul-call-control">
+      <button type="button" class="azul-call-button azul-call-end" data-call-end aria-label="Encerrar conversa por voz" title="Encerrar conversa por voz"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15v-3c0-5 16-5 16 0v3l-5-1v-3M9 11v3l-5 1"/></svg></button>
+      <span>Encerrar</span>
+    </div>
+  </div>
+  <small class="azul-call-disclosure">Você está conversando com a AZUL · voz gerada por IA</small>
+</section>

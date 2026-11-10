@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
-from app.modules.chatbot import exports, operations, search
+from app.modules.chatbot import exports, operations, search, topics, voice
 from app.modules.chatbot.scope import chat_key
 from pathlib import Path
 
@@ -51,7 +51,7 @@ UVIS_SCOPES = {
     'uvis': 'Solicitações municipais: somente registros vinculados à conta UVIS conectada.',
     'equipe_uvis': 'Solicitações municipais: somente registros da conta UVIS à qual a equipe está vinculada.',
 }
-INSTRUCTIONS = """Você é a Azul, a inteligência da Oceano Azul. Se precisar se apresentar, use Azul ou inteligência da Oceano Azul, nunca assistente virtual.
+INSTRUCTIONS = topics.IDENTITY_RULE + """Você é a AZUL, a inteligência da Oceano Azul. Se precisar se apresentar, use AZUL ou inteligência da Oceano Azul, nunca assistente virtual.
 Ao se referir à marca do sistema, use sempre Oceano Azul, mesmo que mensagens antigas
 do histórico mencionem IJA System. Responda inteiramente em português brasileiro,
 com linguagem simples, texto puro e até 250 palavras. Ajude somente a usar o sistema.
@@ -249,10 +249,13 @@ def relevant_links(message, authorized_links):
     return authorized_links[:6] if general_request else []
 
 
-def consume_help_quota(user_id, *, export=False, voice=False):
+def consume_help_quota(user_id, *, export=False, voice=False, transcribe=False):
     """Per-account minute limit and shared daily budget, without message storage."""
     now = int(time.time())
-    limits = ([(f'voice:user:{user_id}:{now // 60}', 3),
+    limits = ([(f'transcribe:user:{user_id}:{now // 60}', 6),
+               (f'transcribe:user-day:{user_id}:{now // 86400}', 30),
+               (f'transcribe:day:{now // 86400}', current_app.config.get('AZUL_TRANSCRIBE_DAILY_LIMIT', 200))] if transcribe else
+              [(f'voice:user:{user_id}:{now // 60}', current_app.config.get('AZUL_VOICE_PER_MINUTE', 6)),
                (f'voice:user-day:{user_id}:{now // 86400}', 30),
                (f'voice:day:{now // 86400}', current_app.config.get('AZUL_VOICE_DAILY_LIMIT', 200))] if voice else
               [(f'export:user:{user_id}:{now // 60}', 3),
@@ -310,6 +313,28 @@ def reply(channel):
                          code='access_changed')
         result.headers['Cache-Control'] = 'private, no-store'
         return result, 409
+    decision = topics.evaluate(message, history)
+    if decision.kind != 'allowed':
+        result = jsonify(answer=decision.answer, mode=decision.kind, links=[],
+                         profile=profile_code(current_user), export_preview=None, chat_key=current_key)
+        result.headers['Cache-Control'] = 'private, no-store'
+        return result
+    history = topics.clean_history(history)
+    if decision.subject == 'health':
+        from app.modules.portal_cidadao.chatbot import answer as public_answer
+        from app.modules.chatbot.voice import DIALOGUE_STYLE
+        try:
+            if not current_app.config.get('OPENAI_API_KEY') or not consume_help_quota(current_user.id):
+                return jsonify(answer='A consulta de saúde está indisponível. Tente mais tarde.'), 503
+            text, parts = public_answer(topics.health_history(history) + [{'role':'user','content':message}],
+                                        extra_instructions=DIALOGUE_STYLE if payload.get('voice') is True else '')
+        except Exception:
+            current_app.logger.warning('AZUL: consulta pública de saúde indisponível')
+            return jsonify(answer='Não foi possível consultar as informações de saúde agora.'), 503
+        result = jsonify(answer=text, parts=parts, mode='saude', links=[],
+                         profile=profile_code(current_user), export_preview=None, chat_key=current_key)
+        result.headers['Cache-Control'] = 'private, no-store'
+        return result
     context = help_context(current_user, page)
     normalized_request = service.normalize_chatbot_text(message).strip(' ?!.')
     if payload.get('intent') == 'access_overview' or (not payload.get('intent') and normalized_request in {
@@ -394,7 +419,9 @@ def reply(channel):
             with OpenAI(api_key=key, timeout=30, max_retries=0) as client:
                 response = client.responses.create(
                     model=current_app.config.get('OPENAI_CHAT_MODEL') or 'gpt-6-luna',
-                    instructions=INSTRUCTIONS + export_instructions + '\nCONTEXTO DO SERVIDOR:\n' + json.dumps(context, ensure_ascii=False)
+                    instructions=INSTRUCTIONS + export_instructions
+                    + ('\n' + voice.DIALOGUE_STYLE if payload.get('voice') is True else '')
+                    + '\nCONTEXTO DO SERVIDOR:\n' + json.dumps(context, ensure_ascii=False)
                     + '\nMANUAL GERAL (não concede permissões):\n' + json.dumps(faq, ensure_ascii=False),
                     input=[{'role': item['role'], 'content': item['content']} for item in history]
                     + [{'role': 'user', 'content': message.strip()}],

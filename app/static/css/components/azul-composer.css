@@ -1,0 +1,57 @@
+/* A single writing surface, with compact controls aligned to the right. */
+.azul-sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+.azul-help { --composer-surface:#f3f4f6; --composer-border:#dfe3e8; --composer-ink:#253446; --composer-muted:#7b828e; }
+body.dark-mode .azul-help { --composer-surface:#303030; --composer-border:#414141; --composer-ink:#f3f3f3; --composer-muted:#a0a0a0; }
+.azul-help form.azul-compose { display:block; flex-shrink:0; margin:0; padding:12px 14px 14px; border:0; background:transparent; }
+.azul-workspace form.azul-compose { padding:16px 24px 18px; }
+.azul-help .azul-composer-shell { display:flex; flex-direction:column; width:100%; max-width:740px; min-height:124px; margin:auto; border:1px solid var(--composer-border); border-radius:26px; background:var(--composer-surface); box-shadow:none; transition:border-color .15s; }
+.azul-help .azul-composer-shell:focus-within { border-color:#8c9aa8; }
+.azul-help .azul-composer-shell textarea { display:block; flex:1; box-sizing:border-box; width:100%; min-width:0; min-height:62px; max-height:180px; margin:0; padding:15px 18px 5px; border:0; border-radius:25px 25px 0 0; outline:0; resize:none; background:transparent; color:var(--composer-ink); font:inherit; font-size:14px; line-height:1.5; box-shadow:none; }
+.azul-workspace .azul-composer-shell textarea { font-size:16px; }
+.azul-help .azul-composer-shell textarea::placeholder { color:var(--composer-muted); opacity:1; }
+.azul-help .azul-composer-actions { display:flex; flex-shrink:0; align-items:center; justify-content:flex-end; gap:8px; padding:7px 10px 10px; }
+.azul-help .azul-composer-actions .azul-voice-controls { display:contents; padding:0; border:0; background:none; }
+.azul-help .azul-composer-actions .azul-composer-button { display:inline-flex; align-items:center; justify-content:center; flex:0 0 38px; width:38px; min-width:38px; max-width:none; height:38px; min-height:38px; margin:0; padding:0; border:0; border-radius:50%; color:var(--composer-ink); background:transparent; box-shadow:none; cursor:pointer; font:inherit; }
+.azul-help .azul-composer-actions .azul-composer-button:hover { background:#7c879218; }
+.azul-help .azul-composer-actions .azul-composer-primary { flex-basis:42px; width:42px; height:42px; min-height:42px; background:#2c67cb; color:#fff; }
+.azul-help .azul-composer-actions .azul-composer-primary:hover { background:#245cb9; }
+.azul-help .azul-composer-actions button:disabled { opacity:.4; cursor:default; }
+.azul-help .azul-composer-actions [hidden],.azul-help .azul-composer-actions [data-voice-controls][hidden] { display:none!important; }
+.azul-help .azul-composer-actions .azul-icon-stop { display:none; }
+.azul-help .azul-composer-actions [aria-pressed="true"] .azul-icon-stop { display:block; }
+.azul-help .azul-composer-actions [aria-pressed="true"] :is(.azul-icon-mic,.azul-icon-wave) { display:none; }
+.azul-help .azul-composer-actions [data-dictate][aria-pressed="true"] { color:#bf4c48; background:#c44c4814; }
+.azul-help .azul-composer-message { display:block; max-width:740px; margin:7px auto 0; color:var(--azul-muted); font-size:10px; line-height:1.5; }
+.azul-help .azul-composer-message:empty { display:none; }
+.azul-suggestions-drawer { flex-shrink:0; margin:0; padding:0 16px; border-top:1px solid var(--azul-border); background:var(--azul-card); color:var(--azul-muted); }
+.azul-suggestions-drawer > summary { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:39px; list-style:none; cursor:pointer; font-size:11px; font-weight:500; }
+.azul-suggestions-drawer > summary::-webkit-details-marker { display:none; }
+.azul-suggestions-drawer > summary::after { content:'⌄'; font-size:18px; transition:transform .18s; }
+.azul-suggestions-drawer[open] > summary::after { transform:rotate(180deg); }
+.azul-suggestions-drawer .azul-suggestions { max-height:165px; overflow-y:auto; padding:4px 0 12px; }
+.azul-suggestions-drawer .portal-chat-links { border:0; padding:0 0 10px; }
+.portal-chat-drawer > .azul-suggestions-content { max-height:220px; overflow:auto; padding-bottom:10px; }
+.portal-chat-drawer .portal-chat-suggestions { margin:0; }
+.portal-chat-drawer .portal-chat-suggestions > span { display:block; margin:6px 0 8px; }
+.azul-help[data-guide-open="1"] .azul-suggestions-drawer,.portal-chat-panel:has([data-report]:not([hidden])) > .azul-suggestions-drawer { display:none; }
+.azul-page-body:has(> .azul-tools:not([open])) { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto; }
+.azul-tools > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:43px; list-style:none; cursor:pointer; font-size:12px; font-weight:500; color:var(--azul-muted); }
+.azul-tools > summary::-webkit-details-marker { display:none; }
+.azul-tools > summary::after { content:'⌄'; font-size:18px; }
+.azul-tools[open] > summary::after { transform:rotate(180deg); }
+.azul-tools:not([open]) { grid-column:1 / -1; padding:0 24px; border-left:0; border-top:1px solid var(--azul-border); overflow:visible; }
+.azul-tools-body { padding-top:12px; }
+@media(max-width:767.98px) {
+  .azul-workspace .azul-tools { display:block; max-height:210px; padding:0 16px; overflow-y:auto; }
+  .azul-tools-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; padding:0 0 10px; }
+  .azul-tools-body > :not(button) { display:none; }
+  .azul-workspace .azul-tools-body > button { width:100%; min-width:0; margin:0; padding:10px; }
+}
+@media(max-width:600px) {
+  .azul-help form.azul-compose,.azul-workspace form.azul-compose { padding:10px 12px 12px; }
+  .azul-help .azul-composer-shell { border-radius:24px; min-height:118px; }
+  .azul-help .azul-composer-shell textarea { font-size:16px; padding:13px 16px 3px; }
+  .azul-help .azul-composer-actions { padding:5px 9px 9px; gap:7px; }
+  .azul-suggestions-drawer { padding:0 14px; }
+}
+@media(prefers-reduced-motion:reduce) { .azul-composer-shell,.azul-suggestions-drawer > summary::after { transition:none; } }

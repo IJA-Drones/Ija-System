@@ -1,0 +1,49 @@
+/* The voice conversation takes the place of the transcript until it ends. */
+.azul-help .azul-voice-call { display:flex; flex:1; flex-direction:column; min-height:0; padding:22px 20px 18px; overflow-y:auto; background:radial-gradient(ellipse at 50% 40%,#54b9e514,transparent 65%),var(--azul-card); color:var(--azul-ink); text-align:center; outline:0; }
+.azul-help .azul-voice-call[hidden] { display:none; }
+.azul-help[data-voice-call-open="1"] :is(.azul-messages,.portal-chat-messages,.azul-empty,.azul-suggestions-drawer,.azul-tools,.azul-compose,.azul-voice-status,.azul-context,.portal-chat-notice,[data-guide-open],[data-clear]) { display:none!important; }
+.azul-workspace[data-voice-call-open="1"] .azul-page-body { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+.azul-call-stage { display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:260px; padding:8px 0 20px; }
+.azul-call-kicker { font-size:10px; font-weight:600; letter-spacing:.14em; color:var(--azul-muted); }
+.azul-call-portrait { position:relative; display:grid; place-items:center; isolation:isolate; width:228px; height:190px; flex-shrink:0; }
+.azul-call-portrait::before,.azul-call-portrait::after { content:''; position:absolute; z-index:-1; width:158px; height:158px; border:1px solid #5da9d633; border-radius:50%; background:#72c3eb09; }
+.azul-call-portrait::after { width:192px; height:192px; border-color:#5da9d616; background:transparent; }
+.azul-drone-call { --drone-scale:.76; margin-top:-18px; }
+.azul-help .azul-call-title { margin:0; color:var(--azul-ink); font:inherit; font-size:21px; font-weight:600; letter-spacing:-.4px; line-height:1.3; }
+.azul-help .azul-call-description { max-width:310px; min-height:38px; margin:0; color:var(--azul-muted); font-size:12px; line-height:1.6; }
+.azul-call-signal { display:flex; align-items:center; justify-content:center; gap:4px; height:22px; color:#3b86c8; }
+.azul-call-signal span { width:3px; height:5px; border-radius:3px; background:currentColor; }
+.azul-call-controls { display:flex; flex-shrink:0; justify-content:center; align-items:flex-start; gap:32px; padding:8px 0 16px; }
+.azul-call-control { display:flex; flex-direction:column; align-items:center; gap:9px; min-width:92px; color:var(--azul-muted); font-size:11px; }
+.azul-help .azul-call-button { display:inline-flex; align-items:center; justify-content:center; width:54px; height:54px; min-width:54px; min-height:54px; margin:0; padding:0; border:1px solid var(--azul-border); border-radius:50%; background:var(--azul-bg); color:var(--azul-ink); box-shadow:none; cursor:pointer; }
+.azul-help .azul-call-button:hover { border-color:#6a9dca; background:#649dcb18; }
+.azul-help .azul-call-button:disabled { opacity:.4; cursor:default; }
+.azul-help .azul-call-end { background:#d4484d; border-color:#d4484d; color:#fff; }
+.azul-help .azul-call-end:hover { background:#bd393f; border-color:#bd393f; }
+.azul-call-disclosure { display:block; flex-shrink:0; margin:0; color:var(--azul-muted); font-size:10px; line-height:1.6; }
+.azul-help[data-voice-state="listening"] .azul-call-portrait::before { animation:az-call-listen 2.4s ease-in-out infinite; }
+.azul-help[data-voice-state="listening"] .azul-call-signal span { animation:az-call-signal 1.1s ease-in-out infinite alternate; }
+.azul-help[data-voice-state="speaking"] .azul-call-portrait::before { animation:az-call-listen 1.5s ease-in-out infinite; }
+.azul-help[data-voice-state="speaking"] .azul-call-signal span { animation:az-call-signal .45s ease-in-out infinite alternate; }
+.azul-call-signal span:nth-child(2),.azul-call-signal span:nth-child(4) { animation-delay:-.3s!important; }
+.azul-call-signal span:nth-child(3) { animation-delay:-.6s!important; }
+.azul-help:is([data-voice-state="transcribing"],[data-voice-state="waiting"],[data-voice-state="preparing"]) .azul-call-signal span { animation:az-call-think 1.2s ease-in-out infinite; }
+.azul-workspace .azul-call-portrait { width:288px; height:240px; }
+.azul-workspace .azul-drone-call { --drone-scale:.96; }
+@keyframes az-call-listen { 0%,100%{transform:scale(.94);opacity:.5}50%{transform:scale(1.12);opacity:1} }
+@keyframes az-call-signal { from{height:5px}to{height:20px} }
+@keyframes az-call-think { 0%,100%{opacity:.25}50%{opacity:1} }
+@media(max-height:650px) {
+  .azul-help .azul-voice-call { padding:12px 18px; }
+  .azul-call-stage { min-height:185px; padding:0 0 6px; gap:5px; }
+  .azul-call-kicker { display:none; }
+  .azul-help .azul-call-portrait { width:168px; height:140px; }
+  .azul-help .azul-drone-call { --drone-scale:.56; }
+  .azul-call-portrait::before { width:116px; height:116px; }
+  .azul-call-portrait::after { width:142px; height:142px; }
+  .azul-help .azul-call-title { font-size:18px; }
+  .azul-call-description { min-height:0; }
+  .azul-call-controls { padding:5px 0 10px; }
+  .azul-help .azul-call-button { width:46px; height:46px; min-width:46px; min-height:46px; }
+}
+@media(prefers-reduced-motion:reduce) { .azul-call-portrait::before,.azul-call-signal span { animation:none!important; } }

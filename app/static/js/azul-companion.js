@@ -10,16 +10,16 @@
     if (!Array.isArray(steps)) steps = [];
     let stepIndex = 0, guideOpener = null, highlighted = null;
     let audio = null, audioRequest = null, voiceButton = null, voiceVersion = 0;
-    let thinking = false, voicePlaying = false, reactionTimer = null;
+    let thinking = false, listening = false, voicePlaying = false, reactionTimer = null, speechContext = null;
     const clips = new Map();
     const setVoiceStatus = text => { if (voiceStatus) voiceStatus.textContent = text; };
     function droneState(value) { root.dataset.droneState = value; }
-    function settleDrone() { droneState(voicePlaying ? 'speak' : (thinking || audioRequest) ? 'think' : 'idle'); }
+    function settleDrone() { droneState(voicePlaying ? 'speak' : (thinking || audioRequest) ? 'think' : listening ? 'listen' : 'idle'); }
     function stopVoice() {
       voiceVersion++;
       audioRequest?.abort();
       audioRequest = null;
-      if (audio) { audio.pause(); audio.src = ''; audio = null; }
+      if (audio) { audio.pause?.(); try { audio.stop?.(); } catch (_) {} audio.src = ''; audio = null; }
       voicePlaying = false;
       if (voiceButton) {
         voiceButton.textContent = voiceButton.dataset.idleLabel || 'Ouvir resposta';
@@ -37,6 +37,8 @@
     }
     function attachSpeech(container, offer, idleLabel = 'Ouvir resposta') {
       if (!['/api/azul/voz', '/portal-cidadao/voz'].includes(voiceUrl) || !offer || offer.url !== voiceUrl || typeof offer.token !== 'string' || typeof Audio !== 'function') return;
+      const recorded = typeof offer.clip === 'string' && /^\/static\/audio\/azul-falas\/[a-f0-9]{64}\.wav(?:\?v=[a-f0-9]{12})?$/.test(offer.clip) ? offer.clip : null;
+      const cacheKey = recorded || offer.token;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'azul-speak';
@@ -44,23 +46,30 @@
       button.dataset.idleLabel = idleLabel;
       button.setAttribute('aria-label', idleLabel + ' com voz gerada por inteligência artificial');
       button.setAttribute('aria-pressed', 'false');
-      button.addEventListener('click', async () => {
+      button.addEventListener('click', async event => {
+        if (event?.isTrusted && root.azulVoice?.isActive()) {
+          const wasPlaying = voiceButton === button;
+          root.azulVoice.stop();
+          if (wasPlaying) return;
+        }
         if (voiceButton === button) { stopVoice(); return; }
         stopVoice();
         const version = voiceVersion;
         voiceButton = button;
         button.setAttribute('aria-pressed', 'true');
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 55000);
+        const timer = setTimeout(() => controller.abort(), recorded ? 10000 : 55000);
         try {
-          let url = clips.get(offer.token);
+          let url = clips.get(cacheKey), rawAudio = null;
           if (!url) {
             audioRequest = controller;
             button.textContent = 'Parar preparação';
             button.setAttribute('aria-busy', 'true');
-            setVoiceStatus('Preparando a voz da Azul…');
+            setVoiceStatus(recorded ? 'Carregando a voz da Azul…' : 'Preparando a voz da Azul…');
             settleDrone();
-            const response = await fetch(voiceUrl, {
+            const response = await fetch(recorded || voiceUrl, recorded ? {
+              signal:controller.signal, credentials:'same-origin'
+            } : {
               method: 'POST', signal: controller.signal,
               headers: {'Content-Type': 'application/json', 'X-CSRFToken': root.dataset.csrf,
                 ...(root.dataset.token ? {'X-Portal-Chat-Token':root.dataset.token} : {})},
@@ -75,12 +84,13 @@
               }
               throw new Error(failure.error || 'A voz está indisponível agora. Continue pela resposta em texto.');
             }
-            if (!(response.headers.get('Content-Type') || '').startsWith('audio/wav')) throw new Error('Não foi possível abrir o áudio. Atualize a página e tente novamente.');
+            if (!/^audio\/(?:wav|x-wav|wave)(?:;|$)/i.test(response.headers.get('Content-Type') || '')) throw new Error('Não foi possível abrir o áudio. Atualize a página e tente novamente.');
             const blob = await response.blob();
+            if (speechContext) rawAudio = await blob.arrayBuffer();
             if (version !== voiceVersion || controller.signal.aborted) return;
             if (!blob.size || blob.size > 9 * 1024 * 1024) throw new Error('Este áudio não está disponível. Continue pela resposta em texto.');
             url = URL.createObjectURL(blob);
-            clips.set(offer.token, url);
+            clips.set(cacheKey, url);
             while (clips.size > 3) {
               const oldest = clips.keys().next().value;
               URL.revokeObjectURL(clips.get(oldest)); clips.delete(oldest);
@@ -88,29 +98,41 @@
           }
           if (version !== voiceVersion) return;
           audioRequest = null;
-          audio = new Audio(url);
-          audio.onplaying = () => {
+          const playing = () => {
             if (version !== voiceVersion) return;
             voicePlaying = true;
             button.textContent = 'Parar áudio';
             button.setAttribute('aria-busy', 'false');
             setVoiceStatus('A Azul está falando · voz gerada por IA');
             settleDrone();
+            root.dispatchEvent(new CustomEvent('azul:voice-started'));
           };
-          audio.onended = () => { if (version === voiceVersion) stopVoice(); };
+          if (speechContext && speechContext.state !== 'closed') {
+            const bytes = rawAudio || await (await fetch(url)).arrayBuffer();
+            const decoded = await speechContext.decodeAudioData(bytes);
+            if (version !== voiceVersion) return;
+            audio = speechContext.createBufferSource(); audio.buffer = decoded; audio.connect(speechContext.destination);
+          } else { audio = new Audio(url); audio.onplaying = playing; }
+          audio.onended = () => {
+            if (version !== voiceVersion) return;
+            stopVoice(); root.dispatchEvent(new CustomEvent('azul:voice-ended'));
+          };
           audio.onerror = () => {
             if (version !== voiceVersion) return;
             stopVoice(); setVoiceStatus('Não foi possível reproduzir o áudio. Tente ouvir novamente.');
+            root.dispatchEvent(new CustomEvent('azul:voice-error'));
           };
-          await audio.play();
+          if (audio.start) { audio.start(); playing(); } else await audio.play();
         } catch (error) {
           if (version !== voiceVersion) return;
           stopVoice();
           setVoiceStatus(error.name === 'AbortError' ? 'A preparação do áudio demorou. Tente novamente.' :
             error.name === 'NotAllowedError' ? 'Áudio pronto. Clique em ouvir novamente para reproduzir.' : error.message);
+          root.dispatchEvent(new CustomEvent('azul:voice-error'));
         } finally { clearTimeout(timer); }
       });
       container.append(button);
+      return button;
     }
     function removeHighlight() {
       highlighted?.classList.remove('azul-guide-highlight');
@@ -197,9 +219,12 @@
       closeGuide,
       stopVoice,
       thinking(value) { thinking = value; settleDrone(); },
+      listening(value) { listening = value; settleDrone(); },
+      speaking(value) { voicePlaying = value; settleDrone(); },
+      useAudioContext(context) { speechContext = context; },
       react(value = 'wave') { clearTimeout(reactionTimer); droneState(value); reactionTimer = setTimeout(settleDrone, 2200); },
-      stop() { closeGuide(); stopVoice(); },
-      clear() { closeGuide(); clearAudio(); clearTimeout(reactionTimer); thinking = false; settleDrone(); }
+      stop() { root.azulVoice?.stop(); closeGuide(); stopVoice(); },
+      clear() { root.azulVoice?.stop(); closeGuide(); clearAudio(); clearTimeout(reactionTimer); thinking = false; settleDrone(); }
     };
     window.addEventListener('pagehide', () => root.azulCompanion.clear());
     document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoice(); });

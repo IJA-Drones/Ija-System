@@ -72,5 +72,7 @@
 .azul-help[data-drone-state=sleep] .azd-flight { animation:none; transform:translateY(9px); }
 .azul-help[data-drone-state=sleep] .azd-propeller { animation:none; opacity:.35; }
 .azul-help[data-drone-state=sleep] .azd-eye { height:4px; top:31px; animation:none; }
+.azul-help[data-drone-state=listen] .azd-antenna::before { animation:az-md-led .7s ease-in-out infinite alternate; }
+.azul-help[data-drone-state=listen] .azd-eye { height:29px; top:16px; }
 @media(prefers-reduced-motion:reduce) { .azul-drone *, .azul-help .azd-tilt { animation:none!important; transition:none!important; } }
 

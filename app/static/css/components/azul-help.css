@@ -75,6 +75,13 @@ body.dark-mode .azul-help {--azul-ink:#e1ecfa;--azul-bg:#172333;--azul-card:#1e2
 .azul-voice-status { flex-shrink:0; margin:0; padding:8px 16px; font-size:11px; color:var(--azul-muted); background:var(--azul-card); }
 .azul-voice-status:empty { display:none; }
 .azul-voice-disclosure { display:block; color:var(--azul-muted); font-size:10px; text-align:center; margin-top:7px; }
+.azul-voice-controls { flex-shrink:0; padding:9px 16px; background:var(--azul-card); border-top:1px solid var(--azul-border); }
+.azul-voice-controls > div { display:flex; gap:8px; align-items:center; }
+.azul-voice-controls button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; border:1px solid #b8d6e4; border-radius:10px; background:#edf6fa; color:#235f7c; padding:8px 12px; font:inherit; font-size:11px; cursor:pointer; }
+.azul-voice-controls .azul-microphone[aria-pressed="true"] { background:#fff0ef; border-color:#e6b5b0; color:#963d38; }
+.azul-voice-controls small { display:block; font-size:10px; line-height:1.5; margin-top:7px; color:var(--azul-muted); }
+.azul-voice-controls [hidden],.azul-voice-controls[hidden] { display:none!important; }
+.azul-help[data-guide-open="1"] .azul-voice-controls,.portal-chat-panel:has([data-report]:not([hidden])) .azul-voice-controls { display:none; }
 .azul-help :is(button,a):focus-visible { outline:2px solid #4998c7; outline-offset:3px; }
 @media(max-width:480px) {
   .azul-launcher { bottom:10px; right:6px; width:96px; padding:0 0 5px; }

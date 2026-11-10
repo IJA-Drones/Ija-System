@@ -25,6 +25,14 @@ def list_public_prefeituras():
 
 
 def register_routes(bp):
+    @bp.post('/portal-cidadao/transcrever', endpoint='portal_azul_transcribe')
+    def portal_azul_transcribe():
+        from app.modules.chatbot.speech_input import reply
+        response = current_app.make_response(reply(public=True))
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        return response
+
     from .companion import context as companion_context, reply as voice_reply
     bp.app_context_processor(companion_context)
 

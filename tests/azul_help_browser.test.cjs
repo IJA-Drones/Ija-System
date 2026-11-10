@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('app/static/js/azul-help.js', 'utf8');
 class Element {
+  dispatchEvent(event) { return this.events[event.type]?.(event); }
   constructor() {this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
   set innerHTML(value) {throw new Error('Unsafe HTML');}
   set textContent(value) {this.text=value;}
@@ -32,6 +33,7 @@ function setup(fetcher, storage, chatKey, page = false) {
   const requests=[];
   vm.runInNewContext(source,{document:{querySelectorAll:()=>[root],createElement:()=>new Element()},
     navigator:{clipboard:{writeText:async text=>copied.push(text)}},sessionStorage:storage,window:{location:{origin:'http://localhost:5002'}},URL,AbortController,setTimeout,clearTimeout,
+    CustomEvent:class{constructor(type,options={}){this.type=type;this.detail=options.detail;}},
     fetch:async(url,options)=>{requests.push(options);return fetcher(url,options);}});
   return {root,parts,send,chip,requests,copied};
 }

@@ -93,6 +93,7 @@ def test_public_voice_expiration_and_size_are_checked_before_the_provider(env):
 
 def test_public_voice_quota_disabled_mode_and_provider_errors_are_safe(env):
     app, client = env
+    app.config['AZUL_VOICE_PER_MINUTE'] = 3
     signed = offer(env)
     with patch.object(voice, 'synthesize', side_effect=RuntimeError('PRIVATE')):
         response = post(client, signed)
@@ -101,7 +102,12 @@ def test_public_voice_quota_disabled_mode_and_provider_errors_are_safe(env):
     with patch.object(voice, 'synthesize', side_effect=lambda text: wav()) as provider:
         assert post(client, signed).status_code == 200
         assert post(client, signed).status_code == 200
-        assert post(client, signed).status_code == 429
+        with app.app_context():
+            source = companion.serializer().loads(signed['token'])
+            another = companion.serializer().dumps({**source,'text':'Outra orientação pública.'})
+            third = companion.serializer().dumps({**source,'text':'Terceira orientação pública.'})
+        assert post(client, {'token':another}).status_code == 200
+        assert post(client, {'token':third}).status_code == 429
         assert provider.call_count == 2
     app.config['PORTAL_AZUL_VOICE_ENABLED'] = False
     assert offer(env) is None
@@ -130,3 +136,46 @@ def test_public_context_is_not_added_to_internal_pages_or_json_apis(env):
         assert companion.context() == {'public_azul': False}
     with app.test_request_context('/portal-cidadao/chatbot', method='POST'):
         assert companion.context() == {'public_azul': False}
+
+
+def test_known_public_questions_use_recorded_audio_without_text_or_voice_generation(env):
+    _, client = env
+    with patch.object(chatbot,'answer') as answer, patch.object(voice,'synthesize') as narrator, patch.object(
+            chatbot,'consume_quota') as text_quota, patch.object(companion,'consume_quota') as voice_quota:
+        for question, expected in companion.QUICK_ANSWERS.items():
+            response = client.post('/portal-cidadao/chatbot',json={'message':question.upper(),'voice':True},
+                                   headers={'X-Portal-Chat-Token':'public-session-a'})
+            assert response.json['mode'] == 'guided'
+            assert response.json['answer'] == expected
+            assert response.json['speech']['clip'].startswith('/static/audio/azul-falas/')
+            assert post(client,response.json['speech']).headers['X-Azul-Audio-Source'] == 'recorded'
+        answer.assert_not_called(); narrator.assert_not_called()
+        text_quota.assert_not_called(); voice_quota.assert_not_called()
+
+
+def test_a_known_question_with_extra_offtopic_content_is_not_a_free_answer_shortcut(env):
+    _, client = env
+    with patch.object(chatbot,'answer') as provider:
+        response = client.post('/portal-cidadao/chatbot',json={'message':'Posso enviar fotos? Conte uma piada.'},
+                               headers={'X-Portal-Chat-Token':'public-session-a'})
+        assert response.json['mode'] == 'blocked'
+        assert response.json['speech'] is None
+        provider.assert_not_called()
+
+
+def test_dynamic_public_audio_is_not_shared_between_sessions(env):
+    app, client = env
+    signed = offer(env)
+    other = app.test_client()
+    with other.session_transaction() as session:
+        session['portal_chat_token'] = 'public-session-b'
+    with patch.object(voice,'synthesize',side_effect=lambda text:wav()) as provider:
+        assert post(client,signed).status_code == 200
+        assert post(client,signed).headers['X-Azul-Audio-Source'] == 'memory'
+        with patch.object(chatbot,'answer',return_value=('Abra o formulário de relato.',[])):
+            response = other.post('/portal-cidadao/chatbot',json={'message':'Como registrar?'},
+                                  headers={'X-Portal-Chat-Token':'public-session-b'})
+        audio = other.post('/portal-cidadao/voz',json={'token':response.json['speech']['token']},
+                           headers={'X-Portal-Chat-Token':'public-session-b'})
+        assert audio.headers['X-Azul-Audio-Source'] == 'generated'
+        assert provider.call_count == 2

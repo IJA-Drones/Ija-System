@@ -76,6 +76,7 @@ def test_voice_rejects_arbitrary_tampered_expired_and_unauthenticated_requests(e
 
 def test_voice_has_independent_quota_and_safe_provider_failures(env, context):
     app, client, _ = env
+    app.config['AZUL_VOICE_PER_MINUTE'] = 3
     offer = offered(env, context)
     with patch.object(voice, 'synthesize', side_effect=RuntimeError('PRIVATE-DATA')):
         response = client.post(offer['url'], json={'token': offer['token']})
@@ -84,7 +85,12 @@ def test_voice_has_independent_quota_and_safe_provider_failures(env, context):
     with patch.object(voice, 'synthesize', side_effect=lambda text: wav()) as provider:
         for _ in range(2):
             assert client.post(offer['url'], json={'token': offer['token']}).status_code == 200
-        assert client.post(offer['url'], json={'token': offer['token']}).status_code == 429
+        with app.app_context():
+            source = voice.serializer().loads(offer['token'])
+            another = voice.serializer().dumps({**source, 'text':'Outro resumo autorizado.'})
+            third = voice.serializer().dumps({**source, 'text':'Terceiro resumo autorizado.'})
+        assert client.post(offer['url'], json={'token':another}).status_code == 200
+        assert client.post(offer['url'], json={'token':third}).status_code == 429
         assert provider.call_count == 2
     app.config['AZUL_VOICE_ENABLED'] = False
     assert offered(env, context) is None

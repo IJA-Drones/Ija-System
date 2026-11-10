@@ -127,7 +127,7 @@
     }
     function welcome() {
       if (isPage) { updateView(); return; }
-      append('Olá! Sou a Azul.\nPosso explicar como usar o sistema e ajudar você a encontrar os recursos disponíveis para seu acesso.\n\nPor onde começamos?', 'assistant');
+      append('Olá! Sou a AZUL.\nPosso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Os recursos do sistema seguem o seu acesso.\n\nPor onde começamos?', 'assistant');
     }
     function open(value) {
       if (isPage) return;
@@ -255,9 +255,10 @@
       status.textContent = 'Conversa encerrada para atualizar seu acesso.';
       updateView();
     }
-    async function ask(text, intent) {
+    async function ask(text, intent, options = {}) {
       text = text.trim();
       if (!text || pending || accessChanged || text.length > 1500) return;
+      if (!options.voice) root.azulVoice?.stop();
       root.azulCompanion?.closeGuide();
       root.azulCompanion?.stopVoice();
       open(true);
@@ -275,7 +276,8 @@
         const response = await fetch(root.dataset.url, {
           method: 'POST', signal: controller.signal,
           headers: {'Content-Type': 'application/json', 'X-CSRFToken': root.dataset.csrf},
-          body: JSON.stringify({message: text, history: intent === 'start_report' ? [] : history, page: root.dataset.page, intent, chat_key: root.dataset.chatKey})
+          body: JSON.stringify({message: text, history: intent === 'start_report' ? [] : history, page: root.dataset.page, intent, chat_key: root.dataset.chatKey,
+            ...(options.voice ? {voice:true} : {})})
         });
         const data = await response.json().catch(() => ({}));
         if (version !== generation) return;
@@ -294,12 +296,26 @@
           entry.links = Array.isArray(data.links) ? data.links.slice(0,12) : [];
           renderLinks(bubble, entry.links);
         }
-        root.azulCompanion?.attachSpeech(bubble, data.speech);
+        if (data.mode === 'saude' && Array.isArray(data.parts)) {
+          const sources = document.createElement('div'); sources.className = 'azul-links';
+          const seen = new Set();
+          for (const part of data.parts.slice(0,80)) {
+            let url; try { url = new URL(part.url); } catch (_) { continue; }
+            if (url.protocol !== 'https:' || url.username || url.password || seen.has(url.href)) continue;
+            if (!['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
+            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte oficial';
+            link.target = '_blank'; link.rel = 'noopener noreferrer'; sources.append(link); seen.add(url.href);
+          }
+          if (sources.children.length) bubble.append(sources);
+        }
+        const speechButton = root.azulCompanion?.attachSpeech(bubble, data.speech);
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
         history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);
         messages.scrollTop = messages.scrollHeight;
+        root.dispatchEvent(new CustomEvent('azul:reply',{detail:{speechButton,mode:data.mode}}));
       } catch (error) {
         if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'faq');
+        if (version === generation) root.dispatchEvent(new CustomEvent('azul:reply-error'));
       } finally {
         clearTimeout(timer);
         if (version === generation) {
@@ -314,7 +330,12 @@
     }
     root.addEventListener('azul:open', () => open(true));
     root.addEventListener('azul:close', () => open(false));
-    root.addEventListener('azul:ask', event => ask(event.detail?.message || '', event.detail?.intent));
+    root.addEventListener('azul:ask', event => ask(event.detail?.message || '', event.detail?.intent, {voice:event.detail?.voice === true}));
+    root.addEventListener('azul:interrupt', () => {
+      if (!pending) return;
+      generation++; pending.abort(); pending = null; send.disabled = false;
+      root.azulCompanion?.thinking(false); status.textContent = idleStatus; save();
+    });
     root.addEventListener('azul:access-changed', invalidateAccess);
     toggle?.addEventListener('click', () => { open(panel.hidden); if (!panel.hidden) root.azulCompanion?.react(); });
     stop?.addEventListener('click', () => {
@@ -342,7 +363,9 @@
     root.querySelector('[data-clear]').addEventListener('click', reset);
     root.addEventListener('keydown', event => { if (!isPage && event.key === 'Escape' && !panel.hidden) open(false); });
     form.addEventListener('submit', event => { event.preventDefault(); ask(input.value); });
-    root.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => ask(button.dataset.question, button.dataset.intent)));
+    root.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => {
+      button.closest?.('details')?.removeAttribute('open'); ask(button.dataset.question, button.dataset.intent);
+    }));
     if (!restore()) welcome();
   });
 })();

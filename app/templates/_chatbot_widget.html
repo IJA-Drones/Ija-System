@@ -1,8 +1,10 @@
 {% from '_azul_drone.html' import drone %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261106-2') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261106-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261110-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
-<div class="azul-help" data-azul-help data-tutorial-url="{{ azul_tutorial_url|default('', true) }}" data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261110-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-voice-call.css', v='20261110-3') }}">
+<div class="azul-help" data-azul-help data-transcribe-url="{{ azul_transcribe_url|default('') }}" data-tutorial-url="{{ azul_tutorial_url|default('', true) }}" data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
   <button type="button" class="azul-launcher" data-toggle aria-expanded="false" aria-controls="{{ chatbot_id_prefix }}Panel" title="Conversar com a Azul · arraste para mover">{{ drone('azul-drone-launcher') }}<span class="azul-launcher-label">Azul <i class="bi bi-chat-dots" aria-hidden="true"></i></span></button>
   <section id="{{ chatbot_id_prefix }}Panel" class="azul-panel" hidden aria-label="Azul, inteligência do sistema">
     <header class="azul-header">
@@ -17,7 +19,9 @@
     </header>
     <div class="azul-context"><span class="azul-dot"></span> Ajuda com base no seu acesso <span data-profile></span></div>
     {% include '_azul_guide.html' %}
+    {% include '_azul_voice_call.html' %}
     <div class="azul-messages" role="log" aria-live="polite" aria-relevant="additions text" data-messages></div>
+    <details class="azul-suggestions-drawer"><summary>Perguntas e atalhos</summary>
     <div class="azul-suggestions" aria-label="Sugestões">
       {% if azul_can_search|default(false) %}
       <button type="button" data-search-guide data-question="Quero buscar solicitações municipais. Quais filtros posso informar?">Buscar solicitações <i class="bi bi-search" aria-hidden="true"></i></button>
@@ -32,17 +36,14 @@
       {% if azul_can_export|default(false) %}
       <button type="button" data-question="Quero gerar um relatório." data-intent="start_report">Gerar relatório <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i></button>
       {% endif %}
-    </div>
+    </div></details>
     <p class="azul-voice-status" data-voice-status role="status"></p>
-    <form class="azul-compose form-no-loading">
-      <label class="visually-hidden" for="{{ chatbot_id_prefix }}Input">Pergunte à Azul</label>
-      <div class="azul-input-row"><input id="{{ chatbot_id_prefix }}Input" data-compose-input maxlength="1500" required autocomplete="off" placeholder="Como posso ajudar?" aria-label="Pergunte à Azul"><button type="submit" aria-label="Enviar mensagem"><i class="bi bi-arrow-up" aria-hidden="true"></i></button></div>
-      {% if azul_voice_available|default(false) %}<span class="azul-voice-disclosure">Voz gerada por IA · reprodução opcional</span>{% endif %}
-      <small data-status role="status">{{ 'Orientações e relatórios. Downloads exigem confirmação.' if azul_can_export|default(false) else 'Orientações e atalhos. Nenhuma alteração pelo chat.' }}</small>
-    </form>
+    {% with composer_id=chatbot_id_prefix ~ 'Input', composer_status='Orientações e relatórios. Downloads exigem confirmação.' if azul_can_export|default(false) else 'Orientações e atalhos. Nenhuma alteração pelo chat.' %}{% include '_azul_composer.html' %}{% endwith %}
   </section>
 </div>
-<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261106-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261110-5') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261110-4') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261106-1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-drag.js', v='20261106-2') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261106-4') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261110-2') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261110-2') }}" defer></script>
