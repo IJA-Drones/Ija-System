@@ -44,3 +44,48 @@ body.dark-mode .azul-help {--azul-ink:#e1ecfa;--azul-bg:#172333;--azul-card:#1e2
 .azul-expand:hover {background:#ffffff20;color:#fff;}
 
 .azul-reload {display:block;margin-top:12px;padding:8px 12px;border:1px solid var(--azul-border);border-radius:8px;background:var(--azul-card);color:var(--azul-ink);font:inherit;}
+
+/* The mini-drone is the entry point; it never opens the conversation by itself. */
+.azul-launcher { bottom:16px; right:16px; width:108px; padding:0 3px 8px; flex-direction:column; gap:0; border:0; border-radius:24px; background:transparent; box-shadow:none; }
+.azul-launcher-label { display:inline-flex; align-items:center; gap:9px; padding:6px 15px; border-radius:20px; background:#174875; border:1px solid #ffffff55; color:#fff; box-shadow:0 4px 16px #12395c26; font-size:12px; }
+.azul-launcher .azul-launcher-label i { font-size:13px; }
+.azul-panel { bottom:124px; }
+.azul-header { padding:13px 16px; gap:9px; flex-shrink:0; }
+.azul-header .azul-drone { margin-left:-7px; }
+.azul-guide { display:flex; flex:1; flex-direction:column; gap:15px; min-height:0; overflow-y:auto; padding:22px 18px; background:var(--azul-card); }
+.azul-guide[hidden] { display:none!important; }
+.azul-guide header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.azul-guide-kicker { font-size:10px; font-weight:700; letter-spacing:.1em; color:var(--azul-muted); }
+.azul-guide-kicker span { margin-left:7px; letter-spacing:0; font-weight:400; }
+.azul-guide header button { border:0; background:transparent; color:var(--azul-muted); min-height:36px; min-width:36px; border-radius:8px; }
+.azul-guide h2 { margin:0; font-size:20px; line-height:1.35; color:var(--azul-ink); }
+.azul-guide > p { margin:0; color:var(--azul-ink); font-size:14px; line-height:1.8; }
+.azul-guide-links { margin:0; }
+.azul-guide-tools { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.azul-guide-tools > button { border:0; padding:5px 0; background:transparent; color:var(--azul-ink); font:inherit; font-size:12px; text-decoration:underline; }
+.azul-guide footer { display:flex; justify-content:space-between; gap:12px; margin-top:auto; padding-top:20px; }
+.azul-guide footer button { padding:9px 14px; border:1px solid var(--azul-border); border-radius:10px; font:inherit; font-size:13px; color:var(--azul-ink); background:var(--azul-bg); min-height:40px; }
+.azul-guide footer [data-guide-next] { background:#205c90; color:#fff; border-color:#205c90; }
+.azul-guide button:disabled { opacity:.45; }
+.azul-help[data-guide-open="1"] :is(.azul-messages,.azul-empty,.azul-suggestions,.azul-compose) { display:none!important; }
+.azul-guide-highlight { outline:2px solid #298dc6!important; outline-offset:4px; border-radius:5px; }
+.azul-speak { display:inline-flex; margin-top:10px; padding:6px 10px; border:1px solid var(--azul-border); border-radius:8px; color:var(--azul-ink); background:var(--azul-card); font:inherit; font-size:11px; min-height:32px; }
+.azul-speak:hover,.azul-speak[aria-pressed="true"] { border-color:#398bb9; background:var(--azul-bg); }
+.azul-guide .azul-speak { margin:0; }
+.azul-voice-status { flex-shrink:0; margin:0; padding:8px 16px; font-size:11px; color:var(--azul-muted); background:var(--azul-card); }
+.azul-voice-status:empty { display:none; }
+.azul-voice-disclosure { display:block; color:var(--azul-muted); font-size:10px; text-align:center; margin-top:7px; }
+.azul-help :is(button,a):focus-visible { outline:2px solid #4998c7; outline-offset:3px; }
+@media(max-width:480px) {
+  .azul-launcher { bottom:10px; right:6px; width:96px; padding:0 0 5px; }
+  .azul-launcher .azul-drone { --drone-scale:.3; }
+  .azul-panel { bottom:112px; max-height:calc(100dvh - 134px); }
+  .azul-speak,.azul-guide-tools > button,.azul-guide footer button { min-height:40px; }
+}
+.azul-help .azul-drag-handle { touch-action:none; user-select:none; -webkit-user-select:none; cursor:grab; }
+.azul-drag-handle .azul-drone { pointer-events:none; }
+[data-dragging="1"] .azul-drag-handle { cursor:grabbing; }
+@media(max-width:600px) {
+  .azul-help:has(> .azul-panel:not([hidden])) > .azul-launcher,
+  .portal-chat:has(> .portal-chat-panel:not([hidden])) > .azul-launcher { visibility:hidden; pointer-events:none; }
+}

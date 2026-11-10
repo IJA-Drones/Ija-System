@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_chatbot.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261020-4') }}">
 {% endblock %}
 
@@ -424,7 +423,6 @@
 
   <script type="application/json" id="portalCidadaoFocusCatalog">{{ focus_catalog | tojson }}</script>
 </main>
-{% include '_portal_chatbot.html' %}
 {% endmacro %}
 {% block content %}{{ portal_content() }}{% endblock %}
 {% block auth_content %}{{ portal_content() }}{% endblock %}
@@ -433,8 +431,6 @@
 <script src="{{ url_for('static', filename='js/compartilhar.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-offline.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-push.js', v='20261022') }}"></script>
-<script src="{{ url_for('static', filename='js/portal-chat-mobile.js') }}"></script>
-<script src="{{ url_for('static', filename='js/portal-chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-report.js') }}"></script>
 {% if public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261020-2') }}" defer></script>{% endif %}

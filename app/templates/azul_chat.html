@@ -1,32 +1,38 @@
 {% extends "base.html" %}
+{% from '_azul_drone.html' import drone %}
 {% block title %}Azul · Conversa | Oceano Azul{% endblock %}
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261104') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul_chat.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261106-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261106-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul_chat.css', v='20261106-2') }}">
 {% endblock %}
 {% block content %}
 <div class="azul-help azul-workspace" data-azul-help data-view="page" data-conversation="0"
+     data-tutorial-url="{{ azul_tutorial_url|default('', true) }}"
      data-chat-key="{{ azul_chat_key }}" data-export="{{ '1' if azul_can_export else '0' }}"
      data-url="{{ azul_help_url }}" data-page="{{ request.path }}"
      data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
   <section class="azul-panel" aria-label="Conversa com a Azul">
     <header class="azul-page-header">
-      <div class="azul-page-brand"><span class="azul-page-mark" aria-hidden="true"><i class="bi bi-stars"></i></span><div><h1>Azul <span>IA</span></h1><p>Sua conexão com o Oceano Azul</p></div></div>
-      <button type="button" class="azul-new-chat" data-clear title="Limpar a conversa atual e começar outra"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova conversa</button>
+      <div class="azul-page-brand">{{ drone() }}<div><h1>Azul <span>IA</span></h1><p>Sua conexão com o Oceano Azul</p></div></div>
+      <div class="azul-page-actions"><button type="button" class="azul-new-chat" data-guide-open><i class="bi bi-book" aria-hidden="true"></i> Guia prático</button><button type="button" class="azul-new-chat" data-clear title="Limpar a conversa atual e começar outra"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova conversa</button></div>
     </header>
     <div class="azul-page-body">
       <div class="azul-conversation">
+        {% include '_azul_guide.html' %}
         <div class="azul-empty" data-empty>
-          <span class="azul-empty-mark" aria-hidden="true"><i class="bi bi-stars"></i></span>
+          {{ drone('azul-drone-large') }}
           <span class="azul-eyebrow">INTELIGÊNCIA DO SISTEMA</span>
           <h2>Por onde vamos começar?</h2>
           <p>Encontre informações, entenda os processos e avance no seu trabalho. Tudo dentro do seu acesso.</p>
           <div class="azul-starters" aria-label="Começar uma conversa">
             <button type="button" data-question="O que posso acessar no sistema?" data-intent="access_overview"><i class="bi bi-compass" aria-hidden="true"></i><strong>Explore seu acesso</strong><span>Descubra os recursos disponíveis para você.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
-            <button type="button" data-question="Como encontro orientações para usar os recursos disponíveis para mim?"><i class="bi bi-journal-text" aria-hidden="true"></i><strong>Encontre o caminho</strong><span>Peça orientações para sua próxima tarefa.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+            <button type="button" data-guide-open><i class="bi bi-journal-text" aria-hidden="true"></i><strong>Guia prático</strong><span>Pratique com a Azul e dados fictícios.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
           </div>
         </div>
         <div class="azul-messages" role="log" aria-label="Mensagens da conversa" aria-live="polite" aria-relevant="additions text" data-messages></div>
+        <p class="azul-voice-status" data-voice-status role="status"></p>
         <form class="azul-compose form-no-loading">
           <label class="visually-hidden" for="azulPageInput">Mensagem para a Azul</label>
           <div class="azul-input-row">
@@ -34,6 +40,7 @@
             <div class="azul-compose-toolbar"><span id="azulComposeHint">Enter para enviar · Shift + Enter para nova linha</span><span data-count aria-label="Caracteres utilizados">0 / 1.500</span><button type="button" data-stop hidden aria-label="Interromper resposta" title="Interromper resposta"><i class="bi bi-stop-fill" aria-hidden="true"></i></button><button type="submit" aria-label="Enviar mensagem" title="Enviar mensagem"><i class="bi bi-arrow-up" aria-hidden="true"></i></button></div>
           </div>
           <small data-status role="status">A Azul responde com base nas permissões do seu perfil.</small>
+          {% if azul_voice_available|default(false) %}<span class="azul-voice-disclosure">Voz gerada por IA · reprodução opcional</span>{% endif %}
         </form>
       </div>
       <aside class="azul-tools" aria-label="Recursos da Azul">
@@ -41,7 +48,7 @@
         <h2>Como posso ajudar</h2>
         <p>Escolha um ponto de partida ou escreva sua pergunta.</p>
         {% if azul_can_search %}
-        <button type="button" data-question="Quero buscar solicitações municipais. Quais filtros posso informar?"><i class="bi bi-search" aria-hidden="true"></i><span><strong>Buscar solicitações</strong><small>Encontre registros com os filtros certos.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+        <button type="button" data-search-guide data-question="Quero buscar solicitações municipais. Quais filtros posso informar?"><i class="bi bi-search" aria-hidden="true"></i><span><strong>Buscar solicitações</strong><small>Encontre registros com os filtros certos.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         {% endif %}
         {% if azul_can_view_operations %}
         <button type="button" data-question="O que precisa da minha atenção hoje?" data-intent="attention_today"><i class="bi bi-calendar-check" aria-hidden="true"></i><span><strong>Atenção hoje</strong><small>Consulte o resumo da sua operação.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
@@ -50,6 +57,7 @@
         <button type="button" data-question="Quero gerar um relatório." data-intent="start_report"><i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i><span><strong>Gerar relatório</strong><small>Revise os filtros e confirme o download.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         {% endif %}
         <button type="button" data-question="Não consigo editar. Como verifico minhas permissões?"><i class="bi bi-shield-lock" aria-hidden="true"></i><span><strong>Entender permissões</strong><small>Saiba como verificar seu acesso.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+        <button type="button" data-guide-open><i class="bi bi-book" aria-hidden="true"></i><span><strong>Guia prático</strong><small>Aprenda o caminho com a Azul.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         <div class="azul-access-note"><i class="bi bi-person-check" aria-hidden="true"></i><strong>Seu acesso, respeitado <span data-profile></span></strong><p>As consultas seguem as mesmas permissões e vínculos do sistema.</p></div>
         <small class="azul-session-note">A conversa fica nesta aba durante a sessão. Você pode continuar pelo chat flutuante ao navegar.</small>
       </aside>
@@ -59,5 +67,7 @@
 {% endblock %}
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261104-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261106-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261106-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261106-4') }}" defer></script>
 {% endblock %}

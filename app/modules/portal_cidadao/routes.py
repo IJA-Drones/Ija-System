@@ -25,6 +25,16 @@ def list_public_prefeituras():
 
 
 def register_routes(bp):
+    from .companion import context as companion_context, reply as voice_reply
+    bp.app_context_processor(companion_context)
+
+    @bp.post('/portal-cidadao/voz', endpoint='portal_azul_voice')
+    def portal_azul_voice():
+        response = current_app.make_response(voice_reply())
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        return response
+
     from .whatsapp import register_routes as register_whatsapp_routes
     register_whatsapp_routes(bp)
     from .telegram import register_routes as register_telegram_routes

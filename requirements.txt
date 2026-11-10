@@ -62,6 +62,7 @@ mdurl==0.1.2
 murmurhash==1.0.15
 numpy==2.4.4
 openai==2.30.0
+websockets==15.0.1
 openai-agents==0.13.5
 openai-guardrails==0.1.2
 openpyxl==3.1.5

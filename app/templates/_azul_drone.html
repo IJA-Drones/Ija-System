@@ -1,0 +1,15 @@
+{% macro drone(class_name="") -%}
+<span class="azul-drone {{ class_name }}" aria-hidden="true"><span class="azul-drone-space">
+<span class="azd-flight"><span class="azd-tilt"><span class="azd-behavior">
+            <span class="azd-boom azd-boom-back-left"></span><span class="azd-boom azd-boom-back-right"></span>
+            <span class="azd-boom azd-boom-front-left"></span><span class="azd-boom azd-boom-front-right"></span>
+            <span class="azd-motor azd-back-left"><span class="azd-guard"></span><span class="azd-prop-plane"><span class="azd-propeller"></span></span><span class="azd-hub"></span></span>
+            <span class="azd-motor azd-back-right"><span class="azd-guard"></span><span class="azd-prop-plane"><span class="azd-propeller"></span></span><span class="azd-hub"></span></span>
+            <span class="azd-motor azd-front-left"><span class="azd-guard"></span><span class="azd-prop-plane"><span class="azd-propeller"></span></span><span class="azd-hub"></span></span>
+            <span class="azd-motor azd-front-right"><span class="azd-guard"></span><span class="azd-prop-plane"><span class="azd-propeller"></span></span><span class="azd-hub"></span></span>
+            <span class="azd-antenna"></span><span class="azd-leg azd-leg-left"></span><span class="azd-leg azd-leg-right"></span>
+            <span class="azd-shell"><span class="azd-top-stripe"></span><span class="azd-visor"><span class="azd-face"><span class="azd-eye azd-eye-left"></span><span class="azd-eye azd-eye-right"></span><span class="azd-cheek azd-cheek-left"></span><span class="azd-cheek azd-cheek-right"></span><span class="azd-mouth"></span></span><span class="azd-scan"></span></span><span class="azd-shell-name">AZUL</span></span>
+            <span class="azd-particle azd-particle-left"></span><span class="azd-particle azd-particle-right"></span>
+          </span></span></span>
+</span></span>
+{%- endmacro %}

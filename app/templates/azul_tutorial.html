@@ -1,0 +1,20 @@
+{% from '_azul_drone.html' import drone %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Aprender na prática com a Azul · Dados fictícios</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261106-2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul-tutorial.css', v='20261106-1') }}">
+</head>
+<body class="azul-help" data-drone-state="idle">
+  <main id="tutorialApp"></main>
+  <div class="tutorial-spotlight" data-spotlight hidden aria-hidden="true"></div>
+  <div class="tutorial-flyer" data-flyer hidden aria-hidden="true">{{ drone() }}<span data-pointer></span></div>
+  <template id="tutorialDrone">{{ drone('azul-drone-large') }}</template>
+  <script type="application/json" id="tutorialCatalog">{{ lessons|tojson }}</script>
+  <script src="{{ url_for('static', filename='js/azul-tutorial.js', v='20261106-1') }}" defer></script>
+  <noscript><p>Ative o JavaScript para iniciar o tutorial interativo. Esta sala usa apenas dados fictícios.</p></noscript>
+</body>
+</html>

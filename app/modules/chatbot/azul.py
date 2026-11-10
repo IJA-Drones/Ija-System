@@ -249,10 +249,13 @@ def relevant_links(message, authorized_links):
     return authorized_links[:6] if general_request else []
 
 
-def consume_help_quota(user_id, *, export=False):
+def consume_help_quota(user_id, *, export=False, voice=False):
     """Per-account minute limit and shared daily budget, without message storage."""
     now = int(time.time())
-    limits = ([(f'export:user:{user_id}:{now // 60}', 3),
+    limits = ([(f'voice:user:{user_id}:{now // 60}', 3),
+               (f'voice:user-day:{user_id}:{now // 86400}', 30),
+               (f'voice:day:{now // 86400}', current_app.config.get('AZUL_VOICE_DAILY_LIMIT', 200))] if voice else
+              [(f'export:user:{user_id}:{now // 60}', 3),
                (f'export:day:{user_id}:{now // 86400}', 50)] if export else
               [(f'user:{user_id}:{now // 60}', 8),
                (f'day:{now // 86400}', current_app.config.get('AZUL_HELP_DAILY_LIMIT', 500))])

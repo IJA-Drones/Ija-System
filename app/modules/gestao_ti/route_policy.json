@@ -1431,5 +1431,8 @@
   },
   "main.azul_export_download": {
     "POST": "prefeitura.relatorios.exportar"
+  },
+  "main.azul_voice": {
+    "POST": ["area:prefeitura", "area:agro", "area:financeiro", "area:sistema"]
   }
 }

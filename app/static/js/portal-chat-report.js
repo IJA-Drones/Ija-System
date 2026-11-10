@@ -102,6 +102,8 @@
   function start() {
     if (active || form.dataset.submitting === "true" || chatForm.querySelector('button').disabled) return;
     active = true;
+    root.azulCompanion?.stop();
+    root.querySelectorAll?.('[data-guide-open]')?.forEach(button => { button.disabled = true; });
     root.querySelector('.portal-chat-panel').hidden = false;
     root.querySelector('.portal-chat-toggle').setAttribute('aria-expanded', 'true');
     chatSections.forEach(element => { element.hidden = true; });
@@ -127,6 +129,8 @@
 
   function leave() {
     if (sending) return;
+    root.azulCompanion?.stopVoice();
+    root.querySelectorAll?.('[data-guide-open]')?.forEach(button => { button.disabled = false; });
     report.append(review);
     review.hidden = true;
     wrappers.forEach(wrapper => { wrapper.replaceWith(...wrapper.childNodes); });

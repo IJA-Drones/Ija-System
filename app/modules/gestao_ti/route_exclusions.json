@@ -1,4 +1,5 @@
 {
+  "main.azul_tutorial": "Synthetic read-only training room; public citizen exercises, server-filtered internal catalogue; sandbox and CSP prohibit business requests or form submissions",
   "main.treinamentos": "Authenticated read-only learning center; no operational data or writes",
   "main.treinamentos_arquivo": "Authenticated downloads from a fixed catalogue of manuals and synthetic fixtures",
   "main.portal_acoes": "Public approved municipal actions, explicitly separated demonstration mode",
@@ -20,6 +21,7 @@
   "main.serve_sw": "public, personal or separately protected endpoint",
   "main.portal_cidadao": "public, personal or separately protected endpoint",
   "main.portal_cidadao_chatbot": "public portal chatbot protected by its session token, input validation and request quotas",
+  "main.portal_azul_voice": "Public narration of signed server text only; session token, expiry and independent voice quotas",
   "main.portal_cidadao_boletim_dengue": "public, personal or separately protected endpoint",
   "main.portal_cidadao_denuncias_criar": "public, personal or separately protected endpoint",
   "main.portal_cidadao_cep": "public, personal or separately protected endpoint",

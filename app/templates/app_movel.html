@@ -31,10 +31,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app-movel.css') }}">
 </head>
 <body>
+  {% from '_azul_drone.html' import drone %}
+  <template id="mobileAzulMascot">{{ drone('azul-drone-large') }}</template>
   <div id="app" class="app"></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <dialog id="dialog" class="dialog"></dialog>
+  {% include '_portal_chatbot.html' %}
   <script src="{{ url_for('static', filename='js/compartilhar.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/app-movel.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app-movel.js', v='20261106-2') }}"></script>
 </body>
 </html>

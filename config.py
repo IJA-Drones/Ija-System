@@ -10,6 +10,12 @@ class Config:
     PORTAL_CHATBOT_WEB_SEARCH_ENABLED = os.getenv("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     AZUL_HELP_DAILY_LIMIT = int(os.getenv("AZUL_HELP_DAILY_LIMIT", "500"))
+    AZUL_VOICE_ENABLED = os.getenv("AZUL_VOICE_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    AZUL_VOICE_MODEL = os.getenv("AZUL_VOICE_MODEL", "gpt-realtime-2.1-mini")
+    AZUL_VOICE = os.getenv("AZUL_VOICE", "coral")
+    AZUL_VOICE_DAILY_LIMIT = int(os.getenv("AZUL_VOICE_DAILY_LIMIT", "200"))
+    PORTAL_AZUL_VOICE_ENABLED = os.getenv("PORTAL_AZUL_VOICE_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    PORTAL_AZUL_VOICE_DAILY_LIMIT = int(os.getenv("PORTAL_AZUL_VOICE_DAILY_LIMIT", "100"))
     OPENAI_TALENT_MODEL = os.getenv("OPENAI_TALENT_MODEL", "")
     OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-6-luna")
     PORTAL_CHATBOT_DAILY_LIMIT = int(os.getenv("PORTAL_CHATBOT_DAILY_LIMIT", "500"))

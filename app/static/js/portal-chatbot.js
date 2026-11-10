@@ -11,6 +11,8 @@
   const clear = root.querySelector('[data-clear]');
   const status = root.querySelector('[data-status]');
   const about = root.querySelector('[data-about-oceano]');
+  let speechConfig = {};
+  try { speechConfig = JSON.parse(root.querySelector('[data-portal-speech]')?.textContent || '{}'); } catch (_) { /* Text chat remains available. */ }
   let history = [];
   let busy = false;
   function appendPortalText(entry, text) {
@@ -38,7 +40,7 @@
     }
     entry.append(document.createTextNode(text.slice(cursor)));
   }
-  function append(text, role, parts = [], showName = true, highlightInstitutional = false) {
+  function append(text, role, parts = [], showName = true, highlightInstitutional = false, speech = null) {
     const entry = document.createElement('p');
     entry.className = `portal-chat-message portal-chat-${role}`;
     entry.textContent = role === 'user' ? `Você: ${text}` : `Azul: ${text}`;
@@ -76,6 +78,7 @@
       }
     }
     log.append(entry);
+    if (role === 'assistant') root.azulCompanion?.attachSpeech(entry, speech);
     log.scrollTop = log.scrollHeight;
   }
   const quickAnswers = [
@@ -86,14 +89,18 @@
   ];
   function answerQuick(item) {
     if (busy) return;
+    root.azulCompanion?.stopVoice();
+    root.azulCompanion?.closeGuide();
+    const canonical = speechConfig.quick?.[item.question];
+    const answer = canonical?.answer || item.answer;
     append(item.question, 'user');
-    append(item.answer, 'assistant');
+    append(answer, 'assistant', [], true, false, canonical?.speech);
     history = [...history, {role: 'user', content: item.question},
-      {role: 'assistant', content: item.answer}].slice(-6);
+      {role: 'assistant', content: answer}].slice(-6);
     input.focus();
   }
   function welcome() {
-    append('Olá! Sou a Azul. Posso ajudar com saúde, prevenção, vigilância e uso do Portal do Cidadão, além dos contatos da Prefeitura e do canal institucional da Oceano Azul. Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false);
+    append(speechConfig.welcome_text || 'Olá! Sou a Azul. Posso ajudar com saúde, prevenção, vigilância e uso do Portal do Cidadão, além dos contatos da Prefeitura e do canal institucional da Oceano Azul. Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.', 'assistant', [], false, false, speechConfig.welcome);
     const suggestions = document.createElement('details');
     suggestions.open = true;
     suggestions.className = 'portal-chat-suggestions';
@@ -114,39 +121,52 @@
     log.scrollTop = 0;
   }
   function show(open) {
+    if (!open) root.azulCompanion?.stop();
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches;
     (open ? (mobile ? root.querySelector('[data-close]') : input) : toggle).focus();
   }
-  toggle.addEventListener('click', () => show(panel.hidden));
+  toggle.addEventListener('click', () => { show(panel.hidden); if (!panel.hidden) root.azulCompanion?.react(); });
+  root.addEventListener('azul:open', () => show(true));
+  root.addEventListener('azul:close', () => show(false));
+  root.addEventListener('azul:ask', event => ask(event.detail?.message || ''));
+  root.addEventListener('azul:access-changed', () => {
+    root.azulCompanion?.clear();
+    input.disabled = send.disabled = clear.disabled = true;
+    status.textContent = 'Recarregue a página para atualizar sua sessão.';
+  });
   root.querySelector('[data-close]').addEventListener('click', () => show(false));
   root.addEventListener('keydown', event => { if (event.key === 'Escape') show(false); });
-  clear.addEventListener('click', () => { if (busy) return; history = []; log.replaceChildren(); welcome(); input.focus(); });
+  clear.addEventListener('click', () => { if (busy) return; root.azulCompanion?.clear(); history = []; log.replaceChildren(); welcome(); input.focus(); });
   about?.addEventListener('click', () => {
     if (busy || !about.dataset.summary) return;
+    root.azulCompanion?.stopVoice();
     const question = 'Quem é a Oceano Azul?';
     const answer = about.dataset.summary;
     append(question, 'user');
     append(answer, 'assistant', [{text: answer + '\n\n'},
-      {text: 'Conheça o site institucional da Oceano Azul', url: about.dataset.source, title: 'Site institucional da empresa'}], true, true);
+      {text: 'Conheça o site institucional da Oceano Azul', url: about.dataset.source, title: 'Site institucional da empresa'}], true, true, speechConfig.institutional);
     history = [...history, {role: 'user', content: question},
       {role: 'assistant', content: answer + '\nFonte: ' + about.dataset.source}].slice(-6);
     input.focus();
   });
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-    const message = input.value.trim();
+  async function ask(text) {
+    const message = text.trim();
     if (busy || !message) return;
+    root.azulCompanion?.closeGuide();
+    root.azulCompanion?.stopVoice();
     if (/^(?:quero|gostaria de|preciso|desejo|vamos)?\s*(?:fazer|criar|registrar|enviar|abrir)\s+(?:um[a]?\s+)?(?:relato|den[uú]ncia|ocorr[eê]ncia)[.!?]*$/i.test(message)) {
       input.value = '';
-      root.dispatchEvent(new CustomEvent('portal:start-report'));
+      if (root.dataset.reportUrl && !root.querySelector('[data-start-report]')) window.location.assign(root.dataset.reportUrl);
+      else root.dispatchEvent(new CustomEvent('portal:start-report'));
       return;
     }
     const normalized = message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[?!.]+$/g, '').trim();
     const quick = quickAnswers.find(item => item.question.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[?!.]+$/g, '').trim() === normalized);
     if (quick) { input.value = ''; answerQuick(quick); return; }
     busy = true; send.disabled = true; clear.disabled = true; if (about) about.disabled = true;
+    root.azulCompanion?.thinking(true);
     send.textContent = 'Aguarde…';
     form.setAttribute('aria-busy', 'true');
     append(message, 'user');
@@ -163,18 +183,20 @@
       });
       const data = await response.json();
       if (!response.ok || !data.answer) throw new Error(data.error || 'Não foi possível responder agora.');
-      append(data.answer, 'assistant', data.parts || []);
+      append(data.answer, 'assistant', data.parts || [], true, false, data.speech);
       history = [...history, {role: 'user', content: message}, {role: 'assistant', content: data.answer}].slice(-6);
     } catch (error) {
       append(error.name === 'AbortError' ? 'A resposta demorou. Tente novamente.' : (error.message === 'Failed to fetch' ? 'Falha de conexão. Tente novamente.' : error.message), 'assistant');
       input.value = message;
     } finally {
       clearTimeout(timeout); busy = false; send.disabled = false; clear.disabled = false; status.textContent = '';
+      root.azulCompanion?.thinking(false);
       send.textContent = sendLabel;
       if (about) about.disabled = false;
       form.setAttribute('aria-busy', 'false');
       if (!panel.hidden) input.focus();
     }
-  });
+  }
+  form.addEventListener('submit', event => { event.preventDefault(); return ask(input.value); });
   welcome();
 })();

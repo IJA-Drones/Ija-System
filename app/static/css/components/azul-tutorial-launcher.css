@@ -1,0 +1,17 @@
+.azul-training-dialog { position:fixed; inset:12px; margin:auto; padding:0; border:1px solid #cadae6; border-radius:22px; width:min(1360px,calc(100vw - 24px)); height:calc(100dvh - 24px); max-width:none; max-height:none; background:#f5f8fb; box-shadow:0 25px 90px #092d4f45; color:#20445b; overflow:hidden; }
+.azul-training-dialog[open] { display:flex; flex-direction:column; }
+.azul-training-dialog::backdrop { background:#071c36a6; backdrop-filter:blur(4px); }
+.azul-training-toolbar { display:flex; align-items:center; gap:14px; padding:13px 20px; background:#fff; border-bottom:1px solid #dce7ee; flex-shrink:0; }
+.azul-training-toolbar > div:first-child { flex:1; }.azul-training-toolbar strong { display:block; font-size:14px; }.azul-training-toolbar small { display:block; font-size:10px; color:#5d7d91; margin-top:4px; }
+.azul-training-toolbar > button { border:1px solid #dce7ee; background:#f7fafc; color:#376a82; border-radius:9px; padding:10px 12px; min-height:40px; font:inherit; font-size:11px; cursor:pointer; }
+.azul-training-toolbar > [data-training-close] { font-size:24px; border:0; background:transparent; width:40px; padding:0; }
+.azul-training-narration { display:grid; place-items:center; min-height:40px; min-width:126px; font-size:10px; color:#678494; }
+.azul-training-narration .azul-speak { margin:0; border:1px solid #bddce5; background:#eff8fa; color:#256b7b; border-radius:9px; padding:10px 12px; min-height:40px; font:inherit; font-size:11px; cursor:pointer; }
+.azul-training-dialog > iframe { width:100%; flex:1; min-height:0; border:0; display:block; }
+.azul-training-dialog > iframe[hidden] { display:none; }
+.azul-training-loading { font-size:12px; color:#567c90; padding:12px 20px; margin:0; background:#e9f2f7; }
+@media(max-width:600px) {
+  .azul-training-dialog { inset:0; width:100%; height:100dvh; border:0; border-radius:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+  .azul-training-toolbar { padding:9px 12px; gap:8px; flex-wrap:wrap; }.azul-training-toolbar strong { font-size:12px; }.azul-training-toolbar small { font-size:9px; }.azul-training-toolbar > button { padding:8px; font-size:9px; }
+  .azul-training-narration { order:4; width:100%; min-height:34px; }.azul-training-narration .azul-speak { width:100%; padding:8px; min-height:34px; }
+}

@@ -331,6 +331,7 @@
   const go = (hash) => { if (location.hash === '#' + hash) render(); else location.hash = hash; };
   const routes = { '': home, inicio: home, 'relatar-foco': foco, 'caso-suspeito': caso, alertas, chat, agente, enviados };
   function render() {
+    document.querySelector('[data-portal-chat]')?.dispatchEvent(new CustomEvent('azul:close'));
     const parts = location.hash.replace(/^#/, '').split('/');
     if (cleanup) { try { cleanup(); } catch (e) { /* nada */ } cleanup = null; }
     window.scrollTo(0, 0);
@@ -656,26 +657,19 @@
 
   // ------------------------------------------------------------------ Fale com a Azul
   function chat() {
-    const msgs = [{ role: 'assistant', content: 'Olá! Eu sou a Azul. Posso ajudar com dúvidas sobre dengue, zika, chikungunya e como evitar focos do mosquito.', error: false }];
-    let sending = false;
-    const tg = (state.config && state.config.telegram) || 'https://t.me/ija_vigilancia_bot';
+    const companion = document.querySelector('[data-portal-chat]');
+    const mascot = document.getElementById('mobileAzulMascot')?.innerHTML || '';
     $app.innerHTML = `${bar('Fale com a Azul')}
-      <div class="chat"><a class="btn outline sm tg-link" href="${esc(tg)}" target="_blank" rel="noopener">${svg('send')} Abrir no Telegram</a><div class="msgs" id="msgs"></div>
-      <form class="composer" id="composer"><input type="text" id="msg" placeholder="Digite sua pergunta" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Enviar">${svg('send')}</button></form></div>`;
-    const box = $app.querySelector('#msgs'), input = $app.querySelector('#msg');
-    const draw = () => {
-      box.innerHTML = msgs.map((m) => `<div class="bubble ${m.error ? 'err' : m.role === 'user' ? 'me' : 'bot'}">${esc(m.content)}</div>`).join('') + (sending ? '<p class="typing">Azul está digitando…</p>' : '');
-      window.scrollTo(0, document.body.scrollHeight);
-    };
-    draw();
-    $app.querySelector('#composer').addEventListener('submit', async (e) => {
-      e.preventDefault(); const text = input.value.trim(); if (!text || sending) return;
-      const history = msgs.filter((m) => !m.error).slice(1).slice(-6).map((m) => ({ role: m.role, content: m.content }));
-      msgs.push({ role: 'user', content: text, error: false }); sending = true; input.value = ''; draw();
-      try { const r = await api.post('/api/mobile/chat', { message: text, history, dispositivo: state.deviceId }, null, 60000); msgs.push({ role: 'assistant', content: String(r.answer || ''), error: false }); }
-      catch (err) { msgs.push({ role: 'assistant', content: err.message, error: true }); }
-      sending = false; draw();
-    });
+      <main class="content app-azul-intro azul-help">${mascot}<h2>Vamos conversar?</h2>
+      <p>Peça orientações sobre saúde, prevenção e uso do aplicativo. Você também pode abrir o guia prático e ouvir as respostas.</p>
+      <button type="button" class="btn portal" id="mobileAzulOpen">Conversar com a Azul</button>
+      <button type="button" class="btn outline" id="mobileAzulGuide">Guia prático</button></main>`;
+    const open = () => companion?.dispatchEvent(new CustomEvent('azul:open'));
+    $app.querySelector('#mobileAzulOpen').addEventListener('click', open);
+    $app.querySelector('#mobileAzulGuide').addEventListener('click', () => companion?.querySelector('[data-guide-open]')?.click());
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', open, {once:true});
+    else open();
+    return () => companion?.dispatchEvent(new CustomEvent('azul:close'));
   }
 
   // ------------------------------------------------------------------ Agente de endemias

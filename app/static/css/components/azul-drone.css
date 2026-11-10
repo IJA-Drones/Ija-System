@@ -1,0 +1,76 @@
+.azul-drone { --drone-scale:.18; position:relative; display:block; width:calc(300px * var(--drone-scale)); height:calc(250px * var(--drone-scale)); flex-shrink:0; --look-x:0px; --look-y:0px; --look-tilt:0deg; }
+.azul-drone-space { position:absolute; width:300px; height:250px; left:0; top:0; transform:scale(var(--drone-scale)); transform-origin:0 0; }
+.azul-drone-large { --drone-scale:.72; margin:0 auto; }
+.azul-drone-launcher { --drone-scale:.34; }
+.azul-help .azd-flight { position:absolute; inset:0; animation:az-md-hover 3.6s ease-in-out infinite; }
+.azul-help .azd-tilt { position:absolute; inset:0; transform:rotate(var(--look-tilt)); transition:transform .2s ease-out; }
+.azul-help .azd-behavior { position:absolute; inset:0; transform-origin:50% 55%; }
+.azul-help .azd-boom { position:absolute; height:15px; width:70px; border-radius:12px; background:linear-gradient(#eefbff,#91c2dd); box-shadow:inset 0 2px 2px #fff8,0 2px 3px #00365f15; }
+.azul-help .azd-boom-back-left { left:53px; top:98px; transform:rotate(25deg); z-index:0; }
+.azul-help .azd-boom-back-right { right:53px; top:98px; transform:rotate(-25deg); z-index:0; }
+.azul-help .azd-boom-front-left { left:42px; top:153px; transform:rotate(-12deg); z-index:2; }
+.azul-help .azd-boom-front-right { right:42px; top:153px; transform:rotate(12deg); z-index:2; }
+.azul-help .azd-motor { position:absolute; width:82px; height:44px; z-index:4; }
+.azul-help .azd-back-left { top:65px; left:20px; z-index:1; transform:scale(.88); }
+.azul-help .azd-back-right { top:65px; right:20px; z-index:1; transform:scale(.88); }
+.azul-help .azd-front-left { top:125px; left:0; }
+.azul-help .azd-front-right { top:125px; right:0; }
+.azul-help .azd-guard { position:absolute; top:0; left:0; width:82px; height:30px; border:4px solid #a8d6ee; border-top-color:#e5f7ff; border-bottom-color:#66a7cc; border-radius:50%; background:#75b9e31a; box-shadow:0 3px 0 #427da04f,inset 0 1px 3px #8ad8ff30; }
+.azul-help .azd-prop-plane { position:absolute; left:6px; top:6px; width:70px; height:16px; overflow:hidden; border-radius:50%; }
+.azul-help .azd-propeller { position:absolute; width:70px; height:70px; top:-27px; border-radius:50%; background:repeating-conic-gradient(from 0deg,#138bcd20 0deg,#168fd88a 28deg,#c0efff30 55deg,transparent 62deg,transparent 90deg); animation:az-md-spin .21s linear infinite; filter:blur(.4px); }
+.azul-help .azd-hub { position:absolute; width:9px; height:8px; left:36px; top:10px; background:linear-gradient(#e9faff,#529bc3); border-radius:50%; box-shadow:0 1px 2px #164c6c80; }
+.azul-help .azd-shell { position:absolute; z-index:3; top:95px; left:76px; width:148px; height:116px; border-radius:46px 46px 40px 40px; background:linear-gradient(140deg,#fff 0%,#e8f8ff 36%,#b7d9ed 100%); box-shadow:inset 3px 4px 5px #fff,inset -4px -6px 8px #6aaccf65,0 7px 12px #00477220; }
+.azul-help .azd-top-stripe { position:absolute; top:5px; left:44px; width:60px; height:5px; border-radius:5px; background:linear-gradient(90deg,#088aca,#69dcf8,#088aca); box-shadow:0 1px 1px #fff; }
+.azul-help .azd-visor { position:absolute; top:17px; left:12px; width:124px; height:78px; overflow:hidden; border-radius:30px; background:linear-gradient(145deg,#123d57 0%,#091e30 65%,#103c53 100%); box-shadow:inset 0 3px 5px #0007,0 1px 0 #fff; }
+.azul-help .azd-visor::after { content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(145deg,#c5f0ff20 0%,transparent 36%,transparent 70%,#28799618); }
+.azul-help .azd-face { position:absolute; inset:0; transform:translate(var(--look-x),var(--look-y)); transition:transform .13s ease-out; }
+.azul-help .azd-eye { position:absolute; top:18px; width:16px; height:25px; border-radius:9px; background:linear-gradient(#a0f7ff,#45d5fa); box-shadow:0 0 12px #38d0fa70,inset 1px 1px 2px #e3ffff60; animation:az-md-blink 6.5s infinite; transform-origin:center; }
+.azul-help .azd-eye-left { left:28px; }
+.azul-help .azd-eye-right { right:28px; }
+.azul-help .azd-mouth { position:absolute; top:49px; left:53px; width:18px; height:9px; border:2px solid #7be9ff; border-top:0; border-radius:0 0 18px 18px; }
+.azul-help .azd-cheek { position:absolute; top:46px; width:11px; height:3px; border-radius:3px; background:#36c9e2; opacity:.35; }
+.azul-help .azd-cheek-left { left:16px; }
+.azul-help .azd-cheek-right { right:16px; }
+.azul-help .azd-shell-name { position:absolute; bottom:6px; left:0; right:0; font-size:8px; letter-spacing:2px; font-weight:600; text-align:center; color:#3c82a5; }
+.azul-help .azd-antenna { position:absolute; z-index:2; width:5px; height:24px; left:147px; top:73px; background:linear-gradient(90deg,#80b5d2,#dcf4ff); border-radius:5px; }
+.azul-help .azd-antenna::before { content:''; position:absolute; width:10px; height:10px; left:-2.5px; top:-5px; border-radius:50%; background:#6ee8ff; box-shadow:0 0 10px #3ecff490,inset 1px 1px 2px #efffff; }
+.azul-help .azd-leg { position:absolute; z-index:1; top:198px; width:10px; height:24px; background:linear-gradient(90deg,#8bb6cf,#d0eafa); border-radius:4px; }
+.azul-help .azd-leg-left { left:102px; transform:rotate(10deg); }
+.azul-help .azd-leg-right { right:102px; transform:rotate(-10deg); }
+.azul-help .azd-leg::after { content:''; position:absolute; left:-7px; bottom:0; width:24px; height:7px; border-radius:5px; background:linear-gradient(#bcd9ea,#71a9c9); }
+.azul-help .azd-particle { position:absolute; top:104px; width:7px; height:7px; border-radius:2px; background:#43c5f4; opacity:0; }
+.azul-help .azd-particle-left { left:21px; }
+.azul-help .azd-particle-right { right:21px; background:#80e5ff; }
+.azul-help .azd-scan { position:absolute; top:0; left:0; right:0; height:3px; background:#63dfff; box-shadow:0 0 14px #42cdff; opacity:0; }
+.azul-help[data-drone-state=wave] .azd-behavior { animation:az-md-wave .7s ease-in-out 3; }
+.azul-help[data-drone-state=wave] .azd-eye-right { animation:az-md-wink .8s ease-in-out 2; }
+.azul-help[data-drone-state=think] .azd-behavior { transform:rotate(7deg); }
+.azul-help[data-drone-state=think] .azd-eye { height:18px; top:22px; }
+.azul-help[data-drone-state=think] .azd-scan { animation:az-md-scan 2s ease-in-out infinite; }
+.azul-help[data-drone-state=think] .azd-antenna::before { animation:az-md-led 1s ease-in-out infinite alternate; }
+.azul-help[data-drone-state=think] .azd-mouth { top:52px; left:56px; width:12px; height:3px; border:0; background:#7be9ff; border-radius:3px; }
+.azul-help[data-drone-state=happy] .azd-behavior { animation:az-md-hop .65s ease-in-out 3; }
+.azul-help[data-drone-state=happy] .azd-mouth { background:#7be9ff; height:12px; }
+.azul-help[data-drone-state=happy] .azd-particle { animation:az-md-confetti 1s ease-out 3; }
+.azul-help[data-drone-state=happy] .azd-particle-right { animation-delay:.3s; }
+.azul-help[data-drone-state=speak] .azd-mouth { width:14px; left:55px; border:0; background:#7be9ff; animation:az-md-talk .26s ease-in-out infinite alternate; }
+.azul-help[data-drone-state=land] .azd-flight { animation:none; transform:translateY(15px); }
+.azul-help[data-drone-state=land] .azd-tilt { transform:none; }
+.azul-help[data-drone-state=land] .azd-propeller { animation:none; filter:none; opacity:.6; background:conic-gradient(from 25deg,transparent 0deg,transparent 75deg,#368bb4 75deg,#368bb4 105deg,transparent 105deg,transparent 255deg,#368bb4 255deg,#368bb4 285deg,transparent 285deg); }
+.azul-help[data-drone-state=land] .azd-eye { height:4px; top:31px; animation:none; }
+.azul-help[data-drone-state=land] .azd-antenna::before { opacity:.4; box-shadow:none; }
+@keyframes az-md-hover { 0%,100%{transform:translateY(-3px) rotate(-1.5deg)}50%{transform:translateY(-14px) rotate(1.5deg)} }
+@keyframes az-md-spin { to{transform:rotate(360deg)} }
+@keyframes az-md-blink { 0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.1)} }
+@keyframes az-md-wave { 0%,100%{transform:rotate(0deg)}25%{transform:rotate(-10deg) translateY(-3px)}75%{transform:rotate(10deg) translateY(-3px)} }
+@keyframes az-md-wink { 0%,35%,100%{transform:scaleY(1)}50%,65%{transform:scaleY(.12)} }
+@keyframes az-md-scan { 0%,100%{opacity:0;transform:translateY(0)}20%,80%{opacity:.18}90%{transform:translateY(76px);opacity:0} }
+@keyframes az-md-led { from{opacity:.4}to{opacity:1} }
+@keyframes az-md-hop { 0%,100%{transform:translateY(0) rotate(0)}45%{transform:translateY(-22px) rotate(-4deg)} }
+@keyframes az-md-confetti { 0%,100%{opacity:0;transform:translateY(0) rotate(0) scale(.2)}40%{opacity:1;transform:translateY(-34px) rotate(65deg) scale(1)} }
+@keyframes az-md-talk { from{top:52px;height:4px;border-radius:6px}to{top:48px;height:12px;border-radius:45%} }
+.azul-help[data-drone-state=sleep] .azd-flight { animation:none; transform:translateY(9px); }
+.azul-help[data-drone-state=sleep] .azd-propeller { animation:none; opacity:.35; }
+.azul-help[data-drone-state=sleep] .azd-eye { height:4px; top:31px; animation:none; }
+@media(prefers-reduced-motion:reduce) { .azul-drone *, .azul-help .azd-tilt { animation:none!important; transition:none!important; } }
+

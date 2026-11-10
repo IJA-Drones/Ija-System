@@ -131,6 +131,7 @@
     }
     function open(value) {
       if (isPage) return;
+      if (!value) root.azulCompanion?.stop();
       panel.hidden = !value;
       toggle.setAttribute('aria-expanded', String(value));
       save();
@@ -138,6 +139,7 @@
     }
     function reset() {
       if (accessChanged) return;
+      root.azulCompanion?.clear();
       generation++;
       if (pending) pending.abort();
       pending = null;
@@ -229,6 +231,7 @@
       bubble.append(card);
     }
     function invalidateAccess() {
+      root.azulCompanion?.clear();
       generation++;
       if (pending) pending.abort();
       pending = null;
@@ -241,7 +244,7 @@
       try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
       messages.replaceChildren();
       root.querySelector('[data-profile]').textContent = '';
-      root.querySelectorAll('[data-question], [data-clear]').forEach(button => { button.disabled = true; });
+      root.querySelectorAll('[data-question], [data-clear], [data-guide-open]').forEach(button => { button.disabled = true; });
       const bubble = append('Seu acesso ou sessão mudou. Recarregue a página para continuar com as permissões atuais.', 'assistant', 'faq');
       const reload = document.createElement('button');
       reload.type = 'button';
@@ -255,12 +258,15 @@
     async function ask(text, intent) {
       text = text.trim();
       if (!text || pending || accessChanged || text.length > 1500) return;
+      root.azulCompanion?.closeGuide();
+      root.azulCompanion?.stopVoice();
       open(true);
       append(text, 'user');
       input.value = '';
       send.disabled = true;
       const controller = new AbortController();
       pending = controller;
+      root.azulCompanion?.thinking(true);
       save();
       const version = generation;
       status.textContent = 'A Azul está preparando sua resposta…';
@@ -288,6 +294,7 @@
           entry.links = Array.isArray(data.links) ? data.links.slice(0,12) : [];
           renderLinks(bubble, entry.links);
         }
+        root.azulCompanion?.attachSpeech(bubble, data.speech);
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
         history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);
         messages.scrollTop = messages.scrollHeight;
@@ -297,6 +304,7 @@
         clearTimeout(timer);
         if (version === generation) {
           pending = null;
+          root.azulCompanion?.thinking(false);
           send.disabled = false;
           status.textContent = idleStatus;
           save();
@@ -304,12 +312,17 @@
         }
       }
     }
-    toggle?.addEventListener('click', () => open(panel.hidden));
+    root.addEventListener('azul:open', () => open(true));
+    root.addEventListener('azul:close', () => open(false));
+    root.addEventListener('azul:ask', event => ask(event.detail?.message || '', event.detail?.intent));
+    root.addEventListener('azul:access-changed', invalidateAccess);
+    toggle?.addEventListener('click', () => { open(panel.hidden); if (!panel.hidden) root.azulCompanion?.react(); });
     stop?.addEventListener('click', () => {
       if (!pending) return;
       generation++;
       pending.abort();
       pending = null;
+      root.azulCompanion?.thinking(false);
       send.disabled = false;
       append('Resposta interrompida. Você pode enviar outra pergunta.', 'assistant', 'faq');
       status.textContent = idleStatus;

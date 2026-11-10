@@ -1,0 +1,9 @@
+<section class="azul-guide" data-guide hidden aria-label="Guia prático do sistema">
+  <header><span class="azul-guide-kicker">GUIA PRÁTICO <span data-guide-progress></span></span><button type="button" data-guide-close aria-label="Fechar guia"><span aria-hidden="true">×</span></button></header>
+  <h2 data-guide-title></h2>
+  <p data-guide-body></p>
+  <div class="azul-guide-links azul-links" data-guide-links></div>
+  <div class="azul-guide-tools"><div data-guide-audio></div><button type="button" data-guide-question>Perguntar à Azul</button></div>
+  <footer><button type="button" data-guide-prev>Voltar</button><button type="button" data-guide-next>Próximo <i class="bi bi-arrow-right" aria-hidden="true"></i></button></footer>
+</section>
+<script type="application/json" data-guide-config>{{ azul_guide|default([])|tojson }}</script>

@@ -1,37 +1,48 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261104') }}">
-<div class="azul-help" data-azul-help data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
-  <button type="button" class="azul-launcher" data-toggle aria-expanded="false" aria-controls="{{ chatbot_id_prefix }}Panel" title="Conversar com a Azul"><i class="bi bi-stars" aria-hidden="true"></i><span>Azul</span></button>
+{% from '_azul_drone.html' import drone %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261106-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261106-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
+<div class="azul-help" data-azul-help data-tutorial-url="{{ azul_tutorial_url|default('', true) }}" data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
+  <button type="button" class="azul-launcher" data-toggle aria-expanded="false" aria-controls="{{ chatbot_id_prefix }}Panel" title="Conversar com a Azul · arraste para mover">{{ drone('azul-drone-launcher') }}<span class="azul-launcher-label">Azul <i class="bi bi-chat-dots" aria-hidden="true"></i></span></button>
   <section id="{{ chatbot_id_prefix }}Panel" class="azul-panel" hidden aria-label="Azul, inteligência do sistema">
     <header class="azul-header">
-      <span class="azul-avatar" aria-hidden="true"><i class="bi bi-stars"></i></span>
+      {{ drone() }}
       <div class="azul-heading"><strong>Azul <span>IA</span></strong><small>Inteligência do sistema</small></div>
       {% if azul_page_url|default(none) %}
       <a class="azul-expand" href="{{ azul_page_url }}" title="Abrir página da Azul" aria-label="Abrir página da Azul"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
       {% endif %}
+      <button type="button" data-guide-open title="Guia prático" aria-label="Abrir guia prático"><i class="bi bi-book" aria-hidden="true"></i></button>
       <button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><i class="bi bi-trash3" aria-hidden="true"></i></button>
       <button type="button" data-close title="Fechar" aria-label="Fechar conversa"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </header>
     <div class="azul-context"><span class="azul-dot"></span> Ajuda com base no seu acesso <span data-profile></span></div>
+    {% include '_azul_guide.html' %}
     <div class="azul-messages" role="log" aria-live="polite" aria-relevant="additions text" data-messages></div>
     <div class="azul-suggestions" aria-label="Sugestões">
       {% if azul_can_search|default(false) %}
-      <button type="button" data-question="Quero buscar solicitações municipais. Quais filtros posso informar?">Buscar solicitações <i class="bi bi-search" aria-hidden="true"></i></button>
+      <button type="button" data-search-guide data-question="Quero buscar solicitações municipais. Quais filtros posso informar?">Buscar solicitações <i class="bi bi-search" aria-hidden="true"></i></button>
       {% endif %}
       {% if azul_can_view_operations|default(false) %}
       <button type="button" data-question="O que precisa da minha atenção hoje?" data-intent="attention_today">Minha atenção hoje <i class="bi bi-calendar-check" aria-hidden="true"></i></button>
       {% endif %}
       <button type="button" data-question="O que posso acessar no sistema?" data-intent="access_overview">Meu acesso <i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
       <button type="button" data-question="Como usar esta tela?">Ajuda nesta tela <i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+      <button type="button" data-guide-open>Guia prático <i class="bi bi-book" aria-hidden="true"></i></button>
       <button type="button" data-question="Não consigo editar. Como verifico minhas permissões?">Dúvidas de permissão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
       {% if azul_can_export|default(false) %}
       <button type="button" data-question="Quero gerar um relatório." data-intent="start_report">Gerar relatório <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i></button>
       {% endif %}
     </div>
+    <p class="azul-voice-status" data-voice-status role="status"></p>
     <form class="azul-compose form-no-loading">
       <label class="visually-hidden" for="{{ chatbot_id_prefix }}Input">Pergunte à Azul</label>
-      <div class="azul-input-row"><input id="{{ chatbot_id_prefix }}Input" maxlength="1500" required autocomplete="off" placeholder="Como posso ajudar?" aria-label="Pergunte à Azul"><button type="submit" aria-label="Enviar mensagem"><i class="bi bi-arrow-up" aria-hidden="true"></i></button></div>
+      <div class="azul-input-row"><input id="{{ chatbot_id_prefix }}Input" data-compose-input maxlength="1500" required autocomplete="off" placeholder="Como posso ajudar?" aria-label="Pergunte à Azul"><button type="submit" aria-label="Enviar mensagem"><i class="bi bi-arrow-up" aria-hidden="true"></i></button></div>
+      {% if azul_voice_available|default(false) %}<span class="azul-voice-disclosure">Voz gerada por IA · reprodução opcional</span>{% endif %}
       <small data-status role="status">{{ 'Orientações e relatórios. Downloads exigem confirmação.' if azul_can_export|default(false) else 'Orientações e atalhos. Nenhuma alteração pelo chat.' }}</small>
     </form>
   </section>
 </div>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261104-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261106-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261106-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-drag.js', v='20261106-2') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261106-4') }}" defer></script>

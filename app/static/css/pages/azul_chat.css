@@ -100,3 +100,19 @@ body.dark-mode .azul-workspace .azul-message small { color: #a8c5f0; }
   .azul-workspace textarea { font-size: 16px; }
   .azul-compose-toolbar #azulComposeHint { display: none; }
 }
+
+.azul-page-actions { display:flex; align-items:center; gap:8px; }
+.azul-workspace .azul-guide { padding:28px; }
+.azul-workspace .azul-guide h2 { font-size:24px; }
+.azul-workspace .azul-guide > p { max-width:680px; }
+.azul-workspace .azul-empty { padding-top:18px; }
+.azul-empty > .azul-drone { margin-bottom:10px; }
+.azul-workspace .azul-voice-status { padding:8px 24px; }
+@media(max-width:767.98px) {
+  .azul-page-header { flex-wrap:wrap; }
+  .azul-page-actions { margin-left:auto; flex-wrap:wrap; }
+  .azul-page-brand .azul-drone { --drone-scale:.15; }
+  .azul-empty .azul-drone { --drone-scale:.5; }
+  .azul-workspace .azul-guide { padding:20px 16px; }
+  .azul-workspace .azul-guide h2 { font-size:21px; }
+}

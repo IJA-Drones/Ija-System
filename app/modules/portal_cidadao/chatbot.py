@@ -224,13 +224,18 @@ def chat_token():
     return session["portal_chat_token"]
 
 
-def consume_quota():
+def consume_quota(*, voice=False):
     """Atomic quotas shared by workers on this host; never store raw IPs."""
     now = int(time.time())
     ip_hash = hmac.new(str(current_app.secret_key).encode(),
                        (request.remote_addr or "unknown").encode(), hashlib.sha256).hexdigest()
-    limits = [(f"ip:{ip_hash}:{now // 60}", 8, now + 120),
+    limits = ([(f"voice:ip:{ip_hash}:{now // 60}", 3, now + 120),
+               (f"voice:ip-day:{ip_hash}:{now // 86400}", 50, now + 172800),
+               (f"voice:session:{hashlib.sha256(chat_token().encode()).hexdigest()}:{now // 86400}", 30, now + 172800),
+               (f"voice:day:{now // 86400}", int(current_app.config.get('PORTAL_AZUL_VOICE_DAILY_LIMIT', 100)), now + 172800)] if voice else
+              [(f"ip:{ip_hash}:{now // 60}", 8, now + 120),
               (f"day:{now // 86400}", int(current_app.config.get("PORTAL_CHATBOT_DAILY_LIMIT", 500)), now + 172800)]
+              )
     Path(current_app.instance_path).mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(str(Path(current_app.instance_path) / "portal_chat_quota.sqlite"), timeout=2) as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS quota (key TEXT PRIMARY KEY, count INTEGER, expires INTEGER)")
@@ -305,7 +310,8 @@ def reply():
         return jsonify(error="Azul temporariamente indisponível."), 503
     try:
         text, parts = answer(messages)
-        return jsonify(answer=text, parts=parts)
+        from .companion import offer
+        return jsonify(answer=text, parts=parts, speech=offer(text))
     except ChatbotError as exc:
         return jsonify(error=exc.message), exc.status
     except OpenAIError:
