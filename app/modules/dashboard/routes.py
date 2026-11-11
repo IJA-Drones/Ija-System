@@ -34,6 +34,9 @@ def register_routes(bp):
         if current_user.tipo_usuario == "equipe_uvis":
             return redirect(url_for("main.dashboard_equipe_uvis"))
 
+        if current_user.tipo_usuario == "manutencao":
+            return redirect(url_for("main.equipamentos_manutencao"))
+
         if is_agro_finance_user(current_user):
             return redirect(url_for("main.financeiro_central"))
 

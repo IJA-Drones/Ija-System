@@ -555,6 +555,9 @@
   "main.equipamento_manutencao_detalhe": {
     "GET": "prefeitura.equipamentos.consultar"
   },
+  "main.equipamento_manutencao_imagem": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
   "main.equipamento_manutencao_pecas": {
     "GET": "prefeitura.equipamentos.consultar",
     "POST": "prefeitura.equipamentos.editar"

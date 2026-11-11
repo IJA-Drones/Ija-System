@@ -108,6 +108,11 @@ def current_rules(profile_code):
         if role in DRONE_IMPORT_ROLES:
             allow("prefeitura.equipamentos", "importar")
 
+        if role == "manutencao":
+            allow("prefeitura.veiculos", "consultar")
+            allow("prefeitura.logs_veiculos", "consultar exportar")
+            allow("prefeitura.equipamentos", "consultar editar exportar")
+            allow("prefeitura.mapas", "consultar")
         if role in VEHICLE_MANAGEMENT_ROLES:
             allow("prefeitura.veiculos", "consultar criar editar excluir corrigir exportar")
         elif operational or role == "visualizar":
@@ -209,7 +214,7 @@ def current_rules(profile_code):
             allow("sistema.suporte", "criar")
         if role == "dev":
             allow("sistema.suporte", "atender")
-        if role in {"dev", "diretor"}:
+        if role in {"dev", "diretor", "manutencao"}:
             allow("sistema.estoque", "consultar criar editar excluir exportar")
         if can_access_operational_panel(user):
             allow("sistema.operacional", "consultar")

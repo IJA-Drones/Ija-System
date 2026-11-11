@@ -78,6 +78,8 @@ def _legacy_redirect_endpoint(user):
         return "main.agro_piloto_dashboard"
     if user.tipo_usuario == "equipe_uvis":
         return "main.dashboard_equipe_uvis"
+    if user.tipo_usuario == "manutencao":
+        return "main.equipamentos_manutencao"
     return "main.dashboard"
 
 

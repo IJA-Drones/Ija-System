@@ -473,6 +473,15 @@ def build_os_media_remote_path(os_id, filename):
     return "/".join([_base_dir(), str(os_id), filename])
 
 
+def build_manutencao_media_remote_path(manutencao_id, filename):
+    """Keep equipment maintenance uploads separate from Ordem de Serviço files."""
+    return "/".join([
+        "manutencoes de equipamentos",
+        str(manutencao_id),
+        _clean_remote_path(filename),
+    ])
+
+
 def build_os_video_remote_path(os_id, filename):
     return build_os_media_remote_path(os_id, filename)
 

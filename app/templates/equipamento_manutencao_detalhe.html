@@ -50,6 +50,25 @@
     </div>
   </div>
 
+  <div class="card shadow-sm border-0 rounded-4 mb-4"><div class="card-body">
+    <h5>Relato técnico</h5>
+    <dl class="row mb-0">
+      <dt class="col-sm-4">Responsável técnico pela avaria</dt><dd class="col-sm-8">{{ manutencao.responsavel_avaria or '-' }}</dd>
+      <dt class="col-sm-4">Responsável técnico pela manutenção</dt><dd class="col-sm-8">{{ manutencao.responsavel_manutencao or '-' }}</dd>
+      <dt class="col-sm-4">Piloto responsável pela avaria</dt><dd class="col-sm-8">{{ manutencao.piloto_responsavel_avaria or '-' }}</dd>
+      <dt class="col-sm-4">Avarias identificadas</dt><dd class="col-sm-8">{{ manutencao.avarias_identificadas or '-' }}</dd>
+      <dt class="col-sm-4">Drone testado</dt><dd class="col-sm-8">{{ 'Sim' if manutencao.drone_testado else 'Não' }} — {{ manutencao.observacoes_teste or '' }}</dd>
+      <dt class="col-sm-4">Imagens do ocorrido</dt><dd class="col-sm-8">
+        {% if imagens_manutencao %}<div class="d-flex flex-wrap gap-2">{% for imagem in imagens_manutencao %}<a href="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" target="_blank" rel="noopener"><img src="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" alt="Imagem do ocorrido {{ loop.index }}" loading="lazy" style="width:120px;height:90px;object-fit:cover" class="rounded border"></a>{% endfor %}</div>{% else %}-{% endif %}
+      </dd>
+    </dl></div></div>
+  <div class="card shadow-sm border-0 rounded-4 mb-4"><div class="card-body">
+    <h5>Assinaturas</h5>
+    <div class="row g-4">
+      <div class="col-md-6"><div class="small fw-bold text-muted mb-2">RESPONSÁVEL TÉCNICO PELA MANUTENÇÃO</div>{% if manutencao.assinatura_responsavel_tecnico %}<img src="{{ manutencao.assinatura_responsavel_tecnico }}" alt="Assinatura do responsável técnico" class="img-fluid border rounded p-2" style="max-height:130px">{% else %}<span class="text-muted">Não informada</span>{% endif %}</div>
+      <div class="col-md-6"><div class="small fw-bold text-muted mb-2">RESPONSÁVEL PELA AVARIA</div>{% if manutencao.assinatura_responsavel_avaria %}<img src="{{ manutencao.assinatura_responsavel_avaria }}" alt="Assinatura do responsável pela avaria" class="img-fluid border rounded p-2" style="max-height:130px">{% else %}<span class="text-muted">Não informada</span>{% endif %}</div>
+    </div>
+  </div></div>
   <div class="card shadow-sm border-0 rounded-4 overflow-hidden manutencao-detalhe-table-card">
     <div class="card-header py-3 border-0">
       <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Peças usadas</h6>

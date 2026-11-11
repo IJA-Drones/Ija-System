@@ -1,4 +1,6 @@
+import base64
 import os
+import re
 import tempfile
 from datetime import datetime
 from io import BytesIO
@@ -32,6 +34,22 @@ def _fmt_dt(value):
         return value.strftime("%d/%m/%Y %H:%M")
     except Exception:
         return str(value)
+
+
+def _signature_image(data_url, width_mm=78, height_mm=30):
+    if not isinstance(data_url, str):
+        return None
+    match = re.fullmatch(r"data:image/png;base64,([A-Za-z0-9+/]+={0,2})", data_url.strip())
+    if not match:
+        return None
+    try:
+        raw = base64.b64decode(match.group(1), validate=True)
+        image = RLImage(BytesIO(raw))
+        image.drawWidth = width_mm * mm
+        image.drawHeight = height_mm * mm
+        return image
+    except Exception:
+        return None
 
 
 def _fmt_date(value):
@@ -259,12 +277,37 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
             ["Nº de série", _safe(drone.numero_serie), "Status atual", _safe(drone.status)],
             ["Equipe", _safe(getattr(getattr(drone, "equipe", None), "nome_equipe", None)), "Status manutenção", status_manutencao],
             ["Abertura", aberta_em, "Encerramento", encerrada_em],
+            ["Resp. técnico", _safe(getattr(manutencao, "responsavel_manutencao", None)), "Resp. avaria", _safe(getattr(manutencao, "responsavel_avaria", None))],
+            ["Piloto responsável", _safe(getattr(manutencao, "piloto_responsavel_avaria", None)), "Drone testado", "Sim" if getattr(manutencao, "drone_testado", False) else "Não"],
+            ["Avarias identificadas", _safe(getattr(manutencao, "avarias_identificadas", None)), "Observações teste", _safe(getattr(manutencao, "observacoes_teste", None))],
             ["Total de itens usados", str(total_pecas), "Registros", str(len(usos))],
         ]),
         Spacer(1, 8 * mm),
         Paragraph("Peças utilizadas", section_style),
         _pecas_table(usos),
     ]
+
+    signature_rows = []
+    for label, name, signature in (
+        ("Responsável técnico pela manutenção", getattr(manutencao, "responsavel_manutencao", None), getattr(manutencao, "assinatura_responsavel_tecnico", None)),
+        ("Responsável pela avaria", getattr(manutencao, "responsavel_avaria", None), getattr(manutencao, "assinatura_responsavel_avaria", None)),
+    ):
+        image = _signature_image(signature)
+        cell = [Paragraph(f"<b>{label}</b>", styles["Normal"]), Paragraph(_safe(name), styles["BodyText"]), Spacer(1, 3)]
+        cell.append(image if image else Paragraph("Assinatura não informada.", styles["BodyText"]))
+        signature_rows.append(cell)
+    signature_table = Table([signature_rows], colWidths=[doc.width / 2, doc.width / 2])
+    signature_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+        ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.4, BORDER),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.extend([Paragraph("Assinaturas", section_style), signature_table])
 
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer,
               canvasmaker=municipal_canvas(getattr(manutencao, "prefeitura_id", None) or getattr(drone, "prefeitura_id", None)))
