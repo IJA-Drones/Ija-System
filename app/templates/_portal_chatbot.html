@@ -3,9 +3,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_chatbot.css', v='20261110-2') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261110-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261111-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-voice-call.css', v='20261110-3') }}">
-<div class="portal-chat azul-help" data-portal-chat data-azul-companion data-voice-url="{{ url_for('main.portal_azul_voice') }}"
+<div class="portal-chat azul-help" data-portal-chat data-azul-companion data-usage-scope="{{ public_azul_usage_scope|default('') }}" data-voice-url="{{ url_for('main.portal_azul_voice') }}"
      data-transcribe-url="{{ public_azul_transcribe_url|default('') }}"
      data-tutorial-url="{{ public_azul_tutorial_url|default('', true) }}" data-url="{{ url_for('main.portal_cidadao_chatbot') }}" data-token="{{ portal_chat_token }}" data-report-url="{{ public_azul_report_url|default('') }}"
      data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
@@ -37,12 +37,14 @@
     <p class="azul-voice-status" data-voice-status role="status"></p>
     {% with composer_id='portalChatInput', composer_status='' %}{% include '_azul_composer.html' %}{% endwith %}
   </section>
+  {% include '_azul_runtime.html' %}
   <script type="application/json" data-portal-speech>{{ public_azul_speech|default({})|tojson }}</script>
 </div>
-<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261110-5') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261110-4') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261111-1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261106-1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-drag.js', v='20261106-2') }}" defer></script>
 <script src="{{ url_for('static', filename='js/portal-chat-mobile.js', v='20261106-2') }}" defer></script>
-<script src="{{ url_for('static', filename='js/portal-chatbot.js', v='20261110-2') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261110-2') }}" defer></script>
+<script src="{{ url_for('static', filename='js/portal-chatbot.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261111-1') }}" defer></script>

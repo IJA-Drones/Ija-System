@@ -16,8 +16,8 @@
       const hasVoice = controls && !controls.hidden;
       send.hidden = conversation || pending || (!hasText && hasVoice);
       stop.hidden = pending && !conversation ? false : true;
-      if (mic) mic.hidden = !conversation && (hasText || pending || active);
-      if (dictate) dictate.hidden = conversation || pending;
+      if (mic) mic.hidden = root.dataset.soundEnabled==='0' || root.dataset.conversationEnabled==='0' || (!conversation && (hasText || pending || active));
+      if (dictate) dictate.hidden = root.dataset.microphoneEnabled==='0' || conversation || pending;
       if (action) action.hidden = !conversation;
       status?.classList.toggle('azul-sr-only', !status.textContent.trim() || status.textContent.trim() === (status.dataset.idleStatus || '').trim());
       voiceStatus?.classList.toggle('azul-sr-only', !active && root.dataset.voiceNotice !== '1');
@@ -33,7 +33,7 @@
     });
     root.addEventListener('click', () => requestAnimationFrame(refresh));
     new MutationObserver(refresh).observe(form,{subtree:true,attributes:true,attributeFilter:['disabled','aria-busy'],childList:true,characterData:true});
-    new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['data-voice-state','data-voice-mode','data-voice-notice']});
+    new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['data-voice-state','data-voice-mode','data-voice-notice','data-sound-enabled','data-microphone-enabled','data-conversation-enabled']});
     refresh();
   });
 })();

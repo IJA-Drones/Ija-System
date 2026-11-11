@@ -1,10 +1,12 @@
 from app.modules.gestao_ti.permissions import route_access, can_access_endpoint
-from flask import abort, current_app, jsonify, make_response, render_template, request, url_for, session
+import hashlib
+from flask import abort, current_app, g, jsonify, make_response, render_template, request, url_for, session
 from flask_login import current_user, login_required, user_logged_in, user_logged_out
 from app.modules.chatbot.scope import chat_key
 
 from app.modules.chatbot.azul import reply as azul_reply
-from app.modules.chatbot import voice
+from app.modules.chatbot import voice, metering, settings, control_store
+from app.shared.access import is_dev_user
 
 from app.modules.chatbot.service import (
     can_access_admin_chatbot,
@@ -14,6 +16,8 @@ from app.modules.chatbot.service import (
 
 
 def register_routes(bp):
+    from app.modules.chatbot.management import register_routes as register_management
+    register_management(bp)
     @bp.get('/azul/tutorial', endpoint='azul_tutorial')
     def azul_tutorial():
         from app.modules.chatbot.tutorial import page
@@ -37,6 +41,13 @@ def register_routes(bp):
                     and payload.get('mode') not in {'blocked', 'clarify'}):
                 payload['speech'] = voice.offer(payload['answer'], current_user)
                 response.set_data(current_app.json.dumps(payload))
+        if (response.status_code==200 and response.is_json
+                and request.endpoint in {'main.azul_help','main.uvis_chatbot','main.admin_chatbot',
+                    'main.agro_admin_chatbot','main.agro_piloto_chatbot','main.portal_cidadao_chatbot','main.mobile_chat'}
+                and not getattr(g,'azul_paid_calls',0)):
+            payload = response.get_json(silent=True)
+            if isinstance(payload,dict) and isinstance(payload.get('answer'),str):
+                metering.free('text','blocked' if payload.get('mode')=='blocked' else 'local')
         return response
 
     @bp.app_context_processor
@@ -52,7 +63,17 @@ def register_routes(bp):
         from app.modules.chatbot.search import allowed as search_allowed
         from app.modules.chatbot.guide import build as build_guide
         from app.modules.chatbot.speech_input import available as microphone_available
-        return {'azul_chat_key': chat_key(current_user) if allowed else '',
+        try:
+            audio_policy = settings.policy()
+        except control_store.StoreError:
+            audio_policy = dict(sound_enabled=False,microphone_enabled=False,conversation_enabled=False,revision=-1)
+            return {'azul_help_url':None,'azul_page_url':None,'azul_audio_policy':audio_policy,
+                    'azul_settings_url':url_for('main.azul_settings') if is_dev_user(current_user) else None}
+        key = chat_key(current_user) if allowed else ''
+        return {'azul_chat_key':key,
+                'azul_usage_scope':hashlib.sha256(key.encode()).hexdigest()[:24] if key else '',
+                'azul_audio_policy':audio_policy,
+                'azul_settings_url':url_for('main.azul_settings') if is_dev_user(current_user) else None,
                 'azul_help_url': url_for('main.azul_help') if allowed else None,
                 'azul_page_url': url_for('main.azul_chat') if allowed and can_access_endpoint(
                     current_user, 'main.azul_chat', 'GET', legacy=True) else None,
@@ -86,6 +107,7 @@ def register_routes(bp):
         if (not route_access(current_user, True)
                 or not can_access_endpoint(current_user, 'main.azul_help', 'POST', legacy=True)):
             abort(403, description='Seu perfil não tem acesso à Azul nesta área.')
+        settings.current()
         response = make_response(render_template('azul_chat.html'))
         response.headers['Cache-Control'] = 'private, no-store'
         return response

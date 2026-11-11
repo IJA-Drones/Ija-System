@@ -6,20 +6,20 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul_chat.css', v='20261110-2') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261110-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261111-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-voice-call.css', v='20261110-3') }}">
 {% endblock %}
 {% block content %}
 <div class="azul-help azul-workspace" data-azul-help data-view="page" data-conversation="0"
      data-tutorial-url="{{ azul_tutorial_url|default('', true) }}"
      data-transcribe-url="{{ azul_transcribe_url|default('') }}"
-     data-chat-key="{{ azul_chat_key }}" data-export="{{ '1' if azul_can_export else '0' }}"
+     data-usage-scope="{{ azul_usage_scope|default('') }}" data-chat-key="{{ azul_chat_key }}" data-export="{{ '1' if azul_can_export else '0' }}"
      data-url="{{ azul_help_url }}" data-page="{{ request.path }}"
      data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
   <section class="azul-panel" aria-label="Conversa com a Azul">
     <header class="azul-page-header">
       <div class="azul-page-brand">{{ drone() }}<div><h1>Azul <span>IA</span></h1><p>Sua conexão com o Oceano Azul</p></div></div>
-      <div class="azul-page-actions"><button type="button" class="azul-new-chat" data-guide-open><i class="bi bi-book" aria-hidden="true"></i> Guia prático</button><button type="button" class="azul-new-chat" data-clear title="Limpar a conversa atual e começar outra"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova conversa</button></div>
+      <div class="azul-page-actions">{% if azul_settings_url|default(none) %}<a class="azul-new-chat" href="{{ azul_settings_url }}"><i class="bi bi-gear" aria-hidden="true"></i> Configurações</a>{% endif %}<button type="button" class="azul-new-chat" data-guide-open><i class="bi bi-book" aria-hidden="true"></i> Guia prático</button><button type="button" class="azul-new-chat" data-clear title="Limpar a conversa atual e começar outra"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova conversa</button></div>
     </header>
     <div class="azul-page-body">
       <div class="azul-conversation">
@@ -59,13 +59,15 @@
       </div></details>
     </div>
   </section>
+  {% include '_azul_runtime.html' %}
 </div>
 {% endblock %}
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261110-5') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261110-4') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261111-1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261106-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261110-2') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261110-2') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261111-1') }}" defer></script>
 {% endblock %}

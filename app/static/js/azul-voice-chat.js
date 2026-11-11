@@ -88,7 +88,7 @@
           if (active && expected === version) nextTimer = setTimeout(listen,200);
         };
         root.azulCompanion?.thinking(false); root.azulCompanion?.speaking(true);
-        state('speaking',clips[kind].text); source.start();
+        state('speaking',clips[kind].text); source.start(); root.azulAudioPolicy?.record(clips[kind].url);
       } catch (_) {
         if (expected === version && active) { request = null; root.azulCompanion?.thinking(false); listen(); }
       } finally { clearTimeout(timeout); }
@@ -108,7 +108,7 @@
       const samples = new Float32Array(segment.count);
       let offset = 0;
       for (const block of segment.blocks) { samples.set(block,offset); offset += block.length; }
-      const count = Math.min(480000, Math.floor(samples.length * 16000 / segment.rate));
+      const count = Math.min(16000*(root.azulAudioPolicy?.current.speech_seconds || 30), Math.floor(samples.length * 16000 / segment.rate));
       const bytes = new ArrayBuffer(44 + count * 2), view = new DataView(bytes);
       const word = (at,text) => { for (let i=0;i<text.length;i++) view.setUint8(at+i,text.charCodeAt(i)); };
       word(0,'RIFF'); view.setUint32(4,36+count*2,true); word(8,'WAVE'); word(12,'fmt ');
@@ -135,6 +135,8 @@
         const response = await fetch(url,{
           method:'POST',signal:controller.signal,credentials:'same-origin',
           headers:{'Content-Type':'audio/wav','X-CSRFToken':root.dataset.csrf,
+            'X-Azul-Voice-Mode':mode,
+            'X-Azul-Conversation':root.dataset.conversationId || '',
             ...(root.dataset.token ? {'X-Portal-Chat-Token':root.dataset.token} : {'X-Azul-Chat-Key':root.dataset.chatKey})},
           body:wav(segment)
         });
@@ -162,7 +164,12 @@
     }
     async function listen() {
       const expected = version;
-      if (!active || turns >= 10) { if (active) stop('Conversa concluída. Toque no microfone para começar outra.'); return; }
+      if (active && mode==='conversation' && greeted && root.azulAudioPolicy && !await root.azulAudioPolicy.check('conversation')) {
+        if (active && expected===version) stop(root.azulAudioPolicy.message); return;
+      }
+      if (expected!==version) return;
+      const limits=root.azulAudioPolicy?.current || {};
+      if (!active || turns >= (limits.session_turns || 10)) { if (active) stop('Conversa concluída. Toque no microfone para começar outra.'); return; }
       state('starting','Ligando o microfone…');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
@@ -173,8 +180,8 @@
         }
         const segment = {stream,rate:context.sampleRate,blocks:[],count:0,heard:0,lastSpeech:0};
         capture = segment;
-        segment.silenceTimer = setTimeout(() => { if (capture === segment && segment.heard < .2) stop('Não ouvi uma fala. Toque no microfone para tentar novamente.'); },8000);
-        segment.limitTimer = setTimeout(() => { if (capture === segment) finishTurn(); },30500);
+        segment.silenceTimer = setTimeout(() => { if (capture === segment && segment.heard < .2) stop('Não ouvi uma fala. Toque no microfone para tentar novamente.'); },(limits.silence_seconds || 8)*1000);
+        segment.limitTimer = setTimeout(() => { if (capture === segment) finishTurn(); },(limits.speech_seconds || 30)*1000+500);
         segment.source = context.createMediaStreamSource(stream); segment.gain = context.createGain(); segment.gain.gain.value = 0;
         const receive = ({samples,rms}) => {
           if (capture !== segment || !active) return;
@@ -182,7 +189,7 @@
           segment.blocks.push(samples); segment.count += samples.length;
           if (rms > .018) { segment.heard += seconds; segment.lastSpeech = performance.now(); }
           if (segment.heard >= .2 && performance.now()-segment.lastSpeech > 1100) finishTurn();
-          else if (segment.count / segment.rate >= 30) finishTurn();
+          else if (segment.count / segment.rate >= (limits.speech_seconds || 30)) finishTurn();
         };
         if (context.audioWorklet && typeof AudioWorkletNode === 'function') {
           try {
@@ -221,7 +228,11 @@
         await context.resume();
       } catch (_) { if (expected === version) stop('Não foi possível ativar o áudio. Tente novamente.'); return; }
       if (!active || expected !== version) return;
-      sessionTimer = setTimeout(() => stop('A conversa por voz foi encerrada. Toque no microfone para retomar.'),300000);
+      if (root.azulAudioPolicy && !await root.azulAudioPolicy.check(mode==='dictation'?'microphone':'conversation')) {
+        stop(root.azulAudioPolicy.message || 'O som ou o microfone da AZUL foi desativado nas configurações.'); return;
+      }
+      if (!active || expected !== version) return;
+      sessionTimer = setTimeout(() => stop('A conversa por voz foi encerrada. Toque no microfone para retomar.'),(root.azulAudioPolicy?.current.session_minutes || 5)*60000);
       listen();
     }
     mic.addEventListener('click',() => start('conversation'));

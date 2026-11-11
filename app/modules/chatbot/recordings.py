@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from flask import current_app, url_for
+from app.modules.chatbot import settings
 
 STYLE = 'marin-suave-ptbr-v1'
 DIRECTORY = Path(__file__).resolve().parents[2] / 'static' / 'audio' / 'azul-falas'
@@ -30,8 +31,8 @@ def find(text):
     try:
         manifest = json.loads((DIRECTORY / 'manifest.json').read_text())
         if (manifest.get('style') != STYLE
-                or manifest.get('voice') != current_app.config.get('AZUL_VOICE', 'marin')
-                or manifest.get('model') != current_app.config.get('AZUL_VOICE_MODEL', 'gpt-realtime-2.1-mini')):
+                or manifest.get('voice') != settings.get('voice_name')
+                or manifest.get('model') != settings.get('voice_model')):
             return None
         key = text_key(text)
         entry = manifest.get('clips', {}).get(key, {})

@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 from app.modules.portal_cidadao.catalog import build_public_focus_catalog
 from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
-from app.modules.chatbot import topics, voice
+from app.modules.chatbot import topics, voice, settings, metering
 
 from flask import current_app, jsonify, request, session
 from openai import OpenAI, OpenAIError
@@ -174,7 +174,7 @@ def public_instructions():
         "paginas": {"contatos": "/portal-cidadao/contatos", "relato": "/portal-cidadao#portal-relato",
                     "boletim": "/portal-cidadao/boletim-dengue"},
     }
-    return INSTRUCTIONS + DENGUE_GUIDANCE + "\nCONTEXTO PÚBLICO DO PORTAL (dados):\n" + json.dumps(context, ensure_ascii=False)
+    return INSTRUCTIONS + DENGUE_GUIDANCE + settings.context(public=True) + "\nCONTEXTO PÚBLICO DO PORTAL (dados):\n" + json.dumps(context, ensure_ascii=False)
 
 
 def safe_source_url(url):
@@ -232,14 +232,14 @@ def consume_quota(*, voice=False, transcribe=False):
                        (request.remote_addr or "unknown").encode(), hashlib.sha256).hexdigest()
     limits = ([(f"transcribe:ip:{ip_hash}:{now // 60}", 6, now + 120),
                (f"transcribe:ip-day:{ip_hash}:{now // 86400}", 50, now + 172800),
-               (f"transcribe:session:{hashlib.sha256(chat_token().encode()).hexdigest()}:{now // 86400}", 30, now + 172800),
-               (f"transcribe:day:{now // 86400}", int(current_app.config.get('PORTAL_AZUL_TRANSCRIBE_DAILY_LIMIT', 100)), now + 172800)] if transcribe else
-              [(f"voice:ip:{ip_hash}:{now // 60}", int(current_app.config.get('AZUL_VOICE_PER_MINUTE', 6)), now + 120),
+               (f"transcribe:session:{hashlib.sha256(chat_token().encode()).hexdigest()}:{now // 86400}", settings.get('user_audio_per_day'), now + 172800),
+               (f"transcribe:day:{now // 86400}", settings.get('public_daily_transcribe'), now + 172800)] if transcribe else
+              [(f"voice:ip:{ip_hash}:{now // 60}", settings.get('voice_per_minute'), now + 120),
                (f"voice:ip-day:{ip_hash}:{now // 86400}", 50, now + 172800),
-               (f"voice:session:{hashlib.sha256(chat_token().encode()).hexdigest()}:{now // 86400}", 30, now + 172800),
-               (f"voice:day:{now // 86400}", int(current_app.config.get('PORTAL_AZUL_VOICE_DAILY_LIMIT', 100)), now + 172800)] if voice else
+               (f"voice:session:{hashlib.sha256(chat_token().encode()).hexdigest()}:{now // 86400}", settings.get('user_audio_per_day'), now + 172800),
+               (f"voice:day:{now // 86400}", settings.get('public_daily_voice'), now + 172800)] if voice else
               [(f"ip:{ip_hash}:{now // 60}", 8, now + 120),
-              (f"day:{now // 86400}", int(current_app.config.get("PORTAL_CHATBOT_DAILY_LIMIT", 500)), now + 172800)]
+              (f"day:{now // 86400}", settings.get('public_daily_text'), now + 172800)]
               )
     Path(current_app.instance_path).mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(str(Path(current_app.instance_path) / "portal_chat_quota.sqlite"), timeout=2) as conn:
@@ -266,14 +266,16 @@ def answer(messages, *, extra_instructions=""):
     decision = topics.evaluate(messages[-1]['content'], messages[:-1], public=True)
     if decision.kind != 'allowed':
         return decision.answer, []
+    if not settings.get('enabled'):
+        raise ChatbotError('A geração da AZUL foi pausada. Use as orientações e os formulários do portal.',503)
     messages = topics.clean_history(messages[:-1], public=True) + [messages[-1]]
     with OpenAI(api_key=current_app.config["OPENAI_API_KEY"], timeout=50, max_retries=0) as client:
-        response = client.responses.create(
-            model=current_app.config.get("OPENAI_CHAT_MODEL") or "gpt-6-luna",
+        response = metering.respond(client,
+            model=settings.get('public_model'),
             instructions=public_instructions() + extra_instructions, input=messages,
-            reasoning={"effort": "low"}, max_output_tokens=2500, store=False,
+            reasoning={"effort": "low"}, max_output_tokens=settings.get('max_output_public'), store=False,
             tools=([{"type": "web_search", "filters": {"allowed_domains": OFFICIAL_DOMAINS}}]
-                   if current_app.config.get("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", True) else []),
+                   if settings.get('web_search_enabled') else []),
             max_tool_calls=2,
         )
     text = response.output_text.strip()
@@ -300,9 +302,10 @@ def reply():
     if not isinstance(data, dict) or not isinstance(data.get("message"), str):
         return jsonify(error="Digite uma mensagem válida."), 400
     message = data["message"].strip()
+    message_limit = settings.get('max_message_chars')
     history = data.get("history", [])
-    if not message or len(message) > 1500 or not isinstance(history, list) or len(history) > 6:
-        return jsonify(error="Use até 1.500 caracteres e no máximo seis mensagens de histórico."), 400
+    if not message or len(message) > message_limit or not isinstance(history, list) or len(history) > 6:
+        return jsonify(error=f"Use até {message_limit} caracteres e no máximo seis mensagens de histórico."), 400
     messages = []
     for item in history:
         if (not isinstance(item, dict) or item.get("role") not in {"user", "assistant"}

@@ -1,6 +1,6 @@
 // static/sw.js — servido em /sw.js (escopo raiz). Push em qualquer página + cache do shell do aplicativo (/m/).
-const CACHE = "ija-app-movel-v12";
-const SHELL = ["/static/audio/azul-inicio-chamada.wav", "/static/audio/azul-escopo-chamada.wav", "/static/css/components/azul-voice-call.css", "/static/css/components/azul-composer.css", "/static/js/azul-composer.js", "/static/js/azul-voice-chat.js", "/static/js/azul-mic-processor.js", "/m/", "/static/css/app-movel.css", "/static/js/app-movel.js", "/static/js/compartilhar.js", "/static/img/logo_oceano_azul_light.png",
+const CACHE = "ija-app-movel-v13";
+const SHELL = ["/static/js/azul-runtime.js", "/static/audio/azul-inicio-chamada.wav", "/static/audio/azul-escopo-chamada.wav", "/static/css/components/azul-voice-call.css", "/static/css/components/azul-composer.css", "/static/js/azul-composer.js", "/static/js/azul-voice-chat.js", "/static/js/azul-mic-processor.js", "/m/", "/static/css/app-movel.css", "/static/js/app-movel.js", "/static/js/compartilhar.js", "/static/img/logo_oceano_azul_light.png",
   "/static/css/components/azul-help.css", "/static/css/components/azul-drone.css", "/static/css/pages/portal_chatbot.css",
   "/static/js/azul-companion.js", "/static/js/azul-drag.js", "/static/js/portal-chat-mobile.js", "/static/js/portal-chatbot.js",
   "/static/css/components/azul-tutorial-launcher.css", "/static/css/pages/azul-tutorial.css", "/static/js/azul-tutorial-launcher.js", "/static/js/azul-tutorial.js",

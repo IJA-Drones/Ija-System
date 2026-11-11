@@ -55,3 +55,6 @@ body.dark-mode .azul-help { --composer-surface:#303030; --composer-border:#41414
   .azul-suggestions-drawer { padding:0 14px; }
 }
 @media(prefers-reduced-motion:reduce) { .azul-composer-shell,.azul-suggestions-drawer > summary::after { transition:none; } }
+
+.azul-help[data-sound-enabled="0"] .azul-speak { display:none!important; }
+.azul-page-actions a.azul-new-chat { text-decoration:none; }

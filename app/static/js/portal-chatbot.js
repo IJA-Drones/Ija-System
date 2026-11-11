@@ -195,6 +195,7 @@
       const response = await fetch(root.dataset.url, {
         method: 'POST', signal: controller.signal, credentials: 'same-origin',
         headers: {'Content-Type': 'application/json', 'X-Portal-Chat-Token': root.dataset.token,
+          'X-Azul-Conversation':root.dataset.conversationId || '',
           'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''},
         body: JSON.stringify({message, history,...(options.voice ? {voice:true} : {})})
       });

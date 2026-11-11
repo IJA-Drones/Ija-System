@@ -144,3 +144,22 @@ test('denied microphone permission leaves text available and no background reque
  assert.equal(env.call.hidden,true);
  assert.equal(env.root.azulVoice.isActive(),false);assert.equal(env.requests.length,0);
 });
+
+test('server-provided voice limits bound the WAV and stop after the allowed turn',async()=>{
+ const env=setup();env.root.azulAudioPolicy={current:{speech_seconds:3,silence_seconds:4,session_turns:1,session_minutes:1},check:async()=>true,record(){}};
+ await start(env);assert.ok([...env.timers.values()].some(timer=>timer.ms===4000));
+ for(let i=0;i<80;i++)env.feed(.1);await settle();
+ assert.equal(env.requests.length,1);const bytes=Buffer.from(await env.requests[0].body.arrayBuffer());
+ assert.equal(bytes.readUInt32LE(40),16000*3*2);
+ env.root.dispatchEvent({type:'azul:reply',detail:{mode:'local',speechButton:{click(){}}}});
+ env.root.dispatchEvent({type:'azul:voice-started'});env.root.dispatchEvent({type:'azul:voice-ended'});
+ [...env.timers.values()].find(timer=>timer.ms===200).fn();await settle();
+ assert.equal(env.root.azulVoice.isActive(),false);
+});
+
+test('a disabled conversation policy stops before requesting microphone permission',async()=>{
+ const env=setup();env.root.azulAudioPolicy={current:{conversation_enabled:false},check:async()=>false};
+ await env.mic.events.click();await settle();
+ assert.equal(env.tracks.length,0);assert.equal(env.requests.length,0);assert.equal(env.call.hidden,true);
+ assert.equal(env.contexts[0].closed,true);
+});

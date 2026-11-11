@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% from '_azul_drone.html' import drone %}
+{% set cfg = azul_settings %}
+{% macro check(key, title, description) -%}
+<label class="azm-switch-row"><span><strong>{{ title }}</strong><small>{{ description }}</small></span><input type="checkbox" data-setting="{{ key }}" {% if cfg[key] %}checked{% endif %}><span class="azm-switch" aria-hidden="true"></span></label>
+{%- endmacro %}
+{% macro number(key, title, minimum, maximum, step=1, help='') -%}
+<label class="azm-field"><span>{{ title }}</span><input type="number" required min="{{ minimum }}" max="{{ maximum }}" step="{{ step }}" value="{{ cfg[key] }}" data-setting="{{ key }}">{% if help %}<small>{{ help }}</small>{% endif %}</label>
+{%- endmacro %}
+{% macro model(key, title, choices) -%}
+<label class="azm-field"><span>{{ title }}</span><select required data-setting="{{ key }}">{% if cfg[key] not in choices %}<option value="" selected disabled>Escolha um modelo compatível</option>{% endif %}{% for value in choices %}<option value="{{ value }}" {% if cfg[key]==value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+{%- endmacro %}
+{% block title %}Configurações da AZUL | Oceano Azul{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul-settings.css', v='20261111-1') }}">
+{% endblock %}
+{% block content %}
+<div class="azul-management azul-help" data-azul-management data-config-url="{{ url_for('main.azul_settings_api') }}" data-usage-url="{{ url_for('main.azul_usage') }}" data-config-csrf="{{ control_csrf }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
+  <header class="azm-header"><div class="azm-brand">{{ drone() }}<div><span class="azm-eyebrow">PAINEL DEV</span><h1>Controle da AZUL</h1><p>Comportamento, modelos e consumo em um só lugar.</p></div></div><a class="azm-back" href="{{ url_for('main.azul_chat') }}">← Voltar à AZUL</a></header>
+  <form class="form-no-loading" data-management-form novalidate>
+    <div class="azm-layout">
+      <nav class="azm-tabs" role="tablist" aria-label="Configurações da AZUL">
+        {% for id,icon,label in [('usage','bi-bar-chart','Consumo'),('behavior','bi-sliders','Comportamento'),('models','bi-cpu','Modelos'),('limits','bi-speedometer2','Limites'),('pricing','bi-currency-exchange','Tarifas e câmbio')] %}
+        <button type="button" role="tab" id="azmTab{{ id }}" data-tab="{{ id }}" aria-controls="azmPanel{{ id }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ '0' if loop.first else '-1' }}"><i class="bi {{ icon }}" aria-hidden="true"></i>{{ label }}</button>
+        {% endfor %}
+        <div class="azm-access"><i class="bi bi-shield-check" aria-hidden="true"></i><strong>Exclusivo do dev</strong><span>Alterações são registradas com versão e responsável.</span></div>
+      </nav>
+      <main class="azm-panels">
+        <section id="azmPanelusage" role="tabpanel" aria-labelledby="azmTabusage" data-panel="usage">
+          <div class="azm-section-head"><div><h2>Consumo da AZUL</h2><p>Tokens medidos e custo estimado das novas interações.</p></div><div class="azm-filters"><label>Período<select data-usage-days><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option></select></label><label>Canal<select data-usage-channel><option value="all">Todos</option><option value="internal">Sistema interno</option><option value="public">Portal e canais públicos</option></select></label><button type="button" data-refresh-usage aria-label="Atualizar consumo" title="Atualizar consumo">↻</button></div></div>
+          <div class="azm-kpis"><article><span>Custo estimado</span><strong data-kpi="cost">—</strong><small>Tarifas e câmbio de cada chamada</small></article><article><span>Tokens registrados</span><strong data-kpi="tokens">—</strong><small>Entrada, saída e áudio reportados</small></article><article><span>Atendimentos</span><strong data-kpi="conversations">—</strong><small>Agrupados por conversa e sessão</small></article><article><span>Sem medição concluída</span><strong data-kpi="unknown">—</strong><small data-kpi="reserved">Reservas aparecem no limite de gasto</small></article></div>
+          <p class="azm-note">A medição começa com este controle. Interações anteriores não são reconstruídas. Custos em reais são estimativas, sem impostos ou tarifas do cartão, e não substituem a fatura do provedor. Falas gravadas e cache têm custo de geração zero por reutilização.</p>
+          <div class="azm-card"><h3>Por etapa</h3><div class="azm-table-wrap"><table><thead><tr><th>Etapa</th><th>Origem</th><th>Eventos</th><th>Tokens</th><th>Estimativa</th></tr></thead><tbody data-usage-groups><tr><td colspan="5">Carregando consumo…</td></tr></tbody></table></div></div>
+          <div class="azm-card"><h3>Últimas conversas</h3><p class="azm-subtle">Somente identificadores de sessão e consumo. Mensagens, nomes, transcrições e áudios não são armazenados neste painel.</p><div class="azm-table-wrap"><table><thead><tr><th>Conversa</th><th>Canal</th><th>Última atividade</th><th>Tokens</th><th>Estimativa</th></tr></thead><tbody data-usage-conversations></tbody></table></div></div>
+          <div class="azm-card"><h3>Chamadas recentes</h3><div class="azm-table-wrap"><table><thead><tr><th>Quando</th><th>Etapa / modelo</th><th>Situação</th><th>Tokens / áudio</th><th>Estimativa</th></tr></thead><tbody data-usage-recent></tbody></table></div></div>
+          <p class="azm-feedback" data-usage-status role="status"></p>
+        </section>
+        <section id="azmPanelbehavior" role="tabpanel" aria-labelledby="azmTabbehavior" data-panel="behavior" hidden>
+          <div class="azm-section-head"><div><h2>Como a AZUL atende</h2><p>Controle a experiência e acrescente informações de referência.</p></div></div>
+          <div class="azm-card">
+            {{ check('sound_enabled','Som do chatbot','Desativa toda saída de áudio: ligação, respostas e falas gravadas, inclusive no guia.') }}
+            {{ check('microphone_enabled','Ditado pelo microfone','Permite transformar fala em texto. A transcrição tem cobrança própria.') }}
+            {{ check('conversation_enabled','Conversa por voz','Disponível quando som e microfone estão ativos.') }}
+            {{ check('enabled','Geração de respostas novas','Ao pausar, guias e respostas locais continuam disponíveis.') }}
+            {{ check('web_search_enabled','Pesquisa em fontes oficiais','Permite pesquisas de saúde nos domínios oficiais autorizados. Pode gerar cobrança adicional.') }}
+          </div>
+          <div class="azm-card azm-fields"><label class="azm-field"><span>Contexto do sistema interno</span><textarea data-setting="internal_context" maxlength="6000" rows="7" placeholder="Informações sobre os fluxos, termos e orientações do sistema…">{{ cfg.internal_context }}</textarea><small>Até 6.000 caracteres. Esse contexto não é enviado ao atendimento público de saúde.</small></label><label class="azm-field"><span>Contexto público</span><textarea data-setting="public_context" maxlength="6000" rows="7" placeholder="Orientações públicas sobre o portal e seus serviços…">{{ cfg.public_context }}</textarea><small>Use somente informações públicas, sem senhas, dados pessoais ou registros internos.</small></label><p class="azm-note">O nome AZUL, os assuntos permitidos e as permissões de cada usuário continuam definidos pelo sistema. O contexto complementar não amplia acesso a dados ou ferramentas.</p></div>
+        </section>
+        <section id="azmPanelmodels" role="tabpanel" aria-labelledby="azmTabmodels" data-panel="models" hidden>
+          <div class="azm-section-head"><div><h2>Modelos e voz</h2><p>Selecione os modelos usados em cada etapa do atendimento.</p></div></div>
+          <div class="azm-card azm-grid">{{ model('internal_model','Respostas do sistema interno',text_models) }}{{ model('public_model','Saúde e atendimento público',text_models) }}{{ model('voice_model','Geração de voz',voice_models) }}{{ model('transcribe_model','Transcrição do microfone',transcribe_models) }}{{ model('voice_name','Voz',voices) }}</div>
+          <p class="azm-note">A disponibilidade depende da chave e do acesso da conta ao modelo. A chave permanece no servidor. Alterar a voz ou o modelo de áudio pode exigir novas gerações para falas que não correspondam à biblioteca. As duas falas de abertura e escopo já gravadas mantêm a voz original Marin.</p>
+          <div class="azm-card azm-grid">{{ number('max_output_internal','Máximo de tokens por resposta interna',256,8000) }}{{ number('max_output_public','Máximo de tokens por resposta pública',256,8000) }}{{ number('max_message_chars','Máximo de caracteres por pergunta',100,1500) }}</div>
+        </section>
+        <section id="azmPanellimits" role="tabpanel" aria-labelledby="azmTablimits" data-panel="limits" hidden>
+          <div class="azm-section-head"><div><h2>Limites de uso e gasto</h2><p>Reduza o consumo sem retirar os guias e as respostas prontas.</p></div></div>
+          <div class="azm-card"><h3>Orçamento estimado</h3><div class="azm-grid">{{ number('daily_budget_brl','Limite diário em R$',0,1000000,'0.01','0 = sem teto monetário adicional') }}{{ number('monthly_budget_brl','Limite mensal em R$',0,1000000,'0.01','0 = sem teto monetário adicional') }}</div><p class="azm-note">Antes de chamar o provedor, o sistema reserva uma estimativa conservadora da operação. Chamadas em andamento ou sem consumo informado mantêm a reserva. O teto usa as tarifas cadastradas e não é um bloqueio de faturamento da conta OpenAI.</p></div>
+          <div class="azm-card"><h3>Novas operações por dia</h3><p class="azm-subtle">0 bloqueia novas operações desse tipo. Falas prontas e reutilizações não gastam a quota de geração.</p><div class="azm-grid">{{ number('internal_daily_text','Respostas internas',0,100000) }}{{ number('public_daily_text','Respostas públicas',0,100000) }}{{ number('internal_daily_voice','Áudios internos',0,100000) }}{{ number('public_daily_voice','Áudios públicos',0,100000) }}{{ number('internal_daily_transcribe','Transcrições internas',0,100000) }}{{ number('public_daily_transcribe','Transcrições públicas',0,100000) }}</div></div>
+          <div class="azm-card"><h3>Conversa por voz</h3><div class="azm-grid">{{ number('voice_per_minute','Gerações de voz por minuto',0,60) }}{{ number('user_audio_per_day','Operações de cada tipo de áudio por usuário/sessão por dia',0,1000) }}{{ number('session_minutes','Minutos por ligação',1,10) }}{{ number('session_turns','Falas por ligação',1,20) }}{{ number('speech_seconds','Segundos por fala',3,30) }}{{ number('silence_seconds','Encerrar após silêncio inicial (segundos)',4,20) }}</div></div>
+        </section>
+        <section id="azmPanelpricing" role="tabpanel" aria-labelledby="azmTabpricing" data-panel="pricing" hidden>
+          <div class="azm-section-head"><div><h2>Tarifas e câmbio</h2><p>Referências para estimar o custo e aplicar os limites.</p></div></div>
+          <div class="azm-card azm-grid">{{ number('usd_brl','Cotação: R$ por US$ 1',0.000001,1000000,'0.000001') }}<label class="azm-field"><span>Data da cotação</span><input required type="date" data-setting="fx_date" value="{{ cfg.fx_date }}"></label>{{ number('web_search_usd','Pesquisa web: US$ por chamada',0,1000000,'0.000001') }}<label class="azm-field"><span>Data de revisão das tarifas</span><input required type="date" data-setting="pricing_date" value="{{ cfg.pricing_date }}"></label></div>
+          <p class="azm-note">Valores iniciais consultados na <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener noreferrer">tabela oficial da OpenAI</a> e na <a href="https://ptax.bcb.gov.br/ptax_internet/consultarUltimaCotacaoDolar.do" target="_blank" rel="noopener noreferrer">PTAX do Banco Central</a>. Revise quando houver mudança. Chamadas antigas mantêm a tarifa e o câmbio usados na época.</p>
+          {% set labels={'input':'Entrada de texto','cached_input':'Entrada em cache','output':'Saída de texto','audio_input':'Entrada de áudio','cached_audio_input':'Áudio em cache','audio_output':'Saída de áudio','minute':'Minuto de áudio'} %}
+          {% for name, prices in cfg.rates.items() %}<div class="azm-card"><h3>{{ name }}</h3><p class="azm-subtle">{{ 'US$ por minuto de áudio' if 'minute' in prices else 'US$ por 1 milhão de tokens' }}</p><div class="azm-grid">{% for key,value in prices.items() %}<label class="azm-field"><span>{{ labels[key] }}</span><input type="number" required min="0" max="1000000" step="0.000001" value="{{ value }}" data-rate-model="{{ name }}" data-rate-key="{{ key }}"></label>{% endfor %}</div></div>{% endfor %}
+          <div class="azm-card"><h3>Histórico das configurações</h3><div class="azm-table-wrap"><table><thead><tr><th>Versão</th><th>Quando</th><th>Dev</th><th>Campos alterados</th></tr></thead><tbody>{% for item in history %}<tr><td>{{ item.revision }}</td><td><time data-timestamp="{{ item.created_at }}"></time></td><td>{{ item.actor }}</td><td>{{ item.fields }}</td></tr>{% else %}<tr><td colspan="4">Nenhuma alteração registrada.</td></tr>{% endfor %}</tbody></table></div></div>
+        </section>
+      </main>
+    </div>
+    <footer class="azm-save"><p data-save-status role="status">Versão {{ cfg.revision }}. Alterações são aplicadas às próximas operações.</p><button type="submit" data-save>Salvar configurações</button></footer>
+  </form>
+  <script type="application/json" data-initial-settings>{{ cfg|tojson }}</script>
+</div>
+{% endblock %}
+{% block scripts %}{{ super() }}<script src="{{ url_for('static', filename='js/azul-settings.js', v='20261111-1') }}" defer></script>{% endblock %}

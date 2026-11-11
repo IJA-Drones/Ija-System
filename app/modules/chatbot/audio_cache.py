@@ -8,6 +8,7 @@ import time
 
 from flask import current_app
 from app.modules.chatbot.recordings import STYLE
+from app.modules.chatbot import settings
 
 TTL = 600
 MAX_BYTES = 16 * 1024 * 1024
@@ -56,8 +57,7 @@ class AudioCache:
 
 
 def cache_key(text, scope):
-    payload = json.dumps([scope, current_app.config.get('AZUL_VOICE', 'marin'),
-                          current_app.config.get('AZUL_VOICE_MODEL', 'gpt-realtime-2.1-mini'),
+    payload = json.dumps([scope, settings.get('voice_name'), settings.get('voice_model'),
                           STYLE, text], ensure_ascii=False).encode()
     secret = current_app.secret_key
     if not isinstance(secret, bytes):

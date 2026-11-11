@@ -66,5 +66,10 @@
   "main.alertas_telegram": "authenticated self-service: redirects the logged-in user to the Telegram bot with their own link code",
   "main.api_esus_visitas": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only",
   "main.api_esus_status": "Machine-to-machine API: no session; requires the e-SUS integration Bearer token (stored as SHA-256 hash), scoped to the token's municipality, read-only",
-  "main.privacidade": "public privacy policy page required by the app stores"
+  "main.privacidade": "public privacy policy page required by the app stores",
+  "main.azul_settings": "Fixed dev-only guard; AZUL control panel cannot be delegated by Central TI",
+  "main.azul_settings_api": "Fixed dev-only guard and session CSRF; versioned runtime configuration",
+  "main.azul_usage": "Fixed dev-only guard; aggregate usage metadata, no prompts or recordings",
+  "main.azul_audio_policy": "Public minimal audio feature switches; no context, models, rates or credentials",
+  "main.azul_audio_event": "Bounded zero-cost playback telemetry with same-session token or authenticated AZUL access"
 }

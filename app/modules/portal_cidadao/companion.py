@@ -6,7 +6,7 @@ import json
 from flask import current_app, jsonify, request, session, url_for
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
-from app.modules.chatbot import voice
+from app.modules.chatbot import voice, settings, control_store
 from .chatbot import chat_token, consume_quota
 from .institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
 
@@ -46,7 +46,7 @@ def offer(text):
             'token': serializer().dumps({'session': session_fingerprint(), 'text': text})}, text)
 
 
-def context():
+def _context():
     if request.endpoint not in PAGES or request.method != 'GET':
         return {'public_azul': False}
     mobile = request.endpoint == 'main.app_movel'
@@ -89,6 +89,8 @@ def context():
         'áudio disponível, escolha Ouvir resposta. A voz é gerada por inteligência '
         'artificial e só começa quando você pede. Você pode interromper quando quiser.')
     return {'public_azul': True, 'public_azul_guide': steps,
+            'public_azul_usage_scope':hashlib.sha256(chat_token().encode()).hexdigest()[:24],
+            'public_azul_audio_policy':settings.policy(public=True),
             'public_azul_transcribe_url': url_for('main.portal_azul_transcribe')
                 if available() and current_app.config.get('AZUL_CONVERSATION_ENABLED', True) else '',
             'public_azul_tutorial_url': url_for('main.azul_tutorial', publico='publico')
@@ -101,6 +103,14 @@ def context():
                 'quick': {question: {'answer': answer, 'speech': offer(answer)}
                           for question, answer in QUICK_ANSWERS.items()}},
             'oceano_azul_summary': OCEANO_AZUL_SUMMARY, 'oceano_azul_url': OCEANO_AZUL_URL}
+
+
+def context():
+    try:
+        return _context()
+    except control_store.StoreError:
+        # Optional help must not take public pages offline when controls are unavailable.
+        return {'public_azul':False}
 
 
 def reply():

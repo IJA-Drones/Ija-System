@@ -233,6 +233,8 @@ A ferramenta `buscar_solicitacoes` transforma pedidos em filtros validados de st
 
 ### Mini-drone, guia prático e voz da Azul
 
+O perfil **dev** pode administrar a AZUL em **AZUL → Configurações** (`/azul/configuracoes`): som global, contextos separados, modelos, limites, tarifas/câmbio e consumo de novas interações. Consulte [Administração da AZUL](azul-administracao.md) para persistência, medição, reservas de orçamento e aplicação dos controles. As variáveis de ambiente abaixo continuam como padrões e desligamentos de emergência.
+
 O mini-drone identifica a Azul nas telas internas autorizadas, na página `/azul`, nas páginas do Portal do Cidadão e no aplicativo web `/m/`. No portal, também aparece em boletins, contatos, relatos de saúde, recibos, ações públicas, download do aplicativo e privacidade. Ele acompanha o cursor quando está sob o ponteiro, acena ao abrir a conversa e muda de expressão enquanto a resposta ou o áudio são preparados. Durante a reprodução, a boca se anima. A preferência de redução de movimento do dispositivo é respeitada. O mascote não abre o chat nem inicia áudios automaticamente.
 
 Arraste o botão do mini-drone com o mouse ou pelo toque para reposicioná-lo. Um clique ou toque sem arrastar abre a conversa. Com o botão em foco, **Shift + setas** também move o mascote. A posição proporcional fica no `localStorage` do navegador e é reutilizada entre páginas; os limites da tela mantêm o botão acessível. No computador, o painel acompanha a posição escolhida. No celular, o botão fica oculto enquanto o painel está aberto para preservar o espaço da conversa e do teclado.

@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
-from app.modules.chatbot import exports, operations, search, topics, voice
+from app.modules.chatbot import exports, operations, search, topics, voice, settings, metering, control_store
 from app.modules.chatbot.scope import chat_key
 from pathlib import Path
 
@@ -253,15 +253,15 @@ def consume_help_quota(user_id, *, export=False, voice=False, transcribe=False):
     """Per-account minute limit and shared daily budget, without message storage."""
     now = int(time.time())
     limits = ([(f'transcribe:user:{user_id}:{now // 60}', 6),
-               (f'transcribe:user-day:{user_id}:{now // 86400}', 30),
-               (f'transcribe:day:{now // 86400}', current_app.config.get('AZUL_TRANSCRIBE_DAILY_LIMIT', 200))] if transcribe else
-              [(f'voice:user:{user_id}:{now // 60}', current_app.config.get('AZUL_VOICE_PER_MINUTE', 6)),
-               (f'voice:user-day:{user_id}:{now // 86400}', 30),
-               (f'voice:day:{now // 86400}', current_app.config.get('AZUL_VOICE_DAILY_LIMIT', 200))] if voice else
+               (f'transcribe:user-day:{user_id}:{now // 86400}', settings.get('user_audio_per_day')),
+               (f'transcribe:day:{now // 86400}', settings.get('internal_daily_transcribe'))] if transcribe else
+              [(f'voice:user:{user_id}:{now // 60}', settings.get('voice_per_minute')),
+               (f'voice:user-day:{user_id}:{now // 86400}', settings.get('user_audio_per_day')),
+               (f'voice:day:{now // 86400}', settings.get('internal_daily_voice'))] if voice else
               [(f'export:user:{user_id}:{now // 60}', 3),
                (f'export:day:{user_id}:{now // 86400}', 50)] if export else
               [(f'user:{user_id}:{now // 60}', 8),
-               (f'day:{now // 86400}', current_app.config.get('AZUL_HELP_DAILY_LIMIT', 500))])
+               (f'day:{now // 86400}', settings.get('internal_daily_text'))])
     Path(current_app.instance_path).mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(str(Path(current_app.instance_path) / 'azul_help_quota.sqlite'), timeout=2) as conn:
         conn.execute('CREATE TABLE IF NOT EXISTS quota (key TEXT PRIMARY KEY, count INTEGER, expires INTEGER)')
@@ -289,12 +289,13 @@ def reply(channel):
     if not isinstance(payload, dict):
         return jsonify(answer='Digite uma mensagem válida.'), 400
     message = payload.get('message')
+    message_limit = settings.get('max_message_chars')
     history = payload.get('history', [])
     page = payload.get('page', '')
-    if (not isinstance(message, str) or not 0 < len(message.strip()) <= 1500
+    if (not isinstance(message, str) or not 0 < len(message.strip()) <= message_limit
             or not isinstance(page, str) or len(page) > 300
             or not isinstance(history, list) or len(history) > MAX_HISTORY_MESSAGES):
-        return jsonify(answer='Use até 1.500 caracteres por pergunta e até 12 mensagens de histórico.'), 400
+        return jsonify(answer=f'Use até {message_limit} caracteres por pergunta e até 12 mensagens de histórico.'), 400
     for item in history:
         if (not isinstance(item, dict) or item.get('role') not in {'user', 'assistant'}
                 or not isinstance(item.get('content'), str)
@@ -324,10 +325,12 @@ def reply(channel):
         from app.modules.portal_cidadao.chatbot import answer as public_answer
         from app.modules.chatbot.voice import DIALOGUE_STYLE
         try:
-            if not current_app.config.get('OPENAI_API_KEY') or not consume_help_quota(current_user.id):
+            if not settings.get('enabled') or not current_app.config.get('OPENAI_API_KEY') or not consume_help_quota(current_user.id):
                 return jsonify(answer='A consulta de saúde está indisponível. Tente mais tarde.'), 503
             text, parts = public_answer(topics.health_history(history) + [{'role':'user','content':message}],
                                         extra_instructions=DIALOGUE_STYLE if payload.get('voice') is True else '')
+        except control_store.BudgetExceeded:
+            raise
         except Exception:
             current_app.logger.warning('AZUL: consulta pública de saúde indisponível')
             return jsonify(answer='Não foi possível consultar as informações de saúde agora.'), 503
@@ -411,21 +414,22 @@ def reply(channel):
                                 'Não responda que não pode consultar registros quando essa ferramenta estiver disponível. '
                                 'Para DEV ela prioriza falhas e bugs; para os outros perfis autorizados, solicitações municipais. Para outros períodos, módulos ou filtros, explique o alcance e peça esclarecimento.')
     try:
-        available = bool(key) and consume_help_quota(current_user.id)
+        available = settings.get('enabled') and bool(key) and consume_help_quota(current_user.id)
     except sqlite3.Error:
         available = False
     if available:
         try:
             with OpenAI(api_key=key, timeout=30, max_retries=0) as client:
-                response = client.responses.create(
-                    model=current_app.config.get('OPENAI_CHAT_MODEL') or 'gpt-6-luna',
+                response = metering.respond(client,
+                    model=settings.get('internal_model'),
                     instructions=INSTRUCTIONS + export_instructions
+                    + settings.context()
                     + ('\n' + voice.DIALOGUE_STYLE if payload.get('voice') is True else '')
                     + '\nCONTEXTO DO SERVIDOR:\n' + json.dumps(context, ensure_ascii=False)
                     + '\nMANUAL GERAL (não concede permissões):\n' + json.dumps(faq, ensure_ascii=False),
                     input=[{'role': item['role'], 'content': item['content']} for item in history]
                     + [{'role': 'user', 'content': message.strip()}],
-                    store=False, max_output_tokens=1800,
+                    store=False, max_output_tokens=settings.get('max_output_internal'),
                     **({"tools": tools, "parallel_tool_calls": False} if tools else {}),
                 )
             calls = [item for item in getattr(response, 'output', []) if getattr(item, 'type', '') == 'function_call']

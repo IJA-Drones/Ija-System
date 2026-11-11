@@ -53,6 +53,11 @@
           if (wasPlaying) return;
         }
         if (voiceButton === button) { stopVoice(); return; }
+        const wasConversation = root.azulVoice?.isActive();
+        if (root.azulAudioPolicy && !await root.azulAudioPolicy.check('sound')) {
+          setVoiceStatus(root.azulAudioPolicy.message || 'O som da AZUL está desativado nas configurações.'); return;
+        }
+        if (wasConversation && !root.azulVoice?.isActive()) return;
         stopVoice();
         const version = voiceVersion;
         voiceButton = button;
@@ -72,6 +77,7 @@
             } : {
               method: 'POST', signal: controller.signal,
               headers: {'Content-Type': 'application/json', 'X-CSRFToken': root.dataset.csrf,
+                'X-Azul-Conversation':root.dataset.conversationId || '',
                 ...(root.dataset.token ? {'X-Portal-Chat-Token':root.dataset.token} : {})},
               body: JSON.stringify({token: offer.token})
             });
@@ -106,6 +112,7 @@
             setVoiceStatus('A Azul está falando · voz gerada por IA');
             settleDrone();
             root.dispatchEvent(new CustomEvent('azul:voice-started'));
+            if (recorded) root.azulAudioPolicy?.record(recorded);
           };
           if (speechContext && speechContext.state !== 'closed') {
             const bytes = rawAudio || await (await fetch(url)).arrayBuffer();

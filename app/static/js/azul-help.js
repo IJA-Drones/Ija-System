@@ -275,7 +275,7 @@
       try {
         const response = await fetch(root.dataset.url, {
           method: 'POST', signal: controller.signal,
-          headers: {'Content-Type': 'application/json', 'X-CSRFToken': root.dataset.csrf},
+          headers: {'Content-Type': 'application/json', 'X-CSRFToken': root.dataset.csrf,'X-Azul-Conversation':root.dataset.conversationId || ''},
           body: JSON.stringify({message: text, history: intent === 'start_report' ? [] : history, page: root.dataset.page, intent, chat_key: root.dataset.chatKey,
             ...(options.voice ? {voice:true} : {})})
         });
