@@ -1,8 +1,21 @@
+import json
+import os
+import re
+import uuid
 from datetime import date, datetime
+
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipamentos, Equipe, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso
 from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
+from app.shared.skybox import (
+    SkyboxError,
+    build_manutencao_media_remote_path,
+    delete_skybox_file,
+    is_skybox_path,
+    upload_file_to_skybox,
+)
 
 
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
@@ -12,6 +25,10 @@ MANUTENCAO_STATUS_ALIASES = (
     "Manutencao",
     "Em Manutencao",
 )
+MANUTENCAO_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
+MANUTENCAO_IMAGE_MAX_BYTES = 12 * 1024 * 1024
+MANUTENCAO_IMAGE_MAX_COUNT = 10
+SIGNATURE_DATA_URL = re.compile(r"^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$")
 
 
 def list_equipamentos_dashboard(user=None):
@@ -68,13 +85,14 @@ def list_equipamentos_manutencao(user=None):
 
 def list_pecas_disponiveis_manutencao(drone, user=None):
     query = EstoquePeca.query.filter(
-        EstoquePeca.drone_id == drone.id,
         EstoquePeca.status == "disponivel_manutencao",
         EstoquePeca.quantidade > 0,
     )
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
-    return query.order_by(EstoquePeca.modelo_peca.asc(), EstoquePeca.numero_serie.asc()).all()
+    pecas = query.order_by(EstoquePeca.modelo_peca.asc(), EstoquePeca.numero_serie.asc()).all()
+    modelo_drone = (getattr(drone, "modelo", "") or "").strip().casefold()
+    return [p for p in pecas if p.drone_id == drone.id or modelo_drone in {m.strip().casefold() for m in (p.modelos_compativeis or "").split(",") if m.strip()}]
 
 
 def list_pecas_usadas_manutencao(drone, user=None):
@@ -87,6 +105,66 @@ def list_pecas_usadas_manutencao(drone, user=None):
     if user is not None:
         query = apply_prefeitura_scope(query, user, ManutencaoPecaUso.prefeitura_id)
     return query.order_by(ManutencaoPecaUso.criado_em.desc()).all()
+
+
+def list_imagens_manutencao(manutencao):
+    if not manutencao or not manutencao.imagens_ocorrido:
+        return []
+    try:
+        values = json.loads(manutencao.imagens_ocorrido)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(values, list):
+        return []
+    return [value for value in values if isinstance(value, str) and is_skybox_path(value)]
+
+
+def _signature_value(raw, label, errors):
+    value = (raw or "").strip()
+    if not value:
+        return None
+    if len(value) > 2_000_000 or not SIGNATURE_DATA_URL.fullmatch(value):
+        errors[label] = "Assinatura inválida. Desenhe novamente no campo de assinatura."
+        return None
+    return value
+
+
+def _upload_maintenance_images(manutencao, uploads):
+    files = [item for item in (uploads or []) if item and getattr(item, "filename", "")]
+    if not files:
+        return []
+    if len(files) > MANUTENCAO_IMAGE_MAX_COUNT:
+        raise ValueError(f"Envie no máximo {MANUTENCAO_IMAGE_MAX_COUNT} imagens por registro.")
+
+    markers = []
+    try:
+        for upload in files:
+            filename = secure_filename(upload.filename or "")
+            extension = os.path.splitext(filename)[1].lower().lstrip(".")
+            if not filename or extension not in MANUTENCAO_IMAGE_EXTENSIONS:
+                raise ValueError("Envie imagens nos formatos JPG, JPEG ou PNG.")
+            if upload.mimetype and upload.mimetype.lower() not in {"image/jpeg", "image/png"}:
+                raise ValueError("O arquivo selecionado não é uma imagem JPG ou PNG.")
+            try:
+                current = upload.stream.tell()
+                upload.stream.seek(0, os.SEEK_END)
+                size = upload.stream.tell()
+                upload.stream.seek(current)
+            except (AttributeError, OSError):
+                size = None
+            if size is not None and size > MANUTENCAO_IMAGE_MAX_BYTES:
+                raise ValueError("Cada imagem pode ter no máximo 12 MB.")
+            stored_name = f"ocorrido_{uuid.uuid4().hex}.{extension}"
+            remote_path = build_manutencao_media_remote_path(manutencao.id, stored_name)
+            markers.append(upload_file_to_skybox(upload, remote_path))
+    except Exception:
+        for marker in markers:
+            try:
+                delete_skybox_file(marker)
+            except SkyboxError:
+                pass
+        raise
+    return markers
 
 
 def get_manutencao_aberta(drone, user=None):
@@ -135,7 +213,7 @@ def list_historico_pecas_usadas(user=None):
     return query.order_by(ManutencaoPecaUso.criado_em.desc(), ManutencaoPecaUso.id.desc()).all()
 
 
-def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None):
+def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data=None):
     errors = {}
     pecas_disponiveis = list_pecas_disponiveis_manutencao(drone, user=user)
     pecas_por_id = {peca.id: peca for peca in pecas_disponiveis}
@@ -169,14 +247,44 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None):
 
         selecionadas.append((peca, quantidade))
 
-    if not selecionadas and not errors:
-        errors["pecas"] = "Selecione ao menos uma peca usada na manutencao."
-
     observacoes = (form_data.get("observacoes") or "").strip()
+    uploaded_images = files_data.getlist("imagens_ocorrido") if files_data is not None else []
+    has_report_data = bool(uploaded_images) or any((form_data.get(field) or "").strip() for field in (
+        "responsavel_avaria", "responsavel_manutencao", "piloto_responsavel_avaria",
+        "imagens_ocorrido", "avarias_identificadas", "observacoes_teste", "observacoes",
+    )) or form_data.get("drone_testado") == "1"
+    if not selecionadas and not has_report_data and not errors:
+        errors["pecas"] = "Registre uma peça usada ou preencha os dados do relato técnico."
+    assinatura_tecnico = _signature_value(
+        form_data.get("assinatura_responsavel_tecnico"), "assinatura_responsavel_tecnico", errors
+    )
+    assinatura_avaria = _signature_value(
+        form_data.get("assinatura_responsavel_avaria"), "assinatura_responsavel_avaria", errors
+    )
     if errors:
         return None, errors
 
     manutencao = get_or_create_manutencao_aberta(drone, user=user)
+    manutencao.responsavel_avaria = (form_data.get("responsavel_avaria") or "").strip() or None
+    manutencao.responsavel_manutencao = (form_data.get("responsavel_manutencao") or "").strip() or None
+    manutencao.piloto_responsavel_avaria = (form_data.get("piloto_responsavel_avaria") or "").strip() or None
+    manutencao.observacoes = observacoes or manutencao.observacoes
+    manutencao.avarias_identificadas = (form_data.get("avarias_identificadas") or "").strip() or None
+    manutencao.drone_testado = form_data.get("drone_testado") == "1"
+    manutencao.observacoes_teste = (form_data.get("observacoes_teste") or "").strip() or None
+    if form_data.get("limpar_assinatura_tecnico") == "1":
+        manutencao.assinatura_responsavel_tecnico = None
+    elif assinatura_tecnico is not None:
+        manutencao.assinatura_responsavel_tecnico = assinatura_tecnico
+    if form_data.get("limpar_assinatura_avaria") == "1":
+        manutencao.assinatura_responsavel_avaria = None
+    elif assinatura_avaria is not None:
+        manutencao.assinatura_responsavel_avaria = assinatura_avaria
+    image_markers = _upload_maintenance_images(manutencao, uploaded_images)
+    if image_markers:
+        manutencao.imagens_ocorrido = json.dumps(
+            list_imagens_manutencao(manutencao) + image_markers, ensure_ascii=False
+        )
     usos = []
     for peca, quantidade in selecionadas:
         uso = ManutencaoPecaUso(

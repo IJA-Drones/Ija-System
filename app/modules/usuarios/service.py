@@ -34,6 +34,7 @@ ADMIN_USER_TYPES = (
     "sup_veiculos",
     TI_MANAGER_USER_TYPE,
     "agente_endemias",
+    "manutencao",
 )
 LEGACY_COVISA_USER_TYPE = "visualizar"
 LEGACY_COVISA_REGIAO = "COVISA"
@@ -192,10 +193,10 @@ def validate_new_admin_user(
         errors["tipo_usuario"] = "Ative a Central de TI antes de criar esse perfil."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
-    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos", "agente_endemias"} and not prefeitura_id:
+    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos", "agente_endemias", "manutencao"} and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
-    if tipo_usuario == "agente_endemias" and prefeitura_id and not Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first():
-        errors["prefeitura_id"] = "Selecione uma prefeitura ativa para o agente."
+    if tipo_usuario in {"agente_endemias", "manutencao"} and prefeitura_id and not Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first():
+        errors["prefeitura_id"] = "Selecione uma prefeitura ativa para esse usuario."
     if not senha:
         errors["senha"] = "Informe uma senha."
     elif password_error := validate_password(senha):
@@ -232,10 +233,10 @@ def validate_edit_admin_user(
         errors["tipo_usuario"] = "A Central de TI está desativada."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
-    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos", "agente_endemias"} and not prefeitura_id:
+    if tipo_usuario in {PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, "covisa", "visualizar", "sup_veiculos", "agente_endemias", "manutencao"} and not prefeitura_id:
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
-    if tipo_usuario == "agente_endemias" and prefeitura_id and not Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first():
-        errors["prefeitura_id"] = "Selecione uma prefeitura ativa para o agente."
+    if tipo_usuario in {"agente_endemias", "manutencao"} and prefeitura_id and not Prefeitura.query.filter_by(id=prefeitura_id, ativa=True).first():
+        errors["prefeitura_id"] = "Selecione uma prefeitura ativa para esse usuario."
 
     if senha or senha2:
         if len(senha) < 4:

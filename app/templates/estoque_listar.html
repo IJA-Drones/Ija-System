@@ -17,7 +17,7 @@
   <div class="page-toolbar align-items-center estoque-listar-toolbar mb-4">
     <div>
       <h2 class="text-dark mb-1"><i class="bi bi-box-seam-fill me-2 text-primary"></i>Estoque</h2>
-      <p class="text-muted small mb-0">Peças vinculadas a drones e disponibilidade para manutenção.</p>
+      <p class="text-muted small mb-0">Peças vinculadas aos equipamentos e disponibilidade para manutenção.</p>
     </div>
     <div class="page-toolbar-actions">
       <a href="{{ url_for('main.estoque_export_excel') }}" class="btn btn-secondary fw-bold" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_export_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -29,6 +29,14 @@
     </div>
   </div>
 
+  <form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-sm-6 col-md-4">
+      <label class="form-label small fw-bold" for="estoque-local">Filtrar por prateleira/local</label>
+      <input id="estoque-local" name="local" value="{{ local or '' }}" class="form-control" placeholder="Ex.: Armário A">
+    </div>
+    <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filtrar</button></div>
+    {% if local %}<div class="col-auto"><a class="btn btn-link" href="{{ url_for('main.estoque_listar') }}">Limpar</a></div>{% endif %}
+  </form>
   <div class="card shadow-sm border-0 rounded-4 overflow-hidden estoque-listar-table-card">
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -38,7 +46,9 @@
               <th class="ps-3">Peça</th>
               <th>Nº de série</th>
               <th>Qtd</th>
-              <th>Drone</th>
+              <th>Compatível com</th>
+              <th>Prateleira/Local</th>
+              <th>Equipamento</th>
               <th>Status</th>
               <th class="text-end pe-3">Ações</th>
             </tr>
@@ -54,10 +64,14 @@
               </td>
               <td class="text-muted small">{{ peca.numero_serie or '-' }}</td>
               <td><span class="badge bg-light text-dark border">{{ peca.quantidade }}</span></td>
+              <td><span class="fw-semibold">{{ peca.modelos_compativeis or (peca.drone.modelo if peca.drone else 'Todos / não informado') }}</span></td>
+              <td><span class="fw-semibold">{{ peca.prateleira_local or 'Não informado' }}</span></td>
               <td>
-                {% if peca.drone %}
-                  <span class="fw-semibold">{{ peca.drone.renomacao }}</span>
-                  <div class="text-muted small">{{ peca.drone.modelo }}</div>
+                {% set equipamento = peca.equipamento or peca.drone %}
+                {% if equipamento %}
+                  {% set tipo_equipamento = {'drones': 'Drone', 'baterias': 'Bateria', 'veiculos': 'Veículo', 'geradores': 'Gerador'}.get(equipamento.tipo_equipamento, equipamento.tipo_equipamento|replace('_', ' ')|title) %}
+                  <span class="fw-semibold">{{ tipo_equipamento }} · {{ equipamento.renomacao }}</span>
+                  <div class="text-muted small">{{ equipamento.modelo }}</div>
                 {% else %}
                   <span class="text-muted">Sem vínculo</span>
                 {% endif %}
@@ -84,7 +98,7 @@
             </tr>
             {% else %}
             <tr>
-              <td colspan="6" class="text-center text-muted py-5">Nenhuma peça cadastrada no estoque.</td>
+              <td colspan="8" class="text-center text-muted py-5">Nenhuma peça cadastrada no estoque.</td>
             </tr>
             {% endfor %}
           </tbody>

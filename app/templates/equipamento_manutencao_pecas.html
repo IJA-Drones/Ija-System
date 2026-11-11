@@ -28,7 +28,7 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0 mb-4 registro-pecas-card">
     <div class="card-body p-4">
-      <form method="post" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+      <form method="post" enctype="multipart/form-data" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
           <div>
             <h5 class="text-primary fw-bold mb-1">Selecionar peças</h5>
@@ -88,14 +88,54 @@
           </table>
         </div>
 
+        <div class="row g-3 mt-3">
+          <div class="col-md-4"><label class="form-label">Responsável técnico pela avaria</label><input class="form-control" name="responsavel_avaria" maxlength="120" value="{{ manutencao.responsavel_avaria if manutencao else '' }}"></div>
+          <div class="col-md-4"><label class="form-label">Responsável técnico pela manutenção</label><input class="form-control" name="responsavel_manutencao" maxlength="120" value="{{ manutencao.responsavel_manutencao if manutencao else '' }}"></div>
+          <div class="col-md-4"><label class="form-label">Piloto responsável pela avaria</label><input class="form-control" name="piloto_responsavel_avaria" maxlength="120" value="{{ manutencao.piloto_responsavel_avaria if manutencao else '' }}"></div>
+          <div class="col-md-6">
+            <label class="form-label">Imagens do ocorrido</label>
+            <input class="form-control" type="file" name="imagens_ocorrido" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple>
+            <div class="form-text">JPG ou PNG, até 10 imagens de 12 MB cada. Os arquivos são enviados diretamente ao Skybox.</div>
+            {% if imagens_manutencao %}
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                {% for imagem in imagens_manutencao %}
+                  <a href="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" target="_blank" rel="noopener" class="border rounded p-1">
+                    <img src="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" alt="Imagem do ocorrido {{ loop.index }}" loading="lazy" style="width:96px;height:72px;object-fit:cover">
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6"><label class="form-label">Avarias identificadas</label><textarea class="form-control" name="avarias_identificadas" rows="2">{{ manutencao.avarias_identificadas if manutencao else '' }}</textarea></div>
+          <div class="col-md-4 form-check ms-2 mt-3"><input class="form-check-input" type="checkbox" name="drone_testado" value="1" id="drone-testado" {{ 'checked' if manutencao and manutencao.drone_testado else '' }}><label class="form-check-label" for="drone-testado">Drone testado</label></div>
+          <div class="col-md-7"><label class="form-label">Observações do teste</label><textarea class="form-control" name="observacoes_teste" rows="2">{{ manutencao.observacoes_teste if manutencao else '' }}</textarea></div>
+        </div>
+        <div class="row g-3 mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Assinatura do responsável técnico pela manutenção</label>
+            <div class="border rounded bg-white p-2"><canvas id="assinatura-tecnico-pad" class="w-100" style="height:150px;touch-action:none"></canvas>
+              <input type="hidden" name="assinatura_responsavel_tecnico" id="assinatura-tecnico-data" value="{{ manutencao.assinatura_responsavel_tecnico if manutencao else '' }}">
+              <input type="hidden" name="limpar_assinatura_tecnico" id="assinatura-tecnico-clear" value="0">
+              <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-clear-signature="assinatura-tecnico">Limpar</button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Assinatura do responsável pela avaria</label>
+            <div class="border rounded bg-white p-2"><canvas id="assinatura-avaria-pad" class="w-100" style="height:150px;touch-action:none"></canvas>
+              <input type="hidden" name="assinatura_responsavel_avaria" id="assinatura-avaria-data" value="{{ manutencao.assinatura_responsavel_avaria if manutencao else '' }}">
+              <input type="hidden" name="limpar_assinatura_avaria" id="assinatura-avaria-clear" value="0">
+              <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-clear-signature="assinatura-avaria">Limpar</button>
+            </div>
+          </div>
+        </div>
         <div class="mt-4 registro-pecas-observacoes">
           <label class="form-label fw-bold small text-muted">Observações da manutenção</label>
-          <textarea name="observacoes" class="form-control" rows="3" placeholder="Detalhes sobre a troca, diagnóstico ou responsável"></textarea>
+          <textarea name="observacoes" class="form-control" rows="3" placeholder="Detalhes sobre a troca, diagnóstico ou responsável">{{ manutencao.observacoes if manutencao else '' }}</textarea>
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-5 registro-pecas-actions">
           <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-danger btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencao')) if central_ti_url_allowed is defined else true) else 'false' }}">Cancelar</a>
-          <button type="submit" class="btn btn-primary px-4 fw-bold" {% if not pecas %}disabled{% endif %}>
+          <button type="submit" class="btn btn-primary px-4 fw-bold">
             <i class="bi bi-check-lg me-1"></i> Registrar peças usadas
           </button>
         </div>
@@ -142,4 +182,35 @@
     </div>
   </div>
 </div>
+<script>
+(() => {
+  const setupPad = (key) => {
+    const canvas = document.getElementById(`${key}-pad`);
+    const input = document.getElementById(`${key}-data`);
+    const clearFlag = document.getElementById(`${key}-clear`);
+    if (!canvas || !input) return;
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    const restore = () => {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * ratio));
+      canvas.height = Math.max(1, Math.round(rect.height * ratio));
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111827';
+      if (input.value && input.value.startsWith('data:image/png;base64,')) {
+        const image = new Image(); image.onload = () => ctx.drawImage(image, 0, 0, rect.width, rect.height); image.src = input.value;
+      }
+    };
+    const point = (event) => { const rect = canvas.getBoundingClientRect(); return {x:event.clientX-rect.left,y:event.clientY-rect.top}; };
+    canvas.addEventListener('pointerdown', (event) => { drawing = true; if (clearFlag) clearFlag.value='0'; canvas.setPointerCapture(event.pointerId); const p=point(event); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
+    canvas.addEventListener('pointermove', (event) => { if (!drawing) return; const p=point(event); ctx.lineTo(p.x,p.y); ctx.stroke(); });
+    const stop = () => { if (!drawing) return; drawing = false; input.value = canvas.toDataURL('image/png'); };
+    canvas.addEventListener('pointerup', stop); canvas.addEventListener('pointercancel', stop);
+    document.querySelector(`[data-clear-signature="${key}"]`)?.addEventListener('click', () => { ctx.clearRect(0,0,canvas.width,canvas.height); input.value=''; if (clearFlag) clearFlag.value='1'; });
+    window.addEventListener('resize', restore); restore();
+  };
+  setupPad('assinatura-tecnico'); setupPad('assinatura-avaria');
+})();
+</script>
 {% endblock %}

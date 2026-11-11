@@ -158,6 +158,8 @@
                     <span class="badge bg-success-subtle text-success border border-success-subtle">FINANCEIRO</span>
                   {% elif u.tipo_usuario == 'agente_endemias' %}
                     <span class="badge bg-primary">AGENTE DE ENDEMIAS</span>
+                  {% elif u.tipo_usuario == 'manutencao' %}
+                    <span class="badge bg-info text-dark">MANUTENÇÃO E ESTOQUE</span>
                   {% elif u.tipo_usuario == 'prefeitura_admin' %}
                     <span class="badge bg-dark">PREFEITURA</span>
                   {% elif u.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] %}
