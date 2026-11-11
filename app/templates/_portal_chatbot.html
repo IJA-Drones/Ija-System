@@ -11,7 +11,18 @@
      data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
   <button type="button" class="portal-chat-toggle azul-launcher" aria-expanded="false" aria-controls="portalChatPanel" title="Conversar com a Azul · arraste para mover">{{ drone('azul-drone-launcher') }}<span class="azul-launcher-label">Azul <i class="bi bi-chat-dots" aria-hidden="true"></i></span></button>
   <section id="portalChatPanel" class="portal-chat-panel" aria-label="Azul, IA do Portal do Cidadão" hidden>
-    <header>{{ drone() }}<div class="portal-chat-heading"><strong>Azul <span class="portal-chat-badge">IA</span></strong><small>IA do Portal do Cidadão</small></div><div class="portal-chat-header-actions"><button type="button" data-guide-open title="Guia prático" aria-label="Abrir guia prático"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 5v16M3 3h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/></svg></button><button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button><button type="button" data-close aria-label="Fechar conversa com a Azul">×</button></div></header>
+    <header>
+      {{ drone() }}
+      <div class="portal-chat-heading"><strong>Azul <span class="portal-chat-badge">IA</span></strong><small>IA do Portal do Cidadão</small></div>
+      <div class="portal-chat-header-actions">
+        {% if azul_settings_url|default(none) %}
+        <a class="azul-expand" href="{{ azul_settings_url }}" title="Configurações da AZUL" aria-label="Configurações da AZUL"><i class="bi bi-gear" aria-hidden="true"></i></a>
+        {% endif %}
+        <button type="button" data-guide-open title="Guia prático" aria-label="Abrir guia prático"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 5v16M3 3h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/></svg></button>
+        <button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>
+        <button type="button" data-close aria-label="Fechar conversa com a Azul">×</button>
+      </div>
+    </header>
     <details class="portal-chat-notice"><summary>Sobre a Azul</summary><p>A Azul responde sobre saúde, prevenção, vigilância e uso do portal. Também orienta sobre contatos públicos das prefeituras e o canal institucional da Oceano Azul. Para informações de saúde, consulta fontes oficiais. Preencha dados pessoais e de saúde somente nos formulários.</p></details>
     {% with azul_guide=public_azul_guide|default([]) %}{% include '_azul_guide.html' %}{% endwith %}
     {% include '_azul_voice_call.html' %}

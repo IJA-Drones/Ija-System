@@ -35,8 +35,9 @@ def number(value):
 
 def identity():
     endpoint = request.endpoint or ''
-    public = endpoint.startswith(('main.portal_','main.mobile_','main.whatsapp_')) or bool(
-        request.headers.get('X-Portal-Chat-Token')) or not current_user.is_authenticated
+    public = (endpoint.startswith(('main.portal_','main.mobile_','main.whatsapp_','main.telegram_'))
+              or (endpoint=='main.azul_audio_event' and bool(request.headers.get('X-Portal-Chat-Token')))
+              or not hasattr(current_app,'login_manager') or not current_user.is_authenticated)
     actor = 'public' if public else 'user:'+str(current_user.get_id())
     if not session.get('azul_meter_session'):
         session['azul_meter_session'] = uuid4().hex

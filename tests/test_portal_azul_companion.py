@@ -2,10 +2,10 @@ import json
 from unittest.mock import patch
 
 import pytest
-from flask import Blueprint, Flask
+from flask import Blueprint, Flask, url_for
 from flask_login import LoginManager
 
-from app.modules.chatbot import voice
+from app.modules.chatbot import settings, voice
 from app.modules.chatbot.routes import register_routes as internal_routes
 from app.modules.portal_cidadao import chatbot, companion
 from app.modules.portal_cidadao.routes import register_routes
@@ -161,6 +161,17 @@ def test_a_known_question_with_extra_offtopic_content_is_not_a_free_answer_short
         assert response.json['mode'] == 'blocked'
         assert response.json['speech'] is None
         provider.assert_not_called()
+
+
+def test_reopening_a_muted_portal_keeps_independent_dictation_available(env):
+    app,_=env
+    with app.test_request_context('/portal-cidadao'):
+        settings.save({'sound_enabled':False},0,'test-dev')
+        payload=companion.context()
+        assert payload['public_azul'] is True
+        assert payload['public_azul_voice'] is False
+        assert payload['public_azul_audio_policy']['microphone_enabled'] is True
+        assert payload['public_azul_transcribe_url']==url_for('main.portal_azul_transcribe')
 
 
 def test_dynamic_public_audio_is_not_shared_between_sessions(env):

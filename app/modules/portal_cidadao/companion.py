@@ -6,7 +6,7 @@ import json
 from flask import current_app, jsonify, request, session, url_for
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
-from app.modules.chatbot import voice, settings, control_store
+from app.modules.chatbot import voice, speech_input, settings, control_store
 from .chatbot import chat_token, consume_quota
 from .institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
 
@@ -92,7 +92,7 @@ def _context():
             'public_azul_usage_scope':hashlib.sha256(chat_token().encode()).hexdigest()[:24],
             'public_azul_audio_policy':settings.policy(public=True),
             'public_azul_transcribe_url': url_for('main.portal_azul_transcribe')
-                if available() and current_app.config.get('AZUL_CONVERSATION_ENABLED', True) else '',
+                if speech_input.available() and current_app.config.get('PORTAL_AZUL_VOICE_ENABLED', True) else '',
             'public_azul_tutorial_url': url_for('main.azul_tutorial', publico='publico')
                 if 'main.azul_tutorial' in current_app.view_functions else None,
             'public_azul_has_form': request.endpoint == 'main.portal_cidadao',

@@ -140,6 +140,18 @@ def test_runtime_model_context_and_response_limits_are_applied_and_metered(env):
     assert 'Como usar o sistema?' not in stored and 'INTERNAL-REFERENCE' not in stored
 
 
+def test_internal_usage_cannot_be_reclassified_by_a_public_token_header(env):
+    _,client,_=env
+    with patch.object(azul,'OpenAI') as sdk:
+        sdk.return_value.__enter__.return_value.responses.create.return_value=response()
+        result=client.post('/api/azul/ajuda',json={'message':'Como usar o sistema?'},
+                           headers={'X-Portal-Chat-Token':'not-a-public-request'})
+    assert result.status_code==200
+    usage=client.get('/api/azul/consumo').json
+    assert usage['recent'][0]['channel']=='internal'
+    assert usage['conversations'][0]['actor']=='user:9'
+
+
 def test_public_model_only_receives_public_context_and_honors_search_switch(env):
     _,client,_=env
     assert save(client,{'public_model':'gpt-6.1-sol','internal_context':'PRIVATE-SENTINEL',

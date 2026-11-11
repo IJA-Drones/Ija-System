@@ -13,6 +13,9 @@
       {% if azul_page_url|default(none) %}
       <a class="azul-expand" href="{{ azul_page_url }}" title="Abrir página da Azul" aria-label="Abrir página da Azul"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
       {% endif %}
+      {% if azul_settings_url|default(none) %}
+      <a class="azul-expand" href="{{ azul_settings_url }}" title="Configurações da AZUL" aria-label="Configurações da AZUL"><i class="bi bi-gear" aria-hidden="true"></i></a>
+      {% endif %}
       <button type="button" data-guide-open title="Guia prático" aria-label="Abrir guia prático"><i class="bi bi-book" aria-hidden="true"></i></button>
       <button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><i class="bi bi-trash3" aria-hidden="true"></i></button>
       <button type="button" data-close title="Fechar" aria-label="Fechar conversa"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
