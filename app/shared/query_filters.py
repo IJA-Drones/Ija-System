@@ -109,6 +109,15 @@ def query_args_without_page(args):
     return result
 
 
+def paginate_available_page(query, *, page, per_page):
+    """Keep a filtered list usable when an edit removes its last page."""
+    pagination = query.paginate(page=max(page, 1), per_page=per_page, error_out=False)
+    last_page = max(pagination.pages, 1)
+    if pagination.page > last_page:
+        pagination = query.paginate(page=last_page, per_page=per_page, error_out=False)
+    return pagination
+
+
 def parse_search_id(value, prefixes=("id",)):
     text = (value or "").strip().lower()
     if not text:

@@ -106,6 +106,36 @@ OS_APLICACAO_REQUIRED_FIELDS = (
     ("ponta_pulverizacao", "Ponta de pulverizacao"),
 )
 
+OS_SITUACAO_SEM_VOO = "NENHUM VOO REALIZADO"
+OS_SITUACOES_SEM_APLICACAO = frozenset({"APENAS MONITORADO", OS_SITUACAO_SEM_VOO})
+OS_CAMPOS_EXCLUSIVOS_APLICACAO = frozenset({
+    "descricao_produto", "formulacao_produto", "dosagem_g_10l", "tipo_aplicacao",
+    "quantidade_produto_administrada_ml", "pulverizacao_area_l_ha", "ponta_pulverizacao",
+})
+OS_CAMPOS_OBSERVACAO = frozenset({
+    "larva_visualizada", "criadouro_os_tipo_volume", "tratamento_adicional_realizado",
+})
+
+
+def build_os_execution_context(ordem):
+    situacao = (getattr(ordem, "situacao_aplicacao", None) or "").strip().upper()
+    return {
+        "os_sem_aplicacao": situacao in OS_SITUACOES_SEM_APLICACAO,
+        "os_sem_voo": situacao == OS_SITUACAO_SEM_VOO,
+        "os_execucao_regras": {
+            "situacoes_sem_aplicacao": sorted(OS_SITUACOES_SEM_APLICACAO),
+            "situacao_sem_voo": OS_SITUACAO_SEM_VOO,
+            "campos_observacao": sorted(OS_CAMPOS_OBSERVACAO),
+        },
+    }
+
+
+def _limpar_campos_sem_aplicacao(ordem):
+    if (ordem.situacao_aplicacao or "").strip().upper() in OS_SITUACOES_SEM_APLICACAO:
+        # Keep the saved plan; defaults or stale form values are not an actual application.
+        for field_name in OS_CAMPOS_EXCLUSIVOS_APLICACAO:
+            setattr(ordem, field_name, None)
+
 
 class PilotoOsError(Exception):
     def __init__(self, message, category="warning", *, redirect_endpoint="main.piloto_os"):
@@ -147,11 +177,20 @@ def _validar_campos_aplicacao_para_conclusao(ordem):
             redirect_endpoint="main.piloto_os_formulario_view",
         )
 
+    situacao = (ordem.situacao_aplicacao or "").strip().upper()
+    campos_dispensados = set()
+    if situacao in OS_SITUACOES_SEM_APLICACAO:
+        campos_dispensados.update(OS_CAMPOS_EXCLUSIVOS_APLICACAO)
+    if situacao == OS_SITUACAO_SEM_VOO:
+        campos_dispensados.update(OS_CAMPOS_OBSERVACAO)
+
     campos_faltando = [
         label
         for field_name, label in OS_APLICACAO_REQUIRED_FIELDS
-        if _is_blank_os_value(getattr(ordem, field_name, None))
+        if field_name not in campos_dispensados and _is_blank_os_value(getattr(ordem, field_name, None))
     ]
+    if situacao == OS_SITUACAO_SEM_VOO and _is_blank_os_value(ordem.motivo_nao_realizacao):
+        campos_faltando.append("Motivo da nao realizacao")
 
     if (
         (ordem.tratamento_adicional_realizado or "").strip().upper() == "SIM"
@@ -560,6 +599,7 @@ def concluir_os_piloto(user, os_id):
         raise PilotoOsError("Voce nao faz parte da equipe atribuida a esta OS.", "danger")
 
     _validar_campos_aplicacao_para_conclusao(solicitacao.ordem_servico)
+    _limpar_campos_sem_aplicacao(solicitacao.ordem_servico)
 
     solicitacao.status = "CONCLU\u00cdDO"
     db.session.commit()
@@ -664,6 +704,7 @@ def build_piloto_os_form_context(user, os_id):
         "dji_kml_routes": dji_kml_routes,
         "selected_dji_route": selected_dji_route,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
+        **build_os_execution_context(ordem),
         **_build_os_media_context(ordem),
     }
 
@@ -820,6 +861,7 @@ def build_admin_os_form_context(user, os_id):
         "dji_kml_routes": dji_kml_routes,
         "selected_dji_route": selected_dji_route,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
+        **build_os_execution_context(ordem),
         **_build_os_media_context(ordem),
     }
 
@@ -1138,6 +1180,7 @@ def _aplicar_campos_formulario(
     ordem.umidade_relativa_pct = _to_float(form_data.get("umidade_relativa_pct"))
     ordem.velocidade_vento_kmh = _to_float(form_data.get("velocidade_vento_kmh"))
     ordem.motivo_nao_realizacao = _clean_str(form_data.get("motivo_nao_realizacao"))
+    _limpar_campos_sem_aplicacao(ordem)
     ordem.observacoes = _clean_str(form_data.get("observacoes"))
     ordem.piloto = _clean_str(piloto_padrao)
     ordem.assinatura_piloto = _clean_str(form_data.get("assinatura_piloto"))

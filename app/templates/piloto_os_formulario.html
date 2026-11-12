@@ -268,7 +268,7 @@
 
         {# ===================== APLICAÇÃO ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Aplicação</h5>
+          <h5 class="m-0 text-primary fw-bold">Execução do atendimento</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -296,8 +296,8 @@
             </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Larva visualizada *</label>
-            <select name="larva_visualizada" class="form-select" required>
+            <label class="form-label-header">Larva visualizada<span data-obrigatorio-observacao="larva_visualizada" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <select name="larva_visualizada" class="form-select" {% if not os_sem_voo %}required{% endif %}>
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.larva_visualizada == 'SIM' %}selected{% endif %}>SIM</option>
               <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NÃO</option>
@@ -318,14 +318,14 @@
           </div>
           <div class="col-md-5">
             <label class="form-label-header">Nome/RF do ACE responsável *</label>
-            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" required />
+            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ (ordem.nome_rf_ace_responsavel_os or '') if ordem else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Criadouro OS (tipo/volume) *</label>
-            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" required />
+            <label class="form-label-header">Criadouro OS (tipo/volume)<span data-obrigatorio-observacao="criadouro_os_tipo_volume" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" {% if not os_sem_voo %}required{% endif %} />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Data aplicação *</label>
+            <label class="form-label-header">Data do atendimento / aplicação *</label>
             <input type="date" name="data_aplicacao" class="form-control" value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
@@ -337,8 +337,8 @@
             <input type="time" name="hora_termino_aplicacao" class="form-control" value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Tratamento adicional? *</label>
-            <select name="tratamento_adicional_realizado" class="form-select" required>
+            <label class="form-label-header">Tratamento adicional?<span data-obrigatorio-observacao="tratamento_adicional_realizado" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <select name="tratamento_adicional_realizado" class="form-select" {% if not os_sem_voo %}required{% endif %}>
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.tratamento_adicional_realizado == 'SIM' %}selected{% endif %}>SIM</option>
               <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NÃO</option>
@@ -346,12 +346,20 @@
           </div>
           <div class="col-md-8">
             <label class="form-label-header">Quantos? Quais?</label>
-            <input type="text" name="quantos_quais" class="form-control" value="{{ ordem.quantos_quais if ordem else '' }}" />
+            <input type="text" name="quantos_quais" class="form-control" value="{{ (ordem.quantos_quais or '') if ordem else '' }}" />
           </div>
         </div>
 
         <hr class="opacity-25 my-4" />
 
+        <div class="alert alert-info" id="os-sem-aplicacao-aviso" role="status" {% if not os_sem_aplicacao %}hidden{% endif %}>
+          {% if os_sem_voo %}
+            Nenhum voo realizado: informe o motivo e os dados do atendimento. Produto e dosagem não se aplicam. Registre observações de campo somente se foram realizadas.
+          {% else %}
+            Apenas monitorado: preencha as observações do atendimento. Produto e dosagem não se aplicam.
+          {% endif %}
+        </div>
+        <fieldset id="os-campos-aplicacao" {% if os_sem_aplicacao %}disabled hidden{% endif %}>
         {# ===================== DOSAGEM E PARAMETROS ===================== #}
         <div class="section-title">
           <h5 class="m-0 text-primary fw-bold">Dosagem e Parâmetros de Aplicação</h5>
@@ -565,6 +573,7 @@
 
         <hr class="opacity-25 my-4" />
 
+        </fieldset>
         {# ===================== AERONAVE / AMBIENTE ===================== #}
         <div class="section-title">
           <h5 class="m-0 text-primary fw-bold">Condições Ambientais</h5>
@@ -611,10 +620,10 @@
 
           {# Linha 2: Motivo não realização (Inteira) #}
           <div class="col-12">
-            <label class="form-label-header">MOTIVO NÃO REALIZAÇÃO</label>
+            <label class="form-label-header">MOTIVO NÃO REALIZAÇÃO<span id="os-motivo-obrigatorio" {% if not os_sem_voo %}hidden{% endif %}> *</span></label>
             <input type="text" name="motivo_nao_realizacao" class="form-control" 
-                  value="{{ ordem.motivo_nao_realizacao if ordem else '' }}" 
-                  placeholder="Descreva o motivo caso a aplicação não tenha sido concluída..." />
+                  value="{{ (ordem.motivo_nao_realizacao or '') if ordem else '' }}"
+                  placeholder="Descreva o motivo caso a aplicação não tenha sido concluída..." {% if os_sem_voo %}required{% endif %} />
           </div>
 
           {# Linha 3: Equipe (Metade) e Proprietário (Metade) #}
@@ -1077,6 +1086,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="os-execucao-regras">{{ os_execucao_regras | tojson }}</script>
+<script src="{{ url_for('static', filename='js/piloto-os-situacao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/video-upload-recovery.js') }}"></script>
 <script>
 (function () {

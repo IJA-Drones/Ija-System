@@ -7,13 +7,13 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import Drones, Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao
-from app.modules.piloto_os.service import build_os_media_context
+from app.modules.piloto_os.service import build_os_media_context, build_os_execution_context
 from app.shared.os_history_filters import (
     apply_os_history_filters,
     apply_retorno_automatico_filter,
     get_os_history_filters,
 )
-from app.shared.query_filters import id_search_clause
+from app.shared.query_filters import id_search_clause, paginate_available_page
 from app.shared.query_filters import get_multi_values
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
@@ -132,10 +132,10 @@ def build_dashboard_context(user, args, google_maps_key):
             pass
 
     page = args.get("page", 1, type=int)
-    paginacao = query.order_by(Solicitacao.data_criacao.desc()).paginate(
+    paginacao = paginate_available_page(
+        query.order_by(Solicitacao.data_criacao.desc()),
         page=page,
         per_page=6,
-        error_out=False,
     )
 
     equipes_query = apply_prefeitura_scope(Equipe.query, user, Equipe.prefeitura_id).filter_by(ativa=True)
@@ -344,6 +344,7 @@ def build_uvis_os_form_context(user, os_id):
             + len(outras_imagens_paths)
             + (1 if video_path else 0)
         ),
+        **build_os_execution_context(ordem),
         **build_os_media_context(ordem),
     }
 

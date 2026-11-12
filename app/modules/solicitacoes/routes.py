@@ -2,10 +2,12 @@ from app.shared.edit_control import EditConflict
 from sqlalchemy.orm.exc import StaleDataError
 from app.modules.gestao_ti.permissions import route_access
 import os
+from urllib.parse import urlsplit
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 from app.shared.access import is_admin_global_user
 from flask_login import current_user, login_required
+from app.shared.redirects import get_safe_return_url
 
 from app.modules.solicitacoes.service import (
     NovoCadastroValidationError,
@@ -20,6 +22,16 @@ from app.modules.solicitacoes.service import (
     atualizar_solicitacao,
     SolicitacaoAccessError,
 )
+
+
+def _solicitacao_return_url(is_admin):
+    endpoint = "main.admin_dashboard" if is_admin else "main.dashboard"
+    default_url = url_for(endpoint)
+    target = get_safe_return_url(endpoint)
+    # Only return to the originating list, never to an edit form or another action.
+    if urlsplit(target).path == urlsplit(default_url).path:
+        return target
+    return default_url
 
 
 def register_routes(bp):
@@ -88,11 +100,12 @@ def register_routes(bp):
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
 
+        return_url = _solicitacao_return_url(context["is_admin"])
         if request.method == "POST":
             try:
-                redirect_endpoint = atualizar_solicitacao(current_user, id, request.form)
+                atualizar_solicitacao(current_user, id, request.form)
                 flash("Solicitacao atualizada com sucesso!", "success")
-                return redirect(url_for(redirect_endpoint))
+                return redirect(return_url)
             except NovoCadastroValidationError as exc:
                 flash(exc.message, exc.category)
             except SolicitacaoAccessError as exc:
@@ -105,7 +118,7 @@ def register_routes(bp):
                 flash("Erro interno ao salvar a solicitacao. Tente novamente.", "danger")
                 context = build_editar_solicitacao_context(current_user, id)
 
-        return render_template("editar_solicitacao.html", **context)
+        return render_template("editar_solicitacao.html", **context, return_url=return_url)
 
     @bp.route("/admin/deletar/<int:id>", methods=["POST"], endpoint="deletar_registro")
     @login_required

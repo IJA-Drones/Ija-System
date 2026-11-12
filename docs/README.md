@@ -29,6 +29,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 | Financeiro | [Central de empresas — estrutura inicial](central-financeiro.md) |
 | Retornos | [Visualização do ciclo](README-retorno-automatico.md), [central de retornos automáticos](relatorio-central-retornos-automaticos.md) |
 | Endereços e voos | [Bloqueio por endereço resolvido](relatorio-bloqueio-novas-solicitacoes-endereco-resolvido.md), [Place ID e vínculo de KML](relatorio-melhoria-place-id-vinculo-kml-os.md) |
+| Novas demandas operacionais | [Sprint 1: navegação e formulário sem aplicação](novas-demandas-sprint-1.md) |
 | Arquivos | [Streaming WebDAV](relatorio-upload-stream-webdav.md) |
 | Vigilância | [Carga persistida Focal/LIRAa](vigilancia-carga-campo.md), [prévia CSV](vigilancia-validacao-inicial.md), [SINAN](sinan-consulta-publica.md) |
 | Divulgação municipal | [Ações realizadas: revisão, publicação e retirada](acoes-publicas.md) |
