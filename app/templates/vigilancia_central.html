@@ -15,7 +15,7 @@
       <p class="vigilancia-central-description">{{ card.description }}</p>
       <div class="vigilancia-central-module-actions">
         {% if card.endpoint %}
-        {% if card.id == 'campo' and can_plan %}<a class="btn btn-primary" href="{{ url_for('main.vigilancia_planejamento') }}">Planejar levantamento <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a><a class="vigilancia-central-secondary" href="{{ url_for(card.endpoint) }}">{{ card.action }}</a>{% else %}<a class="btn btn-primary" href="{{ url_for(card.endpoint) }}">{{ card.action }} <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>{% endif %}
+        {% if card.id == 'campo' and can_plan %}<a class="btn btn-primary" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=vigilancia_context_prefeitura|default(none), fluxo='levantamento', etapa='1') }}">{{ card.action }} <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a><a class="vigilancia-central-secondary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=vigilancia_context_prefeitura|default(none), fluxo='levantamento') }}">Registrar visitas</a>{% else %}<a class="btn btn-primary" href="{{ url_for(card.endpoint) }}">{{ card.action }} <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>{% endif %}
         {% if card.secondary %}<a class="vigilancia-central-secondary" href="{{ url_for(card.secondary) }}">Validar sem gravar dados</a>{% endif %}
         {% else %}<span class="vigilancia-central-unavailable">Aguardando ativação neste ambiente</span>{% endif %}
       </div>

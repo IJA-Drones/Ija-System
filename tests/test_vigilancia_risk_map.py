@@ -11,7 +11,7 @@ from app.modules.vigilancia.risk import analyze, example_files
 from app.modules.vigilancia.risk_store import RiskStore
 from app.modules.vigilancia.sample import build_geolocated_sample_csv
 from app.modules.vigilancia.service import preview_csv
-from app.modules.vigilancia.territory import condomar_territory, municipality_feature, pernambuco_context
+from app.modules.vigilancia.territory import condomar_territory, municipality_feature, pernambuco_context, territorial_context
 from test_vigilancia_field_routes import client, login, token, prepare, confirm
 from test_vigilancia_planning import planned
 from test_vigilancia_results import setup_results, POLYGON
@@ -50,6 +50,20 @@ def test_geolocated_csv_is_deterministic_and_every_point_is_inside_the_municipal
     assert all(row['imovel_codigo'].startswith('DEMO-MAPA-') for row in report['registros'])
     index = report['indicadores'][0]
     assert (index['imoveis_inspecionados'], index['imoveis_positivos'], index['imoveis_pendentes'], index['iip']) == (16, 4, 4, 25)
+
+
+def test_municipal_context_matches_sao_paulo_and_unknown_cities_never_receive_pernambuco():
+    context = territorial_context('3550308')
+    assert [feature['properties']['codigo'] for feature in context['features']] == ['3550308']
+    assert context['features'][0]['properties']['selecionado'] is True
+    assert context['metadata']['recorte'] == 'Município de São Paulo'
+    boundary = shape(municipality_feature('3550308')['geometry'])
+    assert boundary.is_valid and boundary.covers(Point(-46.634, -23.55))
+    context['features'].clear()
+    assert len(territorial_context('3550308')['features']) == 1
+    assert len(territorial_context('2610905')['features']) == 184
+    for ibge in [None, '3304557']:
+        assert territorial_context(ibge)['features'] == []
 
 
 def test_real_csv_import_confirmation_and_risk_map_share_the_persisted_records(planned):

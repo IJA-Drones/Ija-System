@@ -9,13 +9,17 @@
   <details class="vigilancia-preview-layout"><summary>Identificação e rastreabilidade</summary>  <p class="vigilancia-preview-help">Identificação: {{ batch.id }} · Autor: {{ batch.actor }} · Layout: {{ batch.layout }}<br>Preparado em {{ field_datetime(batch.created) }}{% if batch.confirmed %} · Confirmado em {{ field_datetime(batch.confirmed) }}{% endif %}<br>SHA-256: {{ batch.sha256 }}</p></details>
   {% if batch.status == 'CONCLUIDO' %}
   <p role="status">Carga concluída: {{ batch.inserted }} inspeções novas e {{ batch.reused }} já existentes. Os registros abaixo e o IIP representam somente este lote; não são o consolidado municipal.</p>
+  {% if survey_flow %}<div class="vigilancia-preview-actions"><a class="btn btn-primary" href="{{ url_for('main.vigilancia_campo', prefeitura_id=prefeitura_id, demo='true' if batch.demo else 'false', levantamento=import_plan, fluxo='levantamento') }}">Continuar registrando visitas</a><a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_resultados', prefeitura_id=prefeitura_id, demo='true' if batch.demo else 'false', levantamento=import_plan) }}">Conferir resultados do levantamento</a></div>{% endif %}
   {% elif batch.status == 'VALIDADO' and batch.actor == current_user.get_id()|string and not batch.report.get('exclusoes') %}
   <p>Revise os registros e indicadores abaixo antes de confirmar. Conflitos com cargas anteriores bloqueiam toda a gravação.</p>
-  <form method="post" action="{{ url_for('main.vigilancia_importacoes') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.vigilancia_importacoes'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+  {% set confirm_endpoint = 'main.vigilancia_campo' if field_inline else 'main.vigilancia_importacoes' %}
+  <form method="post" action="{{ url_for(confirm_endpoint, pagina=page_number, **query) if field_inline else url_for(confirm_endpoint) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(confirm_endpoint), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
     <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
     <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">
     <input type="hidden" name="lote" value="{{ batch.id }}">
     <input type="hidden" name="acao" value="confirmar">
+    {% if field_inline %}<input type="hidden" name="demo" value="{{ 'true' if batch.demo else 'false' }}">{% endif %}
+    {% if survey_flow %}<input type="hidden" name="fluxo" value="levantamento">{% endif %}
     <button type="submit" class="btn btn-primary">Confirmar carga validada</button>
   </form>
   {% elif batch.status == 'REJEITADO' %}<p>Este lote não pode ser confirmado. Corrija o arquivo e envie novamente.</p>{% endif %}

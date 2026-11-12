@@ -12,7 +12,7 @@ LIRAa: 01 cadastro territorial → criar rascunho → 02 amostra dentro do
 rascunho → conferir agentes e liberar → 03 visitas, selecionando o destino
 na importação → validar e confirmar a carga → resultados e mapa de risco.
 
-As visitas são de 21/10/2026. O período do levantamento deve incluir essa data.
+As visitas são de 21/10/2026. Somente em Demonstração, datas fora do período do levantamento são aceitas e preservadas.
 Arquivo 03: municipio_id=14 e levantamento_codigo=teste-1.
 O seletor permite importar em outro levantamento liberado que tenha os mesmos
 estratos e quarteirões. Ele não cria a amostra nem substitui os vínculos.

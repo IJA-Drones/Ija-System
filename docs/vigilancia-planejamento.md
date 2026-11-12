@@ -5,6 +5,80 @@ Entrada da coordenação: **Vigilância → Focal e LIRAa → Planejar levantame
 permissões de consulta e edição de vigilância existentes. O perfil de agente
 possui uma área própria, descrita abaixo.
 
+## Fluxo do levantamento em quatro passos
+
+A entrada **Acessar Focal e LIRAa** da Central de Vigilância abre o fluxo do
+próprio módulo, também acessível pela Central de Treinamentos. O LIRAa tem quatro
+abas: **Levantamento, Quarteirões, Estratos e Visitas**. **Ver resultados** fica
+em um botão separado. A aba Estratos permite selecionar um levantamento e abrir
+diretamente seu cadastro manual ou a importação do arquivo 02, preservando
+prefeitura, demonstração/dados autorizados e levantamento ao navegar.
+
+1. **Cadastrar levantamento:** criar ou selecionar o levantamento, com código,
+   período, responsável e fonte. Criar o rascunho mantém a aba Levantamento;
+   o botão **Continuar para 2 · Quarteirões** abre a demarcação territorial.
+2. **Demarcar quarteirões:** cadastrar e desenhar os contornos no mapa ou importar
+   o CSV territorial (arquivo de teste 01). O código do levantamento permanece
+   selecionado ao salvar. Os quarteirões continuam no cadastro territorial da
+   prefeitura; a vinculação à amostra ocorre no passo seguinte.
+3. **Adicionar estratos:** cadastrar estratos, metas, vínculos dos quarteirões e
+   agentes, ou enviar o CSV de amostra (arquivo de teste 02). O campo de envio da
+   amostra fica visível dentro do rascunho, sem depender de expandir um detalhe.
+   O botão **Novo estrato** leva ao formulário **Cadastrar estrato**, sempre
+   visível no rascunho, mesmo quando já existem estratos. Não exige arquivo CSV.
+4. **Registrar visitas:** usar o registro manual com seleção do quarteirão ou
+   importar o CSV de visitas (arquivo de teste 03), revisar e confirmar a carga.
+
+Cada etapa apresenta somente seu cadastro, inclusive sem JavaScript. Quarteirões,
+estratos/amostra e visitas têm o campo de anexo e o CSV de exemplo lado a lado.
+Para São Paulo, os botões baixam o kit UVIS Sé; para Pesqueira, o kit existente.
+Outros municípios recebem o modelo genérico. A tela de visitas permite anexar o
+arquivo diretamente e encaminha à revisão antes de gravar.
+
+Salvar um cadastro ou importar os quarteirões mantém a etapa atual, a prefeitura,
+a origem dos dados e o levantamento selecionado. A importação territorial não
+abre Estratos automaticamente. O avanço ocorre pelas abas ou pelos botões
+**Continuar**. Liberar ou encerrar o levantamento mantém a aba Estratos.
+A prévia e a confirmação de uma visita manual ou de um CSV enviado na aba
+Visitas aparecem nessa mesma tela. Nenhum registro entra nos índices sem a
+confirmação. A tela separada de importações também permanece nela após validar
+e confirmar. No acesso individual do agente, levantamento e quarteirão continuam
+selecionados após preparar ou confirmar uma visita.
+
+As etapas são navegáveis; sua conclusão não é requisito para exportar. Cada tela
+oferece a exportação do seu cadastro. O fluxo
+oferece CSV de levantamentos, quarteirões com geometria, estratos/amostra e
+visitas. Rascunhos, estratos ainda sem quarteirões e conjuntos vazios podem ser
+exportados. Um conjunto vazio gera apenas o cabeçalho. As exportações mantêm
+o escopo municipal, a separação entre demonstração e dados autorizados e a
+permissão de exportação já usada nos relatórios. Consultas de exportação não
+criam nem atualizam registros.
+
+A exportação de amostra de um levantamento selecionado usa o layout da amostra;
+sem selecionar um levantamento, o CSV acrescenta a coluna `plano` para identificar
+a origem de cada linha. Amostras incompletas podem ser exportadas, mas ainda
+precisam ser completadas e revisadas antes da liberação para novas visitas
+planejadas. As validações de gravação, autoria e confirmação permanecem.
+
+O arquivo de teste 04 contém notificações SINAN. Sua importação continua no
+módulo SINAN e não é uma etapa do levantamento LIRAa.
+
+O kit **UVIS Sé · São Paulo** fica em `app/resources/treinamentos/testes-sao-paulo`
+e no ZIP disponível em Treinamentos. Mantém os quatro layouts de Pesqueira.
+Endereços, coordenadas dos equipamentos e quadras fiscais são dados públicos
+do GeoSampa consultados em 12/11/2026. Os polígonos são simplificados; os pontos
+de visitas, imóveis, metas e dados de saúde são fictícios. As consultas e os
+polígonos originais estão em `FONTES_GEOGRAFICAS.json`. O kit usa a prefeitura
+interna 1, conferida por consulta somente de leitura neste ambiente, e IBGE
+3550308 para SINAN. Em outra instalação, ajuste o ID interno das visitas.
+Nenhum cadastro, visita ou caso foi inserido no banco real para montar o kit.
+
+Verificação: `tests/test_vigilancia_survey_flow.py` cobre a ordem funcional com
+os três CSVs LIRAa do kit, exportações antes da liberação e das visitas,
+consultas sem escrita, separação entre municípios e demonstração/dados
+autorizados. Os IDs 14 e 167 usados nesse teste são dados fictícios do banco
+descartável, compatíveis com as referências do kit; nenhum cadastro real é criado.
+
 A **COVISA de cada prefeitura** coordena o planejamento municipal: cadastra o
 território, define estratos, metas e quarteirões, atribui contas aos agentes e
 libera/encerra os levantamentos. Tanto o perfil `covisa` quanto a conta legada
@@ -43,9 +117,14 @@ padrão; não foi necessário alterar seleções salvas, contas ou schema do ban
    que revisou o plano amostral. A liberação não homologa a metodologia nem os
    índices; não há sorteio ou cálculo automático de tamanho de amostra.
 6. Registrar visitas pelo quarteirão. O contexto de levantamento, estrato,
-   bairro e área é preenchido. Confirmação revalida vínculo, período e situação
+   bairro e área é preenchido. Confirmação revalida vínculo e situação
    do plano na mesma transação das inspeções. CSV legado não pode contornar
    o planejamento de um levantamento que tenha plano cadastrado.
+   Somente em **Demonstração**, a data da visita pode ficar antes ou depois do
+   período cadastrado do levantamento. Ela é preservada como informada, tanto
+   no cadastro manual quanto no CSV e no acesso web do agente. Nos dados
+   autorizados, a data continua restrita ao período na preparação e confirmação.
+   Os filtros continuam usando a data efetivamente registrada.
 7. Acompanhar imóveis únicos inspecionados e com pendência por quarteirão.
    Essas contagens não representam resultados laboratoriais homologados.
    Encerrar o plano interrompe novas confirmações, inclusive de lotes pendentes.

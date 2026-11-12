@@ -3,11 +3,14 @@
 {% block content %}
 {% set label = 'quarteirão' if item.tipo == 'quarteirao' else item.tipo %}
 <main class="vigilancia-preview-page py-4">
-  <header class="vigilancia-preview-header"><div><h1>Excluir {{ label }}</h1><p>Confira o registro e o impacto antes de confirmar.</p></div></header>
+  <header class="vigilancia-preview-header"><div><h1>{{ 'Exclusão concluída' if concluida else 'Excluir ' ~ label }}</h1><p>{{ 'O resultado da operação permanece nesta tela.' if concluida else 'Confira o registro e o impacto antes de confirmar.' }}</p></div></header>
   <section class="vigilancia-preview-panel" aria-labelledby="exclusao-registro">
     <h2 id="exclusao-registro" class="text-break">{{ item.titulo }}</h2>
     <p><strong>{{ prefeitura_nome }}</strong> · {{ 'Demonstração - dados fictícios' if demo else 'Dados autorizados da vigilância' }}</p>
     <p class="text-break">Código: {{ item.codigo }}{% if item.origem %} · {{ item.origem }}{% endif %}</p>
+    {% if concluida %}
+    <p role="status">Registro excluído. Os resultados e mapas passam a considerar os registros restantes.</p>
+    {% else %}
     {% if item.tipo == 'levantamento' %}
     <p>Serão excluídos o levantamento, seus estratos, os vínculos da amostra e <strong>{{ item.visitas }} visitas</strong>. Os quarteirões do cadastro territorial serão preservados.</p>
     {% elif item.tipo == 'visita' %}
@@ -27,7 +30,8 @@
       <div class="vigilancia-preview-actions mt-3"><button class="btn btn-danger" type="submit">Confirmar exclusão</button></div>
     </form>
     {% endif %}
-    <a class="btn btn-outline-primary mt-3" href="{{ url_for('main.vigilancia_campo' if item.tipo == 'visita' else 'main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Voltar sem excluir</a>
+    {% endif %}
+    <a class="btn btn-outline-primary mt-3" href="{{ url_for('main.vigilancia_campo' if item.tipo == 'visita' else 'main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', fluxo='levantamento', **({} if item.tipo == 'visita' else {'etapa': '2' if item.tipo == 'quarteirao' else '1'})) }}">{{ 'Voltar ao LIRAa' if concluida else 'Voltar sem excluir' }}</a>
   </section>
 </main>
 {% endblock %}

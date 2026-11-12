@@ -7,6 +7,7 @@
   const detail = document.getElementById("campo-territorio-detalhe");
   const status = document.getElementById("campo-territorio-status");
   const context = data.contexto.features;
+  const contextName = data.contexto.metadata?.recorte || "território disponível";
   const features = data.geografia.features;
   const visits = data.pontos;
   const controls = [...document.querySelectorAll("[data-territorial-layer]")];
@@ -38,7 +39,7 @@
     let frame = view === "estado" ? context.flatMap(feature => positions(feature.geometry)) : view === "municipio" ?
       selected.flatMap(feature => positions(feature.geometry)).concat(geographicVisits) :
       (plotted.length ? plotted : (selected.length ? selected : context).flatMap(feature => positions(feature.geometry)));
-    if (!frame.length) frame = [[-41.4, -9.5], [-34.8, -7.1]];
+    if (!frame.length) frame = [[-74, -34], [-34, 6]];
     const west = Math.min(...frame.map(point => point[0])), east = Math.max(...frame.map(point => point[0]));
     const south = Math.min(...frame.map(point => point[1])), north = Math.max(...frame.map(point => point[1]));
     const cosine = Math.cos((south + north) / 2 * Math.PI / 180);
@@ -55,7 +56,7 @@
       path.setAttribute("class", `campo-municipio${props.condomar ? " condomar" : ""}${props.selecionado ? " selecionado" : ""}`);
       interactive(path, `${props.nome} · IBGE ${props.codigo}`, () => information(props.nome,
         [`IBGE ${props.codigo}`, "Limite municipal oficial do IBGE, simplificado para visualização.",
-         props.condomar ? "Município do CONDOMAR." : "Município de contexto de Pernambuco.",
+         props.condomar ? "Município do CONDOMAR." : `Referência territorial: ${contextName}.`,
          "Este contorno é referência territorial. Os índices do levantamento não são aplicados automaticamente a todo o município."]));
       svg.append(path);
     }
@@ -82,12 +83,16 @@
          "Posição informada na visita ou no CSV; não é um caso de doença."]));
       svg.append(marker);
     });
-    const caption = view === "estado" ? "Visão de Pernambuco continental." : view === "municipio" ?
+    const caption = view === "estado" ? `Visão de ${contextName}.` : view === "municipio" ?
       "Visão do município selecionado." : "Visão aproximada do levantamento selecionado.";
     const missing = !features.length && visits.length ? " Sem contornos vinculados a este levantamento; são exibidas somente as visitas." : "";
     status.textContent = `${visible("visitas") ? visits.length : 0} visitas com coordenadas · ${visible("iip") ? features.length : 0} contornos de planejamento. ${caption}${missing}`;
   }
-  document.getElementById("campo-territorio-estado").addEventListener("click", () => { view = "estado"; draw(); });
+  const contextButton = document.getElementById("campo-territorio-estado");
+  if (contextButton) {
+    contextButton.disabled = !context.length;
+    contextButton.addEventListener("click", () => { view = "estado"; draw(); });
+  }
   document.getElementById("campo-territorio-enquadrar").addEventListener("click", () => { view = "levantamento"; draw(); });
   const municipalityButton = document.getElementById("campo-territorio-municipio");
   if (municipalityButton) {

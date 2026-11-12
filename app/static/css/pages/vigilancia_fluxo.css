@@ -87,3 +87,7 @@
   .vigilancia-flow-intro { padding: 1rem; }
 }
 @media print { .vigilancia-workspace, .liraa-steps, .liraa-section-menu, .liraa-next-action { display: none !important; } }
+/* Importação e exemplo ficam juntos em cada cadastro. */
+.vigilancia-csv-attachment{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem}
+.vigilancia-csv-attachment input[type=file]{flex:1 1 16rem;min-width:0}
+.vigilancia-csv-attachment .btn{flex:0 1 auto}

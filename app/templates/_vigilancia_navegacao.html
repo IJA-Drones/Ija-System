@@ -1,22 +1,26 @@
 {% set endpoint = request.endpoint or '' %}
 {% set current = 'sinan' if 'sinan' in endpoint else 'resultados' if 'resultados' in endpoint or 'risco' in endpoint else 'planejamento' if 'planejamento' in endpoint else 'campo' %}
+{% if current == 'planejamento' %}{% set current = 'territorio' if survey_step|default(1) == 2 else 'estratos' if survey_step|default(1) == 3 else 'planejamento' %}{% endif %}
 {% set scope_id = prefeitura_id|default(vigilancia_context_prefeitura, true) %}
 {% set mode = 'true' if demo|default(batch.demo if batch is defined and batch else request.args.get('demo', 'true') == 'true') else 'false' %}
-{% set survey = plan.code if plan is defined and plan else plan_reference.plano if plan_reference is defined and plan_reference else filters.get('levantamento', '') if filters is defined else field_filters.get('levantamento', '') if field_filters is defined else '' %}
-{% if vigilancia_navigation %}
+{% set survey = plan.code if plan is defined and plan else plan_reference.plano if plan_reference is defined and plan_reference else import_plan if import_plan is defined else filters.get('levantamento', '') if filters is defined else field_filters.get('levantamento', '') if field_filters is defined else '' %}
+{% if vigilancia_navigation or survey_flow %}
 <div class="vigilancia-workspace" aria-label="Navegação da vigilância">
   <div class="vigilancia-workspace-context"><a href="{{ url_for('main.vigilancia') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Central de Vigilância</a></div>
   {% if current != 'sinan' %}
-  <nav class="vigilancia-workspace-tabs" aria-label="Tarefas do LIRAa e focal">
-    {% for key, target, label in [('planejamento', 'main.vigilancia_planejamento', 'Planejar'), ('campo', 'main.vigilancia_campo', 'Registrar visitas'), ('resultados', 'main.vigilancia_resultados', 'Ver resultados')] %}
-    {% set params = dict(prefeitura_id=scope_id, demo=mode) %}
-    {% if key == 'resultados' and survey %}{% set params = dict(params, levantamento=survey) %}{% endif %}
+  <nav class="vigilancia-workspace-tabs" aria-label="Etapas do LIRAa">
+    {% for key, target, label, step in [('planejamento', 'main.vigilancia_planejamento', '1 · Levantamento', 1), ('territorio', 'main.vigilancia_planejamento', '2 · Quarteirões', 2), ('estratos', 'main.vigilancia_planejamento', '3 · Estratos', 3), ('campo', 'main.vigilancia_campo', '4 · Visitas', 4)] %}
+    {% set params = dict(prefeitura_id=scope_id, demo=mode, fluxo='levantamento') %}
+    {% if step < 4 %}{% set params = dict(params, etapa=step, plano=survey) %}
+    {% else %}{% set params = dict(params, levantamento=survey) %}{% endif %}
     {% set target_url = url_for(target, **params) %}
     {% if central_ti_url_allowed is not defined or central_ti_url_allowed(target_url) %}
     <a href="{{ target_url }}" {% if current == key %}aria-current="page"{% endif %}>{{ label }}</a>
     {% endif %}
     {% endfor %}
   </nav>
+  {% set results_url = url_for('main.vigilancia_resultados', prefeitura_id=scope_id, demo=mode, levantamento=survey) %}
+  {% if central_ti_url_allowed is not defined or central_ti_url_allowed(results_url) %}<div class="vigilancia-preview-actions"><a class="btn btn-outline-primary btn-sm" href="{{ results_url }}" {% if current == 'resultados' %}aria-current="page"{% endif %}>Ver resultados</a></div>{% endif %}
   {% endif %}
 </div>
 {% endif %}

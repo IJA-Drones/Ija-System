@@ -46,6 +46,17 @@ serviço. A ausência ou uma configuração inválida desabilita a comparação 
 com aviso; não interfere nos índices de campo. Esta entrega não preenche essa
 configuração no banco nem associa prefeituras automaticamente.
 
+O mapa territorial dos resultados e a camada LIRAa do mapa de risco usam o
+contexto compatível com esse vínculo: municípios de Pernambuco mantêm a malha
+estadual continental; São Paulo (`3550308`) usa o limite municipal do IBGE,
+consultado e preservado em 12/11/2026. A consulta da tela não depende da API do
+IBGE nem do Google Maps. **Ver município** mostra o limite municipal; **Enquadrar
+levantamento** aproxima os contornos e visitas do recorte. O botão estadual
+aparece apenas onde há uma malha estadual disponível. Outros municípios sem
+malha local continuam exibindo contornos e coordenadas do levantamento, com
+aviso, sem utilizar Pernambuco como referência. O limite de São Paulo não é
+a delimitação da UVIS Sé; os contornos amostrados vêm do planejamento.
+
 O catálogo contempla os 15 municípios do CONDOMAR já disponíveis no SINAN.
 Para a POC regional, preencher uma entrada por ID interno real no mesmo objeto
 JSON, preservando os IDs de cada ambiente. O banco de teste não deve receber

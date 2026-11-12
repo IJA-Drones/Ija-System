@@ -16,7 +16,7 @@ from .results import ResultsStore, filters_from, indicators_csv, municipality_ib
 from .service import PreviewValidationError
 from .sinan_store import StoreError
 from . import sinan
-from .territory import pernambuco_context
+from .territory import territorial_context
 
 
 def _mode():
@@ -87,7 +87,7 @@ def register_routes(bp):
             filters=filters, sinan_data=sinan_data, sinan_filters=selected_sinan, diseases=sinan.DISEASES,
             query={"prefeitura_id": prefeitura, "demo": "true" if demo else "false", **filters},
             erro=error, generated_at=datetime.now(ZoneInfo("America/Sao_Paulo")),
-            territorial_context=pernambuco_context(ibge), territorial_ibge=ibge,
+            territorial_context=territorial_context(ibge), territorial_ibge=ibge,
             can_export=can_access_endpoint(current_user, "main.vigilancia_resultados_export", "GET", legacy=legacy),
             contornos=schematic(report["geografia"]) if report else []), status
 

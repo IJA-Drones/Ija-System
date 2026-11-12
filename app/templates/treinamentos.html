@@ -5,7 +5,7 @@
 <div class="training-page">
   <header class="training-header">
     <div><p class="training-eyebrow">Materiais de apoio</p><h1>Treinamentos</h1><p>Manuais e arquivos para praticar os fluxos do sistema.</p></div>
-    <a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes') }}"><i class="bi bi-download me-2" aria-hidden="true"></i>Baixar kit de testes <span class="training-format">ZIP</span></a>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes') }}">Kit Pesqueira <span class="training-format">ZIP</span></a><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes-sp') }}">Kit UVIS Sé · São Paulo <span class="training-format">ZIP</span></a></div>
   </header>
 
   <section class="training-guide" aria-labelledby="guia-title">
@@ -20,7 +20,8 @@
     <a class="btn btn-outline-primary" href="https://drive.google.com/drive/folders/1gtqsbUG4bizj4ZNbFy-O3FVs3_hlDTCq?usp=drive_link" target="_blank" rel="noopener noreferrer">Abrir no Google Drive<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i><span class="visually-hidden"> (abre em nova aba)</span></a>
   </section>
 
-  <aside class="training-demo" aria-label="Contexto dos arquivos de teste"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Demonstração · Pesqueira / PE</strong><p>Use a origem <strong>Demonstração</strong> nos módulos. Visitas de <strong>21/10/2026</strong>; o período do levantamento precisa incluir essa data. Resultados de saúde e imóveis são fictícios.</p></div></aside>
+  <aside class="training-demo" aria-label="Contexto dos arquivos de teste"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Demonstração · Pesqueira / PE</strong><p>Use a origem <strong>Demonstração</strong> nos módulos. Visitas de <strong>21/10/2026</strong>; somente em Demonstração são aceitas datas fora do período do levantamento. Resultados de saúde e imóveis são fictícios.</p></div></aside>
+  <aside class="training-demo" aria-label="Kit da UVIS Sé"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Demonstração · UVIS Sé · São Paulo</strong><p>Nas telas de quarteirões, estratos e visitas, selecione São Paulo para baixar o CSV correspondente ao lado do campo de anexo. Endereços e quadras fiscais são referências reais do GeoSampa; visitas de <strong>11/11/2026</strong>, metas e resultados são fictícios. <a href="{{ url_for('main.treinamentos_arquivo', material_id='kit-instrucoes-sp') }}">Ver instruções e fontes</a>.</p></div></aside>
 
   <div class="training-grid">
     {% for section in sections %}

@@ -49,6 +49,11 @@
       if (planningLink) {
         const query = new URLSearchParams({demo: mode.value});
         if (/^[1-9]\d*$/.test(municipality.value)) query.set("prefeitura_id", municipality.value);
+        if (planningLink.dataset.surveyFlow === "levantamento") {
+          query.set("fluxo", "levantamento");
+          query.set("etapa", "3");
+          if (destination.value) query.set("plano", destination.value);
+        }
         planningLink.href = `${planningLink.dataset.planningUrl}?${query}`;
       }
       if (pending || failed || checkingFile || fileFailed) return;
