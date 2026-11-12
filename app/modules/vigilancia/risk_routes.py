@@ -19,7 +19,7 @@ from .risk_store import RiskStore
 from .results import ResultsStore, filters_from, municipality_ibge
 from .field_capture import FieldInputError
 from .service import PreviewValidationError
-from .territory import pernambuco_context
+from .territory import pernambuco_context, territorial_context
 from .sample import build_geolocated_sample_csv
 
 
@@ -118,9 +118,10 @@ def register_routes(bp):
             error, status = "O histórico de risco está indisponível. Confira a conexão e a migração do mapa de risco.", 503
         registered=Prefeitura.query.filter_by(id=prefeitura).first() if prefeitura else None
         global_user=is_admin_global_user(current_user)
-        territory_context = pernambuco_context(ibge)
-        context_codes = {feature['properties']['codigo'] for feature in territory_context['features']}
-        history_context = territory_context if selected and all(
+        territory_context = territorial_context(ibge)
+        historical_territory = pernambuco_context()
+        context_codes = {feature['properties']['codigo'] for feature in historical_territory['features']}
+        history_context = historical_territory if selected and all(
             feature['properties']['codigo'] in context_codes for feature in selected['report']['geografia']['features']) else None
         return render_template("vigilancia_risco.html",prefeitura_id=prefeitura,prefeitura_nome=registered.nome if registered else "",
             prefeituras=Prefeitura.query.order_by(Prefeitura.nome).all() if global_user else [],global_user=global_user,

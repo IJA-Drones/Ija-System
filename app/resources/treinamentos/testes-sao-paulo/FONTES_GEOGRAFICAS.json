@@ -1,0 +1,642 @@
+{
+  "municipio": "São Paulo / SP",
+  "municipio_ibge": "3550308",
+  "uvis": "Sé",
+  "codigo_uvis": "81",
+  "consultado_em": "2026-11-12",
+  "fonte": "Prefeitura de São Paulo, GeoSampa, WFS 2.0.0",
+  "equipamentos_url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=geoportal:equipamento_cultura_bibliotecas&outputFormat=application/json&srsName=EPSG:4326&count=500",
+  "museus_url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=geoportal:equipamento_cultura_museus&outputFormat=application/json&srsName=EPSG:4326&count=500",
+  "referencia_uvis": "https://www.prefeitura.sp.gov.br/cidade/secretarias/upload/saude/vigilancia_em_saude/arquivos/Ferramenta_territorios_UVIS.pdf",
+  "documentacao": "https://geoinfo-smdu.github.io/tutorial-geosampa-internet-2.0/",
+  "codigo_ibge_url": "https://www.ibge.gov.br/cidades-e-estados/sp/sao-paulo.html",
+  "instituicoes_nao_sao_casos": "As instituições são referências cartográficas. Nenhum registro representa uma visita, foco ou caso real nesses locais.",
+  "registros": [
+    {
+      "equipamento": {
+        "type": "Feature",
+        "id": "equipamento_cultura_bibliotecas.40002",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [
+            -46.64204844,
+            -23.54727159
+          ]
+        },
+        "geometry_name": "ge_ponto",
+        "properties": {
+          "cd_identificador": 40002,
+          "cd_identificador_tema_equipamento": 3,
+          "nm_tema_equipamento": "CULTURA",
+          "cd_identificador_rede_equipamento": 0,
+          "nm_rede_equipamento": "SEM REDE",
+          "tx_rede_equipamento": "Sem descrição",
+          "cd_identificador_tipo_equipamento": 2,
+          "nm_tipo_equipamento": "Bibliotecas Públicas (inclui  Bosques e Pontos de Leitura)",
+          "tx_tipo_equipamento": "Bibliotecas Públicas (inclui  Bosques e Pontos de Leitura)",
+          "cd_identificador_classe_equipamento": 1,
+          "nm_classe_equipamento": "BIBLIOTECAS",
+          "tx_classe_equipamento": "BIBLIOTECAS",
+          "cd_identificador_esfera_administrativa_equipamento": 1,
+          "nm_esfera_administrativa_equipamento": "Municipal",
+          "tx_esfera_administrativa_equipamento": "Entidade mantenedora: PMSP",
+          "cd_equipamento": null,
+          "nm_equipamento": "Biblioteca Mário de Andrade",
+          "tx_endereco_equipamento": "Rua da Consolação, 94",
+          "nm_bairro_equipamento": null,
+          "cd_cep_equipamento": "01302-000",
+          "tx_horario_funcionamento": null,
+          "tx_numero_telefone": null,
+          "cd_equipamento_base_origem": null
+        }
+      },
+      "quadra_fiscal_original": {
+        "type": "Feature",
+        "id": "quadra_fiscal.fid--4a1d07b6_1a1d029be75_2930",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -46.64241383,
+                -23.54784406
+              ],
+              [
+                -46.641524,
+                -23.54768763
+              ],
+              [
+                -46.64150083,
+                -23.54767258
+              ],
+              [
+                -46.64149851,
+                -23.54758794
+              ],
+              [
+                -46.64148163,
+                -23.54645107
+              ],
+              [
+                -46.64271788,
+                -23.54701914
+              ],
+              [
+                -46.64272836,
+                -23.54706686
+              ],
+              [
+                -46.64258142,
+                -23.54775884
+              ],
+              [
+                -46.64255864,
+                -23.54780326
+              ],
+              [
+                -46.64253198,
+                -23.54783261
+              ],
+              [
+                -46.64249178,
+                -23.54785147
+              ],
+              [
+                -46.64241383,
+                -23.54784406
+              ]
+            ]
+          ]
+        },
+        "geometry_name": "ge_poligono",
+        "properties": {
+          "cd_identificador": 14634,
+          "cd_identificador_original_quadra_fiscal": 8893798,
+          "qt_area_quadra_fiscal": 13865.229,
+          "cd_quadra_fiscal": "014",
+          "cd_subquadra_fiscal": "001",
+          "cd_situacao_quadra": 1,
+          "cd_setor_fiscal": "006",
+          "dt_carga": "2026-11-11T03:00:00Z",
+          "cd_situacao_setor": 1,
+          "cd_tipo_quadra": "F",
+          "tx_tipo_quadra": "FISCAL"
+        }
+      },
+      "consulta_quadra": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG%3A4326&typeNames=geoportal%3Aquadra_fiscal&count=30&bbox=-46.64205844000001%2C-23.54728159%2C-46.64203844%2C-23.54726159%2CEPSG%3A4326",
+      "codigo_demonstracao": "DEMO-SP-SE-Q01",
+      "quadra_fiscal": "006.014.001",
+      "simplificacao": {
+        "metodo": "Douglas-Peucker e arredondamento a seis casas",
+        "tolerancia_graus": 2e-06,
+        "vertices_originais": 11,
+        "vertices_csv": 10
+      },
+      "natureza": "Endereço, ponto do equipamento e quadra fiscal são públicos e reais. A seleção para LIRAa, os imóveis e as inspeções são fictícios."
+    },
+    {
+      "equipamento": {
+        "type": "Feature",
+        "id": "equipamento_cultura_museus.40362",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [
+            -46.63282869,
+            -23.54924821
+          ]
+        },
+        "geometry_name": "ge_ponto",
+        "properties": {
+          "cd_identificador": 40362,
+          "cd_identificador_tema_equipamento": 3,
+          "nm_tema_equipamento": "CULTURA",
+          "cd_identificador_rede_equipamento": 0,
+          "nm_rede_equipamento": "SEM REDE",
+          "tx_rede_equipamento": "Sem descrição",
+          "cd_identificador_tipo_equipamento": 5,
+          "nm_tipo_equipamento": "Museu",
+          "tx_tipo_equipamento": "Museus",
+          "cd_identificador_classe_equipamento": 3,
+          "nm_classe_equipamento": "MUSEUS",
+          "tx_classe_equipamento": "MUSEUS",
+          "cd_identificador_esfera_administrativa_equipamento": 3,
+          "nm_esfera_administrativa_equipamento": "Federal",
+          "tx_esfera_administrativa_equipamento": "Entidade mantenedora: União",
+          "cd_equipamento": null,
+          "nm_equipamento": "Museu da Caixa Econômica Federal",
+          "tx_endereco_equipamento": "Praça da Sé, 111, 8º andar, Centro, 01001-001, São Paulo, SP",
+          "nm_bairro_equipamento": null,
+          "cd_cep_equipamento": "01001-001",
+          "tx_horario_funcionamento": null,
+          "tx_numero_telefone": null,
+          "cd_equipamento_base_origem": null
+        }
+      },
+      "quadra_fiscal_original": {
+        "type": "Feature",
+        "id": "quadra_fiscal.fid--4a1d07b6_1a1d029be75_2931",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -46.63263961,
+                -23.54937893
+              ],
+              [
+                -46.63248395,
+                -23.54936174
+              ],
+              [
+                -46.63242019,
+                -23.54935469
+              ],
+              [
+                -46.63236497,
+                -23.54934862
+              ],
+              [
+                -46.63220715,
+                -23.54933125
+              ],
+              [
+                -46.63216993,
+                -23.54931557
+              ],
+              [
+                -46.63218938,
+                -23.54923816
+              ],
+              [
+                -46.6322154,
+                -23.54913458
+              ],
+              [
+                -46.6322334,
+                -23.54906295
+              ],
+              [
+                -46.63227079,
+                -23.54891411
+              ],
+              [
+                -46.63231558,
+                -23.54873583
+              ],
+              [
+                -46.63234597,
+                -23.54872206
+              ],
+              [
+                -46.63251884,
+                -23.5487838
+              ],
+              [
+                -46.63256901,
+                -23.54880172
+              ],
+              [
+                -46.63263896,
+                -23.54882671
+              ],
+              [
+                -46.63281852,
+                -23.54889084
+              ],
+              [
+                -46.63287755,
+                -23.54891192
+              ],
+              [
+                -46.63292094,
+                -23.54892742
+              ],
+              [
+                -46.63293401,
+                -23.54893117
+              ],
+              [
+                -46.63294536,
+                -23.54893764
+              ],
+              [
+                -46.63295488,
+                -23.5489472
+              ],
+              [
+                -46.63296079,
+                -23.54895789
+              ],
+              [
+                -46.63296264,
+                -23.548965
+              ],
+              [
+                -46.6329642,
+                -23.54905944
+              ],
+              [
+                -46.63298175,
+                -23.54918749
+              ],
+              [
+                -46.63301875,
+                -23.54928887
+              ],
+              [
+                -46.63307422,
+                -23.54939412
+              ],
+              [
+                -46.63307016,
+                -23.54940672
+              ],
+              [
+                -46.63303284,
+                -23.54942237
+              ],
+              [
+                -46.63263961,
+                -23.54937893
+              ]
+            ]
+          ]
+        },
+        "geometry_name": "ge_poligono",
+        "properties": {
+          "cd_identificador": 22446,
+          "cd_identificador_original_quadra_fiscal": 9198197,
+          "qt_area_quadra_fiscal": 4727.666,
+          "cd_quadra_fiscal": "068",
+          "cd_subquadra_fiscal": "001",
+          "cd_situacao_quadra": 1,
+          "cd_setor_fiscal": "002",
+          "dt_carga": "2026-11-11T03:00:00Z",
+          "cd_situacao_setor": 1,
+          "cd_tipo_quadra": "F",
+          "tx_tipo_quadra": "FISCAL"
+        }
+      },
+      "consulta_quadra": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG%3A4326&typeNames=geoportal%3Aquadra_fiscal&count=30&bbox=-46.63283869%2C-23.549258209999998%2C-46.63281868999999%2C-23.54923821%2CEPSG%3A4326",
+      "codigo_demonstracao": "DEMO-SP-SE-Q02",
+      "quadra_fiscal": "002.068.001",
+      "simplificacao": {
+        "metodo": "Douglas-Peucker e arredondamento a seis casas",
+        "tolerancia_graus": 2e-06,
+        "vertices_originais": 29,
+        "vertices_csv": 14
+      },
+      "natureza": "Endereço, ponto do equipamento e quadra fiscal são públicos e reais. A seleção para LIRAa, os imóveis e as inspeções são fictícios."
+    },
+    {
+      "equipamento": {
+        "type": "Feature",
+        "id": "equipamento_cultura_museus.40413",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [
+            -46.63262467,
+            -23.54795759
+          ]
+        },
+        "geometry_name": "ge_ponto",
+        "properties": {
+          "cd_identificador": 40413,
+          "cd_identificador_tema_equipamento": 3,
+          "nm_tema_equipamento": "CULTURA",
+          "cd_identificador_rede_equipamento": 0,
+          "nm_rede_equipamento": "SEM REDE",
+          "tx_rede_equipamento": "Sem descrição",
+          "cd_identificador_tipo_equipamento": 5,
+          "nm_tipo_equipamento": "Museu",
+          "tx_tipo_equipamento": "Museus",
+          "cd_identificador_classe_equipamento": 3,
+          "nm_classe_equipamento": "MUSEUS",
+          "tx_classe_equipamento": "MUSEUS",
+          "cd_identificador_esfera_administrativa_equipamento": 4,
+          "nm_esfera_administrativa_equipamento": "Particular",
+          "tx_esfera_administrativa_equipamento": "Entidade mantenedora: particular",
+          "cd_equipamento": null,
+          "nm_equipamento": "Museu Anchieta",
+          "tx_endereco_equipamento": "Praça Patteo do Collegio, 2, Centro, 01016-040, São Paulo, SP",
+          "nm_bairro_equipamento": null,
+          "cd_cep_equipamento": "01016-040",
+          "tx_horario_funcionamento": null,
+          "tx_numero_telefone": null,
+          "cd_equipamento_base_origem": null
+        }
+      },
+      "quadra_fiscal_original": {
+        "type": "Feature",
+        "id": "quadra_fiscal.fid--4a1d07b6_1a1d029be75_2933",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -46.63176803,
+                -23.54795865
+              ],
+              [
+                -46.63178273,
+                -23.54792814
+              ],
+              [
+                -46.63186449,
+                -23.54775843
+              ],
+              [
+                -46.63198261,
+                -23.54751138
+              ],
+              [
+                -46.6320136,
+                -23.5474432
+              ],
+              [
+                -46.63218153,
+                -23.54707376
+              ],
+              [
+                -46.63234783,
+                -23.54670793
+              ],
+              [
+                -46.63236386,
+                -23.54667265
+              ],
+              [
+                -46.63238999,
+                -23.54661518
+              ],
+              [
+                -46.63240332,
+                -23.54660863
+              ],
+              [
+                -46.63241983,
+                -23.54661261
+              ],
+              [
+                -46.63244269,
+                -23.54662375
+              ],
+              [
+                -46.63274799,
+                -23.54695939
+              ],
+              [
+                -46.63277804,
+                -23.54699242
+              ],
+              [
+                -46.6328055,
+                -23.54702261
+              ],
+              [
+                -46.63298895,
+                -23.5472243
+              ],
+              [
+                -46.63304528,
+                -23.54728622
+              ],
+              [
+                -46.63310066,
+                -23.5473471
+              ],
+              [
+                -46.63321523,
+                -23.54747306
+              ],
+              [
+                -46.63319308,
+                -23.54760053
+              ],
+              [
+                -46.63317326,
+                -23.54771462
+              ],
+              [
+                -46.63317106,
+                -23.5477346
+              ],
+              [
+                -46.63317472,
+                -23.54787245
+              ],
+              [
+                -46.63317843,
+                -23.54802945
+              ],
+              [
+                -46.63317867,
+                -23.54812075
+              ],
+              [
+                -46.63316828,
+                -23.54819942
+              ],
+              [
+                -46.6331493,
+                -23.54827267
+              ],
+              [
+                -46.63313104,
+                -23.54831675
+              ],
+              [
+                -46.63307916,
+                -23.54843619
+              ],
+              [
+                -46.63303023,
+                -23.5484185
+              ],
+              [
+                -46.63272231,
+                -23.54830244
+              ],
+              [
+                -46.63238024,
+                -23.54816552
+              ],
+              [
+                -46.63233536,
+                -23.54832303
+              ],
+              [
+                -46.63230113,
+                -23.54844638
+              ],
+              [
+                -46.63228788,
+                -23.5484941
+              ],
+              [
+                -46.6322263,
+                -23.548716
+              ],
+              [
+                -46.63217957,
+                -23.54870755
+              ],
+              [
+                -46.63216382,
+                -23.54876794
+              ],
+              [
+                -46.63214429,
+                -23.54884283
+              ],
+              [
+                -46.63212812,
+                -23.54890486
+              ],
+              [
+                -46.63210361,
+                -23.54899885
+              ],
+              [
+                -46.63207688,
+                -23.54910136
+              ],
+              [
+                -46.63211754,
+                -23.54910996
+              ],
+              [
+                -46.63209628,
+                -23.54918938
+              ],
+              [
+                -46.63206238,
+                -23.54918088
+              ],
+              [
+                -46.63204393,
+                -23.54924885
+              ],
+              [
+                -46.63202547,
+                -23.54931682
+              ],
+              [
+                -46.63159723,
+                -23.54926265
+              ],
+              [
+                -46.63151787,
+                -23.54925261
+              ],
+              [
+                -46.63142388,
+                -23.54924072
+              ],
+              [
+                -46.63125024,
+                -23.54921875
+              ],
+              [
+                -46.63120383,
+                -23.54914131
+              ],
+              [
+                -46.63133277,
+                -23.54886118
+              ],
+              [
+                -46.63141838,
+                -23.54867517
+              ],
+              [
+                -46.6315125,
+                -23.54846713
+              ],
+              [
+                -46.6315352,
+                -23.54841695
+              ],
+              [
+                -46.63154894,
+                -23.54838656
+              ],
+              [
+                -46.6316085,
+                -23.54825489
+              ],
+              [
+                -46.63176803,
+                -23.54795865
+              ]
+            ]
+          ]
+        },
+        "geometry_name": "ge_poligono",
+        "properties": {
+          "cd_identificador": 1955,
+          "cd_identificador_original_quadra_fiscal": 9198161,
+          "qt_area_quadra_fiscal": 27923.237,
+          "cd_quadra_fiscal": "059",
+          "cd_subquadra_fiscal": "001",
+          "cd_situacao_quadra": 1,
+          "cd_setor_fiscal": "002",
+          "dt_carga": "2026-11-11T03:00:00Z",
+          "cd_situacao_setor": 1,
+          "cd_tipo_quadra": "F",
+          "tx_tipo_quadra": "FISCAL"
+        }
+      },
+      "consulta_quadra": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG%3A4326&typeNames=geoportal%3Aquadra_fiscal&count=30&bbox=-46.63263467%2C-23.54796759%2C-46.632614669999995%2C-23.54794759%2CEPSG%3A4326",
+      "codigo_demonstracao": "DEMO-SP-SE-Q03",
+      "quadra_fiscal": "002.059.001",
+      "simplificacao": {
+        "metodo": "Douglas-Peucker e arredondamento a seis casas",
+        "tolerancia_graus": 2e-06,
+        "vertices_originais": 58,
+        "vertices_csv": 24
+      },
+      "natureza": "Endereço, ponto do equipamento e quadra fiscal são públicos e reais. A seleção para LIRAa, os imóveis e as inspeções são fictícios."
+    }
+  ]
+}

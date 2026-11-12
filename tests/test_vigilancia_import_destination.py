@@ -31,9 +31,10 @@ def upload(c, content, **values):
 
 
 @pytest.mark.parametrize('source_code', ['CODIGO-ORIGINAL', ''])
-def test_select_destination_preserves_original_and_confirms_into_chosen_plan(destination, source_code):
+@pytest.mark.parametrize('inspection_date', ['2026-10-18', '2026-10-21', '2026-10-24'])
+def test_select_destination_preserves_original_and_confirms_into_chosen_plan(destination, source_code, inspection_date):
     c, store = destination
-    raw = visits(levantamento_codigo=source_code)
+    raw = visits(levantamento_codigo=source_code, data_inspecao=inspection_date)
     page = c.get('/vigilancia/importacoes?demo=true')
     assert 'Levantamento de destino' in page.text and 'value="L-2026-01"' in page.text
     response = upload(c, raw)
@@ -53,6 +54,7 @@ def test_select_destination_preserves_original_and_confirms_into_chosen_plan(des
     assert confirm(c, batch['id']).status_code == 303
     records = store.records(7, demo=True)
     assert len(records) == 2 and {r['levantamento_codigo'] for r in records} == {'L-2026-01'}
+    assert {r['data_inspecao'] for r in records} == {inspection_date}
     assert store.original(batch['id'], 7) == raw
     assert store.get(batch['id'], 7)['report']['vinculo_levantamento']['codigo_csv'] == source_code
     report = ResultsStore(store.engine).report(7, True, filters_from({'levantamento':'L-2026-01'}))
@@ -90,7 +92,7 @@ def test_destination_list_is_scoped_and_confirmation_rechecks_release(destinatio
 
 
 @pytest.mark.parametrize('overrides', [dict(estrato_codigo='E-ERRADO'), dict(quarteirao_codigo='Q-ERRADO'),
-    dict(bairro='Outro bairro'), dict(data_inspecao='2026-10-18'), dict(municipio_id=8)])
+    dict(bairro='Outro bairro'), dict(municipio_id=8)])
 def test_destination_does_not_override_other_validations(destination, overrides):
     c, store = destination
     response = upload(c, visits(levantamento_codigo='OUTRO', **overrides))
@@ -129,7 +131,7 @@ def test_destination_rejects_focal_mixed_surveys_and_missing_block_column(destin
 
 def test_failed_upload_keeps_selected_mode_and_destination(destination):
     c, store = destination
-    response = upload(c, visits(levantamento_codigo='OUTRO', data_inspecao='2026-10-18'))
+    response = upload(c, visits(levantamento_codigo='OUTRO', estrato_codigo='E-INEXISTENTE'))
     assert response.status_code == 409
     assert 'value="L-2026-01" selected' in response.text
     assert 'value="true" selected' in response.text

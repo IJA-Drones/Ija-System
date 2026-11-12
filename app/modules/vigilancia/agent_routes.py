@@ -114,7 +114,9 @@ def register_routes(bp):
                         plan_reference=dict(plano=selected["plano"], quarteirao=selected["quarteirao"], agente_id=current_user.id))
                 else:
                     raise FieldConflict("Ação inválida.")
-                return redirect(url_for("main.vigilancia_agente", demo="true" if demo else "false", lote=batch["id"]), code=303)
+                reference = batch["report"]["planejamento"]
+                return redirect(url_for("main.vigilancia_agente", demo="true" if demo else "false", lote=batch["id"],
+                    plano=reference["plano"], quarteirao=reference["quarteirao"]), code=303)
             if values.get("lote"):
                 batch = store.get(text(values, "lote", 32), prefeitura)
                 if not batch or batch["actor"] != str(current_user.id) or batch["demo"] != demo or batch["report"].get("planejamento", {}).get("agente_id") != current_user.id:

@@ -2,6 +2,7 @@
 
 import csv
 import io
+from urllib.parse import urlsplit, parse_qs
 from unittest.mock import patch
 
 import pytest
@@ -37,12 +38,20 @@ def test_visit_requires_review_then_survives_reopen_and_repeated_submit(client):
     login(client)
     page = client.get('/vigilancia/campo')
     assert page.status_code == 200 and 'Registrar visita' in page.text
-    response = client.post('/vigilancia/campo', data={**record(), **deposits(depositos_d1='3'),
+    filters = dict(origem='LIRAA', levantamento='L-2026-01', estrato='01', inicio='2026-10-01', fim='2026-10-31')
+    response = client.post('/vigilancia/campo', query_string=filters, data={**record(), **deposits(depositos_d1='3'),
                            'demo': 'true', '_csrf_token': token(client)})
     assert response.status_code == 303
+    assert urlsplit(response.location).path == '/vigilancia/campo'
+    assert all(parse_qs(urlsplit(response.location).query)[key] == [value] for key, value in filters.items())
+    page = client.get(response.location)
+    assert page.status_code == 200 and 'Resultado da prévia' in page.text
+    assert 'Registrar visita' in page.text and 'Confirmar carga validada' in page.text
     assert store(client).records(7, demo=True) == []
     batch = store(client).history(7)[0]
-    assert confirm(client, batch['id']).status_code == 303
+    confirmed = client.post(response.location, data=dict(acao='confirmar', lote=batch['id'], demo='true', _csrf_token=token(client)))
+    assert confirmed.status_code == 303 and urlsplit(confirmed.location).path == '/vigilancia/campo'
+    assert all(parse_qs(urlsplit(confirmed.location).query)[key] == [value] for key, value in filters.items())
     saved = store(client).records(7, demo=True)
     assert len(saved) == 1 and saved[0]['depositos_d1'] == 3
     page = client.get('/vigilancia/campo')
@@ -65,6 +74,27 @@ def test_official_formulas_use_properties_for_iip_and_containers_for_breteau():
     assert indicator['iip'] == 50 and indicator['ib'] == 150
     counts = {row['codigo']: row for row in indicator['recipientes']}
     assert counts['D1']['itr'] == 66.67 and counts['A2']['itr'] == 33.33
+
+
+@pytest.mark.parametrize('mode', ['true', 'false'])
+def test_inline_confirmation_preserves_author_scope_mode_and_prior_authorization(client, mode):
+    login(client)
+    client.get('/vigilancia/campo', query_string={'demo': mode})
+    prepared = client.post('/vigilancia/campo', data={**record(), 'demo': mode,
+        'autorizado': 'sim', '_csrf_token': token(client)})
+    assert prepared.status_code == 303
+    batch = store(client).history(7)[0]
+    data = dict(acao='confirmar', lote=batch['id'], demo=mode, _csrf_token=token(client))
+    wrong_mode = 'false' if mode == 'true' else 'true'
+    assert client.post('/vigilancia/campo', data={**data, 'demo': wrong_mode}).status_code == 404
+    login(client, 'other')
+    assert client.post('/vigilancia/campo', data=data).status_code == 404
+    assert store(client).records(7, demo=(mode == 'true')) == []
+    login(client, 'a')
+    confirmed = client.post('/vigilancia/campo', data=data)
+    assert confirmed.status_code == 303 and urlsplit(confirmed.location).path == '/vigilancia/campo'
+    assert len(store(client).records(7, demo=(mode == 'true'))) == 1
+    assert store(client).records(7, demo=(mode != 'true')) == []
 
 
 def test_missing_counts_are_unknown_and_zero_has_a_different_meaning():

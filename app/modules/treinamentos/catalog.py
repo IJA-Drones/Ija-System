@@ -17,7 +17,24 @@ MATERIALS = {
     "imagem-acao": ("testes/05_Imagem_Acao_Demonstrativa.jpg", "image/jpeg"),
     "texto-acao": ("testes/06_Texto_Acao_Demonstrativa.txt", "text/plain"),
     "kit-testes": ("kit-testes-pesqueira-demo.zip", "application/zip"),
+    "csv-sp-territorio": ("testes-sao-paulo/01_Cadastro_territorial_UVIS_Se_Sao_Paulo_DEMO.csv", "text/csv"),
+    "csv-sp-amostra": ("testes-sao-paulo/02_Amostra_UVIS_Se_Sao_Paulo_DEMO.csv", "text/csv"),
+    "csv-sp-visitas": ("testes-sao-paulo/03_Visitas_LIRAa_UVIS_Se_Sao_Paulo_DEMO.csv", "text/csv"),
+    "csv-sp-sinan": ("testes-sao-paulo/04_SINAN_Dengue_2026_UVIS_Se_Sao_Paulo_DEMO.csv", "text/csv"),
+    "kit-testes-sp": ("kit-testes-sao-paulo-uvis-se-demo.zip", "application/zip"),
+    "kit-instrucoes-sp": ("testes-sao-paulo/LEIA_PRIMEIRO.txt", "text/plain"),
 }
+
+
+def demo_csv_examples(municipality_name):
+    """Match the registered municipality name, never assume an internal database ID."""
+    import unicodedata
+    name = ''.join(c for c in unicodedata.normalize('NFKD', municipality_name or '') if not unicodedata.combining(c)).lower()
+    if 'sao paulo' in name:
+        return dict(label='UVIS Sé · São Paulo', **{kind: f'csv-sp-{kind}' for kind in ('territorio', 'amostra', 'visitas')})
+    if 'pesqueira' in name:
+        return dict(label='Pesqueira · DEMO', **{kind: f'csv-{kind}' for kind in ('territorio', 'amostra', 'visitas')})
+    return {}
 
 SECTIONS = (
     dict(id="liraa", title="LIRAa e focal", icon="bi-clipboard-check",

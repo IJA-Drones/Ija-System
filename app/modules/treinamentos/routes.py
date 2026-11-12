@@ -23,7 +23,10 @@ def _module_url(section):
         legacy = True
     if not can_access_endpoint(current_user, endpoint, "GET", legacy=legacy):
         return None
-    return url_for(endpoint, demo="true")
+    params = {"demo": "true"}
+    if section["id"] == "liraa" and endpoint == "main.vigilancia_planejamento":
+        params.update(fluxo="levantamento", etapa="1", _anchor="novo-levantamento")
+    return url_for(endpoint, **params)
 
 
 def register_routes(bp):
