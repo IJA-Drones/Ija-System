@@ -391,3 +391,200 @@
   .dev-filter { grid-template-columns: minmax(0, 1fr); }
   .dev-command-row { flex-wrap: wrap; }
 }
+
+
+/* Liquid glass is limited to the system-health header. */
+html:has(.dev-shell),
+body:has(.dev-shell) {
+  --color-bg-body: #fff;
+}
+
+.dev-hero-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1.25rem;
+  border-radius: 58px;
+  background: linear-gradient(135deg, #1a4a7c, #2c5282 54%, #1a4a7c);
+}
+
+/* Header accents use the brand palette from base/variables.css. */
+.dev-hero-stage::before,
+.dev-hero-stage::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: clamp(260px, 29vw, 360px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: .36;
+  pointer-events: none;
+}
+
+.dev-hero-stage::before {
+  top: -12%;
+  left: 5%;
+  background: linear-gradient(45deg, #2c5282, #00a3c4);
+}
+
+.dev-hero-stage::after {
+  right: 3%;
+  bottom: -18%;
+  background: linear-gradient(45deg, #00a3c4, #1a4a7c);
+}
+
+.dev-shell .dev-hero {
+  margin-bottom: 0;
+  border-top: 1.5px solid rgba(255, 255, 255, .55);
+  border-left: 1.5px solid rgba(255, 255, 255, .45);
+  border-right: 1px solid rgba(255, 255, 255, .12);
+  border-bottom: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 42px;
+  background: transparent;
+  color: #f2f8ff;
+  box-shadow: 0 25px 50px -12px rgba(11, 34, 60, .16);
+}
+
+.dev-glass-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(180%) contrast(105%);
+  backdrop-filter: blur(8px) saturate(180%) contrast(105%);
+}
+
+.dev-hero.has-glass-refraction .dev-glass-backdrop {
+  backdrop-filter: blur(8px) url("#devGlassLens") saturate(180%) contrast(105%);
+}
+
+.dev-glass-filters { position: absolute; pointer-events: none; }
+
+.dev-shell .dev-hero::before {
+  z-index: 1;
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at var(--dev-light-x, 22%) var(--dev-light-y, 0%), rgba(255, 255, 255, .05), transparent 65%),
+    linear-gradient(var(--dev-light-angle, 104deg), rgba(255, 255, 255, .025), transparent 29%, transparent 70%, rgba(255, 255, 255, .01));
+}
+
+.dev-shell .dev-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, .60),
+    inset 0 -8px 20px rgba(255, 255, 255, .05);
+  pointer-events: none;
+}
+
+.dev-shell .dev-hero-content {
+  z-index: 3;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 1.5rem;
+}
+
+.dev-shell .dev-hero-content > * { min-width: 0; }
+
+.dev-shell .dev-hero .dev-title {
+  color: #f2f8ff !important;
+  text-shadow: 0 1px 8px rgba(0, 9, 28, .15);
+}
+
+.dev-shell .dev-hero .dev-welcome { color: #e1edf8; }
+.dev-shell .dev-hero .dev-subtitle { color: #dae8f5; }
+
+.dev-shell .dev-hero .dev-kicker,
+.dev-shell .dev-hero-actions .btn {
+  border: 1px solid rgba(255, 255, 255, .32);
+  background: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+
+.dev-shell .dev-hero .dev-kicker { padding: .4rem .75rem; color: #d2eafa; }
+.dev-shell .dev-hero .dev-command {
+  border: 0;
+  border-left: 1px solid rgba(227, 242, 255, .20);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.dev-shell .dev-command-row { border-bottom-color: rgba(227, 242, 255, .15); }
+.dev-shell .dev-command-row .text-white-50 { color: #d5e5f2 !important; }
+
+.dev-shell .dev-hero-actions { gap: .6rem; }
+.dev-shell .dev-hero-actions .btn {
+  border-radius: 999px;
+  padding: .6rem .9rem;
+  color: #f2f8ff !important;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.dev-shell .dev-hero-actions .btn:hover {
+  background: rgba(255, 255, 255, .28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
+  transform: translateY(-1px);
+}
+
+.dev-shell .dev-hero-actions .btn:active { transform: scale(.98); }
+
+.dev-shell .dev-hero-actions .btn.dev-refresh-control {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.1rem;
+}
+
+.dev-shell .dev-hero-actions .btn-light,
+.dev-shell .dev-hero-actions .btn[aria-pressed="true"] {
+  background: rgba(16, 67, 113, .84);
+  color: #f5faff !important;
+}
+
+.dev-shell .dev-hero-actions .btn-light:hover { background: rgba(16, 67, 113, .94); }
+.dev-shell .dev-hero-actions .btn:focus-visible { outline-color: #c8eaff; }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dev-glass-backdrop { background: #11365c; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .dev-hero-stage::before,
+  .dev-hero-stage::after { display: none; }
+  .dev-glass-backdrop { background: #11365c; }
+  .dev-shell .dev-hero .dev-kicker,
+  .dev-shell .dev-hero-actions .btn { background: #294d70; }
+  .dev-glass-backdrop,
+  .dev-hero.has-glass-refraction .dev-glass-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .dev-shell .dev-hero-actions .btn-light,
+  .dev-shell .dev-hero-actions .btn[aria-pressed="true"] { background: #104371; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dev-shell .dev-hero-actions .btn { transition: none; }
+  .dev-shell .dev-hero-actions .btn:hover,
+  .dev-shell .dev-hero-actions .btn:active { transform: none; }
+}
+
+@media (max-width: 1199.98px) {
+  .dev-shell .dev-hero-content { grid-template-columns: 1fr; }
+  .dev-shell .dev-hero .dev-command { border-left: 0; border-top: 1px solid rgba(227, 242, 255, .20); }
+}
+
+@media (max-width: 575.98px) {
+  .dev-hero-stage { padding: .75rem; border-radius: 42px; }
+  .dev-shell .dev-hero { border-radius: 32px; }
+  .dev-shell .dev-hero .dev-title { font-size: clamp(1.8rem, 8vw, 2.5rem); }
+  .dev-shell .dev-hero-actions .btn { flex: 1 1 auto; }
+}

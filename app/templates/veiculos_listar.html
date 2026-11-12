@@ -13,7 +13,7 @@
 {% set can_manage = (central_ti_permission('prefeitura.veiculos.criar') or central_ti_permission('prefeitura.veiculos.editar') or central_ti_permission('prefeitura.veiculos.excluir')) %}
 {% endif %}
 
-<div class="container-fluid py-4" style="max-width: 1200px;">
+<div class="container-fluid py-4 vehicles-list-page">
 
     {# --- CABEÇALHO PADRONIZADO --- #}
     <div class="dashboard-header mb-4">
@@ -141,187 +141,224 @@
           action="{{ url_for('main.atualizar_equipes_veiculos', **request.args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.atualizar_equipes_veiculos', **request.args), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}"></form>
     {% endif %}
 
-    <div class="card shadow-sm border-0 rounded-4 menu-actions-table-wrap">
+    <div class="card shadow-sm border-0 rounded-4 vehicles-table-card">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 text-center">
+            <div class="table-responsive vehicles-table-scroll" role="region" aria-label="Lista de veículos" tabindex="0">
+                <table class="table table-hover align-middle mb-0 vehicles-table">
+                    <caption class="visually-hidden">Frota de veículos, responsáveis, quilometragem e última movimentação</caption>
+                    <colgroup>
+                        <col class="vehicle-col-identity">
+                        <col class="vehicle-col-fleet">
+                        <col class="vehicle-col-team">
+                        <col class="vehicle-col-supervisor">
+                        <col class="vehicle-col-km">
+                        <col class="vehicle-col-remaining">
+                        <col class="vehicle-col-movement">
+                        <col class="vehicle-col-status">
+                        <col class="vehicle-col-actions">
+                    </colgroup>
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4 text-start">Veículo / Placa</th>
-                            <th>Frota / Op.</th>
-                            <th>Equipe responsável</th>
-                            <th>Supervisor responsável</th>
-                            <th>KM Atual</th>
-                            <th>KM Restante</th>
-                            <th>Ultima Movimentacao</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th scope="col">Veículo / Placa</th>
+                            <th scope="col">Frota / Op.</th>
+                            <th scope="col">Equipe responsável</th>
+                            <th scope="col">Supervisor responsável</th>
+                            <th scope="col">KM Atual</th>
+                            <th scope="col">KM Restante</th>
+                            <th scope="col">Última movimentação</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for v in veiculos %}
                         {% set falt = v.km_restante_revisao %}
                         <tr>
-                            <td class="ps-4 text-start">
-                                <div class="fw-bold text-dark">{{ v.modelo }}</div>
-                                <div class="text-muted small">{{ v.placa }}</div>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark border">{{ v.frota }}</span>
-                                <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
-                            </td>
-                            <td>
-                                {% set current_equipe = equipes_por_id.get(v.equipe_id|string) if equipes_por_id is defined else none %}
-                                {% if can_manage %}
-                                    <input type="hidden" name="veiculo_ids" value="{{ v.id }}" form="bulk-equipes-form">
-                                    <input type="hidden"
-                                           name="equipe_id_{{ v.id }}"
-                                           value="{{ v.equipe_id or '' }}"
-                                           form="bulk-equipes-form"
-                                           data-team-input>
-                                    <div class="dropdown team-picker" data-team-picker>
-                                        <button class="team-picker-toggle"
-                                                type="button"
-                                                data-bs-toggle="dropdown"
-                                                data-bs-offset="0,6"
-                                                aria-expanded="false">
-                                            <span class="team-picker-pilot" data-team-pilot>
-                                                {{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}
-                                            </span>
-                                            <span class="team-picker-name">
-                                                <i class="bi bi-people-fill me-1"></i><span data-team-name>{{ current_equipe.label if current_equipe else '-- Sem equipe --' }}</span>
-                                            </span>
-                                        </button>
-                                        <ul class="dropdown-menu team-picker-menu">
-                                            <li>
-                                                <button class="dropdown-item team-picker-option {% if not v.equipe_id %}active{% endif %}"
-                                                        type="button"
-                                                        data-team-option
-                                                        data-team-value=""
-                                                        data-team-name="-- Sem equipe --"
-                                                        data-team-pilot="Sem piloto vinculado">
-                                                    <span class="team-picker-pilot">Sem piloto vinculado</span>
-                                                    <span class="team-picker-name">-- Sem equipe --</span>
-                                                </button>
-                                            </li>
-                                            {% for equipe in equipes or [] %}
-                                                <li>
-                                                    <button class="dropdown-item team-picker-option {% if (v.equipe_id|string) == equipe.value %}active{% endif %}"
-                                                            type="button"
-                                                            data-team-option
-                                                            data-team-value="{{ equipe.value }}"
-                                                            data-team-name="{{ equipe.label }}"
-                                                            data-team-pilot="{{ equipe.piloto_label }}">
-                                                        <span class="team-picker-pilot">{{ equipe.piloto_label }}</span>
-                                                        <span class="team-picker-name">
-                                                            <i class="bi bi-people-fill me-1"></i>{{ equipe.label }}
-                                                        </span>
-                                                    </button>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                {% elif v.equipe %}
-                                    <div class="team-picker-pilot">{{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}</div>
-                                    <div class="small text-primary fw-bold">
-                                        <i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}
-                                    </div>
-                                {% else %}
-                                    <span class="text-muted small">--</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if can_manage %}
-                                    <input type="hidden" name="supervisor_id_{{ v.id }}"
-                                           value="{{ v.supervisor_usuario_id or '' }}"
-                                           form="bulk-equipes-form" data-supervisor-input>
-                                    <div class="dropdown team-picker" data-supervisor-picker>
-                                        <button class="team-picker-toggle" type="button" data-bs-toggle="dropdown"
-                                                data-bs-offset="0,6" aria-expanded="false"
-                                                aria-label="Supervisor responsável pelo veículo {{ v.placa }}">
-                                            <span class="team-picker-pilot">Responsável individual</span>
-                                            <span class="team-picker-name"><i class="bi bi-person-badge me-1"></i><span data-supervisor-name>{{ v.responsavel_exibicao if v.supervisor_usuario_id else '-- Sem supervisor --' }}</span></span>
-                                        </button>
-                                        <ul class="dropdown-menu team-picker-menu">
-                                            <li><button class="dropdown-item team-picker-option {% if not v.supervisor_usuario_id %}active{% endif %}"
-                                                        type="button" data-supervisor-option data-supervisor-value=""
-                                                        data-supervisor-name="-- Sem supervisor --">-- Sem supervisor --</button></li>
-                                            {% for supervisor in supervisores or [] %}
-                                                <li><button class="dropdown-item team-picker-option {% if v.supervisor_usuario_id == supervisor.id %}active{% endif %}"
-                                                            type="button" data-supervisor-option data-supervisor-value="{{ supervisor.id }}"
-                                                            data-supervisor-name="{{ supervisor.nome_uvis or supervisor.login }}">
-                                                    {{ supervisor.nome_uvis or supervisor.login }}
-                                                </button></li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                {% elif v.supervisor_usuario_id %}
-                                    <span class="small text-primary fw-semibold">{{ v.responsavel_exibicao }}</span>
-                                {% else %}
-                                    <span class="text-muted small">--</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark border rounded-pill px-3">
-                                    {{ (v.km_atual or 0)|round|int }} km
-                                </span>
-                            </td>
-                            <td>
-                                {% if falt is not none %}
-                                    <span class="badge {% if falt < 0 %}bg-danger-light text-danger{% elif falt <= 2000 %}bg-warning-light text-warning{% else %}bg-success-light text-success{% endif %} rounded-pill px-3">
-                                        {{ falt|round|int }} km
-                                    </span>
-                                {% else %}
-                                    <span class="text-muted small">--</span>
-                                {% endif %}
-                            </td>
-                            <td class="small">
-                                {% set log = ultimos_logs.get(v.id) %}
-                                {% if log %}
-                                    {% set km_resumo = log.km_final if log.km_final is not none else log.ultimo_km_registrado %}
-                                    <div class="fw-semibold text-dark">{{ (log.km_inicial or 0)|round|int }} -> {{ (km_resumo or 0)|round|int }} km</div>
-                                    <div class="text-muted">
-                                        {% if log.km_final is none %}
-                                            Turno aberto |
-                                        {% else %}
-                                            Turno encerrado |
-                                        {% endif %}
-                                        {% if log.teve_abastecimento %}
-                                            R$ {{ '%.2f'|format(log.total_valor_abastecido) }} | {{ log.qtd_abastecimentos }} abast.
-                                        {% else %}
-                                            Sem abastecimento
-                                        {% endif %}
-                                        | {{ log.ultima_movimentacao_em.strftime('%d/%m/%Y %H:%M') if log.ultima_movimentacao_em else '-' }}
-                                    </div>
-                                {% else %}
-                                    <span class="text-muted">Sem historico</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% elif v.status == 'Inativo' %}bg-light text-muted{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
-                                    {{ v.status }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="dropup">
-                                    <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                        {% if (central_ti_ui_guard(['main.deletar_veiculo', 'main.editar_veiculo'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
-                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_veiculo', veiculo_id=v.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_veiculo', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-                                                <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
-                                            </form>
-                                        </li>
-                                        {% else %}
-                                        <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
-                                        {% endif %}
-                                    </ul>
+                            <td data-label="Veículo / Placa">
+                                <div class="vehicle-cell-content">
+                                    <div class="fw-bold text-dark">{{ v.modelo }}</div>
+                                    <div class="text-muted small">{{ v.placa }}</div>
                                 </div>
                             </td>
+                            <td data-label="Frota / Op.">
+                                <div class="vehicle-cell-content vehicle-fleet">
+                                    <span class="badge bg-light text-dark border">{{ v.frota }}</span>
+                                    <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
+                                </div>
+                            </td>
+                            <td data-label="Equipe responsável">
+                                <div class="vehicle-cell-content">
+                                    {% set current_equipe = equipes_por_id.get(v.equipe_id|string) if equipes_por_id is defined else none %}
+                                    {% if can_manage %}
+                                        <input type="hidden" name="veiculo_ids" value="{{ v.id }}" form="bulk-equipes-form">
+                                        <input type="hidden"
+                                               name="equipe_id_{{ v.id }}"
+                                               value="{{ v.equipe_id or '' }}"
+                                               form="bulk-equipes-form"
+                                               data-team-input>
+                                        <div class="dropdown team-picker" data-team-picker>
+                                            <button class="team-picker-toggle"
+                                                    type="button"
+                                                    data-bs-toggle="dropdown"
+                                                    data-bs-offset="0,6"
+                                                    aria-expanded="false"
+                                                    aria-label="Equipe responsável pelo veículo {{ v.placa }}">
+                                                <span class="team-picker-pilot" data-team-pilot>
+                                                    {{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}
+                                                </span>
+                                                <span class="team-picker-name">
+                                                    <i class="bi bi-people-fill me-1"></i><span data-team-name>{{ current_equipe.label if current_equipe else 'Sem equipe' }}</span>
+                                                </span>
+                                            </button>
+                                            <ul class="dropdown-menu team-picker-menu">
+                                                <li>
+                                                    <button class="dropdown-item team-picker-option {% if not v.equipe_id %}active{% endif %}"
+                                                            type="button"
+                                                            data-team-option
+                                                            data-team-value=""
+                                                            data-team-name="Sem equipe"
+                                                            data-team-pilot="Sem piloto vinculado">
+                                                        <span class="team-picker-pilot">Sem piloto vinculado</span>
+                                                        <span class="team-picker-name">Sem equipe</span>
+                                                    </button>
+                                                </li>
+                                                {% for equipe in equipes or [] %}
+                                                    <li>
+                                                        <button class="dropdown-item team-picker-option {% if (v.equipe_id|string) == equipe.value %}active{% endif %}"
+                                                                type="button"
+                                                                data-team-option
+                                                                data-team-value="{{ equipe.value }}"
+                                                                data-team-name="{{ equipe.label }}"
+                                                                data-team-pilot="{{ equipe.piloto_label }}">
+                                                            <span class="team-picker-pilot">{{ equipe.piloto_label }}</span>
+                                                            <span class="team-picker-name">
+                                                                <i class="bi bi-people-fill me-1"></i>{{ equipe.label }}
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% elif v.equipe %}
+                                        <div class="team-picker-pilot">{{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}</div>
+                                        <div class="small text-primary fw-bold">
+                                            <i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">--</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td data-label="Supervisor responsável">
+                                <div class="vehicle-cell-content">
+                                    {% if can_manage %}
+                                        <input type="hidden" name="supervisor_id_{{ v.id }}"
+                                               value="{{ v.supervisor_usuario_id or '' }}"
+                                               form="bulk-equipes-form" data-supervisor-input>
+                                        <div class="dropdown team-picker" data-supervisor-picker>
+                                            <button class="team-picker-toggle" type="button" data-bs-toggle="dropdown"
+                                                    data-bs-offset="0,6" aria-expanded="false"
+                                                    aria-label="Supervisor responsável pelo veículo {{ v.placa }}">
+                                                <span class="team-picker-pilot">Responsável individual</span>
+                                                <span class="team-picker-name"><i class="bi bi-person-badge me-1"></i><span data-supervisor-name>{{ v.responsavel_exibicao if v.supervisor_usuario_id else 'Sem supervisor' }}</span></span>
+                                            </button>
+                                            <ul class="dropdown-menu team-picker-menu">
+                                                <li><button class="dropdown-item team-picker-option {% if not v.supervisor_usuario_id %}active{% endif %}"
+                                                            type="button" data-supervisor-option data-supervisor-value=""
+                                                            data-supervisor-name="Sem supervisor">Sem supervisor</button></li>
+                                                {% for supervisor in supervisores or [] %}
+                                                    <li><button class="dropdown-item team-picker-option {% if v.supervisor_usuario_id == supervisor.id %}active{% endif %}"
+                                                                type="button" data-supervisor-option data-supervisor-value="{{ supervisor.id }}"
+                                                                data-supervisor-name="{{ supervisor.nome_uvis or supervisor.login }}">
+                                                        {{ supervisor.nome_uvis or supervisor.login }}
+                                                    </button></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% elif v.supervisor_usuario_id %}
+                                        <span class="small text-primary fw-semibold">{{ v.responsavel_exibicao }}</span>
+                                    {% else %}
+                                        <span class="text-muted small">--</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td data-label="KM Atual">
+                                <div class="vehicle-cell-content">
+                                    <span class="badge bg-light text-dark border rounded-pill px-3">
+                                        {{ (v.km_atual or 0)|round|int }} km
+                                    </span>
+                                </div>
+                            </td>
+                            <td data-label="KM Restante">
+                                <div class="vehicle-cell-content">
+                                    {% if falt is not none %}
+                                        <span class="badge {% if falt < 0 %}bg-danger-light text-danger{% elif falt <= 2000 %}bg-warning-light text-warning{% else %}bg-success-light text-success{% endif %} rounded-pill px-3">
+                                            {{ falt|round|int }} km
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted small">--</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td data-label="Última movimentação" class="small">
+                                <div class="vehicle-cell-content vehicle-movement">
+                                    {% set log = ultimos_logs.get(v.id) %}
+                                    {% if log %}
+                                        {% set km_resumo = log.km_final if log.km_final is not none else log.ultimo_km_registrado %}
+                                        <div class="fw-semibold text-dark">{{ (log.km_inicial or 0)|round|int }} &rarr; {{ (km_resumo or 0)|round|int }} km</div>
+                                        <div class="text-muted">
+                                            {% if log.km_final is none %}
+                                                Turno aberto
+                                            {% else %}
+                                                Turno encerrado
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted">
+                                            {% if log.teve_abastecimento %}
+                                                R$ {{ '%.2f'|format(log.total_valor_abastecido) }} | {{ log.qtd_abastecimentos }} abast.
+                                            {% else %}
+                                                Sem abastecimento
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted">{{ log.ultima_movimentacao_em.strftime('%d/%m/%Y %H:%M') if log.ultima_movimentacao_em else '-' }}</div>
+                                    {% else %}
+                                        <span class="text-muted">Sem histórico</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td data-label="Status">
+                                <div class="vehicle-cell-content">
+                                    <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% elif v.status == 'Inativo' %}bg-light text-muted{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
+                                        {{ v.status }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td data-label="Ações">
+                                <div class="vehicle-cell-content">
+                                    <div class="dropup">
+                                        <button class="btn btn-outline-secondary vehicle-actions-toggle" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" aria-label="Ações do veículo {{ v.placa }}">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                            {% if (central_ti_ui_guard(['main.deletar_veiculo', 'main.editar_veiculo'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+                                            <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_veiculo', veiculo_id=v.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form class="form-deletar m-0" method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_veiculo', veiculo_id=v.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+                                                    <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
+                                                </form>
+                                            </li>
+                                            {% else %}
+                                            <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="vehicles-empty-row">
+                            <td colspan="9" class="text-center text-muted py-5">Nenhum veículo encontrado.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -341,6 +378,22 @@
 
 {% block scripts %}
 <script>
+    // Menus fixos escapam da área de rolagem horizontal da tabela.
+    document.querySelectorAll('.vehicles-table [data-bs-toggle="dropdown"]').forEach((toggle) => {
+        bootstrap.Dropdown.getOrCreateInstance(toggle, {
+            popperConfig(defaultConfig) {
+                return {
+                    ...defaultConfig,
+                    strategy: 'fixed',
+                    modifiers: [
+                        ...defaultConfig.modifiers,
+                        { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8 } },
+                    ],
+                };
+            },
+        });
+    });
+
     document.querySelectorAll("[data-team-option]").forEach((option) => {
         option.addEventListener("click", () => {
             const picker = option.closest("[data-team-picker]");
@@ -353,7 +406,7 @@
 
             if (input) input.value = option.dataset.teamValue || "";
             if (pilotLabel) pilotLabel.textContent = option.dataset.teamPilot || "Sem piloto vinculado";
-            if (teamName) teamName.textContent = option.dataset.teamName || "-- Sem equipe --";
+            if (teamName) teamName.textContent = option.dataset.teamName || "Sem equipe";
 
             if (!option.dataset.teamValue && cell) {
                 const row = cell.closest("tr");
@@ -362,7 +415,7 @@
                 if (supervisorInput) supervisorInput.value = "";
                 if (supervisorPicker) {
                     const supervisorName = supervisorPicker.querySelector("[data-supervisor-name]");
-                    if (supervisorName) supervisorName.textContent = "-- Sem supervisor --";
+                    if (supervisorName) supervisorName.textContent = "Sem supervisor";
                     supervisorPicker.querySelectorAll("[data-supervisor-option]").forEach((item) => {
                         item.classList.toggle("active", !item.dataset.supervisorValue);
                     });
@@ -382,7 +435,7 @@
             const input = cell ? cell.querySelector("[data-supervisor-input]") : null;
             const name = picker.querySelector("[data-supervisor-name]");
             if (input) input.value = option.dataset.supervisorValue || "";
-            if (name) name.textContent = option.dataset.supervisorName || "-- Sem supervisor --";
+            if (name) name.textContent = option.dataset.supervisorName || "Sem supervisor";
             picker.querySelectorAll("[data-supervisor-option]").forEach((item) => item.classList.remove("active"));
             option.classList.add("active");
         });

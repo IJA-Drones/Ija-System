@@ -65,6 +65,11 @@ SOCIAL = re.compile(r'^(?:oi|ola|bom dia|boa tarde|boa noite|obrigad[oa]|valeu|t
 FOLLOWUP = re.compile(r'^(?:sim|nao|pode|continue|continuar|entendi|explique melhor|pode explicar melhor|'
                       r'mais detalhes|todos|todas|tudo|nenhum|nenhuma|excel|pdf|'
                       r'so as pendentes|as pendentes|todo o periodo|todos os bairros|todos os status)[!,. ?]*$')
+# A new question or request must not be mistaken for a bare report-filter value.
+NEW_QUESTION = re.compile(
+    r'\b(?:quem|qual|quais|como|quando|onde|por que|fale|falar|conte|contar|'
+    r'explique|explicar|diga|dizer|mostre|mostrar|ensine|ensinar|escreva|escrever|'
+    r'crie|criar|traduza|traduzir|resuma|resumir|biografias?|discografias?)\b')
 
 
 @dataclass(frozen=True)
@@ -99,6 +104,7 @@ def evaluate(message, history=(), *, public=False):
         report_choice = (before.kind == 'allowed' and before.subject == 'system'
                          and any(re.search(r'\b(?:relatorio|export\w*|excel|pdf|bairro|periodo)\b', normalize(item.get('content','')))
                                  for item in history if item.get('role') == 'user')
+                         and not NEW_QUESTION.search(text)
                          and re.fullmatch(r'[\w\s,./:-]{1,80}', text))
         if before.kind == 'allowed' and (FOLLOWUP.fullmatch(text) or report_choice):
             return Decision('allowed', before.subject)

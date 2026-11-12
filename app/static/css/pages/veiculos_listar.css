@@ -1,7 +1,12 @@
 /* =========================================
        DESIGN SYSTEM OCEANO AZUL
        ========================================= */
-    .dashboard-header {
+    .vehicles-list-page {
+        max-width: 1600px;
+        min-width: 0;
+    }
+
+    .vehicles-list-page .dashboard-header {
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
@@ -9,88 +14,119 @@
         flex-wrap: wrap;
     }
 
-    .dashboard-header h2 {
+    .vehicles-list-page .dashboard-header h2 {
         margin: 0 !important;
         white-space: nowrap;
     }
 
-    .header-actions {
+    .vehicles-list-page .header-actions {
         display: flex;
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
     }
 
-    /* =========================================
-       RESPONSIVIDADE (MOBILE -> CARDS)
-       ========================================= */
-    @media (max-width: 768px) {
-        .dashboard-header {
-            flex-direction: column !important;
-            align-items: stretch !important;
-        }
-
-        .dashboard-header h2 { margin-right: 0 !important; white-space: normal; }
-        .header-actions { width: 100%; }
-        .header-actions a.btn { width: 100%; justify-content: center; flex: 1; }
-
-        /* Tabela vira Lista de Cards */
-        .table-responsive { background: transparent !important; border: 0 !important; overflow: visible !important; }
-        thead { display: none !important; }
-        tbody { display: flex !important; flex-direction: column !important; gap: 16px !important; padding: 10px 0 !important; }
-
-        tbody tr {
-            display: block !important;
-            background: var(--color-bg-white) !important;
-            border: 1px solid rgba(0, 0, 0, 0.10) !important;
-            border-radius: 18px !important;
-            box-shadow: var(--shadow-sm) !important;
-            padding: 10px !important;
-            margin-bottom: 5px;
-        }
-
-        tbody tr td {
-            display: grid !important;
-            grid-template-columns: 110px 1fr !important;
-            gap: 10px;
-            padding: 12px 8px !important;
-            border: 0 !important;
-            text-align: right !important;
-            align-items: center !important;
-        }
-
-        tbody tr td + td { border-top: 1px solid rgba(0, 0, 0, 0.05) !important; }
-
-        /* Labels Automáticos */
-        tbody tr td:nth-child(1)::before { content: "Veículo"; }
-        tbody tr td:nth-child(2)::before { content: "Frota / Op."; }
-        tbody tr td:nth-child(3)::before { content: "Equipe responsável"; }
-        tbody tr td:nth-child(4)::before { content: "Supervisor responsável"; }
-        tbody tr td:nth-child(5)::before { content: "KM Atual"; }
-        tbody tr td:nth-child(6)::before { content: "KM Restante"; }
-        tbody tr td:nth-child(7)::before { content: "Ultima Movimentacao"; }
-        tbody tr td:nth-child(8)::before { content: "Status"; }
-        tbody tr td:nth-child(9)::before { content: "Ações"; }
-
-        tbody tr td::before {
-            font-weight: 700;
-            color: var(--color-text-muted);
-            font-size: .70rem;
-            text-transform: uppercase;
-            text-align: left !important;
-        }
-
-        .dropdown, .dropup { display: flex; justify-content: flex-end; }
+    .vehicles-list-page .vehicles-table-card {
+        min-width: 0;
+        overflow: visible;
+        transform: none;
     }
 
-    .menu-actions-table-wrap,
-    .menu-actions-table-wrap .card-body,
-    .menu-actions-table-wrap .table-responsive {
-        overflow: visible !important;
+    .vehicles-table-card > .card-body {
+        border-radius: inherit;
+    }
+
+    .vehicles-table-scroll {
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: inherit;
+    }
+
+    .vehicles-table-scroll:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 3px;
+    }
+
+    .vehicles-table {
+        width: 100%;
+        min-width: 1140px;
+        table-layout: fixed;
+    }
+
+    .vehicles-table .vehicle-col-identity { width: 10%; }
+    .vehicles-table .vehicle-col-fleet { width: 8%; }
+    .vehicles-table .vehicle-col-team,
+    .vehicles-table .vehicle-col-supervisor { width: 16%; }
+    .vehicles-table .vehicle-col-km { width: 8%; }
+    .vehicles-table .vehicle-col-remaining { width: 9%; }
+    .vehicles-table .vehicle-col-movement { width: 17%; }
+    .vehicles-table .vehicle-col-status { width: 10%; }
+    .vehicles-table .vehicle-col-actions { width: 6%; }
+
+    .vehicles-table thead th {
+        padding: 1rem .75rem;
+        font-size: .7rem;
+        letter-spacing: .025em;
+        vertical-align: middle;
+    }
+
+    .vehicles-table td {
+        padding: .875rem .75rem;
+        font-size: .85rem;
+    }
+
+    .vehicles-table th,
+    .vehicles-table td {
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
+
+    .vehicles-table th:last-child,
+    .vehicles-table td:last-child {
+        text-align: center;
+    }
+
+    .vehicle-cell-content {
+        min-width: 0;
+    }
+
+    .vehicle-fleet,
+    .vehicle-movement {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .25rem;
+    }
+
+    .vehicle-movement {
+        font-size: .75rem;
+        line-height: 1.5;
+    }
+
+    .vehicles-table .badge {
+        max-width: 100%;
+        padding: .4em .65em !important;
+        white-space: normal;
+        line-height: 1.4;
+    }
+
+    .vehicles-table .vehicle-fleet .badge {
+        white-space: nowrap;
+        overflow-wrap: normal;
+    }
+
+    .vehicles-table .vehicle-actions-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
     }
 
     .team-picker {
-        min-width: 170px;
+        min-width: 0;
+        width: 100%;
     }
 
     .team-picker-toggle {
@@ -100,7 +136,7 @@
         border-radius: 8px;
         background: #fff;
         color: var(--color-text, #17233c);
-        padding: 5px 30px 5px 10px;
+        padding: 7px 26px 7px 8px;
         text-align: left;
         display: flex;
         flex-direction: column;
@@ -129,7 +165,7 @@
 
     .team-picker-pilot {
         color: #536179;
-        font-size: .68rem;
+        font-size: .72rem;
         line-height: 1.1;
         max-width: 100%;
         overflow: hidden;
@@ -141,11 +177,10 @@
         color: #084b83;
         font-size: .78rem;
         font-weight: 800;
-        line-height: 1.12;
+        line-height: 1.3;
         max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
+        white-space: normal;
     }
 
     .team-picker-menu {
@@ -275,13 +310,102 @@
             currentColor;
     }
 
-    @media (max-width: 768px) {
-        .team-picker.dropdown {
-            justify-content: stretch;
+    /* Cada célula mantém o rótulo e todo o seu conteúdo na mesma linha. */
+    @media (max-width: 767.98px) {
+        .vehicles-list-page {
+            padding-inline: 0;
         }
 
-        .team-picker {
-            min-width: 0;
+        .vehicles-list-page .dashboard-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .vehicles-list-page .dashboard-header h2 {
+            white-space: normal;
+        }
+
+        .vehicles-list-page .header-actions {
             width: 100%;
+        }
+
+        .vehicles-list-page .header-actions .btn {
+            flex: 1 1 calc(50% - 10px);
+            justify-content: center;
+        }
+
+        .vehicles-list-page .vehicles-table-card {
+            background: transparent;
+            box-shadow: none !important;
+        }
+
+        .vehicles-table-scroll {
+            overflow: visible;
+            background: transparent;
+        }
+
+        .vehicles-table,
+        .vehicles-table tbody,
+        .vehicles-table tbody tr {
+            display: block;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .vehicles-table colgroup,
+        .vehicles-table thead {
+            display: none;
+        }
+
+        .vehicles-table tbody tr {
+            margin-bottom: 1rem;
+            padding: .5rem;
+            border: 1px solid var(--color-border, #edf2f7);
+            border-radius: 16px;
+            background: var(--color-bg-white);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .vehicles-table tbody td {
+            display: grid;
+            grid-template-columns: minmax(0, 6.25rem) minmax(0, 1fr);
+            align-items: center;
+            gap: .75rem;
+            padding: .75rem .5rem;
+            border: 0;
+            text-align: left;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .vehicles-table tbody td + td {
+            border-top: 1px solid var(--color-border, #edf2f7);
+        }
+
+        .vehicles-table td[data-label]::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            font-size: .68rem;
+            text-transform: uppercase;
+        }
+
+        .vehicles-table .vehicles-empty-row td {
+            display: block;
+        }
+
+        .vehicles-table .vehicle-fleet {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        body.dark-mode .vehicles-table tbody tr {
+            background: var(--color-bg-surface, #152233);
+            border-color: #233549;
+        }
+
+        body.dark-mode .vehicles-table tbody td {
+            background: transparent;
+            border-color: #233549;
         }
     }

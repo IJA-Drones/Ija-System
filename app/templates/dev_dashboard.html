@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dev_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dev_dashboard.css', v='20261112-glass-system-colors') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid dev-shell py-4">
-  <section class="dev-hero p-4 p-lg-5 mb-4">
+  <div class="dev-hero-stage mb-4">
+  <section class="dev-hero p-4 p-lg-5">
+    <span class="dev-glass-backdrop" aria-hidden="true"></span>
     <div class="dev-hero-content">
       <div>
         <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Developer console · Oceano Azul</span>
@@ -16,8 +18,8 @@
           Central técnica do sistema: presença em tempo real, saúde da aplicação, erros recentes, infraestrutura e contexto operacional.
         </p>
         <div class="dev-hero-actions">
-          <button class="btn btn-light btn-sm" type="button" id="devRefreshNow">
-            <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+          <button class="btn btn-light btn-sm dev-refresh-control" type="button" id="devRefreshNow" aria-label="Atualizar painel" title="Atualizar painel">
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span class="visually-hidden">Atualizar</span>
           </button>
           <button class="btn btn-outline-light btn-sm" type="button" id="devLiveToggle" aria-pressed="false">
             <i class="bi bi-broadcast me-1"></i> Ao vivo
@@ -64,6 +66,7 @@
       </aside>
     </div>
   </section>
+  </div>
 
   <section class="dev-grid mb-4">
     <div class="card dev-metric">
@@ -425,6 +428,7 @@
 
 {% block scripts %}
 {{ super() }}
+<script src="{{ url_for('static', filename='js/dev-glass.js', v='20261111-lens-final') }}" defer></script>
 <script>
   (function () {
     const mapsKey = {{ maps_key|tojson }};
@@ -845,13 +849,14 @@
 
     function bindControls() {
       document.getElementById("devRefreshNow")?.addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
+        const button = event.currentTarget;
+        button.disabled = true;
         try {
           await refreshDashboard();
         } catch (error) {
           setText("devRefreshStatus", "Falha ao atualizar");
         } finally {
-          event.currentTarget.disabled = false;
+          button.disabled = false;
         }
       });
 
