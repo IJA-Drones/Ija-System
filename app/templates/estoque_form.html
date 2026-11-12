@@ -19,7 +19,7 @@
       <h2 class="text-dark mb-1">
         <i class="bi bi-box-seam-fill me-2 text-primary"></i>{{ 'Editar peça' if peca else 'Nova peça no estoque' }}
       </h2>
-      <p class="text-muted small mb-0">Controle de peças disponíveis para manutenção dos drones.</p>
+      <p class="text-muted small mb-0">Controle de peças disponíveis para manutenção dos equipamentos.</p>
     </div>
   </div>
 
@@ -40,6 +40,29 @@
         </div>
 
         <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Modelos compatíveis</label>
+            <input type="text" name="modelos_compativeis" class="form-control" value="{{ form.get('modelos_compativeis','') }}" placeholder="Ex.: T10, T25, Matrice 4E">
+            <div class="form-text">Informe os modelos separados por vírgula. Não vincula a peça a um drone específico.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted" for="estoque-equipamento">Equipamento vinculado</label>
+            <select id="estoque-equipamento" name="equipamento_id" class="form-select {% if errors.get('equipamento_id') %}is-invalid{% endif %}">
+              <option value="">Sem vínculo específico</option>
+              {% for equipamento in equipamentos %}
+                {% set tipo_equipamento = {'drones': 'Drone', 'baterias': 'Bateria', 'veiculos': 'Veículo', 'geradores': 'Gerador'}.get(equipamento.tipo_equipamento, equipamento.tipo_equipamento|replace('_', ' ')|title) %}
+                <option value="{{ equipamento.id }}" {{ 'selected' if form.get('equipamento_id')|string == equipamento.id|string else '' }}>
+                  {{ tipo_equipamento }} · {{ equipamento.renomacao }} — {{ equipamento.modelo }}{% if equipamento.numero_serie %} (S/N {{ equipamento.numero_serie }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('equipamento_id') %}<div class="invalid-feedback">{{ errors.get('equipamento_id') }}</div>{% endif %}
+            <div class="form-text">Selecione o equipamento específico ao qual esta peça pertence.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Prateleira/Local</label>
+            <input type="text" name="prateleira_local" class="form-control" value="{{ form.get('prateleira_local','') }}" placeholder="Ex.: Armário A, prateleira 2">
+          </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Quantidade *</label>
             <input type="number" name="quantidade" min="0" class="form-control {% if errors.get('quantidade') %}is-invalid{% endif %}" value="{{ form.get('quantidade','1') }}" required>
@@ -55,19 +78,7 @@
             </select>
             {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-bold small text-muted">Drone do qual faz parte</label>
-            {% set chosen_drone = form.get('drone_id','') %}
-            <select name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}">
-              <option value="">Sem vínculo</option>
-              {% for drone in drones %}
-                <option value="{{ drone.id }}" {{ 'selected' if chosen_drone and chosen_drone|int == drone.id else '' }}>
-                  {{ drone.renomacao }} - {{ drone.modelo }}
-                </option>
-              {% endfor %}
-            </select>
-            {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.get('drone_id') }}</div>{% endif %}
-          </div>
+
         </div>
 
         <div class="mb-4">

@@ -64,6 +64,7 @@ VEICULOS_ALLOWED_TYPES = (
     EQUIPE_OCEANO_USER_TYPE,
     "prefeitura_admin",
     "sup_veiculos",
+    "manutencao",
 )
 
 
@@ -85,6 +86,7 @@ VEICULOS_LOGS_ALLOWED_TYPES = (
     "prefeitura_admin",
     EQUIPE_OCEANO_USER_TYPE,
     "sup_veiculos",
+    "manutencao",
 )
 VEICULOS_LOGS_EDIT_TYPES = {
     "dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "sup_veiculos",

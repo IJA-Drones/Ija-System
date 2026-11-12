@@ -2478,10 +2478,14 @@ class EstoquePeca(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    equipamento_id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), nullable=True, index=True)
+    # Mantido para compatibilidade com integrações e registros antigos.
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
 
     numero_serie = db.Column(db.String(100), nullable=True, unique=True, index=True)
     modelo_peca = db.Column(db.String(120), nullable=False, index=True)
+    prateleira_local = db.Column(db.String(120), nullable=True, index=True)
+    modelos_compativeis = db.Column(db.Text, nullable=True)
     quantidade = db.Column(db.Integer, nullable=False, default=1)
     status = db.Column(db.String(30), nullable=False, default="disponivel_manutencao", index=True)
     observacoes = db.Column(db.Text, nullable=True)
@@ -2490,6 +2494,7 @@ class EstoquePeca(db.Model):
     atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False, index=True)
 
     prefeitura = db.relationship("Prefeitura", back_populates="estoque_pecas", lazy="joined")
+    equipamento = db.relationship("Equipamentos", lazy="joined", foreign_keys=[equipamento_id])
     drone = db.relationship("Drones", back_populates="pecas_estoque", lazy="joined", foreign_keys=[drone_id])
     usos_manutencao = db.relationship("ManutencaoPecaUso", back_populates="peca", lazy="select")
 
@@ -2538,6 +2543,15 @@ class ManutencaoEquipamento(db.Model):
     aberta_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     encerrada_em = db.Column(db.DateTime, nullable=True, index=True)
     observacoes = db.Column(db.Text, nullable=True)
+    responsavel_avaria = db.Column(db.String(120), nullable=True)
+    responsavel_manutencao = db.Column(db.String(120), nullable=True)
+    piloto_responsavel_avaria = db.Column(db.String(120), nullable=True)
+    imagens_ocorrido = db.Column(db.Text, nullable=True)
+    avarias_identificadas = db.Column(db.Text, nullable=True)
+    drone_testado = db.Column(db.Boolean, nullable=False, default=False)
+    observacoes_teste = db.Column(db.Text, nullable=True)
+    assinatura_responsavel_tecnico = db.Column(db.Text, nullable=True)
+    assinatura_responsavel_avaria = db.Column(db.Text, nullable=True)
 
     prefeitura = db.relationship("Prefeitura", back_populates="manutencoes_equipamentos", lazy="joined")
     drone = db.relationship("Drones", back_populates="manutencoes", lazy="joined", foreign_keys=[drone_id])

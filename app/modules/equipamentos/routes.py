@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.modules.equipamentos.exporters import XLSX_MIME, build_manutencao_pdf, build_manutencoes_excel, build_pecas_usadas_excel
+from app.shared.skybox import SkyboxError, stream_skybox_file
 from app.models import Baterias, Drones
 from app.modules.equipamentos.service import (
     build_bateria_edit_form,
@@ -23,6 +24,7 @@ from app.modules.equipamentos.service import (
     list_equipamentos_manutencao,
     list_historico_manutencoes,
     list_historico_pecas_usadas,
+    list_imagens_manutencao,
     list_pecas_disponiveis_manutencao,
     list_pecas_usadas_manutencao,
     registrar_pecas_usadas_manutencao,
@@ -38,6 +40,11 @@ from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, no
 
 def _require_admin_or_operario():
     if not route_access(current_user, normalize_role(getattr(current_user, 'tipo_usuario', None)) in {'dev', 'diretor', 'admin', 'operario', 'operador', 'prefeitura_admin'} or is_veiculos_supervisor(current_user)):
+        abort(403)
+
+
+def _require_maintenance_access():
+    if not route_access(current_user, normalize_role(getattr(current_user, "tipo_usuario", None)) in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "manutencao"} or is_veiculos_supervisor(current_user)):
         abort(403)
 
 
@@ -276,7 +283,7 @@ def register_routes(bp):
     @bp.route("/equipamentos/manutencoes/historico", methods=["GET"], endpoint="equipamentos_manutencoes_historico")
     @login_required
     def equipamentos_manutencoes_historico():
-        _require_admin_or_operario()
+        _require_maintenance_access()
         return render_template(
             "equipamentos_manutencoes_historico.html",
             manutencoes=list_historico_manutencoes(user=current_user),
@@ -285,14 +292,14 @@ def register_routes(bp):
     @bp.route("/equipamentos/manutencoes/historico/excel", methods=["GET"], endpoint="equipamentos_manutencoes_historico_excel")
     @login_required
     def equipamentos_manutencoes_historico_excel():
-        _require_admin_or_operario()
+        _require_maintenance_access()
         output, filename = build_manutencoes_excel(list_historico_manutencoes(user=current_user))
         return send_file(output, mimetype=XLSX_MIME, as_attachment=True, download_name=filename)
 
     @bp.route("/equipamentos/manutencoes/pecas/historico", methods=["GET"], endpoint="equipamentos_manutencoes_pecas_historico")
     @login_required
     def equipamentos_manutencoes_pecas_historico():
-        _require_admin_or_operario()
+        _require_maintenance_access()
         return render_template(
             "equipamentos_manutencoes_pecas_historico.html",
             usos=list_historico_pecas_usadas(user=current_user),
@@ -301,25 +308,26 @@ def register_routes(bp):
     @bp.route("/equipamentos/manutencoes/pecas/historico/excel", methods=["GET"], endpoint="equipamentos_manutencoes_pecas_historico_excel")
     @login_required
     def equipamentos_manutencoes_pecas_historico_excel():
-        _require_admin_or_operario()
+        _require_maintenance_access()
         output, filename = build_pecas_usadas_excel(list_historico_pecas_usadas(user=current_user))
         return send_file(output, mimetype=XLSX_MIME, as_attachment=True, download_name=filename)
 
     @bp.route("/equipamentos/manutencoes/<int:manutencao_id>", methods=["GET"], endpoint="equipamento_manutencao_detalhe")
     @login_required
     def equipamento_manutencao_detalhe(manutencao_id):
-        _require_admin_or_operario()
+        _require_maintenance_access()
         manutencao = get_manutencao_scoped_or_404(manutencao_id, current_user)
         return render_template(
             "equipamento_manutencao_detalhe.html",
             manutencao=manutencao,
+            imagens_manutencao=list_imagens_manutencao(manutencao),
             usos=manutencao.pecas_usadas,
         )
 
     @bp.route("/equipamentos/<int:drone_id>/manutencao/pecas", methods=["GET", "POST"], endpoint="equipamento_manutencao_pecas")
     @login_required
     def equipamento_manutencao_pecas(drone_id):
-        _require_admin_or_operario()
+        _require_maintenance_access()
         drone = _get_scoped_drone_or_404(drone_id)
 
         if (drone.status or "").strip() not in {"Em Manutenção", "Manutenção", "Manutencao", "Em Manutencao"}:
@@ -329,29 +337,57 @@ def register_routes(bp):
         errors = {}
         if request.method == "POST":
             try:
-                usos, errors = registrar_pecas_usadas_manutencao(drone, request.form, user=current_user)
+                usos, errors = registrar_pecas_usadas_manutencao(
+                    drone, request.form, user=current_user, files_data=request.files
+                )
                 if not errors:
                     flash(f"{len(usos)} peca(s) registrada(s) na manutencao.", "success")
                     return redirect(url_for("main.equipamentos_manutencao"))
                 flash("Corrija os campos destacados.", "warning")
+            except (ValueError, SkyboxError) as exc:
+                db.session.rollback()
+                flash(str(exc), "danger")
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception("Erro ao registrar pecas usadas na manutencao do drone %s.", drone.id)
                 flash("Erro interno ao registrar as pecas usadas.", "danger")
 
+        manutencao = get_manutencao_aberta(drone, user=current_user)
         return render_template(
             "equipamento_manutencao_pecas.html",
             drone=drone,
-            manutencao=get_manutencao_aberta(drone, user=current_user),
+            manutencao=manutencao,
+            imagens_manutencao=list_imagens_manutencao(manutencao),
             pecas=list_pecas_disponiveis_manutencao(drone, user=current_user),
             usos=list_pecas_usadas_manutencao(drone, user=current_user),
             errors=errors,
         )
 
+    @bp.route(
+        "/equipamentos/manutencoes/<int:manutencao_id>/imagens/<int:index>",
+        methods=["GET"], endpoint="equipamento_manutencao_imagem",
+    )
+    @login_required
+    def equipamento_manutencao_imagem(manutencao_id, index):
+        _require_maintenance_access()
+        manutencao = get_manutencao_scoped_or_404(manutencao_id, current_user)
+        images = list_imagens_manutencao(manutencao)
+        if index < 0 or index >= len(images):
+            abort(404)
+        try:
+            response = stream_skybox_file(images[index], request.headers.get("Range"))
+        except SkyboxError:
+            current_app.logger.exception(
+                "Erro ao carregar imagem da manutencao %s no Skybox.", manutencao_id
+            )
+            abort(404)
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
     @bp.route("/equipamentos/<int:drone_id>/manutencao/pdf", methods=["GET"], endpoint="equipamento_manutencao_pdf")
     @login_required
     def equipamento_manutencao_pdf(drone_id):
-        _require_admin_or_operario()
+        _require_maintenance_access()
         drone = _get_scoped_drone_or_404(drone_id)
         usos = list_pecas_usadas_manutencao(drone, user=current_user)
         try:
@@ -366,7 +402,7 @@ def register_routes(bp):
     @bp.route("/equipamentos/manutencoes/<int:manutencao_id>/pdf", methods=["GET"], endpoint="equipamento_manutencao_historico_pdf")
     @login_required
     def equipamento_manutencao_historico_pdf(manutencao_id):
-        _require_admin_or_operario()
+        _require_maintenance_access()
         manutencao = get_manutencao_scoped_or_404(manutencao_id, current_user)
         try:
             path = build_manutencao_pdf(manutencao.drone, manutencao.pecas_usadas, manutencao=manutencao)
@@ -380,7 +416,7 @@ def register_routes(bp):
     @bp.route("/equipamentos/<int:drone_id>/manutencao/encerrar", methods=["POST"], endpoint="equipamento_manutencao_encerrar")
     @login_required
     def equipamento_manutencao_encerrar(drone_id):
-        _require_admin_or_operario()
+        _require_maintenance_access()
         drone = _get_scoped_drone_or_404(drone_id)
         try:
             if not encerrar_manutencao_drone(drone, user=current_user):

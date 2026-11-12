@@ -330,7 +330,7 @@ def register_routes(bp):
                 abort(403)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             can_manage_work_flags = can_manage_user_work_flags(current_user)
-            trabalha_oceano_azul = can_manage_work_flags and request.form.get("trabalha_oceano_azul") == "1"
+            trabalha_oceano_azul = tipo_usuario == "manutencao" or (can_manage_work_flags and request.form.get("trabalha_oceano_azul") == "1")
             trabalha_agro = can_manage_work_flags and request.form.get("trabalha_agro") == "1"
             suporte_operacional = request.form.get("suporte_operacional") == "1"
             suporte_tecnico = request.form.get("suporte_tecnico") == "1"
@@ -491,9 +491,10 @@ def register_routes(bp):
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             can_manage_work_flags = can_manage_user_work_flags(current_user)
             trabalha_oceano_azul = (
-                request.form.get("trabalha_oceano_azul") == "1"
-                if can_manage_work_flags
-                else bool(usuario.trabalha_oceano_azul)
+                True if tipo_usuario == "manutencao" else (
+                    request.form.get("trabalha_oceano_azul") == "1"
+                    if can_manage_work_flags else bool(usuario.trabalha_oceano_azul)
+                )
             )
             trabalha_agro = (
                 request.form.get("trabalha_agro") == "1"

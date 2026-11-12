@@ -524,6 +524,14 @@
       "area": "prefeitura",
       "group": "legado",
       "glyph": "bi-truck"
+    },
+    {
+      "id": "manutencao",
+      "name": "Manutenção e Estoque",
+      "description": "Acesso operacional a frota, drones, telemetria, estoque e manutenção.",
+      "area": "prefeitura",
+      "group": "operacao",
+      "glyph": "bi-tools"
     }
   ]
 }
