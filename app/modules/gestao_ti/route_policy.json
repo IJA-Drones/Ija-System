@@ -67,6 +67,9 @@
   "main.veiculos_rastreamento_dados": {
     "GET": "prefeitura.veiculos.consultar"
   },
+  "main.veiculos_rastreamento_historico": {
+    "POST": "prefeitura.veiculos.consultar"
+  },
   "main.veiculos_menu": {
     "GET": "prefeitura.veiculos.consultar"
   },

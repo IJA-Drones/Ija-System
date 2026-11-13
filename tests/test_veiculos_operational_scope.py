@@ -473,6 +473,20 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(context["resumo"]["valor_total"], 80)
         self.assertEqual([item.veiculo_id for item in context["limpezas"]], [veiculo.id])
 
+    def test_start_shift_snapshots_ploa_pilot_instead_of_a_manually_submitted_name(self):
+        titular = Pilotos(nome_piloto="Titular do PLOA", prefeitura_id=1)
+        db.session.add(titular); db.session.flush()
+        db.session.add(EquipePiloto(equipe_id=self.equipe.id, piloto_id=titular.id, papel="piloto"))
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        user = SimpleNamespace(tipo_usuario="equipe_oceano", codigo_setor=str(self.equipe.id), prefeitura_id=1)
+        photo = FileStorage(stream=BytesIO(b"inicio"), filename="inicio.png", content_type="image/png")
+        with patch.object(veiculos_service, "_salvar_upload_veiculo", return_value="foto.png"):
+            iniciar_turno_piloto(user, veiculo.id, {"km_inicial": "1000", "assinatura_b64": "assinatura", "condutor_nome": "Outro nome"}, {"foto_painel": photo}, "/tmp")
+        log = LogVeiculo.query.one()
+        self.assertEqual(log.condutor_nome, "Titular do PLOA")
+        titular.nome_piloto = "Novo titular"; db.session.commit()
+        self.assertEqual(log.condutor_nome, "Titular do PLOA")
+
     def test_start_shift_rejects_initial_km_different_from_last_closed_shift(self):
         veiculo = self._novo_veiculo(km_atual=1300)
         db.session.add(

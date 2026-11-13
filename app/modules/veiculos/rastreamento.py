@@ -4,11 +4,11 @@ from app.modules.gestao_ti.permissions import route_access
 from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from flask import request, url_for
+from flask import current_app, request, url_for
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import RastreamentoAlerta, RastreamentoHistorico, RastreamentoPosicao, Veiculos
+from app.models import RastreamentoAlerta, RastreamentoHistorico, RastreamentoPosicao, Usuario, Veiculos, Equipe, EquipePiloto
 from app.modules.veiculos.service import (
     EQUIPE_OCEANO_USER_TYPE,
     VEICULOS_ALLOWED_TYPES,
@@ -17,15 +17,17 @@ from app.modules.veiculos.service import (
     _equipe_oceano_logada,
 )
 from app.modules.veiculos.redgps_sync import sync_redgps
+from app.modules.veiculos.tracking_logs import load_logs, reconciliation
+from app.modules.veiculos.tracking_period import parse_tracking_period
 from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
-def build_rastreamento_payload(user):
+def scoped_tracking_vehicles(user):
     role = normalize_role(getattr(user, "tipo_usuario", None))
     if not route_access(user, role in VEICULOS_ALLOWED_TYPES):
         raise PermissionError
 
-    query = Veiculos.query.options(joinedload(Veiculos.equipe)).filter(
+    query = Veiculos.query.options(joinedload(Veiculos.equipe).selectinload(Equipe.membros).joinedload(EquipePiloto.piloto)).filter(
         db.func.lower(db.func.coalesce(Veiculos.status, "")) != "inativo"
     )
     query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
@@ -40,16 +42,38 @@ def build_rastreamento_payload(user):
         if role == "piloto":
             query = query.filter(Veiculos.equipe_id.in_(_equipe_ids_do_piloto(user)))
 
+    return query
+
+
+def build_rastreamento_payload(user, *, sync_live=True):
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    query = scoped_tracking_vehicles(user)
+    period = parse_tracking_period(request.args)
     vehicles = query.order_by(Veiculos.placa.asc(), Veiculos.id.asc()).all()
     vehicle_ids = [vehicle.id for vehicle in vehicles]
-    sync = sync_redgps() if vehicle_ids else {"enabled": False, "error": False}
+    supervisor_ids = {v.supervisor_usuario_id for v in vehicles if v.supervisor_usuario_id}
+    responsible_names = {
+        u.id: u.nome_uvis or u.login
+        for u in db.session.query(Usuario.id, Usuario.nome_uvis, Usuario.login).filter(Usuario.id.in_(supervisor_ids)).all()
+    } if supervisor_ids else {}
+    sync = sync_redgps() if sync_live and vehicle_ids and request.args.get("cached") != "1" else {
+        "enabled": bool(current_app.config.get("REDGPS_SYNC_ENABLED")),
+        "poll_interval_seconds": current_app.config.get("REDGPS_POLL_INTERVAL_SECONDS", 60), "error": False}
     local_zone = ZoneInfo("America/Sao_Paulo")
-    try:
-        history_day = datetime.strptime(request.args.get("date", ""), "%Y-%m-%d").date()
-    except ValueError:
-        history_day = datetime.now(local_zone).date()
-    start = datetime.combine(history_day, time.min, local_zone).astimezone(timezone.utc).replace(tzinfo=None)
-    end = start + timedelta(days=1)
+    history_day = period.day
+    start, end = period.utc_bounds()
+    logs_by_vehicle = load_logs(vehicle_ids, user, history_day, period=period)
+    selected = request.args.get("vehicle_id") or request.args.get("vehicle")
+    if selected is not None:
+        try:
+            selected_id = int(selected)
+        except (ValueError, TypeError):
+            raise ValueError("Veículo inválido.") from None
+        if selected_id not in vehicle_ids:
+            raise PermissionError
+        history_ids = [selected_id]
+    else:
+        history_ids = vehicle_ids[:1]
 
     # The RedGPS synchronizer can append readings without changing the vehicle
     # cadastro.  Keep the latest reading and the route history separate so the
@@ -61,7 +85,7 @@ def build_rastreamento_payload(user):
         positions = (
             RastreamentoPosicao.query
             .filter(RastreamentoPosicao.veiculo_id.in_(vehicle_ids))
-            .order_by(RastreamentoPosicao.reportado_em.desc(), RastreamentoPosicao.id.desc())
+            .order_by(RastreamentoPosicao.is_demo.asc(), RastreamentoPosicao.reportado_em.desc(), RastreamentoPosicao.id.desc())
             .all()
         )
         for position in positions:
@@ -69,13 +93,23 @@ def build_rastreamento_payload(user):
 
         histories = (
             RastreamentoHistorico.query
-            .filter(RastreamentoHistorico.veiculo_id.in_(vehicle_ids))
-            .filter(RastreamentoHistorico.reportado_em >= start, RastreamentoHistorico.reportado_em < end)
+            .filter(RastreamentoHistorico.veiculo_id.in_(history_ids))
+            .filter(db.or_(
+                db.and_(RastreamentoHistorico.is_demo.is_(False),
+                        RastreamentoHistorico.reportado_em >= start, RastreamentoHistorico.reportado_em < end),
+                db.and_(RastreamentoHistorico.is_demo.is_(True),
+                        RastreamentoHistorico.reportado_em >= period.start.replace(tzinfo=None),
+                        RastreamentoHistorico.reportado_em < period.end.replace(tzinfo=None)),
+            ))
             .order_by(RastreamentoHistorico.reportado_em.asc(), RastreamentoHistorico.id.asc())
             .all()
         )
         for point in histories:
             history_by_vehicle.setdefault(point.veiculo_id, []).append(point)
+        for vehicle_id, points in history_by_vehicle.items():
+            position = positions_by_vehicle.get(vehicle_id)
+            if (position and not position.is_demo) or any(not point.is_demo for point in points):
+                history_by_vehicle[vehicle_id] = [point for point in points if not point.is_demo]
 
         alerts = (
             RastreamentoAlerta.query
@@ -98,8 +132,9 @@ def build_rastreamento_payload(user):
             "speed_kmh": position.velocidade_kmh,
             "ignition": 1 if position.ignicao is True else 0 if position.ignicao is False else 2,
             "odometer_km": position.hodometro_km,
-            "reported_at": iso(position.reportado_em, utc=not position.is_demo),
+            "reported_at": position.reportado_em.replace(tzinfo=local_zone).isoformat() if position.is_demo else iso(position.reportado_em, utc=True),
             "address": position.endereco,
+            "telemetry": position.telemetria or {},
         }
 
     def history_payload(point):
@@ -109,7 +144,8 @@ def build_rastreamento_payload(user):
             "speed_kmh": point.velocidade_kmh,
             "ignition": 1 if point.ignicao is True else 0 if point.ignicao is False else 2,
             "odometer_km": point.hodometro_km,
-            "reported_at": iso(point.reportado_em, utc=not point.is_demo),
+            "reported_at": point.reportado_em.replace(tzinfo=local_zone).isoformat() if point.is_demo else iso(point.reportado_em, utc=True),
+            "is_demo": bool(point.is_demo),
         }
 
     def alert_payload(alert):
@@ -123,18 +159,29 @@ def build_rastreamento_payload(user):
 
     payload_vehicles = []
     for vehicle in vehicles:
+        titular = vehicle.equipe.piloto_titular if vehicle.equipe else None
+        ploa_driver = {"name": titular.nome_piloto, "pilot_id": titular.id, "team_id": vehicle.equipe_id} if titular else None
         position = positions_by_vehicle.get(vehicle.id)
+        history = [history_payload(point) for point in history_by_vehicle.get(vehicle.id, [])]
+        linked = reconciliation(logs_by_vehicle.get(vehicle.id, []), history, history_day,
+                                user, vehicle.id, datetime.now(local_zone).replace(tzinfo=None),
+                                period=period if request.args.get("start") else None)
         payload_vehicles.append(
             {
+                **linked,
+                "history_loaded": vehicle.id in history_ids,
                 "id": str(vehicle.id),
                 "plate": vehicle.placa,
                 "model": vehicle.modelo,
                 "operation": vehicle.operacao,
                 "fleet": vehicle.frota,
                 "team": vehicle.equipe.nome_equipe if vehicle.equipe else "Sem equipe",
+                "responsible": responsible_names.get(vehicle.supervisor_usuario_id)
+                if vehicle.supervisor_usuario_id else (vehicle.responsavel or "").strip() or None,
+                "ploa_driver": ploa_driver,
                 "registered_km": vehicle.km_atual,
                 "position": position_payload(position),
-                "history": [history_payload(point) for point in history_by_vehicle.get(vehicle.id, [])],
+                "history": history,
                 "alerts": [alert_payload(alert) for alert in alerts_by_vehicle.get(vehicle.id, [])],
                 "logs_url": url_for("main.veiculo_logs_detalhe", veiculo_id=vehicle.id)
                 if role in VEICULOS_LOGS_ALLOWED_TYPES else None,
@@ -162,4 +209,6 @@ def build_rastreamento_payload(user):
             "sync": sync,
         },
         "vehicles": payload_vehicles,
+        "history_date": history_day.isoformat(),
+        "history_period": period.payload(),
     }

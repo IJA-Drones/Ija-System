@@ -253,7 +253,7 @@ Funcionalidades:
 - painel administrativo de checklists semanais;
 - exportação de veículos e logs em Excel.
 
-O supervisor pode receber um veículo diretamente pela listagem. Para abastecimento do tipo Veículo, há trava de até 500 km acima da referência anterior, com regras detalhadas no [manual do supervisor](docs/perfil-supervisor-operacional-veiculos.md). A tela de rastreamento usa tabelas de posições, histórico e alertas associadas à RedGPS; o sincronizador que obtém leituras externas não foi localizado neste repositório.
+O supervisor pode receber um veículo diretamente pela listagem. Para abastecimento do tipo Veículo, há trava de até 500 km acima da referência anterior, com regras detalhadas no [manual do supervisor](docs/perfil-supervisor-operacional-veiculos.md). O rastreamento usa Google Maps e leituras RedGPS, identifica o condutor do turno aberto e compara o percurso aos logs por veículo e horário. A coleta contínua, a recuperação do histórico e as limitações da conferência estão em [configuração do rastreamento](docs/configuracao.md#rastreamento-ollog--redgps).
 
 ### Importação de Dados DJI e KML
 
@@ -576,7 +576,7 @@ python scripts/build_css_bundle.py --check
 A aplicação sobe em:
 
 ```text
-http://localhost:5002
+http://localhost:5001
 ```
 
 ## Deploy

@@ -168,6 +168,16 @@
 
                 <div class="modal-section-title">1. Checklist Diário (CCD)</div>
                 <div class="row g-3">
+                  {% set titular_ploa = v.equipe.piloto_titular if v.equipe else none %}
+                  {% if titular_ploa %}
+                  <div class="col-12"><label class="form-label small fw-bold">Condutor do PLOA</label><div class="form-control bg-light">{{ titular_ploa.nome_piloto }}</div><div class="hint-line mt-1">Piloto titular do {{ v.equipe.nome_equipe }}. Este nome será registrado no turno.</div></div>
+                  {% elif current_user.tipo_usuario == 'equipe_oceano' %}
+                  <div class="col-12">
+                    <label class="form-label small fw-bold" for="condutorNome{{ v.id }}">Nome do condutor</label>
+                    <input class="form-control" id="condutorNome{{ v.id }}" name="condutor_nome" maxlength="120" autocomplete="name" placeholder="Quem vai conduzir o veículo neste turno?" required>
+                    <div class="hint-line mt-1">Este nome identifica o condutor nos logs e no rastreamento.</div>
+                  </div>
+                  {% endif %}
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Kilometragem de Início</label>
                     <input type="hidden" name="km_inicial" value="{{ '%.2f'|format(km_inicio_valor or 0) }}">

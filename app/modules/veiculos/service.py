@@ -527,6 +527,7 @@ def delete_veiculo(veiculo):
     )
     for log in turnos_abertos:
         log.km_final = log.ultimo_km_registrado
+        log.encerrado_em = _now_brazil()
         if not log.observacao:
             log.observacao = "Turno encerrado automaticamente ao retirar o veiculo de operacao."
 
@@ -925,6 +926,11 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
             "warning",
         )
 
+    titular = veiculo.equipe.piloto_titular if veiculo.equipe else None
+    condutor_nome = (titular.nome_piloto if titular else (form_data.get("condutor_nome") or "")).strip()
+    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE and not condutor_nome:
+        raise VeiculoTurnoError("Informe o nome do condutor para iniciar o turno.", "warning")
+
     novo_log = LogVeiculo(
         veiculo_id=veiculo.id,
         piloto_id=piloto_id,
@@ -934,6 +940,10 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
         check_diario=True,
         assinatura_piloto=assinatura_b64,
         data_registro=_now_brazil(),
+        condutor_nome=(condutor_nome[:120] or None)
+        if titular or getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
+        else ((getattr(user, "piloto", None).nome_piloto if getattr(user, "piloto", None)
+               else getattr(user, "nome_uvis", None)) or None),
     )
     novo_log.foto_painel_path = _salvar_upload_veiculo(
         foto_painel,
@@ -1150,6 +1160,7 @@ def encerrar_turno_piloto(user, veiculo_id, form_data, files_data=None, root_pat
         )
     log.qtd_fazendas_enderecos = qtd_fazendas_enderecos
     log.km_final = km_final
+    log.encerrado_em = _now_brazil()
     log.observacao = observacao
     log.foto_painel_final_path = _salvar_upload_veiculo(
         foto_painel_final,
@@ -1937,6 +1948,7 @@ def _build_veiculos_timeline_from_logs(logs):
             "id": log.id,
             "data": movimentacao,
             "data_inicio": data_inicio,
+            "encerrado_em": log.encerrado_em,
             "operador": _operador_log_veiculo(log),
             "km_inicial": log.km_inicial or 0,
             "km_final": log.km_final if log.km_final is not None else log.ultimo_km_registrado,
@@ -2059,7 +2071,7 @@ def _build_logistica_dias_from_logs_query(query):
             Veiculos.modelo,
             Veiculos.placa,
             equipe_veiculo.nome_equipe.label("equipe"),
-            db.func.coalesce(Pilotos.nome_piloto, Equipe.nome_equipe, "-").label("operador"),
+            db.func.coalesce(LogVeiculo.condutor_nome, Pilotos.nome_piloto, Equipe.nome_equipe, "-").label("operador"),
             db.func.coalesce(abastecimentos.c.gasto, 0).label("gasto"),
             db.func.coalesce(abastecimentos.c.quantidade, 0).label("abastecimentos"),
         )
@@ -2492,6 +2504,8 @@ def _km_rodado_log_veiculo(log):
 
 
 def _operador_log_veiculo(log):
+    if log.condutor_nome:
+        return log.condutor_nome
     if log.piloto:
         return log.piloto.nome_piloto
     if log.equipe:
@@ -2580,7 +2594,9 @@ def _ultima_movimentacao_log_subquery():
             db.session.query(
                 LimpezaVeiculo.log_veiculo_id.label("log_id"),
                 LimpezaVeiculo.data_hora.label("data_hora"),
-            )
+            ),
+            db.session.query(LogVeiculo.id.label("log_id"), LogVeiculo.encerrado_em.label("data_hora"))
+            .filter(LogVeiculo.encerrado_em.isnot(None)),
         )
         .subquery()
     )
@@ -2932,6 +2948,8 @@ def update_veiculo_log_km(user, log_id, form_data):
 
     log.km_inicial = km_inicial
     log.km_final = km_final
+    if km_final is None:
+        log.encerrado_em = None
     for abastecimento, km_registro, litros, valor_total in abastecimento_updates:
         abastecimento.km_registro = km_registro
         abastecimento.litros = litros
@@ -3008,6 +3026,7 @@ def _build_veiculo_log_delete_snapshot(log):
             "prefeitura_id": getattr(log.veiculo, "prefeitura_id", None) if log.veiculo else None,
         },
         "operador": {
+            "condutor_nome": log.condutor_nome,
             "piloto_id": log.piloto_id,
             "piloto_nome": log.piloto.nome_piloto if log.piloto else None,
             "equipe_id": log.equipe_id,
@@ -3015,6 +3034,7 @@ def _build_veiculo_log_delete_snapshot(log):
         },
         "turno": {
             "data_registro": _serialize_datetime(log.data_registro),
+            "encerrado_em": _serialize_datetime(log.encerrado_em),
             "km_inicial": log.km_inicial,
             "km_final": log.km_final,
             "ultimo_km_registrado": log.ultimo_km_registrado,
@@ -3792,6 +3812,7 @@ def _build_veiculos_logs_query(
                 Veiculos.placa.ilike(like),
                 Veiculos.responsavel.ilike(like),
                 Pilotos.nome_piloto.ilike(like),
+                LogVeiculo.condutor_nome.ilike(like),
                 Equipe.nome_equipe.ilike(like),
             )
         )
