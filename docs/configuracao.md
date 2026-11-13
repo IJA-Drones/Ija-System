@@ -22,7 +22,7 @@ Referência conferida em 25/09/2026 contra [config.py](../config.py), [run.py](.
 | `AUDIT_SKYBOX_BATCH_MAX_RECORDS` | `1000` | Máximo de eventos por lote e volume que libera o envio, separado por prefeitura e limitado também a 4 MiB. |
 | `AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS` | `300` | Espera máxima para acumular um lote menor, verificada no próximo ciclo do trabalhador. |
 
-A porta de `run.py` é fixa em **5002**. Não existe leitura de `PORT` nesse arquivo. `APP_ENV` não seleciona configuração Flask nem desliga tarefas. Não existe suporte atual a `IJA_AUTO_DB_MIGRATE`: o Procfile executa migrações em toda inicialização.
+A porta de `run.py` é fixa em **5001**. Não existe leitura de `PORT` nesse arquivo. `APP_ENV` não seleciona configuração Flask nem desliga tarefas. Não existe suporte atual a `IJA_AUTO_DB_MIGRATE`: o Procfile executa migrações em toda inicialização.
 
 ## Proteção de login
 
@@ -76,7 +76,8 @@ Configure `REDGPS_BASE_URL`, `REDGPS_API_KEY`, `REDGPS_USERNAME` e
 habilita a coleta; `REDGPS_POLL_INTERVAL_SECONDS=60` define o intervalo, com
 mínimo de 60 segundos. Execute as migrações antes de ativar.
 
-O painel `/veiculos/rastreamento` consulta a integração ao abrir e se atualiza
+O painel `/veiculos/rastreamento` abre com as posições e a primeira rota já salvas,
+sem esperar pela API externa. Novas leituras são consultadas em segundo plano
 enquanto estiver visível, fora do modo de demonstração e da reprodução de trajetos.
 O controle persistido e o lock transacional do PostgreSQL evitam consultas
 duplicadas entre processos. Falhas também respeitam o intervalo, e as últimas
@@ -91,8 +92,15 @@ de `getdata` é convertido de metros para quilômetros. Veículos sem posição 
 continuam na lista sem marcador no mapa.
 
 O histórico reúne as posições coletadas pelo IJA, sem duplicar a mesma leitura;
-o painel busca somente o dia selecionado. Esta etapa não importa trajetos anteriores
-da OLLOG nem sincroniza alertas, geocercas ou sensores adicionais.
+o painel busca o veículo e o período selecionados. O Google Maps já configurado em
+`KEY_API_GOOGLE_MAPS` é o mapa principal: marcadores mostram veículo, condutor e
+velocidade do último reporte; linhas mostram as coordenadas recebidas em ordem.
+O mapa alternativo é usado quando o Google está indisponível. Não são utilizadas
+rotas sugeridas pelo Google para representar percursos executados. A telemetria
+mostra velocidade, ignição, odômetro, baterias, satélites e sinal GSM enviados pelo
+aparelho; valores ausentes ou `-1` permanecem desconhecidos. A bateria do rastreador
+é exibida na unidade informada pelo aparelho, sem presumir porcentagem. Alertas,
+geocercas e outros sensores ainda não são sincronizados.
 
 Para coletar sem manter o painel aberto, execute **uma instância** do worker no
 ambiente configurado (supervisionado pelo serviço de hospedagem em produção):
@@ -101,12 +109,152 @@ ambiente configurado (supervisionado pelo serviço de hospedagem em produção):
 python scripts/sync_redgps.py --watch
 ```
 
-Sem `--watch`, o comando faz uma única tentativa, respeitando o intervalo, e imprime
+O worker pré-carrega as rotas de hoje, além das posições. Em `--watch`, também
+recupera o dia anterior ao iniciar e na virada do dia; depois atualiza o histórico
+a cada `REDGPS_HISTORY_SYNC_INTERVAL_SECONDS` (padrão 300 segundos, mínimo 60).
+Use `--positions-only` para manter apenas a coleta de últimas posições.
+Sem `--watch`, faz uma única passagem de posições e rotas, imprimindo
 somente metadados e contagens. O `.env` local não configura o ambiente hospedado;
 nesse ambiente, configure as variáveis e publique o código/migração separadamente.
 
+### Condutor, rotas e conferência dos logs
+
+Antes de publicar esta versão, aplique a migração `a3e5c7d901b2`, que acrescenta
+`condutor_nome` e `encerrado_em` a `logs_veiculo` e `telemetria` a
+`rastreamento_posicoes`. O Alembic mantém os dados antigos;
+o downgrade remove somente essas três colunas. O teste de ida e volta usa SQLite
+descartável; valide a migração no PostgreSQL de homologação antes da produção.
+
+Nos novos turnos individuais, o nome do piloto/supervisor é preservado no log.
+O acesso compartilhado `equipe_oceano` exige informar quem conduz ao abrir o turno.
+O fechamento normal ou a retirada do veículo de operação registra o horário de
+encerramento em Brasília. Corrigir um log antigo não inventa um horário de retorno;
+reabrir pela correção de KM limpa o horário anterior. O responsável pelo cadastro
+do veículo e o nome da equipe não são tratados como identidade do motorista.
+
+A lista inicial e o destaque acima do mapa identificam, em campos separados, o
+responsável cadastrado e o **condutor do PLOA**, que é o piloto titular vinculado
+à equipe do veículo. Esse condutor aparece mesmo sem um turno aberto. Sem titular,
+a tela informa a ausência do vínculo. O responsável usa o supervisor vinculado ou
+o nome textual dos cadastros antigos. Busca e CSV da frota incluem os dois nomes.
+Ao abrir um novo turno, o servidor copia o nome do titular do PLOA para
+`condutor_nome`, sem aceitar um nome diferente enviado pelo formulário. Essa cópia
+permanece no histórico quando o titular muda. Logs antigos conservam os nomes
+registrados; não recebem retroativamente o nome do titular atual. O Flashback e
+a conferência exibem a identificação gravada em cada turno. Os vínculos seguem
+os veículos autorizados e, para piloto/equipe, os logs do ator.
+
+O vínculo entre ponto e log usa veículo e intervalo de abertura/fechamento, com
+GPS em UTC e turnos em Brasília. A conferência por turno calcula **KM GPS menos
+KM declarado**, com tolerância de **2 km ou 5% do KM declarado**, o maior valor.
+Os logs e o KM cadastral não são alterados pela conferência. É possível abrir o
+log a partir do rastreamento, ver seu trecho e voltar ao mapa a partir dos logs.
+
+O resumo separa KM coletado, KM dos logs encerrados dentro do período, velocidade
+máxima medida, pontos sem log, diferenças e casos inconclusivos. A distância soma
+incrementos válidos do odômetro. Sem odômetro, usa segmentos retos entre coordenadas
+como estimativa, que não valida o KM do log. Lacunas maiores que 5 minutos ou três
+intervalos de coleta (o maior) e saltos GPS acima de 200 km/h interrompem os
+trechos no mapa e no KML. Uma falha apenas no odômetro invalida a distância daquele
+trecho para a conferência, mas mantém a geometria GPS válida. Leituras isoladas
+aparecem como pontos, sem inventar uma linha entre lacunas. Leituras fictícias não se misturam
+às leituras reais de um mesmo veículo e não validam logs reais.
+
+Logs sem fechamento conhecido, abertos, sobrepostos, parcialmente fora do período
+ou sem cobertura suficiente ficam **inconclusivos**. Turnos que atravessam a
+meia-noite podem ser conferidos quando o período inclui o turno inteiro.
+A presença de amostras não
+comprova cobertura integral. A velocidade antiga é identificada como última
+leitura; o painel mantém o limiar de 15 minutos para marcar posição antiga.
+CSV de frota, trajeto e conferência incluem condutor; o trajeto inclui horário e
+log associado. Dados ausentes permanecem vazios, sem substituir velocidade por zero.
+
+### Recuperação do histórico do provedor
+
+O polling de `getdata` recebe apenas a última leitura por veículo. Para recuperar
+os pontos intermediários, a seleção do veículo abre **Rotas percorridas** e
+consulta primeiro os trajetos já persistidos. A atualização via `history/get`
+ocorre automaticamente em segundo plano. O navegador envia `background: true`
+a `/veiculos/rastreamento/historico`; a resposta HTTP 202 inicia ou consulta o
+mesmo trabalho por veículo e período, sem manter a requisição presa à API.
+Cada worker usa uma fila limitada, e os locks PostgreSQL coordenam os processos.
+O navegador consulta o progresso e os pontos persistidos enquanto aguarda. O botão
+manual de importação foi removido.
+O filtro **De / Até** aceita data e horário, inclusive períodos que atravessam dias,
+com limite de 15 dias. O minuto final é incluído. **Hoje** restaura o dia atual.
+O mesmo intervalo é usado no mapa, na telemetria, no Flashback e nas exportações.
+O Flashback mantém o trajeto desenhado e move somente o marcador, preservando o
+zoom. **Pular paradas e lacunas** comprime os intervalos sem deslocamento ou sem
+leituras; desmarque para respeitar todos os intervalos na velocidade selecionada.
+Os horários originais e as exportações continuam preservados. Uma atualização
+iniciada antes da reprodução não interrompe o Flashback. Sem rota no período, o
+mapa pode mostrar a última posição recebida, com rótulo explícito; isso não habilita
+uma reprodução inexistente.
+Pontos amostrados, a linha do trajeto e os marcadores de parada são clicáveis.
+O modal mostra a leitura original, a identificação gravada no turno, o titular
+atual do PLOA, o responsável e links autorizados para os logs. Paradas são grupos
+de leituras com velocidade de até 1 km/h, em um raio de 40 m, com pelo menos
+1 minuto e sem lacunas de comunicação. A duração é apenas a observada entre
+amostras. Intervalos de ignição só são classificados como ligada/desligada quando
+as duas leituras adjacentes concordam; transições permanecem não determinadas.
+A aba Street View consulta imagens até 80 m do ponto usando a chave Google Maps
+existente, somente ao ser aberta. O panorama permanece no modal; se indisponível,
+há mensagem e um link para o Google Maps. As imagens não são tratadas como registro
+do momento do deslocamento. Os arquivos deste módulo usam versão por data de
+modificação na URL, evitando reutilizar JavaScript antigo após uma atualização.
+O gráfico de velocidade usa horários reais e escala proporcional em km/h, sem
+cortar velocidades acima de 60 km/h. Lacunas e valores ausentes interrompem a
+linha; o controle abaixo permite consultar cada leitura.
+Consultar `/veiculos/rastreamento/dados` com `cached=1`, `vehicle_id`, `start` e `end`
+lê os trajetos do banco sem esperar pelo provedor; a resposta identifica o intervalo
+e quais veículos tiveram seu histórico carregado. `date` continua aceito para
+links antigos de um único dia.
+É necessário habilitar `REDGPS_SYNC_ENABLED` no servidor. A consulta usa o mesmo
+escopo de veículos do painel, exige sessão e CSRF e não altera logs. Consultas
+repetidas têm cache por veículo/período no navegador e por worker; o lock do
+PostgreSQL impede importações simultâneas. Consultas antigas são canceladas e
+respostas atrasadas são descartadas quando a seleção muda. Se outra coleta estiver
+ocupando a integração, há novas tentativas automáticas. O percurso salvo continua
+disponível para reprodução durante a atualização. Falhas preservam o histórico
+anterior; pontos novos são gravados em lote, sem duplicar leituras.
+
+`REDGPS_HISTORY_TIMEZONE` define o fuso do histórico, com padrão
+`America/Sao_Paulo`. A integração consultada em 12/11/2026 retornou horários
+coerentes com UTC−3; outro provedor/conta deve confirmar seu fuso. O campo `gmt`,
+quando presente, é conferido contra o fuso configurado: discrepâncias rejeitam a
+leitura em vez de deslocar silenciosamente o trajeto. O Flashback segue os
+horários reais das amostras, permite pausar e mover o controle e oferece 1×,
+30×, 60× (padrão) e 120×. O detalhe inferior passa a mostrar a telemetria e o
+condutor do ponto reproduzido; o destaque superior permanece no turno atual.
+
+Para recuperação pelo terminal, o worker também dispõe de:
+
+```sh
+python scripts/sync_redgps.py --history-date 2026-11-11 --history-timezone "FUSO_CONFIRMADO_COM_OLLOG" --plate ABC1D23
+```
+
+Substitua o fuso por um identificador IANA confirmado com a OLLOG (por exemplo
+`America/Sao_Paulo` ou `UTC`). Esse parâmetro é obrigatório porque a documentação
+de histórico não oferece `UseUTCDate`; o código não presume o fuso das leituras.
+O comando consulta um dia de Brasília, convertendo o período para o fuso informado.
+Sem `--plate`, recupera a frota ativa cadastrada. Pode repetir `--plate`.
+
+A associação exige placa e dispositivo sem ambiguidade, tanto na consulta atual
+como nos registros históricos. Datas, coordenadas, placa e dispositivo são
+validados; tentativas repetidas não duplicam leituras do histórico nem do polling.
+Uma falha do provedor desfaz a importação inteira. O comando não altera a última
+posição, o condutor ou a quilometragem dos logs. Atualize o painel depois da coleta.
+
+Para operação diária, supervisione o worker contínuo no servidor e programe a
+recuperação de cada dia encerrado no agendador da hospedagem. Essa infraestrutura
+não é ativada por abrir a tela nem por alterar o código local. A RedGPS recomenda
+seu Web Service genérico para receber todos os reportes continuamente; essa
+recepção por push ainda exige configuração e implementação próprias.
+
 Referências: [autenticação](https://docs.redgps.com/books/webservice/page/metodo-de-autenticacion-gettoken/es),
-[posições](https://docs.redgps.com/books/webservice/page/datos-de-unidades-getdata/es).
+[posições](https://docs.redgps.com/books/webservice/page/datos-de-unidades-getdata/es),
+[histórico](https://docs.redgps.com/books/webservice/page/datos-historicos-equipo-historyget/es),
+[linhas no Google Maps](https://developers.google.com/maps/documentation/javascript/shapes#polylines).
 
 ## Arquivos e WebDAV
 

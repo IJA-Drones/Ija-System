@@ -2683,6 +2683,7 @@ class RastreamentoPosicao(db.Model):
     ignicao = db.Column(db.Boolean, nullable=True)
     hodometro_km = db.Column(db.Float, nullable=True)
     endereco = db.Column(db.String(255), nullable=True)
+    telemetria = db.Column(db.JSON, nullable=True)
     reportado_em = db.Column(db.DateTime, nullable=False, index=True)
     provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
     is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
@@ -2756,6 +2757,9 @@ class LogVeiculo(db.Model):
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
     equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    # Vehicle shifts use naive Brasília timestamps, as does data_registro.
+    encerrado_em = db.Column(db.DateTime, nullable=True)
+    condutor_nome = db.Column(db.String(120), nullable=True)
 
     # Quilometragem (Essencial para ambos os formulários)
     km_inicial = db.Column(db.Float, nullable=False)
@@ -2849,6 +2853,8 @@ class LogVeiculo(db.Model):
     @property
     def ultima_movimentacao_em(self):
         datas = [self.data_registro] if self.data_registro else []
+        if self.encerrado_em:
+            datas.append(self.encerrado_em)
         datas.extend(
             item.data_hora
             for item in (self.abastecimentos_detalhados or [])

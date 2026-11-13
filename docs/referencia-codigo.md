@@ -11,16 +11,16 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Item | Quantidade |
 | --- | ---: |
 | Módulos em `app/modules` | 47 |
-| Arquivos Python em `app` | 281 |
-| Declarações de rotas | 505 |
+| Arquivos Python em `app` | 285 |
+| Declarações de rotas | 506 |
 | Modelos com tabela em `app/models.py` | 85 |
 | Templates HTML | 241 |
 | Arquivos CSS, incluindo bundle | 207 |
-| Arquivos JavaScript em `app/static`, incluindo service worker | 52 |
-| Revisões Alembic | 167 |
-| Arquivos Python de teste | 98 |
-| Funções/métodos Python com prefixo `test_` | 1184 |
-| Arquivos Node de teste | 22 |
+| Arquivos JavaScript em `app/static`, incluindo service worker | 53 |
+| Revisões Alembic | 168 |
+| Arquivos Python de teste | 100 |
+| Funções/métodos Python com prefixo `test_` | 1229 |
+| Arquivos Node de teste | 23 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
 
@@ -73,7 +73,7 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [treinamentos](../app/modules/treinamentos/) | 2 | 3 |
 | [usuarios](../app/modules/usuarios/) | 9 | 3 |
 | [uvis_equipes](../app/modules/uvis_equipes/) | 12 | 3 |
-| [veiculos](../app/modules/veiculos/) | 25 | 5 |
+| [veiculos](../app/modules/veiculos/) | 26 | 9 |
 | [vigilancia](../app/modules/vigilancia/) | 40 | 40 |
 
 ## Modelos e vínculos
@@ -143,10 +143,10 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | `Baterias` | `baterias` | `id`, `ciclo`, `drone_id` | `id → equipamentos.id`; `drone_id → drones.id` |
 | `Veiculos` | `veiculos` | `id`, `frota`, `operacao`, `placa`, `responsavel`, `km_atual`, `km_prox_revisao`, `revisao_marcada_em`, `revisao_obs` | `id → equipamentos.id` |
 | `RastreamentoSincronizacao` | `rastreamento_sincronizacao` | `id`, `tentado_em`, `sincronizado_em`, `erro` | — |
-| `RastreamentoPosicao` | `rastreamento_posicoes` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `endereco`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
+| `RastreamentoPosicao` | `rastreamento_posicoes` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `endereco`, `telemetria`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
 | `RastreamentoHistorico` | `rastreamento_historicos` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
 | `RastreamentoAlerta` | `rastreamento_alertas` | `id`, `veiculo_id`, `prefeitura_id`, `tipo`, `severidade`, `mensagem`, `reportado_em`, `resolvido`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
-| `LogVeiculo` | `logs_veiculo` | `id`, `veiculo_id`, `piloto_id`, `equipe_id`, `data_registro`, `km_inicial`, `km_final`, `check_diario`, `qtd_fazendas_enderecos`, `foto_painel_path`, `foto_painel_final_path`, `assinatura_piloto`, `observacao` | `veiculo_id → veiculos.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
+| `LogVeiculo` | `logs_veiculo` | `id`, `veiculo_id`, `piloto_id`, `equipe_id`, `data_registro`, `encerrado_em`, `condutor_nome`, `km_inicial`, `km_final`, `check_diario`, `qtd_fazendas_enderecos`, `foto_painel_path`, `foto_painel_final_path`, `assinatura_piloto`, `observacao` | `veiculo_id → veiculos.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
 | `Abastecimento` | `abastecimentos` | `id`, `log_veiculo_id`, `data_hora`, `km_registro`, `tipo_abastecimento`, `litros`, `valor_total`, `foto_nf_path`, `foto_painel_path` | `log_veiculo_id → logs_veiculo.id` |
 | `LimpezaVeiculo` | `limpezas_veiculo` | `id`, `log_veiculo_id`, `veiculo_id`, `piloto_id`, `equipe_id`, `data_registro`, `data_hora`, `limpeza_realizada`, `tipo_limpeza`, `valor_total`, `observacao` | `log_veiculo_id → logs_veiculo.id`; `veiculo_id → veiculos.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
 | `LimpezaVeiculoAlertaCiencia` | `limpezas_veiculo_alertas_ciencia` | `id`, `veiculo_id`, `usuario_id`, `piloto_id`, `equipe_id`, `referencia_limpeza_em`, `prazo_dias`, `reconhecido_em`, `criado_em`, `atualizado_em` | `veiculo_id → veiculos.id`; `usuario_id → usuarios.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
@@ -170,7 +170,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 ## Migrações
 
-Heads: `f8d2a6c4e901`.
+Heads: `a3e5c7d901b2`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -1015,31 +1015,32 @@ Fonte: [app/modules/veiculos/routes.py](../app/modules/veiculos/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/veiculos/rastreamento` | `veiculos_rastreamento` | 119 |
-| GET | `/veiculos/rastreamento/dados` | `veiculos_rastreamento_dados` | 130 |
-| GET | `/veiculos/menu` | `veiculos_menu` | 140 |
-| GET | `/veiculos` | `listar_veiculos` | 154 |
-| POST | `/veiculos/equipes` | `atualizar_equipes_veiculos` | 167 |
-| GET | `/veiculos/logs` | `veiculos_logs` | 191 |
-| GET | `/veiculos/limpezas` | `veiculos_limpezas` | 200 |
-| GET | `/veiculos/limpeza/alertas` | `veiculos_alertas_limpeza` | 209 |
-| GET | `/veiculos/logs/veiculo/<int:veiculo_id>` | `veiculo_logs_detalhe` | 220 |
-| GET | `/veiculos/logs/exportar` | `exportar_logs_veiculos_xlsx` | 232 |
-| GET | `/admin/veiculos/logs-excluidos` | `veiculos_logs_excluidos` | 241 |
-| POST | `/veiculos/logs/<int:log_id>/corrigir-km` | `corrigir_log_veiculo` | 256 |
-| POST | `/veiculos/logs/<int:log_id>/deletar` | `deletar_log_veiculo` | 302 |
-| GET | `/veiculos/logs/<int:log_id>/midia/<tipo>` | `veiculo_log_midia_skybox` | 349 |
-| GET | `/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>` | `veiculo_abastecimento_midia_skybox` | 370 |
-| GET, POST | `/veiculos/cadastrar` | `cadastrar_veiculo` | 396 |
-| GET, POST | `/veiculos/<int:veiculo_id>/editar` | `editar_veiculo` | 447 |
-| POST | `/veiculos/<int:veiculo_id>/deletar` | `deletar_veiculo` | 502 |
-| GET | `/piloto/veiculos` | `piloto_veiculos` | 517 |
-| GET | `/piloto/caixa-entrada` | `piloto_caixa_entrada` | 536 |
-| POST | `/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar` | `piloto_confirmar_alerta_limpeza` | 549 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/km` | `piloto_atualizar_km_veiculo` | 572 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/abastecimento` | `piloto_registrar_abastecimento_turno` | 599 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/limpeza` | `piloto_registrar_limpeza_turno` | 630 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/encerrar` | `piloto_encerrar_turno` | 659 |
+| GET | `/veiculos/rastreamento` | `veiculos_rastreamento` | 125 |
+| GET | `/veiculos/rastreamento/dados` | `veiculos_rastreamento_dados` | 145 |
+| POST | `/veiculos/rastreamento/historico` | `veiculos_rastreamento_historico` | 157 |
+| GET | `/veiculos/menu` | `veiculos_menu` | 195 |
+| GET | `/veiculos` | `listar_veiculos` | 209 |
+| POST | `/veiculos/equipes` | `atualizar_equipes_veiculos` | 222 |
+| GET | `/veiculos/logs` | `veiculos_logs` | 246 |
+| GET | `/veiculos/limpezas` | `veiculos_limpezas` | 255 |
+| GET | `/veiculos/limpeza/alertas` | `veiculos_alertas_limpeza` | 264 |
+| GET | `/veiculos/logs/veiculo/<int:veiculo_id>` | `veiculo_logs_detalhe` | 275 |
+| GET | `/veiculos/logs/exportar` | `exportar_logs_veiculos_xlsx` | 287 |
+| GET | `/admin/veiculos/logs-excluidos` | `veiculos_logs_excluidos` | 296 |
+| POST | `/veiculos/logs/<int:log_id>/corrigir-km` | `corrigir_log_veiculo` | 311 |
+| POST | `/veiculos/logs/<int:log_id>/deletar` | `deletar_log_veiculo` | 357 |
+| GET | `/veiculos/logs/<int:log_id>/midia/<tipo>` | `veiculo_log_midia_skybox` | 404 |
+| GET | `/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>` | `veiculo_abastecimento_midia_skybox` | 425 |
+| GET, POST | `/veiculos/cadastrar` | `cadastrar_veiculo` | 451 |
+| GET, POST | `/veiculos/<int:veiculo_id>/editar` | `editar_veiculo` | 502 |
+| POST | `/veiculos/<int:veiculo_id>/deletar` | `deletar_veiculo` | 557 |
+| GET | `/piloto/veiculos` | `piloto_veiculos` | 572 |
+| GET | `/piloto/caixa-entrada` | `piloto_caixa_entrada` | 591 |
+| POST | `/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar` | `piloto_confirmar_alerta_limpeza` | 604 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/km` | `piloto_atualizar_km_veiculo` | 627 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/abastecimento` | `piloto_registrar_abastecimento_turno` | 654 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/limpeza` | `piloto_registrar_limpeza_turno` | 685 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/encerrar` | `piloto_encerrar_turno` | 714 |
 
 ### app/modules/vigilancia/agent_routes.py
 
@@ -1251,7 +1252,8 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_portal_cidadao_denuncias.py](../tests/test_portal_cidadao_denuncias.py) | 13 |
 | [test_portal_cidadao_health_data.py](../tests/test_portal_cidadao_health_data.py) | 21 |
 | [test_portal_public_risk.py](../tests/test_portal_public_risk.py) | 9 |
-| [test_redgps_sync.py](../tests/test_redgps_sync.py) | 13 |
+| [test_redgps_history.py](../tests/test_redgps_history.py) | 11 |
+| [test_redgps_sync.py](../tests/test_redgps_sync.py) | 15 |
 | [test_redirects.py](../tests/test_redirects.py) | 4 |
 | [test_relatorios_region_team_filters.py](../tests/test_relatorios_region_team_filters.py) | 5 |
 | [test_relatorios_retornos_automaticos.py](../tests/test_relatorios_retornos_automaticos.py) | 11 |
@@ -1268,10 +1270,11 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_skybox_upload.py](../tests/test_skybox_upload.py) | 7 |
 | [test_solicitacao_place_id_block.py](../tests/test_solicitacao_place_id_block.py) | 14 |
 | [test_supervisor_veiculos.py](../tests/test_supervisor_veiculos.py) | 23 |
+| [test_tracking_jobs.py](../tests/test_tracking_jobs.py) | 4 |
 | [test_treinamentos.py](../tests/test_treinamentos.py) | 6 |
 | [test_uvis_os_media_access.py](../tests/test_uvis_os_media_access.py) | 13 |
-| [test_veiculos_operational_scope.py](../tests/test_veiculos_operational_scope.py) | 40 |
-| [test_veiculos_rastreamento.py](../tests/test_veiculos_rastreamento.py) | 11 |
+| [test_veiculos_operational_scope.py](../tests/test_veiculos_operational_scope.py) | 41 |
+| [test_veiculos_rastreamento.py](../tests/test_veiculos_rastreamento.py) | 38 |
 | [test_video_upload_sessions.py](../tests/test_video_upload_sessions.py) | 4 |
 | [test_vigilancia_agent_account.py](../tests/test_vigilancia_agent_account.py) | 2 |
 | [test_vigilancia_capture.py](../tests/test_vigilancia_capture.py) | 15 |
