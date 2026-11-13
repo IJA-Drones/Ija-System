@@ -33,7 +33,8 @@ def get_record(oid):
 
 
 def register_routes(bp):
-    from . import water
+    from . import water, uploads
+    uploads.register_routes(bp, restricted)
 
     def water_record(oid):
         row = get_record(oid)

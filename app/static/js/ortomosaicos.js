@@ -216,23 +216,26 @@
   el('new').onclick=()=>{el('prefeitura').value=el('filter').value;el('dialog').showModal();};
   el('close').onclick=()=>{if(!uploading)el('dialog').close();};
   el('dialog').addEventListener('cancel',e=>{if(uploading)e.preventDefault();});
-  el('form').addEventListener('submit',event=>{
+  el('form').addEventListener('submit',async event=>{
     event.preventDefault();if(uploading)return;
     const file=el('file').files[0];
     if(!file){el('upload-status').textContent='Selecione um arquivo TIF.';return;}
     const limitMb=Number(app.dataset.maxMb);
     if(limitMb>0&&file.size>limitMb*1048576){el('upload-status').textContent=`Selecione um TIF de até ${limitMb} MB.`;return;}
+    const fields=Object.fromEntries([...new FormData(el('form'))].filter(([key])=>key!=='arquivo'));
     uploading=true;el('send').disabled=true;el('close').disabled=true;el('upload-progress').hidden=false;
-    const xhr=new XMLHttpRequest();xhr.open('POST',app.dataset.uploadUrl);xhr.setRequestHeader('X-CSRFToken',csrf());xhr.setRequestHeader('Accept','application/json');
-    xhr.upload.onprogress=e=>{if(e.lengthComputable){const percent=Math.round(e.loaded/e.total*100);el('upload-progress').value=percent;el('upload-status').textContent=percent===100?'Validando e armazenando o arquivo…':`Enviando arquivo… ${percent}%`;}};
-    const finish=()=>{uploading=false;el('send').disabled=false;el('close').disabled=false;};
-    xhr.onload=async()=>{finish();let data={};try{data=JSON.parse(xhr.responseText);}catch(_){}
-      if(xhr.status!==202){el('upload-status').textContent=data.error||(xhr.status===413?'A hospedagem recusou o tamanho deste envio. Solicite o ajuste do limite de upload do servidor.':'Não foi possível enviar. Confira sua sessão e tente novamente.');return;}
-      el('dialog').close();el('form').reset();updateType();el('filter').value=String(data.item.prefeitura_id);
-      await load(data.item.id).catch(e=>message(e.message,true));};
-    xhr.onerror=()=>{finish();el('upload-status').textContent='A conexão foi interrompida. Confira a biblioteca antes de repetir o envio.';};
-    xhr.send(new FormData(el('form')));
+    el('send').textContent='Enviando…';
+    el('upload-status').textContent='Preparando envio…';
+    try {
+      const item=await window.uploadOrthoFile({file,fields,url:app.dataset.uploadUrl+'/uploads',csrf,
+        progress:(percent,text)=>{if(percent!==null)el('upload-progress').value=percent;el('upload-status').textContent=text;},
+        onAdvance:()=>document.dispatchEvent(new Event('ija:ortho-upload-progress'))});
+      el('dialog').close();el('form').reset();updateType();el('filter').value=String(item.prefeitura_id);
+      await load(item.id).catch(e=>message(e.message,true));
+    } catch(error) {el('upload-status').textContent=error.message || 'O envio foi interrompido. Selecione o mesmo arquivo para retomar.';}
+    finally {uploading=false;el('send').disabled=false;el('close').disabled=false;el('send').textContent='Enviar e preparar mapa';}
   });
+  window.addEventListener('beforeunload',event=>{if(uploading){event.preventDefault();event.returnValue='';}});
   load(Number(new URLSearchParams(location.search).get('id'))).catch(e=>message(e.message,true));
   setInterval(async()=>{
     if(pollBusy||document.hidden)return;pollBusy=true;

@@ -6,7 +6,19 @@ O menu **Ortomosaicos** (`/ortomosaicos`) é exclusivo dos perfis `diretor` e `d
 
 Envie um GeoTIFF RGB de 8 bits (três bandas ou quatro com transparência), com sistema de coordenadas e transformação geográfica válidos. Não há teto de tamanho ou de pixels imposto pela aplicação por padrão; não aceita MDS, bandas multiespectrais ou TIF sem georreferenciamento. `ORTHOMOSAIC_MAX_UPLOAD_MB=0` e `ORTHOMOSAIC_MAX_PIXELS=0` significam sem limite. Um valor positivo explícito no ambiente permite impor um teto operacional e prevalece sobre o padrão. O formulário e o servidor usam a mesma configuração, incluindo a validação de pixels no subprocesso.
 
-Uploads continuam sendo feitos em uma única requisição, sem retomada automática. Para arquivos grandes no site, conferir limites de corpo e tempo do proxy/hospedagem e espaço temporário disponível (original, cópia de trabalho e COG). Aumentar o limite da aplicação não altera os limites do provedor. O envio ao Skybox usa fluxo de arquivo, sem carregar o TIF inteiro na memória.
+O formulário envia o arquivo em partes de até 8 MiB. Cada parte confirmada avança
+uma posição persistida no servidor. Após uma queda, selecionar o mesmo arquivo,
+com os mesmos campos, no mesmo navegador permite retomar enquanto a pasta de
+trabalho existir. O navegador guarda apenas a referência da sessão e uma
+identificação do arquivo (nome, tamanho, data e hash de amostras das extremidades),
+não os 16 GB. Isso não substitui um hash integral do arquivo; retome com o mesmo
+arquivo original, sem editá-lo. O SHA-256 integral continua sendo calculado no
+servidor antes de gravar o original.
+
+A validação e a gravação no Skybox ocorrem em segundo plano, após a recepção.
+O navegador consulta o estado sem manter uma requisição HTTP aberta durante
+essas etapas. Não há nova migração. O endpoint multipart antigo continua
+compatível, mas o formulário usa `/api/ortomosaicos/uploads`.
 
 O visualizador permite zoom, enquadramento, tela cheia, coordenadas WGS 84, Google Satélite, mapa de ruas OpenStreetMap, controle de opacidade e visibilidade da imagem. O painel de camadas pode ser recolhido. Medições e curvas de nível não fazem parte desta primeira entrega. As medidas de pixel da cópia projetada são em Web Mercator, não uma medição topográfica de precisão no solo.
 
@@ -83,7 +95,7 @@ pois outras funcionalidades usam esses locais.
 
 Referência: [sistema de arquivos efêmero e deploys do Render](https://render.com/docs/deploys#ephemeral-filesystem).
 
-Instalar as dependências de `requirements.txt` (inclui Rasterio 1.5.2) e aplicar `flask --app app:create_app db upgrade`. A migração `c8d3e70a192f`, após `b7f2c9d41e60`, cria somente a tabela `ortomosaicos`. Não altera prefeituras, contas ou OS existentes. O serviço precisa de acesso ao Skybox, permissão para executar o subprocesso Python e espaço temporário para original e cópia otimizada. A conversão não ocorre dentro da requisição de navegação, mas o envio inicial ao Skybox ocorre antes da resposta do upload; configurar timeout e limite do proxy de acordo com o tamanho admitido.
+Instalar as dependências de `requirements.txt` (inclui Rasterio 1.5.2) e aplicar `flask --app app:create_app db upgrade`. A migração `c8d3e70a192f`, após `b7f2c9d41e60`, cria somente a tabela `ortomosaicos`. Não altera prefeituras, contas ou OS existentes. O serviço precisa de acesso ao Skybox, permissão para executar o subprocesso Python e espaço temporário para original e cópia otimizada. A conversão não ocorre dentro da requisição de navegação, e a gravação inicial no Skybox também ocorre em segundo plano no fluxo por partes. O endpoint multipart legado ainda espera essa gravação.
 
 Bibliotecas do navegador são servidas localmente em `app/static/vendor`: OpenLayers 10.10.0 e GeoTIFF.js 3.1.0-beta.0, dependência utilizada pela distribuição OpenLayers. As licenças estão nas respectivas pastas. GeoTIFF.js deve ser carregado antes de `ol.js`. Não habilitar `convertToRGB` para o COG RGBA produzido aqui: a leitura RGB descarta a quarta banda de transparência.
 
@@ -171,3 +183,52 @@ Aplicar a migração `b84f20d19a6e` (após `a73e5c9b204f`) com
 `ortomosaico_estimativas_agua`; não é necessário reenviar ou reprocessar rasters.
 
 Validação: `python -m pytest tests/test_ortomosaicos_agua.py tests/test_ortomosaicos.py tests/test_dem_contours.py -q`.
+
+
+## Envio de 16 GB e diagnóstico de 13/11/2026
+
+O envio observado começou às 13:28:02 (Brasília) e exibiu interrupção por volta
+das 13:33. O Chrome registrou `net::ERR_FAILED` em `/api/ortomosaicos`, sem resposta
+HTTP que permita determinar um limite específico. A biblioteca não continha o
+levantamento depois da falha. O código anterior colocava o arquivo inteiro em
+um multipart, interceptado pelo service worker, e aguardava validação e Skybox
+antes de responder. Não há evidência suficiente para afirmar que foi o timeout
+do Gunicorn: o comando de produção consultado usa padrão de 1.800 segundos.
+
+O fluxo novo evita essas dependências: corpos de 8 MiB, cinco tentativas por
+operação transitória, consulta da posição antes de repetir uma parte e timeout
+de dois minutos por requisição curta. O service worker deixa as rotas de upload
+passarem diretamente pelo navegador. Progresso confirmado renova a atividade da
+sessão pelo mecanismo existente; não altera o limite absoluto nem revive uma
+sessão vencida. A espera pela validação não é atividade artificial.
+
+As sessões ficam em `ORTHOMOSAIC_TEMP_DIR/receive-<id>` (ou no diretório privado
+padrão). Uma trava por recepção e uma por finalização coordenam os workers.
+Manifestos são substituídos atomicamente; bytes sem confirmação são truncados
+na retomada. Cadastro já confirmado é recuperado pelo identificador do envio,
+sem duplicar o levantamento caso o processo pare antes de atualizar o manifesto.
+A finalização reutiliza o TIFF recebido, sem uma segunda cópia de 16 GB. Em falha
+do Skybox, o arquivo permanece disponível para tentar a finalização novamente.
+O próximo GET de estado retoma uma finalização interrompida por um worker.
+
+Este armazenamento exige uma única instância, ou um volume compartilhado entre
+as instâncias. No Render consultado não havia disco persistente anexado: um
+redeploy pode apagar o envio parcial. Retomada não é garantia de sobrevivência
+a redeploy sem disco persistente. A recepção precisa acomodar o original e a
+conversão ainda exige espaço adicional calculado a partir do raster reprojetado.
+Não foram alterados plano, disco, custo nem configuração de produção.
+
+Logs `ortho_upload` em INFO identificam início, posição confirmada, recepção
+completa, cadastro e falha, com identificador de correlação e bytes. Não incluem
+credenciais ou o conteúdo do arquivo. Para liberar sessões sem atividade há
+pelo menos sete dias (pula arquivos com trava ativa):
+
+```bash
+flask --app app:create_app main limpar-envios-ortomosaicos --dias 7
+```
+
+A limpeza é explícita, não automática. Após sua execução, envios removidos precisam
+ser reiniciados. Os testes usam GeoTIFF real pequeno, interrupções simuladas,
+respostas perdidas e arquivo esparso/posições de 16 GiB; não representam uma
+transferência real de 16 GB para produção. A validação final exige publicar e
+acompanhar o arquivo original no Chrome e no Render.

@@ -65,7 +65,7 @@
   <p id="ortho-basemap-status" class="ortho-message" role="status" aria-live="polite"></p>
   <p id="ortho-message" class="ortho-message" role="status" aria-live="polite"></p>
   <dialog id="ortho-dialog" class="ortho-dialog">
-    <form id="ortho-form">
+    <form id="ortho-form" class="form-no-loading">
       <div class="ortho-dialog-head"><h2>Novo levantamento</h2><button id="ortho-close" type="button" aria-label="Fechar">×</button></div>
       <p>Envie um GeoTIFF georreferenciado. O resultado ficará disponível após o processamento.</p>
       <label for="ortho-type">Tipo de arquivo</label>
@@ -101,5 +101,6 @@
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261022-exportar') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261022-exportar') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-upload.js', v='20261113') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261113-upload') }}"></script>
 {% endblock %}
