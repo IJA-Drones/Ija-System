@@ -134,3 +134,10 @@ def test_parallel_chunk_is_rejected_without_mutating_file(app):
     with FileLock(str(folder/'receive.lock')):
         assert put(c,state,b'x'*100).status_code==409
     assert c.get(state['url']).json['offset']==0
+
+
+def test_upload_routes_are_registered_in_central_ti_policy(app):
+    from app.modules.gestao_ti.permissions import EXCLUSIONS
+    for rule in app.url_map.iter_rules():
+        if rule.rule.startswith('/api/ortomosaicos/uploads'):
+            assert rule.endpoint in EXCLUSIONS

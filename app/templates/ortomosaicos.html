@@ -82,7 +82,7 @@
       <label for="ortho-name">Nome do levantamento</label><input id="ortho-name" name="nome" maxlength="120" required placeholder="Ex.: Base PCTI · Outubro 2026">
       <label for="ortho-prefeitura">Prefeitura responsável</label><select id="ortho-prefeitura" name="prefeitura_id" required><option value="">Selecione a prefeitura</option>{% for p in prefeituras %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
       <label for="ortho-file">Arquivo GeoTIFF</label><input id="ortho-file" name="arquivo" type="file" accept=".tif,.tiff,image/tiff" required>
-      <small><span id="ortho-format-hint">RGB de 8 bits, com ou sem transparência.</span>
+      <small><span id="ortho-format-hint">RGB de 8 ou 16 bits, com bandas de cor identificadas e transparência opcional.</span>
         {% if limite_mb %}Até {{ limite_mb }} MB por arquivo.{% else %}Sem limite de tamanho definido pelo sistema.{% endif %}
         {% if limite_pixels %}Até {{ limite_pixels }} pixels.{% endif %}
         Arquivos grandes podem levar mais tempo para enviar e processar.

@@ -198,7 +198,7 @@
   function updateType(){
     const dem=el('type').value==='dem';el('dem-fields').hidden=!dem;
     ['interval','resolution','meters'].forEach(name=>{el(name).disabled=!dem;el(name).required=dem;});
-    el('format-hint').textContent=dem?'Uma banda numérica com altitudes em metros.':'RGB de 8 bits, com ou sem transparência.';
+    el('format-hint').textContent=dem?'Uma banda numérica com altitudes em metros.':'RGB de 8 ou 16 bits, com bandas de cor identificadas e transparência opcional.';
     el('send').textContent=dem?'Enviar e gerar curvas':'Enviar e preparar mapa';
   }
   el('type').onchange=updateType;

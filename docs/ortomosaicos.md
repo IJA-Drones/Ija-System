@@ -4,7 +4,7 @@
 
 O menu **Ortomosaicos** (`/ortomosaicos`) é exclusivo dos perfis `diretor` e `dev`. A restrição é obrigatória no servidor em todas as rotas, inclusive consultas, reprocessamento e leitura parcial do arquivo. A Central TI não pode conceder essa funcionalidade a outros perfis. DIRETOR e DEV mantêm o alcance global de prefeituras já existente no sistema; cada levantamento pertence obrigatoriamente a uma prefeitura, escolhida no envio.
 
-Envie um GeoTIFF RGB de 8 bits (três bandas ou quatro com transparência), com sistema de coordenadas e transformação geográfica válidos. Não há teto de tamanho ou de pixels imposto pela aplicação por padrão; não aceita MDS, bandas multiespectrais ou TIF sem georreferenciamento. `ORTHOMOSAIC_MAX_UPLOAD_MB=0` e `ORTHOMOSAIC_MAX_PIXELS=0` significam sem limite. Um valor positivo explícito no ambiente permite impor um teto operacional e prevalece sobre o padrão. O formulário e o servidor usam a mesma configuração, incluindo a validação de pixels no subprocesso.
+Envie um GeoTIFF com bandas RGB identificadas de 8 ou 16 bits sem sinal, com sistema de coordenadas e transformação geográfica válidos. Bandas adicionais são preservadas no original; a visualização usa apenas vermelho, verde, azul e a banda de transparência identificada. Não há teto de tamanho ou de pixels imposto pela aplicação por padrão; o modo RGB não aceita MDS, bandas sem identificação de cor ou TIF sem georreferenciamento. `ORTHOMOSAIC_MAX_UPLOAD_MB=0` e `ORTHOMOSAIC_MAX_PIXELS=0` significam sem limite. Um valor positivo explícito no ambiente permite impor um teto operacional e prevalece sobre o padrão. O formulário e o servidor usam a mesma configuração, incluindo a validação de pixels no subprocesso.
 
 O formulário envia o arquivo em partes de até 8 MiB. Cada parte confirmada avança
 uma posição persistida no servidor. Após uma queda, selecionar o mesmo arquivo,
@@ -232,3 +232,21 @@ ser reiniciados. Os testes usam GeoTIFF real pequeno, interrupções simuladas,
 respostas perdidas e arquivo esparso/posições de 16 GiB; não representam uma
 transferência real de 16 GB para produção. A validação final exige publicar e
 acompanhar o arquivo original no Chrome e no Render.
+
+
+### Formato do arquivo real
+
+A inspeção do `Result_Ortomosaico_RGB.tif` de 17.272.684.320 bytes encontrou
+34.930 × 27.265 pixels, oito bandas `uint16`, RGB nas bandas 1–3 e alpha na
+banda 8, em EPSG:31983. Além do transporte, o validador anterior recusaria esse
+formato. A conversão agora usa uma VRT RGBA de 8 bits, lida por blocos, sem criar
+um TIFF intermediário de tamanho integral. Os canais uint16 são mapeados
+linearmente de 0–65535 para 0–255 (divisão por 257), incluindo transparência.
+Não há ajuste automático de contraste nem alteração do arquivo original.
+Bandas não identificadas como RGB continuam recusadas, sem adivinhar cores.
+Referência: [escala de bandas VRT do GDAL](https://gdal.org/en/stable/drivers/raster/vrt.html).
+
+O primeiro deploy também revelou o cadastro ausente das duas novas rotas no
+mapa de permissões da Central de TI. Foram registradas junto às demais rotas
+privadas de ortomosaicos, mantendo DIRETOR/DEV, usuário proprietário do envio e
+escopo de prefeitura; a validação de permissões na inicialização permanece ativa.
