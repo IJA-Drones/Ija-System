@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static',filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static',filename='css/pages/vigilancia_risco.css') }}"><link rel="stylesheet" href="{{ url_for('static',filename='css/pages/vigilancia_mapa_territorial.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static',filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static',filename='css/pages/vigilancia_risco.css') }}"><link rel="stylesheet" href="{{ url_for('static',filename='css/pages/vigilancia_mapa_territorial.css', v='20261113-4') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
 {% block content %}
 <main class="vigilancia-preview-page risco-page py-4">
   {% include '_vigilancia_navegacao.html' %}
@@ -46,4 +46,4 @@
   {% endif %}
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static',filename='js/vigilancia-risco.js') }}" defer></script><script src="{{ url_for('static',filename='js/vigilancia-mapa-territorial.js', v='20261112-1') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/vigilancia-risco.js') }}" defer></script><script src="{{ url_for('static',filename='js/vigilancia-mapa-territorial.js', v='20261113-4') }}" defer></script>{% endblock %}

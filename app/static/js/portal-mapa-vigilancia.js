@@ -9,13 +9,29 @@
   const layer = document.getElementById("portal-risco-camada");
   const area = document.getElementById("portal-risco-area");
   const legend = document.getElementById("risco-legenda");
+  const mapNode = document.getElementById("portal-risco-mapa");
+  const fallback = document.getElementById("portal-risco-fallback");
+  const streetStatus = document.getElementById("portal-risco-ruas-status");
+  const browser = typeof window === "undefined" ? null : window;
+  const streetContext = [], streetAreas = [];
+  let streetMap, waitTimer;
   const features = data.geografia.features;
   const context = data.contexto?.features || (data.limite ? [data.limite] : []);
   const ns = "http://www.w3.org/2000/svg";
   const polygons = geometry => geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
   const positions = geometry => polygons(geometry).flat(2);
   const number = value => value == null ? "Indisponível" : value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
-  const percent = value => value == null ? "Indisponível" : `${number(value)}%`;
+  const percent = value => value == null ? "Sem dados" : `${number(value)}%`;
+
+  function selectedArea() {
+    return layer.value === "liraa" && !["municipio", "levantamento"].includes(area.value) ? features[Number(area.value)] : null;
+  }
+  function framePoints() {
+    const selected = selectedArea();
+    const shapes = selected ? [selected] : layer.value === "liraa" && area.value === "levantamento" && features.length ? features :
+      data.limite ? [data.limite] : features;
+    return shapes.flatMap(feature => positions(feature.geometry));
+  }
 
   function information(title, lines) {
     const heading = document.createElement("h3");
@@ -58,6 +74,7 @@
     information(`Estrato ${props.estrato_codigo} · área ${props.area_codigo}`, [
       `Levantamento ${props.levantamento_codigo}`,
       `IIP: ${percent(props.iip)}`,
+      `Classificação: ${props.classificacao_rotulo || "Não informada"}`,
       `${props.imoveis_inspecionados} imóveis inspecionados · ${props.imoveis_positivos} positivos · ${props.imoveis_pendentes} pendentes.`,
       "Contorno preservado no planejamento. O índice não é estendido ao restante do município.",
     ]);
@@ -73,9 +90,8 @@
   function draw() {
     const liraa = layer.value === "liraa";
     area.disabled = !liraa;
-    const selected = liraa && area.value !== "municipio" ? features[Number(area.value)] : null;
-    const shapes = selected ? [selected] : data.limite ? [data.limite] : features;
-    const frame = shapes.flatMap(feature => positions(feature.geometry));
+    const selected = selectedArea();
+    const frame = framePoints();
     svg.replaceChildren();
     if (frame.length) {
       const west = Math.min(...frame.map(point => point[0])), east = Math.max(...frame.map(point => point[0]));
@@ -114,7 +130,8 @@
     if (selected) areaInformation(selected); else summary();
     legend.replaceChildren();
     for (const [color, label] of (liraa ? [
-      ["#e2e8f0", "Limite municipal · referência"], ["#dbeafe", "IIP menor"], ["#1e40af", "IIP maior · somente área amostrada"],
+      ["#e2e8f0", "Limite municipal · referência"],
+      ...(data.legenda_iip || []).map(item => [item.cor, `${item.rotulo} · ${item.faixa}`]),
     ] : [["#bae6fd", "Informação agregada no município"], ["#e2e8f0", "Sem dados disponíveis"]])) {
       const entry = document.createElement("span"), swatch = document.createElement("i");
       swatch.style.backgroundColor = color;
@@ -122,6 +139,65 @@
     }
     status.textContent = frame.length ? `${data.municipio.name} · ${liraa ? `${features.length} contornos LIRAa` : "resumo municipal"} · ${data.demo ? "dados fictícios de demonstração" : "dados da vigilância"}.` :
       "Contorno municipal indisponível nesta malha. Os dados agregados continuam disponíveis nos quadros abaixo.";
+    if (streetMap && !mapNode.hidden) refreshStreetMap();
+  }
+
+  function unavailable(message) {
+    if (!mapNode || !browser) return;
+    browser.clearTimeout(waitTimer);
+    mapNode.hidden = true; fallback.hidden = false;
+    streetStatus.textContent = message + " Os contornos agregados continuam disponíveis sem ruas.";
+  }
+  function refreshStreetMap() {
+    const liraa = layer.value === "liraa", selected = selectedArea();
+    for (const item of streetAreas) {
+      item.shape.setMap(liraa ? streetMap : null);
+      item.shape.setOptions({strokeWeight:selected === item.feature ? 4 : 2});
+    }
+    const hasSource = layer.value === "sinan" ? Boolean(data.sinan) : layer.value === "focal" && data.focal.disponivel;
+    for (const item of streetContext) item.shape.setOptions({fillOpacity:liraa ? 0 : item.city ? .3 : 0,
+      fillColor:hasSource ? "#bae6fd" : "#e2e8f0"});
+    const points = framePoints();
+    if (points.length) {
+      const bounds = new browser.google.maps.LatLngBounds();
+      points.forEach(point => bounds.extend({lat:point[1], lng:point[0]}));
+      streetMap.fitBounds(bounds, 40);
+      browser.google.maps.event.addListenerOnce(streetMap, "idle", () => { if (streetMap.getZoom() > 18) streetMap.setZoom(18); });
+    }
+  }
+  function initializeStreetMap() {
+    if (!mapNode || !browser || !data.mapa_ruas || browser.__GOOGLE_MAPS_AUTH_FAILED__) return;
+    if (!framePoints().length) { unavailable("O limite territorial deste recorte não está disponível."); return; }
+    if (streetMap) return;
+    if (!browser.google?.maps?.Map) {
+      if (!waitTimer) waitTimer = browser.setTimeout(() => unavailable("O mapa de ruas não carregou. Confira sua conexão."), 15000);
+      return;
+    }
+    try {
+      const maps = browser.google.maps, initial = framePoints()[0];
+      mapNode.hidden = false;
+      streetMap = new maps.Map(mapNode, {center:{lat:initial[1], lng:initial[0]}, zoom:12,
+        mapTypeId:"roadmap", streetViewControl:false, gestureHandling:"cooperative"});
+      for (const feature of context) for (const polygon of polygons(feature.geometry)) {
+        const city = feature.properties.codigo === data.municipio.ibge;
+        const shape = new maps.Polygon({map:streetMap, paths:polygon.map(ring => ring.map(point => ({lat:point[1], lng:point[0]}))),
+          strokeColor:city ? "#64748b" : "#cbd5e1", strokeWeight:1, fillOpacity:0, clickable:city, zIndex:0});
+        if (city) shape.addListener("click", () => { area.value = "municipio"; draw(); });
+        streetContext.push({shape, city});
+      }
+      features.forEach((feature, index) => {
+        for (const polygon of polygons(feature.geometry)) {
+          const shape = new maps.Polygon({map:streetMap, paths:polygon.map(ring => ring.map(point => ({lat:point[1], lng:point[0]}))),
+            strokeColor:"#475569", strokeWeight:2, fillColor:feature.properties.cor, fillOpacity:.85, zIndex:1});
+          shape.addListener("click", () => { area.value = String(index); draw(); });
+          streetAreas.push({shape, feature});
+        }
+      });
+      browser.clearTimeout(waitTimer);
+      fallback.hidden = true;
+      streetStatus.textContent = "Mapa de ruas · Google Maps. Selecione uma área colorida para consultar sua classificação e seus índices.";
+      refreshStreetMap();
+    } catch (_error) { unavailable("O mapa de ruas está indisponível neste momento."); }
   }
   layer.addEventListener("change", draw);
   area.addEventListener("change", draw);
@@ -130,6 +206,13 @@
       document.getElementById("portal-risco-levantamento").value = "";
     });
   }
-  if (features.length) area.value = "0";
+  area.value = features.length ? "levantamento" : "municipio";
   draw();
+  if (mapNode && browser) {
+    if (!data.mapa_ruas) unavailable("O mapa de ruas não está configurado.");
+    else if (browser.__GOOGLE_MAPS_AUTH_FAILED__) unavailable("O Google Maps está indisponível neste endereço.");
+    else initializeStreetMap();
+    document.addEventListener("googlemaps:ready", initializeStreetMap);
+    document.addEventListener("googlemaps:auth-failed", () => unavailable("O Google Maps está indisponível neste endereço."));
+  }
 })();

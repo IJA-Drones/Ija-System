@@ -18,7 +18,7 @@ from app.models import Prefeitura, Usuario
 from app.shared.access import GLOBAL_ADMIN_USER_TYPES
 from app.modules.vigilancia.field_capture import FieldInputError
 from app.modules.vigilancia.field_store import FieldStoreError
-from app.modules.vigilancia.results import ResultsStore, filters_from, sinan_filters
+from app.modules.vigilancia.results import ResultsStore, filters_from, sinan_filters, IIP_LEGEND, IIP_CLASSIFICATION_SOURCE
 from app.modules.vigilancia.service import PreviewValidationError
 from app.modules.vigilancia.sinan import DISEASES
 from app.modules.vigilancia.sinan_import import CASE_CLASSES
@@ -79,7 +79,8 @@ def _field_summary(engine, prefeitura, demo, filters):
     indices = [{name: item[name] for name in INDEX_FIELDS} for item in report["indicadores"]]
     geography = {"type": "FeatureCollection", "features": [
         {"type": "Feature", "geometry": item["geometry"], "properties": {
-            **{name: item["properties"][name] for name in INDEX_FIELDS}, "cor": item["properties"]["cor"]}}
+            **{name: item["properties"][name] for name in INDEX_FIELDS},
+            **{name: item["properties"][name] for name in ("cor", "classificacao_iip", "classificacao_rotulo", "faixa_iip")}}}
         for item in report["geografia"]["features"]]}
     rows = report["registros"]
     liraa = [row for row in rows if row["origem"] == "LIRAA"]
@@ -89,7 +90,7 @@ def _field_summary(engine, prefeitura, demo, filters):
         dates = [row["data_inspecao"] for row in values]
         return {"inicio": min(dates) if dates else None, "fim": max(dates) if dates else None}
 
-    return dict(levantamentos=surveys, filtros=filters, geografia=geography, avisos=report["avisos"],
+    return dict(levantamentos=surveys, filtros=filters, geografia=geography, avisos=report["avisos"], legenda_iip=report["legenda_iip"],
         liraa=dict(disponivel=bool(liraa), visitas=len(liraa), indicadores=indices, **period(liraa)),
         focal=dict(disponivel=bool(focal), visitas=len(focal),
                    inspecionados=sum(row["situacao"] == "INSPECIONADO" for row in focal), **period(focal)))
@@ -166,6 +167,7 @@ def get_public_risk_report(config, municipality, args, *, engine=None, logger=No
         limite=municipality_feature(municipality["ibge"]),
         filtros={**field_filters, "doenca": selection["disease"], "ano_sinan": selection["year"]},
         levantamentos=[], geografia={"type": "FeatureCollection", "features": []},
+        legenda_iip=[dict(item) for item in IIP_LEGEND], fonte_classificacao_iip=IIP_CLASSIFICATION_SOURCE,
         liraa={"disponivel": False}, focal={"disponivel": False}, sinan=None, avisos=[])
     field_enabled = config.get("VIGILANCIA_IMPORT_ENABLED", False)
     sinan_enabled = config.get("SINAN_ENABLED", True) and config.get("SINAN_IMPORT_ENABLED", True)

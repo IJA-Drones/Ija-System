@@ -77,8 +77,11 @@
 .portal-cidadao-risk-sources p { margin: 8px 0; font-size: .86rem; color: var(--portal-muted); }
 .portal-cidadao-risk-map-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(230px, .7fr); gap: 18px; align-items: start; }
 .portal-cidadao-risk-map-wrap { min-width: 0; padding: 10px; border: 1px solid var(--portal-line); border-radius: 18px; background: var(--color-bg-body); }
+#portal-risco-mapa { width:100%; height:clamp(320px,55vh,580px); border-radius:12px; }
+#portal-risco-mapa[hidden],#portal-risco-fallback[hidden] { display:none; }
 .portal-cidadao-risk-map-wrap #risco-svg { display: block; width: 100%; height: auto; min-height: 250px; background: transparent; border-radius: 12px; }
 .portal-cidadao-risk-map-wrap #risco-svg path { cursor: pointer; stroke: #475569; stroke-width: 1.4; vector-effect: non-scaling-stroke; transition: fill .15s; }
+.portal-cidadao-risk-map-wrap #risco-svg path[data-selected] { fill-opacity:.85; }
 .portal-cidadao-risk-map-wrap #risco-svg path:hover, .portal-cidadao-risk-map-wrap #risco-svg path:focus, .portal-cidadao-risk-map-wrap #risco-svg path[data-selected="true"] { stroke: #0f172a; stroke-width: 3.5; outline: none; }
 .portal-cidadao-risk-map-wrap #risco-svg text { fill: #0f172a; font-size: 12px; font-weight: 600; pointer-events: none; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
 .portal-cidadao-risk-detail { min-width: 0; padding: 18px; border-radius: 18px; color: var(--portal-ink); background: var(--color-bg-body); overflow-wrap: anywhere; }
@@ -92,6 +95,7 @@
 .portal-cidadao-risk-footer > div { min-width: 0; }
 .portal-cidadao-risk-footer p { margin: 6px 0 0; color: var(--portal-muted); font-size: .88rem; line-height: 1.55; }
 .portal-cidadao-risk-footer .btn { flex: 0 0 auto; }
+@media print { #portal-risco-mapa,#portal-risco-ruas-status { display:none !important; } #portal-risco-fallback[hidden] { display:block; } }
 
 @media (max-width: 760px) {
   .portal-cidadao-risk-controls, .portal-cidadao-risk-map-grid, .portal-cidadao-risk-sources { grid-template-columns: minmax(0, 1fr); }
