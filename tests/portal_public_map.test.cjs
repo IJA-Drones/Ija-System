@@ -17,7 +17,9 @@ function browser(overrides = {}) {
   }
   const city = {type: 'Feature', geometry, properties: {nome: 'Pesqueira', codigo: '2610905'}};
   const data = {municipio: {name: 'Pesqueira', ibge: '2610905'}, demo: true, contexto: {features: [city]}, limite: city,
-    filtros: {levantamento: 'L-POC'}, geografia: {features: [{type: 'Feature', geometry, properties: {cor: '#1e40af',
+    legenda_iip: [{rotulo:'Satisfatório',faixa:'IIP < 1%',cor:'#15803d'}, {rotulo:'Alerta',faixa:'IIP de 1% a 3,9%',cor:'#facc15'},
+      {rotulo:'Risco',faixa:'IIP > 3,9%',cor:'#dc2626'}, {rotulo:'Sem dados',faixa:'Sem imóveis inspecionados no recorte',cor:'#94a3b8'}],
+    filtros: {levantamento: 'L-POC'}, geografia: {features: [{type: 'Feature', geometry, properties: {cor: '#dc2626',classificacao_rotulo:'Risco',
       levantamento_codigo: 'L-POC', estrato_codigo: 'E-01', area_codigo: 'A-01', iip: 25, imoveis_inspecionados: 16, imoveis_positivos: 4, imoveis_pendentes: 4}}]},
     liraa: {disponivel: true, visitas: 20, inicio: '2026-10-19', fim: '2026-10-20'},
     sinan: {doenca: 'Dengue', ano: 2026, total: 4, parcial: true, origem: 'Arquivo importado', classificacoes: [{rotulo: 'Confirmado', total: 4}]},
@@ -32,10 +34,13 @@ function browser(overrides = {}) {
 
 test('public map starts with the sampled area and never draws individual markers', () => {
   const ui = browser();
+  assert.equal(ui.get('portal-risco-area').value, 'levantamento');
+  ui.get('portal-risco-area').change('0');
   assert.match(ui.get('risco-detalhe').text(), /IIP: 25%/);
   assert.match(ui.get('portal-risco-status').text(), /dados fictícios/);
   assert.equal(ui.get('risco-svg').children.filter(node => node.tag === 'path').length, 2);
   assert.equal(ui.get('risco-svg').children.some(node => node.tag === 'circle'), false);
+  assert.match(ui.get('risco-legenda').text(), /Satisfatório.*Alerta.*Risco.*Sem dados/);
 });
 
 test('switching to SINAN shows municipal counts, preserves partial status and hides sampled-area coloring', () => {

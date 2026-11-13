@@ -64,6 +64,21 @@ def field(app, *, demo=True, prefeitura=7):
     return store, batch
 
 
+def test_public_map_exposes_street_map_availability_without_private_configuration(public_app):
+    app = public_app
+    browser = app.test_client()
+    assert payload(browser.get('/portal-cidadao?municipio=2610905&demo=true'))['mapa_ruas'] is False
+    app.jinja_env.globals['google_maps_key'] = 'test-only-public-map-key'
+    response = browser.get('/portal-cidadao?municipio=2610905&demo=true')
+    data = payload(response)
+    assert data['mapa_ruas'] is True
+    assert 'test-only-public-map-key' not in json.dumps(data)
+    assert 'id="portal-risco-mapa"' in response.text
+    assert 'id="portal-risco-fallback"' in response.text
+    assert 'Todas as áreas do levantamento' in response.text
+    assert [item['codigo'] for item in data['legenda_iip']] == ['satisfatorio', 'alerta', 'risco', 'sem_dados']
+
+
 def job(app, *, owner="7:701", ibge="2610905", disease="dengue", year=None, demo=True, status="completed", total=3):
     scope = dict(ibge=ibge, disease=disease, year=year or date.today().year)
     store = DatabaseStore(db.engine)
@@ -134,6 +149,9 @@ def test_manual_planned_visits_share_internal_iip_and_preserved_geometry(public_
     assert report["liraa"]["visitas"] == 1 and report["focal"]["visitas"] == 1
     assert report["geografia"]["features"][0]["geometry"]["coordinates"] == [POLYGON["coordinates"]]
     assert report["geografia"]["features"][0]["properties"]["iip"] == 100
+    assert report["geografia"]["features"][0]["properties"]["classificacao_iip"] == "risco"
+    assert report["geografia"]["features"][0]["properties"]["cor"] == "#dc2626"
+    assert [item["codigo"] for item in report["legenda_iip"]] == ["satisfatorio", "alerta", "risco", "sem_dados"]
     assert "quarteiroes" not in json.dumps(report) and "FOCAL-PRIVADO" not in json.dumps(report)
 
 

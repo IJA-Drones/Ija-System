@@ -1,0 +1,6 @@
+<div class="campo-iip-legenda" aria-label="Classificação por IIP">
+  {% for item in report.legenda_iip %}
+  <div class="campo-iip-faixa"><i style="background-color:{{ item.cor }}" aria-hidden="true"></i><div><strong>{{ item.rotulo }}</strong><span>{{ item.faixa }}</span></div></div>
+  {% endfor %}
+</div>
+<p class="vigilancia-preview-help">Classificação pelo IIP do recorte selecionado. Cinza indica ausência de imóveis inspecionados, e não IIP zero. <a href="{{ report.fonte_classificacao_iip }}" target="_blank" rel="noopener">Referência das faixas</a>.</p>

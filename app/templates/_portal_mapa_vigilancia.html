@@ -24,18 +24,20 @@
   <div class="portal-cidadao-risk-panel">
     <div class="portal-cidadao-risk-controls">
       <label class="form-label" for="portal-risco-camada">Informação no mapa<select class="form-select" id="portal-risco-camada"><option value="liraa">LIRAa · índice de infestação predial</option><option value="sinan">SINAN · registros por município</option><option value="focal">Focal · visitas confirmadas</option></select></label>
-      <label class="form-label" for="portal-risco-area">Consultar área<select class="form-select" id="portal-risco-area"><option value="municipio">{{ risk.municipio.name }} · resumo municipal</option>{% for feature in risk.geografia.features %}<option value="{{ loop.index0 }}">Estrato {{ feature.properties.estrato_codigo }} · área {{ feature.properties.area_codigo }}</option>{% endfor %}</select></label>
+      <label class="form-label" for="portal-risco-area">Consultar área<select class="form-select" id="portal-risco-area"><option value="levantamento">Todas as áreas do levantamento</option><option value="municipio">{{ risk.municipio.name }} · resumo municipal</option>{% for feature in risk.geografia.features %}<option value="{{ loop.index0 }}">Estrato {{ feature.properties.estrato_codigo }} · área {{ feature.properties.area_codigo }}</option>{% endfor %}</select></label>
     </div>
     <div class="portal-cidadao-risk-map-grid">
       <div class="portal-cidadao-risk-map-wrap">
-        <svg id="risco-svg" viewBox="0 0 900 570" role="group" aria-label="Mapa público de vigilância de {{ risk.municipio.name }}. Contornos agregados, sem localização individual de casos ou imóveis."></svg>
+        <p class="portal-cidadao-risk-caption" id="portal-risco-ruas-status" role="status">Carregando mapa de ruas…</p>
+        <div id="portal-risco-mapa" role="region" aria-label="Mapa público de ruas com áreas classificadas pelo LIRAa" hidden></div>
+        <div id="portal-risco-fallback"><svg id="risco-svg" viewBox="0 0 900 570" role="group" aria-label="Mapa público de vigilância de {{ risk.municipio.name }}. Contornos agregados, sem localização individual de casos ou imóveis."></svg></div>
         <p class="portal-cidadao-risk-caption" id="portal-risco-status" role="status"></p>
         <p class="portal-cidadao-risk-caption">Limites municipais simplificados do <a href="https://servicodados.ibge.gov.br/api/docs/malhas?versao=3" target="_blank" rel="noopener">IBGE</a>. O IIP representa a área amostrada e não é aplicado a todo o município.</p>
       </div>
       <aside class="portal-cidadao-risk-detail" aria-live="polite"><h3>Informação da área</h3><div id="risco-detalhe"></div></aside>
     </div>
     <div class="risco-legenda" id="risco-legenda" aria-label="Legenda do mapa"></div>
-    <p class="portal-cidadao-risk-caption">IIP = 100 × imóveis positivos ÷ imóveis inspecionados. A cor indica o índice observado; não representa previsão de epidemia.</p>
+    <p class="portal-cidadao-risk-caption">IIP = 100 × imóveis positivos ÷ imóveis inspecionados. As cores mostram a classificação de infestação da área amostrada: satisfatório, alerta, risco ou sem dados. Não representam previsão de epidemia. <a href="{{ risk.fonte_classificacao_iip }}" target="_blank" rel="noopener">Referência das faixas</a>.</p>
   </div>
   <div class="portal-cidadao-risk-sources">
     <article class="portal-cidadao-risk-detail"><h3>LIRAa · áreas amostradas</h3>
@@ -47,5 +49,5 @@
     <article class="portal-cidadao-risk-detail"><h3>Focal · atividade de campo</h3>{% if risk.focal.disponivel %}<p>{{ risk.focal.visitas }} visitas confirmadas · {{ risk.focal.inspecionados }} inspeções realizadas.</p><p>{{ risk.focal.inicio }} a {{ risk.focal.fim }}.</p>{% else %}<p>Nenhuma visita focal confirmada neste recorte.</p>{% endif %}<p>Visitas de campo não são casos de doença nem substituem o levantamento LIRAa.</p></article>
   </div>
   <div class="portal-cidadao-risk-footer"><div><strong>Relatos de adoecimento são confidenciais</strong><p>Suspeitas enviadas por cidadãos são encaminhadas à vigilância. Não são publicadas neste mapa nem tratadas como casos confirmados do SINAN. Nomes, endereços e localizações individuais permanecem restritos.</p></div><a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">Relatar suspeita de adoecimento <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
-  <script type="application/json" id="portal-risco-data">{{ risk|tojson }}</script>
+  <script type="application/json" id="portal-risco-data">{{ dict(risk, mapa_ruas=(google_maps_key|default('')|length)>0)|tojson }}</script>
 </section>
