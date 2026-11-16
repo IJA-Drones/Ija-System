@@ -284,3 +284,31 @@ caminho persistido; não há migração destrutiva das pastas anteriores.
 
 Referências: [leitura parcial GDAL](https://gdal.org/en/stable/user/virtual_file_systems.html),
 [opções HTTP](https://gdal.org/en/stable/user/configoptions.html).
+
+#### Recuperação de falhas de leitura durante a conversão
+
+A tentativa de 16/11 às 14:28 falhou na leitura durante a conversão, com cerca de
+803 MB temporários, após passar na conferência completa de tamanho/SHA-256. O
+mesmo original teve todas as bandas decodificadas localmente e a conversão local
+completou em 302 segundos. O detalhe GDAL havia sido descartado; portanto não foi
+possível recuperar o código HTTP ou a causa específica daquela leitura remota.
+
+Conversões RGB remotas agora gravam um intermediário RGBA de 8 bits em janelas
+512×512. Uma falha de leitura fecha/reabre a origem e repete apenas a janela
+incompleta, até quatro tentativas, mantendo `If-Match`. A cache HTTP da origem é
+invalidada no fechamento. Só depois são criados os níveis de zoom e o COG a
+partir do intermediário local; o original de 17 GB nunca é copiado para o disco.
+O intermediário também participa do limite de trabalho e é removido ao terminar.
+Os logs informam `pixels windows=N total=M`, `retry` e `overviews`. Falhas
+persistentes continuam interrompendo a publicação, sem produzir mapas parciais.
+
+O processo pai preserva os últimos 32 KiB do diagnóstico do GDAL em falhas,
+redigindo URLs e cabeçalhos de autenticação antes de registrar. A mensagem para
+leitura remota não atribui automaticamente o problema à integridade do arquivo.
+
+Validação do ajuste: 95 testes automatizados relacionados passaram. O original
+real de 17.272.684.320 bytes também foi servido por HTTP local com uma falha HTTP
+injetada; a conversão terminou em 508 segundos, lendo 20.342.914.848 bytes em
+8.182 requisições e produzindo um COG de 2.411.145.406 bytes, 35.308×27.947 RGBA.
+As 25 amostras de 128×128 pixels coincidiram integralmente com a conversão local
+anterior. Esses tempos são do computador local, não uma previsão para o Render.

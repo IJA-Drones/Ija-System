@@ -3,6 +3,7 @@ import json
 import logging
 import mimetypes
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -69,6 +70,11 @@ def raster_command(mode, source, destination=None, interval=None, resolution=Non
         result = bounded_process.run(args, environment, scratch, working_root(), limit)
     else:
         result = subprocess.run(args, capture_output=True, text=True, env=environment, timeout=None)
+    if result.returncode:
+        # Keep the GDAL cause (HTTP status, tile, decoding error), never auth or URLs.
+        detail = re.sub(r'https?://[^\s\"\'<>]+', '[armazenamento]', (result.stderr or '')[-32768:])
+        detail = re.sub(r'(?im)(Authorization|Cookie|Set-Cookie|If-Match):[^\r\n]*', r'\1: [redigido]', detail)
+        logger.error('ortho_process raster_failed mode=%s exit=%s detail=%s', mode, result.returncode, detail)
     try:
         payload = json.loads(result.stdout)
     except ValueError:

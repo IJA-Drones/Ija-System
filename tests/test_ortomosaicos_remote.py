@@ -37,8 +37,9 @@ def rgb16():
 
 
 @contextmanager
-def server(body, *, ranges=True):
+def server(body, *, ranges=True, fail_range_start=None):
     calls=[]
+    failures=[]
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args): pass
         def do_HEAD(self): self.reply(False)
@@ -55,6 +56,10 @@ def server(body, *, ranges=True):
                 match=re.fullmatch(r'bytes=(\d+)-(\d*)',request_range)
                 if not match:self.send_error(416);return
                 start=int(match[1]);end=min(int(match[2]) if match[2] else end,end)
+                # A transient server refusal after the header/first tile succeeds.
+                if fail_range_start is not None and start >= fail_range_start and not failures:
+                    failures.append(start)
+                    self.send_error(400);return
             self.send_response(206 if request_range and ranges else 200)
             self.send_header('Content-Length',str(end-start+1))
             self.send_header('ETag','"verified"')
@@ -69,8 +74,8 @@ def server(body, *, ranges=True):
     finally:instance.shutdown();instance.server_close();worker.join()
 
 
-@pytest.mark.parametrize("tipo", ["rgb", "dem"])
-def test_remote_conversion_preserves_original_without_disk_copy(app,monkeypatch,tipo):
+@pytest.mark.parametrize("tipo,interrupted", [("rgb",False),("dem",False),("rgb",True)])
+def test_remote_conversion_preserves_original_without_disk_copy(app,monkeypatch,tipo,interrupted):
     app.config.update(ORTHOMOSAIC_MAX_UPLOAD_MB=16,ORTHOMOSAIC_REMOTE_SOURCE_MIN_MB=1)
     if tipo == 'dem':
         from tests.test_dem_contours import dem, upload as upload_dem
@@ -80,7 +85,7 @@ def test_remote_conversion_preserves_original_without_disk_copy(app,monkeypatch,
         body=rgb16()
         oid=upload(client(app),body).json['item']['id']
     previous=skybox._request
-    with server(body) as (url,calls):
+    with server(body,fail_range_start=3*1024*1024 if interrupted else None) as (url,calls):
         def request(method,path,**kwargs):
             if path.endswith('/original.tif'):return requests.request(method,url,auth=("mapping","secret"),**kwargs)
             return previous(method,path,**kwargs)
@@ -109,6 +114,9 @@ def test_remote_conversion_preserves_original_without_disk_copy(app,monkeypatch,
         ranges=[headers for _,headers in calls if 'Range' in headers]
         assert len(ranges)>1
         assert all(h.get('If-Match')=='"verified"' for h in ranges)
+        if interrupted:
+            # Reopening must actually re-read the failed range, not silently skip it.
+            assert sum(int(h['Range'].split('=')[1].split('-')[0]) >= 3*1024*1024 for h in ranges) >= 2
         assert not list(Path(app.config['ORTHOMOSAIC_TEMP_DIR']).rglob('.skybox-headers'))
         assert not list(Path(app.config['ORTHOMOSAIC_TEMP_DIR']).rglob('*.tif'))
 
@@ -142,3 +150,54 @@ def test_budget_stops_child_before_it_can_exhaust_provider_storage(app,tmp_path)
             os.environ.copy(),str(tmp_path),tmp_path,1024*1024)
 
     assert (tmp_path / 'mapa.tif').stat().st_size == 2*1024*1024
+
+
+@pytest.mark.parametrize('permanent', [False, True])
+def test_remote_window_failure_retries_only_failed_window(tmp_path, monkeypatch, permanent):
+    from app.modules.ortomosaicos import processor
+    original = tmp_path / 'input.tif'
+    original.write_bytes(rgb16())
+    destination = tmp_path / 'mapa.tif'
+    factory = processor.warped_source
+    seen = {}
+    failed = []
+    @contextmanager
+    def interrupted(source):
+        with factory(source) as warped:
+            class Reader:
+                def __getattr__(self, name): return getattr(warped, name)
+                def read(self, *, window):
+                    key = (window.col_off, window.row_off)
+                    seen[key] = seen.get(key, 0) + 1
+                    if key != (0, 0) and (permanent or not failed):
+                        failed.append(key)
+                        raise rasterio.errors.RasterioIOError('simulated interrupted range')
+                    return warped.read(window=window)
+            yield Reader()
+    monkeypatch.setattr(processor, 'warped_source', interrupted)
+    monkeypatch.setattr(processor.time, 'sleep', lambda _: None)
+    if permanent:
+        with pytest.raises(rasterio.errors.RasterioIOError, match='interrupted range'):
+            processor.remote_display_copy(str(original), str(destination))
+        assert len(failed) == 4
+        assert not destination.exists()
+    else:
+        processor.remote_display_copy(str(original), str(destination))
+        assert len(failed) == 1
+        assert seen[failed[0]] == 2
+        with rasterio.open(destination) as result:
+            assert result.count == 4
+            assert result.read(1)[100,100] == 128
+    assert seen[(0,0)] == 1, 'Completed windows must not restart after a read failure'
+    assert not Path(str(destination)+'.display.tif').exists()
+
+
+def test_raster_failure_logs_diagnostic_without_credentials(app, monkeypatch, caplog):
+    monkeypatch.setattr(service.subprocess, 'run', lambda *a, **kw: SimpleNamespace(
+        returncode=1, stdout='{"ok":false,"error":"Falha na leitura remota"}',
+        stderr='HTTP 503 https://user:private-password@example.com/file?token=private-token\nAuthorization: Basic private-header\nIf-Match: private-etag\nTile x=4 y=5'))
+    with app.app_context(), pytest.raises(ValueError, match='leitura remota'):
+        service.raster_command('convert','input.tif','mapa.tif')
+    diagnostic = caplog.text
+    assert 'HTTP 503' in diagnostic and 'Tile x=4 y=5' in diagnostic
+    assert 'private-' not in diagnostic

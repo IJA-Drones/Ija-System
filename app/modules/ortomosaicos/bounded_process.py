@@ -1,5 +1,7 @@
 """Stop a conversion before scratch usage can terminate the whole web service."""
 import subprocess
+import os
+import re
 import tempfile
 import time
 from pathlib import Path
@@ -37,7 +39,9 @@ def run(args, environment, scratch, root, limit):
             while True:
                 used = check_budget(root, limit)
                 if time.monotonic() - last_log >= 30:
-                    logger.info('ortho_process converting scratch_bytes=%s limit_bytes=%s', used, limit)
+                    tail = os.pread(errors.fileno(), 8192, max(0, os.fstat(errors.fileno()).st_size - 8192)).decode('utf-8', errors='replace')
+                    progress = re.findall(r'^ortho_stage (?:pixels windows=\d+ total=\d+|retry x=\d+ y=\d+ attempt=\d+|overviews)$', tail, re.M)
+                    logger.info('ortho_process converting scratch_bytes=%s limit_bytes=%s progress=%s', used, limit, progress[-1] if progress else 'starting')
                     last_log = time.monotonic()
                 try:
                     process.wait(timeout=1)
@@ -46,7 +50,10 @@ def run(args, environment, scratch, root, limit):
                     pass  # Poll disk usage, not a job deadline.
             check_budget(root, limit)
             output.seek(0)
-            return subprocess.CompletedProcess(args, process.returncode, output.read().decode('utf-8'), '')
+            errors.seek(0, 2)
+            errors.seek(max(0, errors.tell() - 32768))
+            return subprocess.CompletedProcess(args, process.returncode, output.read().decode('utf-8'),
+                                               errors.read().decode('utf-8', errors='replace'))
         finally:
             if process.poll() is None:
                 process.kill()
