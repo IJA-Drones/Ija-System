@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import mimetypes
 import os
 import subprocess
@@ -14,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import current_app, url_for
+from flask.logging import default_handler
 from filelock import FileLock, Timeout as FileLockTimeout
 from requests.exceptions import ConnectionError, SSLError, Timeout
 from sqlalchemy import and_, or_, update
@@ -24,6 +26,12 @@ from app.extensions import db
 from app.models import Ortomosaico, Prefeitura
 from app.shared import skybox
 from .storage import TemporaryStorageError, TemporaryUpload, require_space, working_root
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    logger.addHandler(default_handler)
+logger.propagate = False
 
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ortomosaico')
 _futures = {}
@@ -210,7 +218,7 @@ def _download(row, destination):
                     output.write(chunk)
                 digest.update(chunk)
                 if size - reported >= 512 * 1024 * 1024:
-                    current_app.logger.info('ortho_process verifying id=%s bytes=%s total=%s', row.id, size, row.tamanho_bytes)
+                    logger.info('ortho_process verifying id=%s bytes=%s total=%s', row.id, size, row.tamanho_bytes)
                     reported = size
     if size != row.tamanho_bytes or digest.hexdigest() != row.sha256:
         raise ValueError('A integridade do TIF armazenado não confere. Envie o arquivo novamente.')
@@ -260,7 +268,7 @@ def _process_claimed(oid, token):
         require_space(root, 0 if use_remote else row.tamanho_bytes)
         with tempfile.TemporaryDirectory(prefix='ija-orto-process-', dir=root) as folder:
             source, cog = Path(folder)/'original.tif', Path(folder)/'mapa.tif'
-            current_app.logger.info('ortho_process start id=%s bytes=%s remote_source=%s', oid, row.tamanho_bytes, use_remote)
+            logger.info('ortho_process start id=%s bytes=%s remote_source=%s', oid, row.tamanho_bytes, use_remote)
             etag = _download(row, None if use_remote else source)
             from .remote_source import remote_source
             source_context = remote_source(row, folder, etag) if use_remote else nullcontext((source, None))
@@ -279,7 +287,7 @@ def _process_claimed(oid, token):
                     options = {'remote_environment': remote_environment} if remote_environment else {}
                     metadata = raster_command('convert', input_source, cog, **options)
                 remote = f'{remote_base}/mapa-{token}.tif'
-                current_app.logger.info('ortho_process uploading_map id=%s bytes=%s', oid, cog.stat().st_size)
+                logger.info('ortho_process uploading_map id=%s bytes=%s', oid, cog.stat().st_size)
                 marker = _upload(cog, remote)
                 markers.append(marker); outputs['cog_path'] = marker
                 # RGB navigation needs real range support from storage.
@@ -294,7 +302,7 @@ def _process_claimed(oid, token):
                 for marker in markers:
                     skybox.delete_skybox_file(marker)
                 return False
-        current_app.logger.info('ortho_process complete id=%s', oid)
+        logger.info('ortho_process complete id=%s', oid)
         return True
     except Exception as exc:
         db.session.rollback()

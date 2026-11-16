@@ -4,8 +4,6 @@ import tempfile
 import time
 from pathlib import Path
 
-from flask import current_app
-
 from .storage import TemporaryStorageError, require_space
 
 
@@ -30,6 +28,7 @@ def check_budget(root, limit):
 
 
 def run(args, environment, scratch, root, limit):
+    from .service import logger
     check_budget(root, limit)
     with tempfile.TemporaryFile(dir=scratch) as output, tempfile.TemporaryFile(dir=scratch) as errors:
         process = subprocess.Popen(args, stdout=output, stderr=errors, env=environment)
@@ -38,7 +37,7 @@ def run(args, environment, scratch, root, limit):
             while True:
                 used = check_budget(root, limit)
                 if time.monotonic() - last_log >= 30:
-                    current_app.logger.info('ortho_process converting scratch_bytes=%s limit_bytes=%s', used, limit)
+                    logger.info('ortho_process converting scratch_bytes=%s limit_bytes=%s', used, limit)
                     last_log = time.monotonic()
                 try:
                     process.wait(timeout=1)
