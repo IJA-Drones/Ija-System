@@ -18,7 +18,7 @@ MAX_PIXELS = max(0, int(os.environ.get('ORTHOMOSAIC_MAX_PIXELS', '0')))
 
 
 def inspect_raster(path):
-    with rasterio.Env(GDAL_CACHEMAX=64*1024*1024, GDAL_NUM_THREADS='1'):
+    with rasterio.Env(GDAL_CACHEMAX=256*1024*1024, GDAL_NUM_THREADS='1'):
         with rasterio.open(path, driver='GTiff') as src:
             if not src.crs:
                 raise ValueError('O TIF não possui sistema de coordenadas. Exporte um GeoTIFF georreferenciado.')
@@ -81,7 +81,7 @@ def display_source(src):
 
 def convert(source, destination):
     metadata = inspect_raster(source)
-    with rasterio.Env(GDAL_CACHEMAX=64*1024*1024, GDAL_NUM_THREADS='1'):
+    with rasterio.Env(GDAL_CACHEMAX=256*1024*1024, GDAL_NUM_THREADS='1'):
         with rasterio.open(source, driver='GTiff') as original, display_source(original) as src:
             with WarpedVRT(src, crs='EPSG:3857', resampling=Resampling.bilinear,
                            add_alpha=src.count == 3, warp_mem_limit=64) as warped:
@@ -90,6 +90,9 @@ def convert(source, destination):
                 # Budget the output plus GDAL's intermediate raster/overviews.
                 # This checks filesystem space, not a provider's external quota.
                 required = warped.width * warped.height * warped.count * 3 + 256 * 1024 * 1024
+                job_limit = int(os.environ.get('ORTHOMOSAIC_JOB_MAX_BYTES', '0'))
+                if job_limit and required > job_limit:
+                    raise ValueError('A conversão exige mais espaço que o limite seguro do processamento. O original permanece no Skybox; configure um disco de trabalho maior.')
                 if shutil.disk_usage(os.path.dirname(os.path.abspath(destination))).free < required:
                     raise ValueError('Espaço insuficiente na pasta de trabalho para gerar o ortomosaico e seus níveis de zoom. Libere espaço no servidor e tente novamente.')
                 raster_copy(warped, destination, driver='COG', COMPRESS='DEFLATE',

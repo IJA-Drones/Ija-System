@@ -10,6 +10,7 @@ from app.extensions import db
 from app.models import Ortomosaico, OrtomosaicoEstimativaAgua, Prefeitura
 from app.shared import skybox
 from app.shared.access import can_access_prefeitura, normalize_role
+from .access import ORTHOMOSAIC_ROLES, is_orthomosaic_user, register_dedicated_security
 from . import service
 from .storage import TemporaryStorageError
 
@@ -19,8 +20,11 @@ def restricted(fn):
     @login_required
     def wrapped(*args, **kwargs):
         # Deliberately fixed: Central TI must not grant this feature to other roles.
-        if normalize_role(current_user.tipo_usuario) not in {'dev', 'diretor'}:
+        if normalize_role(current_user.tipo_usuario) not in ORTHOMOSAIC_ROLES:
             abort(403)
+        if is_orthomosaic_user(current_user) and not Prefeitura.query.filter_by(
+                id=current_user.prefeitura_id, ativa=True).first():
+            abort(403, description='Vincule este usuário a uma prefeitura ativa.')
         return fn(*args, **kwargs)
     return wrapped
 
@@ -33,6 +37,7 @@ def get_record(oid):
 
 
 def register_routes(bp):
+    register_dedicated_security(bp)
     from . import water, uploads
     uploads.register_routes(bp, restricted)
 
@@ -94,7 +99,10 @@ def register_routes(bp):
     @bp.get('/ortomosaicos', endpoint='ortomosaicos')
     @restricted
     def index():
-        return render_template('ortomosaicos.html', prefeituras=Prefeitura.query.filter_by(ativa=True).order_by(Prefeitura.nome).all(),
+        prefeituras = Prefeitura.query.filter_by(ativa=True)
+        if is_orthomosaic_user(current_user):
+            prefeituras = prefeituras.filter_by(id=current_user.prefeitura_id)
+        return render_template('ortomosaicos.html', prefeituras=prefeituras.order_by(Prefeitura.nome).all(),
                                limite_mb=service.max_bytes() // (1024*1024),
                                limite_pixels=max(0, int(current_app.config.get('ORTHOMOSAIC_MAX_PIXELS', 0))),
                                ortho_google_key=(current_app.config.get('Maps_KEY_FRONT')
@@ -104,6 +112,8 @@ def register_routes(bp):
     @restricted
     def listing():
         query = Ortomosaico.query
+        if is_orthomosaic_user(current_user):
+            query = query.filter_by(prefeitura_id=current_user.prefeitura_id)
         value = request.args.get('prefeitura_id', '')
         if value:
             try:

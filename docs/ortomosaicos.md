@@ -2,7 +2,7 @@
 
 ## Acesso e uso
 
-O menu **Ortomosaicos** (`/ortomosaicos`) é exclusivo dos perfis `diretor` e `dev`. A restrição é obrigatória no servidor em todas as rotas, inclusive consultas, reprocessamento e leitura parcial do arquivo. A Central TI não pode conceder essa funcionalidade a outros perfis. DIRETOR e DEV mantêm o alcance global de prefeituras já existente no sistema; cada levantamento pertence obrigatoriamente a uma prefeitura, escolhida no envio.
+O menu **Ortomosaicos** (`/ortomosaicos`) é exclusivo dos perfis `diretor`, `dev` e `ortomosaico`. O perfil `ortomosaico` acessa somente esse módulo e somente sua prefeitura ativa vinculada; outras áreas e criação de solicitações pelo mapa ficam bloqueadas, inclusive por URL direta e independentemente da Central TI. A restrição é obrigatória no servidor em todas as rotas, inclusive consultas, reprocessamento e leitura parcial do arquivo. A Central TI não pode conceder essa funcionalidade a outros perfis. DIRETOR e DEV mantêm o alcance global de prefeituras já existente no sistema; cada levantamento pertence obrigatoriamente a uma prefeitura, escolhida no envio.
 
 Envie um GeoTIFF com bandas RGB identificadas de 8 ou 16 bits sem sinal, com sistema de coordenadas e transformação geográfica válidos. Bandas adicionais são preservadas no original; a visualização usa apenas vermelho, verde, azul e a banda de transparência identificada. Não há teto de tamanho ou de pixels imposto pela aplicação por padrão; o modo RGB não aceita MDS, bandas sem identificação de cor ou TIF sem georreferenciamento. `ORTHOMOSAIC_MAX_UPLOAD_MB=0` e `ORTHOMOSAIC_MAX_PIXELS=0` significam sem limite. Um valor positivo explícito no ambiente permite impor um teto operacional e prevalece sobre o padrão. O formulário e o servidor usam a mesma configuração, incluindo a validação de pixels no subprocesso.
 
@@ -60,8 +60,7 @@ em `/tmp`; o módulo ainda fazia outra cópia antes de enviá-la ao Skybox.
 Agora somente o endpoint de upload dos levantamentos recebe os arquivos em
 `instance/ortomosaicos-tmp`, fora da pasta pública e de `/tmp`. A validação e o
 envio ao Skybox reutilizam esse arquivo, que é removido antes do disparo do
-processamento. O download para conversão, a saída e os temporários de GDAL/Python
-também usam a pasta privada de trabalho. `ORTHOMOSAIC_TEMP_DIR` permite escolher
+processamento. Originais abaixo de 512 MiB são baixados para a pasta privada; os maiores são verificados por streaming e lidos diretamente no Skybox durante a conversão, sem uma cópia integral no disco local. Saídas e temporários de GDAL/Python usam a pasta privada. `ORTHOMOSAIC_TEMP_DIR` permite escolher
 outro caminho absoluto; vazio usa o padrão acima. Não há contratação automática
 de disco nem necessidade de disco persistente para essa configuração.
 
@@ -250,3 +249,38 @@ O primeiro deploy também revelou o cadastro ausente das duas novas rotas no
 mapa de permissões da Central de TI. Foram registradas junto às demais rotas
 privadas de ortomosaicos, mantendo DIRETOR/DEV, usuário proprietário do envio e
 escopo de prefeitura; a validação de permissões na inicialização permanece ativa.
+
+
+### Processamento de originais de 17 GB (16/11/2026)
+
+A instância foi encerrada ao ultrapassar 18 GB de armazenamento temporário durante
+a conversão, depois que o original já estava salvo. Mudar de `/tmp` para outra
+pasta efêmera não elimina a cota global do provedor. O original pode ser reutilizado
+pelo botão **Processar novamente**, sem novo upload.
+
+Para arquivos a partir de `ORTHOMOSAIC_REMOTE_SOURCE_MIN_MB=512`, o worker verifica
+o tamanho e SHA-256 lendo uma vez o original em blocos, sem gravá-lo em disco.
+Depois o GDAL lê as partes necessárias via `/vsicurl/`, com cache de rede limitado
+a 128 MiB. Cada leitura exige `If-Match` do ETag verificado; o servidor deve oferecer
+HTTP 206 e uma versão estável. Sem isso, a tentativa falha de forma explícita,
+sem fallback para baixar 17 GB no disco. A autenticação fica em um arquivo privado
+0600, removido ao terminar, nunca no URL, nos logs ou no mapa gerado.
+
+`ORTHOMOSAIC_PROCESS_MAX_WORK_MB=12288` limita o espaço de trabalho para essas
+conversões. O GDAL verifica a estimativa antes de começar; o processo pai acompanha
+o diretório a cada segundo e interrompe somente o subprocesso se ultrapassar o
+limite. Esse limite deixa margem para o restante do serviço na instância de 18 GB;
+não representa uma reserva contra uploads de outros módulos. Um disco montado maior
+pode ser configurado explicitamente, ajustando também o limite; nada é contratado
+automaticamente. Os jobs continuam serializados pela trava existente.
+
+Os logs `ortho_process start`, `verifying`, `converting`, `uploading_map` e `complete`
+permitem distinguir transferência, conversão e gravação. A aplicação não impõe um
+prazo total de execução; requests individuais de leitura têm timeout e repetição.
+
+Novos levantamentos ficam em `ortomosaico/<ambiente>/<nome-prefeitura>-<id>/<uuid>/`
+na raiz do Skybox. Originais já cadastrados e novos derivados deles conservam o
+caminho persistido; não há migração destrutiva das pastas anteriores.
+
+Referências: [leitura parcial GDAL](https://gdal.org/en/stable/user/virtual_file_systems.html),
+[opções HTTP](https://gdal.org/en/stable/user/configoptions.html).

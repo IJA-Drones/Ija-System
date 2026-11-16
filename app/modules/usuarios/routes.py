@@ -490,12 +490,6 @@ def register_routes(bp):
                 abort(403)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             can_manage_work_flags = can_manage_user_work_flags(current_user)
-            trabalha_oceano_azul = (
-                True if tipo_usuario == "manutencao" else (
-                    request.form.get("trabalha_oceano_azul") == "1"
-                    if can_manage_work_flags else bool(usuario.trabalha_oceano_azul)
-                )
-            )
             trabalha_agro = (
                 request.form.get("trabalha_agro") == "1"
                 if can_manage_work_flags
@@ -520,6 +514,12 @@ def register_routes(bp):
                 if tipo_usuario_form == TI_MANAGER_USER_TYPE and not can_assign_ti_manager_role(current_user):
                     abort(403)
                 tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
+            trabalha_oceano_azul = (
+                True if tipo_usuario == "manutencao" else (
+                    request.form.get("trabalha_oceano_azul") == "1"
+                    if can_manage_work_flags else bool(usuario.trabalha_oceano_azul)
+                )
+            )
             regiao = normalize_admin_user_regiao(
                 tipo_usuario_form,
                 (request.form.get("regiao") or "").strip() or None,

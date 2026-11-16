@@ -114,7 +114,9 @@
   <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if current_user.tipo_usuario == 'agente_endemias' %}
+      {% if current_user.tipo_usuario == 'ortomosaico' %}
+        {% set navbar_home_endpoint = 'main.ortomosaicos' %}
+      {% elif current_user.tipo_usuario == 'agente_endemias' %}
         {% set navbar_home_endpoint = 'main.vigilancia_agente' %}
       {% elif is_agro_context %}
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
@@ -308,6 +310,13 @@
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
+          {% if current_user.tipo_usuario == 'ortomosaico' %}
+          <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('main.ortomosaicos') }}">
+              <i class="bi bi-layers me-2"></i><span>Ortomosaicos e curvas</span>
+            </a>
+          </li>
+          {% else %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.treinamentos') %}active{% endif %}"
                href="{{ url_for('main.treinamentos') }}" {% if request.endpoint == 'main.treinamentos' %}aria-current="page"{% endif %}>
@@ -1141,6 +1150,7 @@
           {% endif %}
           {% endif %}
 
+          {% endif %}
           {% endif %}
           {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">

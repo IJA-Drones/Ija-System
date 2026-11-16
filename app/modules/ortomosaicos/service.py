@@ -21,7 +21,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Ortomosaico
+from app.models import Ortomosaico, Prefeitura
 from app.shared import skybox
 from .storage import TemporaryStorageError, TemporaryUpload, require_space, working_root
 
@@ -41,7 +41,7 @@ def max_bytes():
     return max(0, current_app.config.get('ORTHOMOSAIC_MAX_UPLOAD_MB', 0)) * 1024 * 1024
 
 
-def raster_command(mode, source, destination=None, interval=None, resolution=None):
+def raster_command(mode, source, destination=None, interval=None, resolution=None, *, remote_environment=None):
     processor = "dem_processor.py" if mode in {"inspect-dem", "contours"} else "processor.py"
     args = [sys.executable, str(Path(__file__).with_name(processor)), mode, str(source)]
     if destination:
@@ -51,9 +51,16 @@ def raster_command(mode, source, destination=None, interval=None, resolution=Non
     environment = os.environ.copy()
     environment['ORTHOMOSAIC_MAX_PIXELS'] = str(max(0, int(current_app.config.get('ORTHOMOSAIC_MAX_PIXELS', 0))))
     # Keep GDAL/Python scratch files next to the job, on the configured volume.
-    scratch = str(Path(source).resolve().parent)
+    scratch = str(Path(destination).resolve().parent if remote_environment else Path(source).resolve().parent)
     environment.update(TMPDIR=scratch, TMP=scratch, TEMP=scratch, CPL_TMPDIR=scratch)
-    result = subprocess.run(args, capture_output=True, text=True, env=environment, timeout=None)
+    if remote_environment:
+        from . import bounded_process
+        environment.update(remote_environment)
+        limit = max(1, int(current_app.config.get('ORTHOMOSAIC_PROCESS_MAX_WORK_MB', 12288))) * 1024 * 1024
+        environment['ORTHOMOSAIC_JOB_MAX_BYTES'] = str(max(0, limit - bounded_process.directory_bytes(working_root())))
+        result = bounded_process.run(args, environment, scratch, working_root(), limit)
+    else:
+        result = subprocess.run(args, capture_output=True, text=True, env=environment, timeout=None)
     try:
         payload = json.loads(result.stdout)
     except ValueError:
@@ -124,8 +131,10 @@ def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=No
                 metadata['_upload_id'] = upload_id
             url = db.engine.url
             namespace = hashlib.sha256(f'{url.host}|{url.database}|{url.username}'.encode()).hexdigest()[:16]
-            base = current_app.config.get('SKYBOX_BASE_DIR') or 'dados ordens de serviço'
-            remote = f'{base}/ortomosaicos/{namespace}/prefeitura-{prefeitura_id}/{uuid.uuid4().hex}/original.tif'
+            # Mapping files have their own root, independent of OS media storage.
+            prefeitura = db.session.get(Prefeitura, prefeitura_id)
+            prefeitura_nome = secure_filename(prefeitura.nome if prefeitura else '').replace('_', '-').lower()[:100] or 'prefeitura'
+            remote = f'ortomosaico/{namespace}/{prefeitura_nome}-{prefeitura_id}/{uuid.uuid4().hex}/original.tif'
             marker = _upload(path, remote)
             row = Ortomosaico(nome=name, prefeitura_id=prefeitura_id, usuario_id=user_id,
                 arquivo_nome=filename[:255], original_path=marker, tamanho_bytes=size,
@@ -184,19 +193,28 @@ def _keep_claim_alive(oid, token):
 
 
 def _download(row, destination):
-    digest = hashlib.sha256(); size = 0
+    # destination=None verifies the entire original in a bounded stream, without
+    # retaining its 17+ GB in Render's ephemeral filesystem.
+    digest = hashlib.sha256(); size = 0; reported = 0
     with skybox._request('GET', skybox.remote_path_from_marker(row.original_path), stream=True) as response:
         if response.status_code != 200:
             raise ValueError('Não foi possível recuperar o TIF original do Skybox.')
-        with open(destination, 'wb') as output:
+        etag = response.headers.get('ETag')
+        with open(destination, 'wb') if destination else nullcontext(None) as output:
             for chunk in response.iter_content(1024*1024):
-                require_space(Path(destination).parent, len(chunk))
                 size += len(chunk)
                 if size > row.tamanho_bytes:
                     raise ValueError('O arquivo armazenado tem tamanho diferente do original.')
-                output.write(chunk); digest.update(chunk)
+                if output is not None:
+                    require_space(Path(destination).parent, len(chunk))
+                    output.write(chunk)
+                digest.update(chunk)
+                if size - reported >= 512 * 1024 * 1024:
+                    current_app.logger.info('ortho_process verifying id=%s bytes=%s total=%s', row.id, size, row.tamanho_bytes)
+                    reported = size
     if size != row.tamanho_bytes or digest.hexdigest() != row.sha256:
         raise ValueError('A integridade do TIF armazenado não confere. Envie o arquivo novamente.')
+    return etag
 
 
 def process_one(oid):
@@ -238,21 +256,30 @@ def _process_claimed(oid, token):
     markers = []
     try:
         root = working_root()
-        require_space(root, row.tamanho_bytes)
+        use_remote = row.tamanho_bytes >= max(1, int(current_app.config.get('ORTHOMOSAIC_REMOTE_SOURCE_MIN_MB', 512))) * 1024 * 1024
+        require_space(root, 0 if use_remote else row.tamanho_bytes)
         with tempfile.TemporaryDirectory(prefix='ija-orto-process-', dir=root) as folder:
             source, cog = Path(folder)/'original.tif', Path(folder)/'mapa.tif'
-            _download(row, source)
+            current_app.logger.info('ortho_process start id=%s bytes=%s remote_source=%s', oid, row.tamanho_bytes, use_remote)
+            etag = _download(row, None if use_remote else source)
+            from .remote_source import remote_source
+            source_context = remote_source(row, folder, etag) if use_remote else nullcontext((source, None))
             remote_base = skybox.remote_path_from_marker(row.original_path).rsplit('/', 1)[0]
             outputs = {}
             if row.tipo == 'dem':
                 destination = Path(folder)/'curvas'
-                metadata = raster_command('contours', source, destination, row.intervalo_m, row.resolucao_m)
+                with source_context as (input_source, remote_environment):
+                    options = {'remote_environment': remote_environment} if remote_environment else {}
+                    metadata = raster_command('contours', input_source, destination, row.intervalo_m, row.resolucao_m, **options)
                 for field, filename in (('curvas_path', 'curvas.geojson'), ('jpeg_path', 'curvas.jpg')):
                     marker = _upload(destination/filename, f'{remote_base}/{token}-{filename}')
                     markers.append(marker); outputs[field] = marker
             else:
-                metadata = raster_command('convert', source, cog)
+                with source_context as (input_source, remote_environment):
+                    options = {'remote_environment': remote_environment} if remote_environment else {}
+                    metadata = raster_command('convert', input_source, cog, **options)
                 remote = f'{remote_base}/mapa-{token}.tif'
+                current_app.logger.info('ortho_process uploading_map id=%s bytes=%s', oid, cog.stat().st_size)
                 marker = _upload(cog, remote)
                 markers.append(marker); outputs['cog_path'] = marker
                 # RGB navigation needs real range support from storage.
@@ -267,6 +294,7 @@ def _process_claimed(oid, token):
                 for marker in markers:
                     skybox.delete_skybox_file(marker)
                 return False
+        current_app.logger.info('ortho_process complete id=%s', oid)
         return True
     except Exception as exc:
         db.session.rollback()

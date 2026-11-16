@@ -16,8 +16,9 @@ class TemporaryStorageError(RuntimeError):
 
 def working_root():
     configured = (current_app.config.get('ORTHOMOSAIC_TEMP_DIR') or '').strip()
-    # Use the existing private application filesystem, not Render's separately
-    # capped /tmp volume. This is scratch space; durable files remain in Skybox.
+    # All ephemeral paths on Render share the provider's quota (including /tmp).
+    # Large processing jobs read originals remotely and bound generated scratch.
+    # Durable files remain in Skybox; a configured mounted disk can hold scratch.
     path = Path(configured) if configured else Path(current_app.instance_path) / 'ortomosaicos-tmp'
     if not path.is_absolute():
         raise TemporaryStorageError('ORTHOMOSAIC_TEMP_DIR deve ser um caminho absoluto no disco de trabalho.')

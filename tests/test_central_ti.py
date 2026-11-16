@@ -128,6 +128,9 @@ class CentralTiTests(unittest.TestCase):
 
     def test_unconfigured_profiles_display_existing_rules_without_writing(self):
         self.login()
+        # The shared layout lazily initializes chatbot defaults independently of Central TI.
+        from app.modules.chatbot import settings as chatbot_settings
+        chatbot_settings.policy()
         statements = []
         def capture(connection, cursor, statement, parameters, context, executemany):
             statements.append(statement.lstrip().split()[0].upper())

@@ -263,7 +263,7 @@ Referências: [autenticação](https://docs.redgps.com/books/webservice/page/met
 | `SKYBOX_WEBDAV_URL` | Ausente | URL DAV completa do armazenamento. |
 | `SKYBOX_USERNAME` | Ausente | Usuário do armazenamento. |
 | `SKYBOX_APP_PASSWORD` | Ausente | Senha de aplicativo WebDAV. |
-| `SKYBOX_BASE_DIR` | `dados ordens de serviço` | Diretório remoto base. |
+| `SKYBOX_BASE_DIR` | `dados ordens de serviço` | Diretório remoto base das mídias operacionais. Novos ortomosaicos e curvas usam a pasta independente `ortomosaico/` na raiz WebDAV, com subpastas por ambiente, nome da prefeitura + ID (ex.: `prefeitura-teste-2`) e levantamento. Arquivos anteriores continuam no caminho registrado no banco. |
 | `WEBDAV_URL`, `WEBDAV_USER`, `WEBDAV_PASS`, `WEBDAV_BASE_DIR` | Fallback para os equivalentes `SKYBOX_*` | Compatibilidade dos fluxos de OS; se ambos existirem, `WEBDAV_*` prevalece nesses fluxos. O helper genérico Skybox continua usando `SKYBOX_*`. |
 | `WEBDAV_CONNECT_TIMEOUT_SECONDS` | `30` | Timeout de conexão no fluxo WebDAV de OS. |
 | `WEBDAV_TRANSFER_TIMEOUT_SECONDS` | `3600` | Timeout de transferência no mesmo fluxo. |

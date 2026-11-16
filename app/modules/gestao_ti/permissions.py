@@ -147,6 +147,9 @@ def route_options(endpoint, method="GET", args=None):
 
 
 def can_access_endpoint(user, endpoint, method="GET", args=None, legacy=True):
+    from app.modules.ortomosaicos.access import is_orthomosaic_user, dedicated_endpoint_allowed
+    if is_orthomosaic_user(user):
+        return dedicated_endpoint_allowed(endpoint)
     if profile_code(user) == "agente_endemias" and endpoint.startswith("main.") and endpoint not in {
         "main.vigilancia_agente", "main.vigilancia", "main.inicio", "main.agente_posicao",
         "main.treinamentos", "main.treinamentos_arquivo"}:
@@ -170,7 +173,8 @@ def route_access(user, legacy):
 
 
 def ui_url_allowed(user, url, method=None):
-    if active_configuration(user) is None:
+    from app.modules.ortomosaicos.access import is_orthomosaic_user
+    if active_configuration(user) is None and not is_orthomosaic_user(user):
         return True
     parsed = urlsplit(str(url or ""))
     if parsed.netloc or not parsed.path.startswith("/"):
@@ -188,6 +192,9 @@ def ui_url_allowed(user, url, method=None):
 
 
 def ui_guard(user, endpoints, legacy):
+    from app.modules.ortomosaicos.access import is_orthomosaic_user
+    if is_orthomosaic_user(user):
+        return any(can_access_endpoint(user, endpoint) for endpoint in endpoints)
     if active_configuration(user) is None:
         return bool(legacy)
     return any(can_access_endpoint(user, endpoint, method)
