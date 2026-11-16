@@ -2,6 +2,7 @@
 
 import csv
 import io
+import json
 import time
 from datetime import date
 
@@ -70,6 +71,45 @@ def available_agents(conn, prefeitura):
 
 
 class PlanningStore(FieldStore):
+    def export_csv(self, prefeitura, demo, kind, code=""):
+        """Export current data, including incomplete drafts; never require release or visits."""
+        with self.connection() as conn:
+            if kind == "territorio":
+                columns = (*RG_COLUMNS, "geometria")
+                items = [dict(quarteirao=row["code"], **{key: row[key] for key in RG_COLUMNS[1:]},
+                              geometria=json.dumps(row["geometria"], ensure_ascii=False) if row["geometria"] else "")
+                         for row in rows(conn, CampoQuarteirao.__table__, prefeitura, demo)]
+            elif kind == "levantamentos":
+                columns = ("codigo", "titulo", "inicio", "fim", "responsavel", "fonte", "situacao")
+                items = [dict(codigo=row["code"], titulo=row["titulo"], inicio=row["inicio"], fim=row["fim"],
+                              responsavel=row["responsavel"], fonte=row["fonte"], situacao=row["status"])
+                         for row in rows(conn, CampoPlano.__table__, prefeitura, demo,
+                                         *([CampoPlano.code == code] if code else []))]
+            elif kind == "amostra":
+                strata, blocks = CampoPlanoEstrato.__table__, CampoPlanoQuarteirao.__table__
+                columns = PLAN_COLUMNS if code else ("plano", *PLAN_COLUMNS)
+                query = sa.select(strata.c.plano, strata.c.code.label("estrato"),
+                    strata.c.imoveis.label("imoveis_estrato"), strata.c.meta.label("meta_estrato"), strata.c.criterio,
+                    blocks.c.quarteirao, blocks.c.meta.label("meta_quarteirao"), blocks.c.agente_id).select_from(
+                    strata.outerjoin(blocks, sa.and_(blocks.c.prefeitura == strata.c.prefeitura,
+                        blocks.c.demo == strata.c.demo, blocks.c.plano == strata.c.plano, blocks.c.estrato == strata.c.code)))
+                query = query.where(*scoped(strata, prefeitura, demo))
+                if code:
+                    query = query.where(strata.c.plano == code)
+                items = [dict(row) for row in conn.execute(query.order_by(strata.c.plano, strata.c.code, blocks.c.quarteirao)).mappings()]
+            else:
+                raise FieldConflict("Exportação de planejamento inválida.")
+        stream = io.StringIO(newline="")
+        writer = csv.writer(stream, delimiter=";")
+        writer.writerow(columns)
+        for item in items:
+            values = []
+            for column in columns:
+                value = "" if item.get(column) is None else str(item[column])
+                values.append("'" + value if value.startswith(("=", "+", "-", "@", "\t", "\r")) else value)
+            writer.writerow(values)
+        return stream.getvalue().encode("utf-8-sig")
+
     def released_plans(self, prefeitura, demo):
         table = CampoPlano.__table__
         with self.connection() as conn:
@@ -372,7 +412,7 @@ def validate_visits(conn, records, prefeitura, demo, reference, actor=None):
         if any(record[key] != block["territorio"][column] for key, column in (("bairro", "bairro"), ("area_codigo", "area"))):
             raise FieldConflict("A área e o bairro devem corresponder ao quarteirão planejado.")
         inspected = date.fromisoformat(record["data_inspecao"])
-        if not plan["inicio"] <= inspected <= plan["fim"]:
+        if not demo and not plan["inicio"] <= inspected <= plan["fim"]:
             raise FieldConflict("A data da visita está fora do período do levantamento.")
 
 

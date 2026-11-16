@@ -8,7 +8,7 @@ const polygon = (west, south, east, north) => ({type:'Polygon',coordinates:[[
   [west,south],[east,south],[east,north],[west,north],[west,south]
 ]]});
 
-function map({areas=false, selected=true} = {}) {
+function map({areas=false, selected=true, outsidePernambuco=false} = {}) {
   const element = () => ({children:[],attributes:{},handlers:{},dataset:{},checked:true,
     setAttribute(key,value){this.attributes[key]=String(value);},
     append(child){this.children.push(child);},replaceChildren(...children){this.children=children;},
@@ -17,7 +17,7 @@ function map({areas=false, selected=true} = {}) {
     .map(name=>['campo-territorio-'+name,element()]));
   const controls=['iip','visitas'].map(name=>({...element(),dataset:{territorialLayer:name}}));
   nodes['campo-territorio-data'].textContent=JSON.stringify({
-    contexto:{features:[
+    contexto:{metadata:{recorte:outsidePernambuco?'Município de São Paulo':'Pernambuco continental'},features:outsidePernambuco?[]:[
       {geometry:polygon(-37,-9,-36,-8),properties:{nome:'Pesqueira',codigo:'2610905',selecionado:selected}},
       {geometry:polygon(-36,-9,-35,-8),properties:{nome:'Contexto',codigo:'2600000'}}]},
     geografia:{features:areas?[{geometry:polygon(-36.72,-8.36,-36.70,-8.34),properties:{
@@ -66,4 +66,14 @@ test('missing municipal context leaves the close-up usable without inventing con
   const x=map({selected:false});
   assert.equal(x.nodes['campo-territorio-municipio'].disabled,true);
   assert.match(x.status.textContent,/0 contornos de planejamento.*Visão aproximada/);
+});
+
+test('a survey outside Pernambuco never falls back to that state and keeps its visits visible', () => {
+  const x=map({outsidePernambuco:true});
+  assert.equal(x.nodes['campo-territorio-municipio'].disabled,true);
+  assert.equal(x.nodes['campo-territorio-estado'].disabled,true);
+  const marker=x.svg.children.find(el=>el.attributes.class?.startsWith('campo-visita'));
+  assert.equal(marker.attributes.cx,'500');
+  assert.equal(marker.attributes.cy,'310');
+  assert.doesNotMatch(x.status.textContent,/Pernambuco/);
 });

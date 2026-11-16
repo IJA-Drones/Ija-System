@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from app.extensions import db
-from app.modules.vigilancia.results import ResultsStore, filters_from, municipality_ibge
+from app.modules.vigilancia.results import ResultsStore, filters_from, municipality_ibge, iip_classification, iip_color
 from app.modules.vigilancia.sinan_database import DatabaseStore
 from app.modules.vigilancia import sinan_import
 from app.modules.vigilancia.field_capture import capture_csv
@@ -18,6 +18,55 @@ from test_vigilancia_capture import record, deposits
 
 
 POLYGON = {'type':'Polygon','coordinates':[[[-36.701,-8.351],[-36.699,-8.351],[-36.699,-8.349],[-36.701,-8.349],[-36.701,-8.351]]]}
+
+
+@pytest.mark.parametrize('value,code,color', [
+    (None, 'sem_dados', '#94a3b8'), (0, 'satisfatorio', '#15803d'),
+    (.999, 'satisfatorio', '#15803d'), (1, 'alerta', '#facc15'),
+    (3.9, 'alerta', '#facc15'), (3.9001, 'risco', '#dc2626'),
+    (4, 'risco', '#dc2626'), (100, 'risco', '#dc2626'),
+    (float('nan'), 'sem_dados', '#94a3b8'), (float('inf'), 'sem_dados', '#94a3b8'),
+    (-1, 'sem_dados', '#94a3b8'), (101, 'sem_dados', '#94a3b8'),
+])
+def test_iip_classification_boundaries_and_missing_values(value, code, color):
+    assert iip_classification(value)['codigo'] == code
+    assert iip_color(value) == color
+
+
+def test_map_classification_changes_with_confirmed_visits_and_keeps_unvisited_areas_gray(planned):
+    c, planning = planned
+    create(planning)
+    before = planning.overview(7, True)['territorio'][0]
+    planning.mutate(7, True, 'a', 'territorio', dict(quarteirao='Q-01', bairro='Bairro Sintético', area='A-01',
+        imoveis='100', referencia='RG', geometria_acao='substituir', geometria_confirmada='sim',
+        territorio_versao=str(before['atualizado_em']), geometria=json.dumps(POLYGON)))
+    change(planning, 'quarteirao', estrato='E-01', quarteirao='Q-01', meta_quarteirao='20', agente_id='701')
+    change(planning, 'liberar', amostra_validada='sim')
+    results = ResultsStore(planning.engine)
+    filters = filters_from({'levantamento':'L-2026-01'})
+    report = results.report(7, True, filters)
+    assert report['registros'] == [] and report['indicadores'] == []
+    assert report['levantamentos'] == ['L-2026-01']
+    props = report['geografia']['features'][0]['properties']
+    assert props['iip'] is None and props['classificacao_iip'] == 'sem_dados' and props['cor'] == '#94a3b8'
+    pending = prepare_planned(c, planning, situacao='FECHADO', positivo_aedes='')
+    planning.confirm(pending['id'], prefeitura=7, actor='a')
+    assert results.report(7, True, filters)['geografia']['features'][0]['properties']['classificacao_iip'] == 'sem_dados'
+    negative = prepare_planned(c, planning, imovel_codigo='IM-002', inspecao_codigo='VIS-002', positivo_aedes='NAO', **deposits())
+    planning.confirm(negative['id'], prefeitura=7, actor='a')
+    props = results.report(7, True, filters)['geografia']['features'][0]['properties']
+    assert props['iip'] == 0 and props['classificacao_iip'] == 'satisfatorio'
+    positive = prepare_planned(c, planning, imovel_codigo='IM-003', inspecao_codigo='VIS-003')
+    planning.confirm(positive['id'], prefeitura=7, actor='a')
+    props = results.report(7, True, filters)['geografia']['features'][0]['properties']
+    assert props['iip'] == 50 and props['classificacao_iip'] == 'risco'
+    assert props['cor'] == '#dc2626'
+    # O período é aplicado também à classificação, sem reaproveitar o resultado antigo.
+    empty_period = results.report(7, True, filters_from({'levantamento':'L-2026-01', 'inicio':'2026-10-20'}))
+    assert empty_period['geografia']['features'][0]['properties']['classificacao_iip'] == 'sem_dados'
+    assert results.report(7, True, filters_from({'levantamento':'L-2026-01', 'area':'OUTRA'}))['geografia']['features'] == []
+    assert results.report(7, False, filters)['geografia']['features'] == []
+    assert results.report(8, True, filters)['geografia']['features'] == []
 
 
 @pytest.mark.parametrize('path', ['/vigilancia/campo', '/vigilancia/planejamento', '/vigilancia/resultados'])

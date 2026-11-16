@@ -15,14 +15,30 @@ Contas de agente continuam restritas aos seus levantamentos.
   Tratamento focal segue o recorte territorial e as datas, pois não pertence a
   um levantamento LIRAa. Não entra no cálculo dos índices LIRAa.
 - Mapa com contornos preservados no plano, agrupados por estrato/área e
-  coloridos pelo IIP preliminar do grupo. A escala é numérica, de 0 a 100%, e
-  não classifica risco de surto. Não se faz média simples dos índices.
+  coloridos pela classificação do IIP preliminar do grupo: verde para IIP < 1%,
+  amarelo de 1% a 3,9%, vermelho acima de 3,9% e cinza sem imóveis inspecionados
+  no recorte. A classificação usa o IIP calculado, antes da formatação visual,
+  e não prevê epidemias. Não se faz média simples dos índices.
 - Camadas independentes de visitas LIRAa, ações focais e coordenadas de um
   lote SINAN autorizado ou demonstrativo, conforme o modo selecionado.
 - Exportação dos índices em CSV, dos contornos em GeoJSON e impressão pelo
   navegador, com opção de salvar em PDF. A versão impressa inclui os gráficos,
   tabelas e um desenho dos contornos sem mapa-base. Não exporta imagens do
   Google nem as coordenadas individuais SINAN pelo GeoJSON.
+
+As faixas seguem a [classificação publicada pela SMS-Rio](https://prefeitura.rio/saude/liraa-indice-de-infestacao-de-mosquito-da-dengue-na-cidade-do-rio-e-de-066/).
+A mesma classificação alimenta o mapa sobre ruas, os contornos para impressão,
+o GeoJSON e a visualização agregada do Portal do Cidadão. Áreas do plano liberado
+sem inspeções no período aparecem em cinza; um IIP válido igual a zero fica verde.
+
+No **Portal do Cidadão → Mapa de risco**, a mesma classificação aparece sobre
+ruas, com seleção de município, origem dos dados, levantamento e área. A visão
+inicial enquadra todas as áreas do levantamento; a opção de resumo municipal
+permite consultar o município completo. Ao selecionar um contorno, o portal
+mostra seu IIP, classificação e contagens agregadas. SINAN e focal permanecem
+em camadas municipais separadas. Não são enviados pontos de imóveis, visitas
+individuais, agentes, proprietários de lotes ou localizações de casos ao mapa
+público. Se o Google Maps falhar, os contornos continuam disponíveis em SVG.
 
 O mapa de IIP exige selecionar um único levantamento. A comparação de vários
 levantamentos permanece nas tabelas e gráficos. Contornos são os quarteirões
@@ -45,6 +61,17 @@ Conferir a correspondência real antes de definir essa variável e reiniciar o
 serviço. A ausência ou uma configuração inválida desabilita a comparação SINAN,
 com aviso; não interfere nos índices de campo. Esta entrega não preenche essa
 configuração no banco nem associa prefeituras automaticamente.
+
+O mapa territorial dos resultados e a camada LIRAa do mapa de risco usam o
+contexto compatível com esse vínculo: municípios de Pernambuco mantêm a malha
+estadual continental; São Paulo (`3550308`) usa o limite municipal do IBGE,
+consultado e preservado em 12/11/2026. A consulta da tela não depende da API do
+IBGE nem do Google Maps. **Ver município** mostra o limite municipal; **Enquadrar
+levantamento** aproxima os contornos e visitas do recorte. O botão estadual
+aparece apenas onde há uma malha estadual disponível. Outros municípios sem
+malha local continuam exibindo contornos e coordenadas do levantamento, com
+aviso, sem utilizar Pernambuco como referência. O limite de São Paulo não é
+a delimitação da UVIS Sé; os contornos amostrados vêm do planejamento.
 
 O catálogo contempla os 15 municípios do CONDOMAR já disponíveis no SINAN.
 Para a POC regional, preencher uma entrada por ID interno real no mesmo objeto

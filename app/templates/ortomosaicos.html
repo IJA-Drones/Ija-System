@@ -65,7 +65,7 @@
   <p id="ortho-basemap-status" class="ortho-message" role="status" aria-live="polite"></p>
   <p id="ortho-message" class="ortho-message" role="status" aria-live="polite"></p>
   <dialog id="ortho-dialog" class="ortho-dialog">
-    <form id="ortho-form">
+    <form id="ortho-form" class="form-no-loading">
       <div class="ortho-dialog-head"><h2>Novo levantamento</h2><button id="ortho-close" type="button" aria-label="Fechar">×</button></div>
       <p>Envie um GeoTIFF georreferenciado. O resultado ficará disponível após o processamento.</p>
       <label for="ortho-type">Tipo de arquivo</label>
@@ -82,7 +82,7 @@
       <label for="ortho-name">Nome do levantamento</label><input id="ortho-name" name="nome" maxlength="120" required placeholder="Ex.: Base PCTI · Outubro 2026">
       <label for="ortho-prefeitura">Prefeitura responsável</label><select id="ortho-prefeitura" name="prefeitura_id" required><option value="">Selecione a prefeitura</option>{% for p in prefeituras %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
       <label for="ortho-file">Arquivo GeoTIFF</label><input id="ortho-file" name="arquivo" type="file" accept=".tif,.tiff,image/tiff" required>
-      <small><span id="ortho-format-hint">RGB de 8 bits, com ou sem transparência.</span>
+      <small><span id="ortho-format-hint">RGB de 8 ou 16 bits, com bandas de cor identificadas e transparência opcional.</span>
         {% if limite_mb %}Até {{ limite_mb }} MB por arquivo.{% else %}Sem limite de tamanho definido pelo sistema.{% endif %}
         {% if limite_pixels %}Até {{ limite_pixels }} pixels.{% endif %}
         Arquivos grandes podem levar mais tempo para enviar e processar.
@@ -101,5 +101,6 @@
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261022-exportar') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261022-exportar') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-upload.js', v='20261113') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261113-upload') }}"></script>
 {% endblock %}

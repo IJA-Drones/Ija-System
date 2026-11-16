@@ -1,18 +1,35 @@
 {% extends "base.html" %}
+{% from '_vigilancia_fluxo_levantamento.html' import survey_flow as render_survey_flow %}
 {% macro input(name, label, kind='text', required=true, value='', max_length=80) %}
 <div><label class="form-label" for="campo-{{ name }}">{{ label }}</label><input class="form-control" id="campo-{{ name }}" name="{{ name }}" type="{{ kind }}" {% if required %}required{% endif %} maxlength="{{ max_length }}" {% if kind == 'number' %}step="any"{% endif %} value="{{ form.get(name, value) }}"></div>
 {% endmacro %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261020-3') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_fluxo.css', v='20261112-1') }}">{% endblock %}
 {% block content %}
 <main class="vigilancia-preview-page py-4" data-vigilancia-view data-vigilancia-default="{{ 'registro-visita' if can_write else 'resultados-campo' }}">
   {% include '_vigilancia_navegacao.html' %}
+  {% set current_plan = filters.levantamento or (plan_reference.plano if plan_reference else '') %}
   <header class="vigilancia-preview-header">
     <div><h1>Focal e LIRAa</h1><p class="vigilancia-preview-muted">Registre visitas e consulte os indicadores por levantamento.</p></div>
-<div class="vigilancia-preview-actions">{% if prefeitura_id %}<a class="btn btn-outline-primary" href="#resultados-campo" data-vigilancia-target="resultados-campo">Visitas registradas</a>{% endif %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, demo='true' if demo else 'false') }}">Importar visitas</a></div>
+    {% if can_write %}<a class="btn btn-primary" href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', plano=current_plan, fluxo='levantamento', etapa='1', _anchor='novo-levantamento') }}">Cadastrar levantamento</a>{% endif %}
+<div class="vigilancia-preview-actions">{% if prefeitura_id %}<a class="btn btn-outline-primary" href="#resultados-campo" data-vigilancia-target="resultados-campo">Visitas registradas</a>{% endif %}<a class="btn btn-outline-primary" href="{{ url_for('main.vigilancia_importacoes', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', **(dict(levantamento_destino=current_plan, fluxo='levantamento') if survey_flow else {})) }}">Importar visitas</a></div>
   </header>
+  {% if survey_flow %}
+    {{ render_survey_flow(4, prefeitura_id, demo, current_plan, can_export) }}
+
+    {% if flow_overview.get('plano') and can_write %}
+      {% if flow_overview.plano.status == 'LIBERADO' %}
+      <form method="get" class="vigilancia-preview-panel vigilancia-campo-grid" aria-label="Selecionar quarteirão da visita">
+        <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}"><input type="hidden" name="fluxo" value="levantamento"><input type="hidden" name="plano" value="{{ current_plan }}"><input type="hidden" name="levantamento" value="{{ current_plan }}">
+        <label class="form-label">Quarteirão da visita<select name="quarteirao" class="form-select" required><option value="">Selecione</option>{% for block in flow_overview.quarteiroes %}<option value="{{ block.quarteirao }}" {% if plan_reference and plan_reference.quarteirao == block.quarteirao %}selected{% endif %}>{{ block.quarteirao }} · Estrato {{ block.estrato }}</option>{% endfor %}</select></label>
+        <div class="vigilancia-campo-align"><button class="btn btn-outline-primary">Carregar quarteirão</button></div>
+      </form>
+      {% else %}<p class="vigilancia-preview-help">O levantamento está {{ flow_overview.plano.status }}. Para confirmar novas visitas planejadas, revise e libere a amostra na etapa 3. As exportações continuam disponíveis.</p>{% endif %}
+    {% endif %}
+  {% endif %}
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
   <section class="liraa-scope-bar" aria-label="Prefeitura e origem dos dados">
     <form method="get" action="{{ url_for('main.vigilancia_campo') }}" class="vigilancia-campo-grid">
+      {% if survey_flow %}<input type="hidden" name="fluxo" value="levantamento">{% endif %}
       {% include '_vigilancia_prefeitura_filter.html' %}
       <div><label class="form-label" for="escopo-demo">Dados</label><select class="form-select" id="escopo-demo" name="demo"><option value="true" {% if demo %}selected{% endif %}>Demonstração - dados fictícios</option><option value="false" {% if not demo %}selected{% endif %}>Dados autorizados da vigilância</option></select></div>
       <div class="vigilancia-campo-align"><button class="btn btn-primary" type="submit">Consultar</button></div>
@@ -20,6 +37,13 @@
   </section>
   {% if prefeitura_id and can_write %}
   <div id="registro-visita" data-vigilancia-panel>
+  {% with batch=review_batch, result=review_batch.report if review_batch else none, field_inline=true, import_plan=current_plan %}
+    {% include '_vigilancia_cargas.html' %}
+    {% include '_vigilancia_previa_visitas.html' %}
+  {% endwith %}
+  {% if survey_flow %}{% with field_mode=true, field_inline=true, batch=review_batch, import_demo=demo, import_plan=current_plan, import_plans=flow_overview.get('planos', [])|selectattr('status', 'equalto', 'LIBERADO')|list %}
+    {% include '_vigilancia_importar_visitas_form.html' %}
+  {% endwith %}{% endif %}
   <details class="vigilancia-preview-panel" {% if os_context %}open{% endif %}><summary id="os-heading">Referência de endereço por OS · opcional</summary>
     <form method="get" action="{{ url_for('main.vigilancia_campo') }}" class="vigilancia-campo-grid">
       <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="false">
@@ -41,8 +65,9 @@
     <h2 id="registro-heading">Registrar visita</h2>
     {% if plan_reference %}<div class="vigilancia-preview-notice"><p>Levantamento {{ plan_reference.plano }} · Quarteirão {{ plan_reference.quarteirao }}. <a href="{{ url_for('main.vigilancia_planejamento', prefeitura_id=prefeitura_id, demo='true' if demo else 'false', plano=plan_reference.plano) }}#amostra">Voltar ao planejamento</a></p></div>{% endif %}
     <p class="vigilancia-preview-help mb-3">Preencha os dados e revise antes de confirmar.</p>
-    <form method="post" action="{{ url_for('main.vigilancia_campo') }}" id="campo-form" data-ti-allowed="true">
+    <form method="post" action="{{ url_for('main.vigilancia_campo', pagina=page_number, **query) }}" id="campo-form" data-ti-allowed="true">
       <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}"><input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}">
+      {% if survey_flow %}<input type="hidden" name="fluxo" value="levantamento">{% endif %}
       {% if os_context %}<input type="hidden" name="os_id" value="{{ os_context.id }}">{% endif %}
       {% if plan_reference %}<input type="hidden" name="plano" value="{{ plan_reference.plano }}"><input type="hidden" name="quarteirao" value="{{ plan_reference.quarteirao }}">{% endif %}
       <fieldset class="liraa-task-section"><legend>1. Identificação da visita</legend><div class="vigilancia-campo-grid">
@@ -80,6 +105,7 @@
     <div class="vigilancia-preview-section-header"><h2 id="resultados-heading">Visitas registradas</h2>{% if can_write %}<a class="btn btn-primary" href="#registro-visita" data-vigilancia-target="registro-visita">Registrar visita</a>{% endif %}</div>
     <form method="get" action="{{ url_for('main.vigilancia_campo', _anchor='resultados-campo') }}" class="vigilancia-campo-grid">
       <input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}"><input type="hidden" name="demo" value="{{ 'true' if demo else 'false' }}">
+      {% if survey_flow %}<input type="hidden" name="fluxo" value="levantamento">{% endif %}
       <div><label class="form-label" for="filtro-origem">Atividade</label><select class="form-select" id="filtro-origem" name="origem">{% for value, label in [('', 'Todas'), ('LIRAA', 'LIRAa'), ('FOCAL', 'Tratamento focal')] %}<option value="{{ value }}" {% if filters.origem == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       {% for name, label, kind in [('levantamento', 'Levantamento', 'text'), ('estrato', 'Estrato', 'text'), ('inicio', 'Data inicial', 'date'), ('fim', 'Data final', 'date')] %}<div><label class="form-label" for="filtro-{{ name }}">{{ label }}</label><input class="form-control" id="filtro-{{ name }}" name="{{ name }}" type="{{ kind }}" maxlength="80" value="{{ filters[name] }}"></div>{% endfor %}
       <div class="vigilancia-campo-align"><button class="btn btn-outline-primary" type="submit">Aplicar filtros</button></div>
@@ -103,4 +129,4 @@
   {% endif %}
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-fluxo.js', v='20261020-3') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia-campo.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vigilancia-fluxo.js', v='20261020-3') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia-campo.js') }}" defer></script><script src="{{ url_for('static', filename='js/vigilancia-validacao.js', v='20261112-1') }}" defer></script>{% endblock %}

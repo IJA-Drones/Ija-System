@@ -13,37 +13,29 @@
 {% set can_manage = (central_ti_permission('prefeitura.veiculos.criar') or central_ti_permission('prefeitura.veiculos.editar') or central_ti_permission('prefeitura.veiculos.excluir')) %}
 {% endif %}
 
-<div class="container-fluid py-4 vehicles-list-page">
-
-    {# --- CABEÇALHO PADRONIZADO --- #}
-    <div class="dashboard-header mb-4">
-        <div style="margin-right: auto !important;">
-            <h2 class="text-dark">
-                <i class="bi bi-truck-front-fill me-2 text-primary"></i> Frota de Veículos
-            </h2>
+<div class="container-fluid vehicles-list-page">
+    <header class="vehicles-header">
+        <div>
+            <a class="vehicles-back" href="{{ url_for('main.veiculos_menu') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-arrow-left"></i> Central de veículos</a>
+            <h2>Frota de veículos</h2>
+            <p>Veículos, equipes e responsáveis em um só lugar.</p>
         </div>
-
         <div class="header-actions">
             <a href="{{ url_for('main.veiculos_rastreamento') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_rastreamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
-                <i class="bi bi-crosshair me-1"></i> Rastreamento
+                <i class="bi bi-geo-alt me-1"></i> Rastreamento
             </a>
-            <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_menu')) if central_ti_url_allowed is defined else true) else 'false' }}">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-            
             {% if (central_ti_ui_guard(['main.cadastrar_veiculo', 'main.listar_veiculos'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
-                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_veiculo')) if central_ti_url_allowed is defined else true) else 'false' }}">
+                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_veiculo')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-plus-lg"></i> Novo Veículo
                 </a>
 
-                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos', export=1, **request.args)) if central_ti_url_allowed is defined else true) else 'false' }}">
-                    <i class="bi bi-file-earmark-excel-fill"></i> Exportar
+                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-outline-secondary vehicles-export" aria-label="Exportar frota" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos', export=1, **request.args)) if central_ti_url_allowed is defined else true) else 'false' }}">
+                    <i class="bi bi-file-earmark-excel-fill"></i><span class="vehicles-export-label"> Exportar</span>
                 </a>
             {% endif %}
         </div>
-    </div>
+    </header>
 
-    {# --- STATS --- #}
     {% set ns = namespace(total=veiculos|length, atrasados=0, proximos=0, marcados=0) %}
     {% for v in veiculos %}
         {% if v.revisao_marcada_em %}{% set ns.marcados = ns.marcados + 1 %}{% endif %}
@@ -55,138 +47,47 @@
         {% endif %}
     {% endfor %}
 
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Frota</small>
-                <h3 class="fw-bold mb-0 text-dark">{{ ns.total }}</h3>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Revisões</small>
-                <h3 class="fw-bold mb-0 text-warning">{{ ns.proximos }}</h3>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Atrasados</small>
-                <h3 class="fw-bold mb-0 text-danger">{{ ns.atrasados }}</h3>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Marcados</small>
-                <h3 class="fw-bold mb-0 text-success">{{ ns.marcados }}</h3>
-            </div>
-        </div>
-    </div>
 
-    {# --- FILTROS EM SANFONA --- #}
-    <div class="card shadow-sm rounded-4 mb-4 border-0">
-        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
-             data-bs-toggle="collapse" data-bs-target="#collapseFiltros" style="cursor: pointer; background: none;">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-funnel-fill text-primary"></i>
-                <span class="text-dark fw-bold">Filtros de Busca</span>
-            </div>
-            <i class="bi bi-chevron-down text-muted"></i>
-        </div>
-
-        <div class="collapse {% if filters.q or filters.operacao or filters.status %}show{% endif %}" id="collapseFiltros">
-            <div class="card-body pt-0 pb-4">
-                <form method="GET" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label class="small text-muted">Busca Rápida:</label>
-                            <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa...">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="small text-muted">Operação:</label>
-                            <select name="operacao" class="form-select">
-                                <option value="">Todas</option>
-                                <option value="PMSP" {{ 'selected' if filters.operacao == 'PMSP' }}>PMSP</option>
-                                <option value="AGRO" {{ 'selected' if filters.operacao == 'AGRO' }}>AGRO</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="small text-muted">Status:</label>
-                            <select name="status" class="form-select">
-                                <option value="">Todos</option>
-                                <option value="Ativo" {{ 'selected' if filters.status == 'Ativo' }}>🟢 Ativo</option>
-                                <option value="Em Manutenção" {{ 'selected' if filters.status == 'Em Manutenção' }}>Manutenção</option>
-                                <option value="Inativo" {{ 'selected' if filters.status == 'Inativo' }}>Inativo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 d-flex gap-2">
-                            <button class="btn btn-success w-100 d-flex gap-1 justify-content-center align-items-center" type="submit">
-                                <i class="bi bi-search"></i> Filtrar
-                            </button>
-                            {% if filters.q or filters.operacao or filters.status %}
-                                <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
-                                    <i class="bi bi-x-lg"></i> Limpar
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {# --- TABELA / CARDS --- #}
+    <section class="vehicles-stats" aria-label="Resumo dos veículos filtrados">
+        <div><span>Veículos na busca</span><strong>{{ ns.total }}</strong><i class="bi bi-truck"></i></div>
+        <div><span>Revisão próxima</span><strong>{{ ns.proximos }}</strong><small>Até 2.000 km</small></div>
+        <div><span>Revisão atrasada</span><strong class="text-danger">{{ ns.atrasados }}</strong><small>Prazo em km excedido</small></div>
+        <div><span>Revisões agendadas</span><strong>{{ ns.marcados }}</strong><i class="bi bi-calendar-check"></i></div>
+    </section>
+    <section class="vehicles-catalog" aria-label="Cadastro da frota">
+        <form method="GET" class="vehicles-filters" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+            <label class="vehicles-search"><span>Buscar veículo</span><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo ou placa…"></div></label>
+            <label><span>Operação</span><select name="operacao" class="form-select"><option value="">Todas as operações</option><option value="PMSP" {{ 'selected' if filters.operacao == 'PMSP' }}>PMSP</option><option value="AGRO" {{ 'selected' if filters.operacao == 'AGRO' }}>AGRO</option></select></label>
+            <label><span>Status</span><select name="status" class="form-select"><option value="">Todos os status</option><option value="Ativo" {{ 'selected' if filters.status == 'Ativo' }}>Ativo</option><option value="Em Manutenção" {{ 'selected' if filters.status == 'Em Manutenção' }}>Em manutenção</option><option value="Inativo" {{ 'selected' if filters.status == 'Inativo' }}>Inativo</option></select></label>
+            <button class="btn btn-primary" type="submit">Filtrar</button>
+            {% if filters.q or filters.operacao or filters.status %}<a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">Limpar</a>{% endif %}
+        </form>
+        <div class="vehicles-catalog-heading"><span><strong>{{ ns.total }}</strong> veículo(s) encontrado(s)</span>{% if can_manage and veiculos %}<small><i class="bi bi-pencil"></i> Selecione a equipe ou o responsável para editar o vínculo.</small>{% endif %}</div>
     {% if (central_ti_ui_guard(['main.atualizar_equipes_veiculos'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
     <form id="bulk-equipes-form"
           method="POST"
           action="{{ url_for('main.atualizar_equipes_veiculos', **request.args) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.atualizar_equipes_veiculos', **request.args), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}"></form>
     {% endif %}
 
-    <div class="card shadow-sm border-0 rounded-4 vehicles-table-card">
-        <div class="card-body p-0">
+
+        <div class="vehicles-table-card">
             <div class="table-responsive vehicles-table-scroll" role="region" aria-label="Lista de veículos" tabindex="0">
                 <table class="table table-hover align-middle mb-0 vehicles-table">
                     <caption class="visually-hidden">Frota de veículos, responsáveis, quilometragem e última movimentação</caption>
-                    <colgroup>
-                        <col class="vehicle-col-identity">
-                        <col class="vehicle-col-fleet">
-                        <col class="vehicle-col-team">
-                        <col class="vehicle-col-supervisor">
-                        <col class="vehicle-col-km">
-                        <col class="vehicle-col-remaining">
-                        <col class="vehicle-col-movement">
-                        <col class="vehicle-col-status">
-                        <col class="vehicle-col-actions">
-                    </colgroup>
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">Veículo / Placa</th>
-                            <th scope="col">Frota / Op.</th>
-                            <th scope="col">Equipe responsável</th>
-                            <th scope="col">Supervisor responsável</th>
-                            <th scope="col">KM Atual</th>
-                            <th scope="col">KM Restante</th>
-                            <th scope="col">Última movimentação</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Ações</th>
-                        </tr>
-                    </thead>
+                    <colgroup><col class="vehicle-col-identity"><col class="vehicle-col-team"><col class="vehicle-col-supervisor"><col class="vehicle-col-km"><col class="vehicle-col-movement"><col class="vehicle-col-actions"></colgroup>
+                    <thead><tr><th scope="col">Veículo</th><th scope="col">Equipe</th><th scope="col">Responsável</th><th scope="col">Quilometragem</th><th scope="col">Última movimentação</th><th scope="col">Ações</th></tr></thead>
                     <tbody>
                         {% for v in veiculos %}
                         {% set falt = v.km_restante_revisao %}
                         <tr>
-                            <td data-label="Veículo / Placa">
+                            <td data-label="Veículo" class="vehicle-identity-cell">
                                 <div class="vehicle-cell-content">
-                                    <div class="fw-bold text-dark">{{ v.modelo }}</div>
-                                    <div class="text-muted small">{{ v.placa }}</div>
+                                    <strong class="vehicle-plate">{{ v.placa }}</strong><span class="vehicle-model">{{ v.modelo }}</span>
+                                    <div class="vehicle-tags"><span>{{ v.operacao }}</span><span>{{ v.frota }}</span></div>
+                                    <span class="vehicle-status {{ 'is-active' if v.status == 'Ativo' else 'is-inactive' if v.status == 'Inativo' else 'is-maintenance' }}">{{ v.status }}</span>
                                 </div>
                             </td>
-                            <td data-label="Frota / Op.">
-                                <div class="vehicle-cell-content vehicle-fleet">
-                                    <span class="badge bg-light text-dark border">{{ v.frota }}</span>
-                                    <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
-                                </div>
-                            </td>
-                            <td data-label="Equipe responsável">
+                            <td data-label="Equipe">
                                 <div class="vehicle-cell-content">
                                     {% set current_equipe = equipes_por_id.get(v.equipe_id|string) if equipes_por_id is defined else none %}
                                     {% if can_manage %}
@@ -203,7 +104,7 @@
                                                     data-bs-offset="0,6"
                                                     aria-expanded="false"
                                                     aria-label="Equipe responsável pelo veículo {{ v.placa }}">
-                                                <span class="team-picker-pilot" data-team-pilot>
+                                                <span class="team-picker-pilot" data-team-pilot title="Piloto vinculado à equipe">
                                                     {{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}
                                                 </span>
                                                 <span class="team-picker-name">
@@ -240,16 +141,14 @@
                                             </ul>
                                         </div>
                                     {% elif v.equipe %}
-                                        <div class="team-picker-pilot">{{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}</div>
-                                        <div class="small text-primary fw-bold">
-                                            <i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}
-                                        </div>
+                                        <div class="team-picker-name"><i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}</div>
+                                        <div class="team-picker-pilot">Condutor: {{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}</div>
                                     {% else %}
                                         <span class="text-muted small">--</span>
                                     {% endif %}
                                 </div>
                             </td>
-                            <td data-label="Supervisor responsável">
+                            <td data-label="Responsável">
                                 <div class="vehicle-cell-content">
                                     {% if can_manage %}
                                         <input type="hidden" name="supervisor_id_{{ v.id }}"
@@ -259,8 +158,8 @@
                                             <button class="team-picker-toggle" type="button" data-bs-toggle="dropdown"
                                                     data-bs-offset="0,6" aria-expanded="false"
                                                     aria-label="Supervisor responsável pelo veículo {{ v.placa }}">
-                                                <span class="team-picker-pilot">Responsável individual</span>
-                                                <span class="team-picker-name"><i class="bi bi-person-badge me-1"></i><span data-supervisor-name>{{ v.responsavel_exibicao if v.supervisor_usuario_id else 'Sem supervisor' }}</span></span>
+                                                <span class="team-picker-pilot">Responsável cadastrado</span>
+                                                <span class="team-picker-name"><i class="bi bi-person-badge me-1"></i><span data-supervisor-name>{{ v.responsavel_exibicao or 'Não informado' }}</span></span>
                                             </button>
                                             <ul class="dropdown-menu team-picker-menu">
                                                 <li><button class="dropdown-item team-picker-option {% if not v.supervisor_usuario_id %}active{% endif %}"
@@ -275,29 +174,18 @@
                                                 {% endfor %}
                                             </ul>
                                         </div>
-                                    {% elif v.supervisor_usuario_id %}
+                                    {% elif v.responsavel_exibicao %}
                                         <span class="small text-primary fw-semibold">{{ v.responsavel_exibicao }}</span>
                                     {% else %}
                                         <span class="text-muted small">--</span>
                                     {% endif %}
                                 </div>
                             </td>
-                            <td data-label="KM Atual">
-                                <div class="vehicle-cell-content">
-                                    <span class="badge bg-light text-dark border rounded-pill px-3">
-                                        {{ (v.km_atual or 0)|round|int }} km
-                                    </span>
-                                </div>
-                            </td>
-                            <td data-label="KM Restante">
-                                <div class="vehicle-cell-content">
-                                    {% if falt is not none %}
-                                        <span class="badge {% if falt < 0 %}bg-danger-light text-danger{% elif falt <= 2000 %}bg-warning-light text-warning{% else %}bg-success-light text-success{% endif %} rounded-pill px-3">
-                                            {{ falt|round|int }} km
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted small">--</span>
-                                    {% endif %}
+
+                            <td data-label="Quilometragem">
+                                <div class="vehicle-cell-content vehicle-mileage"><strong>{{ (v.km_atual or 0)|round|int }} <small>km</small></strong>
+                                    {% if falt is not none %}<span class="vehicle-maintenance {{ 'is-overdue' if falt < 0 else 'is-due' if falt <= 2000 else '' }}">{% if falt < 0 %}<i class="bi bi-exclamation-circle"></i> Revisão atrasada em {{ (-falt)|round|int }} km{% else %}Revisão em {{ falt|round|int }} km{% endif %}</span>{% else %}<span class="text-muted">Revisão não definida</span>{% endif %}
+                                    {% if v.revisao_marcada_em %}<span class="text-muted">Agendada: {{ v.revisao_marcada_em.strftime('%d/%m/%Y') }}</span>{% endif %}
                                 </div>
                             </td>
                             <td data-label="Última movimentação" class="small">
@@ -326,15 +214,9 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td data-label="Status">
-                                <div class="vehicle-cell-content">
-                                    <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% elif v.status == 'Inativo' %}bg-light text-muted{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
-                                        {{ v.status }}
-                                    </span>
-                                </div>
-                            </td>
                             <td data-label="Ações">
-                                <div class="vehicle-cell-content">
+                                <div class="vehicle-cell-content vehicle-actions">
+                                    <a class="btn btn-outline-primary vehicle-track-link" href="{{ url_for('main.veiculos_rastreamento', vehicle=v.id) }}" aria-label="Rastrear veículo {{ v.placa }}" title="Rastrear veículo" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_rastreamento', vehicle=v.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-geo-alt"></i></a>
                                     <div class="dropup">
                                         <button class="btn btn-outline-secondary vehicle-actions-toggle" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" aria-label="Ações do veículo {{ v.placa }}">
                                             <i class="bi bi-three-dots-vertical"></i>
@@ -355,24 +237,19 @@
                                     </div>
                                 </div>
                             </td>
+
                         </tr>
                         {% else %}
-                        <tr class="vehicles-empty-row">
-                            <td colspan="9" class="text-center text-muted py-5">Nenhum veículo encontrado.</td>
-                        </tr>
+                        <tr class="vehicles-empty-row"><td colspan="6"><i class="bi bi-truck"></i><strong>Nenhum veículo encontrado</strong><p>Ajuste os filtros para consultar sua frota.</p><a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.listar_veiculos') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">Limpar filtros</a></td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
-    {% if can_manage and veiculos %}
-    <div class="d-flex justify-content-end mt-3">
-        <button type="submit" class="btn btn-primary btn-sm px-4" form="bulk-equipes-form">
-            <i class="bi bi-check-lg me-1"></i> Salvar
-        </button>
-    </div>
-    {% endif %}
+        {% if can_manage and veiculos %}
+        <div class="vehicles-save-bar" id="vehiclesSaveBar" hidden><span id="vehicleChanges" role="status" aria-live="polite">Vínculos de equipes e responsáveis</span><button type="submit" class="btn btn-primary" form="bulk-equipes-form" id="vehiclesSave" disabled><i class="bi bi-check-lg"></i> Salvar vínculos</button></div>
+        {% endif %}
+    </section>
 </div>
 {% endblock %}
 
@@ -393,6 +270,22 @@
             },
         });
     });
+
+    const assignmentInputs = [...document.querySelectorAll('[data-team-input], [data-supervisor-input]')];
+    assignmentInputs.forEach((input) => { input.dataset.initialValue = input.value; });
+    function updateAssignmentChanges() {
+        const rows = new Set();
+        assignmentInputs.forEach((input) => {
+            if (input.value !== input.dataset.initialValue) rows.add(input.closest('tr'));
+        });
+        document.querySelectorAll('.vehicles-table tbody tr').forEach((row) => row.classList.toggle('has-changes', rows.has(row)));
+        const bar = document.getElementById('vehiclesSaveBar');
+        if (bar) bar.hidden = rows.size === 0;
+        const save = document.getElementById('vehiclesSave');
+        const status = document.getElementById('vehicleChanges');
+        if (save) save.disabled = rows.size === 0;
+        if (status) status.textContent = rows.size ? `${rows.size} veículo(s) com alterações para salvar` : 'Vínculos de equipes e responsáveis';
+    }
 
     document.querySelectorAll("[data-team-option]").forEach((option) => {
         option.addEventListener("click", () => {
@@ -424,6 +317,7 @@
 
             picker.querySelectorAll("[data-team-option]").forEach((item) => item.classList.remove("active"));
             option.classList.add("active");
+            updateAssignmentChanges();
         });
     });
 
@@ -438,6 +332,7 @@
             if (name) name.textContent = option.dataset.supervisorName || "Sem supervisor";
             picker.querySelectorAll("[data-supervisor-option]").forEach((item) => item.classList.remove("active"));
             option.classList.add("active");
+            updateAssignmentChanges();
         });
     });
 </script>

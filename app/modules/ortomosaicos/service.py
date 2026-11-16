@@ -84,7 +84,7 @@ def _upload(path, remote):
             time.sleep(2 ** attempt)
 
 
-def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=None, resolution=None):
+def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=None, resolution=None, received_path=None, upload_id=None):
     if tipo not in {"rgb", "dem"}:
         raise ValueError("Tipo de levantamento inválido.")
     if tipo == "dem":
@@ -104,8 +104,8 @@ def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=No
     try:
         root = working_root()
         with tempfile.TemporaryDirectory(prefix='ija-orto-upload-', dir=root) as folder:
-            reusable = isinstance(storage.stream, TemporaryUpload)
-            path = storage.stream.ortho_upload_path if reusable else Path(folder) / 'original.tif'
+            reusable = received_path is not None or isinstance(storage.stream, TemporaryUpload)
+            path = Path(received_path) if received_path is not None else (storage.stream.ortho_upload_path if reusable else Path(folder) / 'original.tif')
             storage.stream.seek(0)
             digest = hashlib.sha256(); size = 0
             with nullcontext(None) if reusable else path.open('wb') as out:
@@ -120,6 +120,8 @@ def create_upload(storage, name, prefeitura_id, user_id, tipo="rgb", interval=No
             if not size:
                 raise ValueError('O arquivo está vazio.')
             metadata = raster_command('inspect-dem' if tipo == 'dem' else 'inspect', path)
+            if upload_id:
+                metadata['_upload_id'] = upload_id
             url = db.engine.url
             namespace = hashlib.sha256(f'{url.host}|{url.database}|{url.username}'.encode()).hexdigest()[:16]
             base = current_app.config.get('SKYBOX_BASE_DIR') or 'dados ordens de serviço'

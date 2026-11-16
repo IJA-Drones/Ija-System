@@ -1,5 +1,5 @@
 // static/sw.js — servido em /sw.js (escopo raiz). Push em qualquer página + cache do shell do aplicativo (/m/).
-const CACHE = "ija-app-movel-v13";
+const CACHE = "ija-app-movel-v14";
 const SHELL = ["/static/js/azul-runtime.js", "/static/audio/azul-inicio-chamada.wav", "/static/audio/azul-escopo-chamada.wav", "/static/css/components/azul-voice-call.css", "/static/css/components/azul-composer.css", "/static/js/azul-composer.js", "/static/js/azul-voice-chat.js", "/static/js/azul-mic-processor.js", "/m/", "/static/css/app-movel.css", "/static/js/app-movel.js", "/static/js/compartilhar.js", "/static/img/logo_oceano_azul_light.png",
   "/static/css/components/azul-help.css", "/static/css/components/azul-drone.css", "/static/css/pages/portal_chatbot.css",
   "/static/js/azul-companion.js", "/static/js/azul-drag.js", "/static/js/portal-chat-mobile.js", "/static/js/portal-chatbot.js",
@@ -14,6 +14,8 @@ self.addEventListener("activate", (event) => {
 });
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+  // Let the browser stream raster uploads directly, without a service-worker body relay.
+  if (url.origin === self.location.origin && (url.pathname === '/api/ortomosaicos' || url.pathname.startsWith('/api/ortomosaicos/uploads'))) return;
   if (event.request.method !== "GET" || url.origin !== self.location.origin) { event.respondWith(fetch(event.request)); return; }
   if (url.pathname === "/m/" || url.pathname === "/m") {
     // Shell: rede primeiro (token CSRF e versão novos), cache quando sem rede.

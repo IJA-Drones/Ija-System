@@ -1,0 +1,9 @@
+{% macro csv_attachment(id, label, href, example='Modelo CSV') %}
+<div class="vigilancia-csv-field">
+  <label class="form-label" for="{{ id }}">{{ label }}</label>
+  <div class="vigilancia-csv-attachment">
+    <input class="form-control" id="{{ id }}" name="arquivo" type="file" accept=".csv,text/csv" required>
+    <a class="btn btn-outline-primary" href="{{ href }}"><i class="bi bi-download me-2" aria-hidden="true"></i>Baixar CSV · {{ example }}</a>
+  </div>
+</div>
+{% endmacro %}

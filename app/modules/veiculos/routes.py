@@ -1,13 +1,19 @@
 from app.modules.gestao_ti.permissions import route_access
 import mimetypes
 import os
+from datetime import date
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Veiculos
-from app.modules.veiculos.rastreamento import build_rastreamento_payload
+from app.modules.veiculos.rastreamento import build_rastreamento_payload, scoped_tracking_vehicles
+from app.modules.veiculos.redgps_history import import_redgps_history
+from app.modules.veiculos.tracking_period import parse_tracking_period
+from app.modules.veiculos.tracking_jobs import request_history_refresh
+from app.clients.redgps_client import RedGPSError
+from sqlalchemy.exc import SQLAlchemyError
 from app.modules.veiculos.service import (
     VEICULOS_ALLOWED_TYPES,
     VEICULOS_LOGS_ALLOWED_TYPES,
@@ -120,10 +126,19 @@ def register_routes(bp):
     @login_required
     def veiculos_rastreamento():
         try:
-            payload = build_rastreamento_payload(current_user)
+            payload = build_rastreamento_payload(current_user, sync_live=False)
         except PermissionError:
             abort(403)
-        response = current_app.make_response(render_template("veiculos_rastreamento.html", tracking=payload))
+        except ValueError as error:
+            return jsonify(error=str(error)), 400
+        versions = []
+        for asset in ("js/veiculos-rastreamento.js", "js/tracking-route-details.js", "css/pages/veiculos_rastreamento.css"):
+            try:
+                versions.append(os.stat(os.path.join(current_app.static_folder, asset)).st_mtime_ns)
+            except OSError:
+                pass
+        response = current_app.make_response(render_template("veiculos_rastreamento.html", tracking=payload,
+                                                             tracking_asset_version=max(versions, default=1)))
         response.headers["Cache-Control"] = "private, no-store"
         return response
 
@@ -134,6 +149,46 @@ def register_routes(bp):
             response = jsonify(build_rastreamento_payload(current_user))
         except PermissionError:
             abort(403)
+        except ValueError as error:
+            return jsonify(error=str(error)), 400
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
+    @bp.route("/veiculos/rastreamento/historico", methods=["POST"], endpoint="veiculos_rastreamento_historico")
+    @login_required
+    def veiculos_rastreamento_historico():
+        try:
+            query = scoped_tracking_vehicles(current_user)
+        except PermissionError:
+            abort(403)
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
+            return jsonify(error="Informe veículo e data."), 400
+        try:
+            vehicle_id = int(body.get("vehicle_id"))
+            if not body.get("start"):
+                date.fromisoformat(body.get("date", ""))
+            period = parse_tracking_period(body)
+            day = period.day
+        except (TypeError, ValueError):
+            return jsonify(error="Veículo ou data inválidos."), 400
+        if query.filter(Veiculos.id == vehicle_id).first() is None:
+            abort(404)
+        if body.get("background") is True:
+            if not current_app.config.get("REDGPS_SYNC_ENABLED"):
+                return jsonify(error="A integração RedGPS não está habilitada."), 400
+            result, status = request_history_refresh(vehicle_id, period)
+            response = jsonify(result)
+            response.status_code = status
+            response.headers["Cache-Control"] = "private, no-store"
+            return response
+        try:
+            result = import_redgps_history(day, current_app.config.get("REDGPS_HISTORY_TIMEZONE", "America/Sao_Paulo"), vehicle_ids=[vehicle_id], period=period)
+        except (RedGPSError, SQLAlchemyError):
+            return jsonify(error="Não foi possível recuperar a rota da RedGPS. Os pontos anteriores foram mantidos."), 502
+        except (ValueError, KeyError):
+            return jsonify(error="Confira a data e a configuração do histórico RedGPS."), 400
+        response = jsonify(result)
         response.headers["Cache-Control"] = "private, no-store"
         return response
 

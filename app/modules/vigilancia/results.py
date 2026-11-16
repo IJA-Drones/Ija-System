@@ -37,12 +37,24 @@ def municipality_ibge(config, prefeitura):
         return None
 
 
+IIP_LEGEND = (
+    {"codigo": "satisfatorio", "rotulo": "Satisfatório", "faixa": "IIP < 1%", "cor": "#15803d"},
+    {"codigo": "alerta", "rotulo": "Alerta", "faixa": "IIP de 1% a 3,9%", "cor": "#facc15"},
+    {"codigo": "risco", "rotulo": "Risco", "faixa": "IIP > 3,9%", "cor": "#dc2626"},
+    {"codigo": "sem_dados", "rotulo": "Sem dados", "faixa": "Sem imóveis inspecionados no recorte", "cor": "#94a3b8"},
+)
+# Faixas publicadas pela SMS-Rio; a classificação é de infestação, não uma previsão.
+IIP_CLASSIFICATION_SOURCE = "https://prefeitura.rio/saude/liraa-indice-de-infestacao-de-mosquito-da-dengue-na-cidade-do-rio-e-de-066/"
+
+
+def iip_classification(value):
+    if value is None or not math.isfinite(value) or not 0 <= value <= 100:
+        return dict(IIP_LEGEND[3])
+    return dict(IIP_LEGEND[0 if value < 1 else 1 if value <= 3.9 else 2])
+
+
 def iip_color(value):
-    # Escala numérica contínua, sem afirmar risco de epidemia por cor.
-    if value is None:
-        return "#94a3b8"
-    value = max(0, min(100, value)) / 100
-    return "#%02x%02x%02x" % tuple(round(low + (high - low) * value) for low, high in ((219, 30), (234, 64), (254, 175)))
+    return iip_classification(value)["cor"]
 
 
 class ResultsStore(FieldStore):
@@ -61,7 +73,11 @@ class ResultsStore(FieldStore):
 
     def report(self, prefeitura, demo, filters, *, auto_single_survey=False):
         all_records = self.records(prefeitura, demo=demo)
-        surveys = sorted({row["levantamento_codigo"] for row in all_records if row["origem"] == "LIRAA"})
+        with self.connection() as conn:
+            released = set(conn.scalars(sa.select(CampoPlano.code).where(
+                CampoPlano.prefeitura == prefeitura, CampoPlano.demo == demo,
+                CampoPlano.status.in_(("LIBERADO", "ENCERRADO")))))
+        surveys = sorted(released | {row["levantamento_codigo"] for row in all_records if row["origem"] == "LIRAA"})
         filters = dict(filters)
         if auto_single_survey and not filters["levantamento"] and len(surveys) == 1:
             filters["levantamento"] = surveys[0]
@@ -79,19 +95,26 @@ class ResultsStore(FieldStore):
         report["areas"] = sorted({row["area_codigo"] for row in all_records})
         report["atividades"] = dict(Counter(row["origem"] for row in report["registros"]))
         report["situacoes"] = dict(Counter(row["situacao"] for row in report["registros"]))
+        report["legenda_iip"] = [dict(item) for item in IIP_LEGEND]
+        report["fonte_classificacao_iip"] = IIP_CLASSIFICATION_SOURCE
         geometry = {"type": "FeatureCollection", "features": []}
         warnings = []
         if report["indicadores"] and not filters["levantamento"]:
             warnings.append("Selecione um levantamento para exibir o IIP no mapa sem sobrepor campanhas diferentes.")
-        elif report["indicadores"]:
+        elif filters["levantamento"] and filters["origem"] != "FOCAL":
             grouped = defaultdict(list)
             for block in self.boundaries(prefeitura, demo, filters):
                 territory = block["territorio"]
                 if filters["bairro"] and territory["bairro"] != filters["bairro"]:
                     continue
+                if filters["area"] and territory["area"] != filters["area"]:
+                    continue
                 grouped[(block["plano"], block["estrato"], territory["area"])].append(block)
-            for indicator in report["indicadores"]:
-                key = tuple(indicator[name] for name in ("levantamento_codigo", "estrato_codigo", "area_codigo"))
+            indicators = {tuple(item[name] for name in ("levantamento_codigo", "estrato_codigo", "area_codigo")): item
+                          for item in report["indicadores"]}
+            for key in sorted(grouped.keys() | indicators.keys()):
+                indicator = indicators.get(key, dict(levantamento_codigo=key[0], estrato_codigo=key[1], area_codigo=key[2],
+                    iip=None, ib=None, imoveis_inspecionados=0, imoveis_positivos=0, imoveis_pendentes=0))
                 all_blocks = grouped.get(key, [])
                 blocks = [block for block in all_blocks if block["territorio"].get("geometria")]
                 if not blocks:
@@ -99,9 +122,12 @@ class ResultsStore(FieldStore):
                     continue
                 if len(blocks) != len(all_blocks):
                     warnings.append(f"Estrato {key[1]} / área {key[2]}: {len(blocks)} de {len(all_blocks)} quarteirões possuem contorno. O mapa mostra somente a parte disponível.")
+                classification = iip_classification(indicator["iip"])
                 geometry["features"].append({"type": "Feature", "geometry": {
                     "type": "MultiPolygon", "coordinates": [block["territorio"]["geometria"]["coordinates"] for block in blocks]},
-                    "properties": {**indicator, "quarteiroes": [block["quarteirao"] for block in blocks], "quarteiroes_total": len(all_blocks), "cor": iip_color(indicator["iip"])}})
+                    "properties": {**indicator, "quarteiroes": [block["quarteirao"] for block in blocks], "quarteiroes_total": len(all_blocks),
+                        "cor": classification["cor"], "classificacao_iip": classification["codigo"],
+                        "classificacao_rotulo": classification["rotulo"], "faixa_iip": classification["faixa"]}})
         report["geografia"] = geometry
         report["avisos"] = warnings
         report["pontos"] = [{"latitude": row["latitude"], "longitude": row["longitude"],

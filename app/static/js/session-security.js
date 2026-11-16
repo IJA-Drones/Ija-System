@@ -140,6 +140,7 @@
   // Video upload progress is real application activity even when the tab is hidden.
   // The upload code emits this event only after the transmitted byte count grows.
   document.addEventListener("ija:video-upload-progress", () => renewForActivity());
+  document.addEventListener("ija:ortho-upload-progress", () => renewForActivity());
   continueButton.addEventListener("click", (event) => {
     if (!event.isTrusted) return;
     recordActivity(event, true);

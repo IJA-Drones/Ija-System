@@ -1,0 +1,12 @@
+{% macro survey_flow(step, prefeitura, demo=true, plano='', can_export=false) %}
+<section class="vigilancia-flow-intro" aria-label="Etapas do levantamento LIRAa">
+  <strong>Levantamento LIRAa · passo {{ step }} de 4</strong>
+  <p>Use as quatro abas do LIRAa para cadastrar o levantamento, demarcar quarteirões, adicionar estratos e registrar visitas. As exportações estão disponíveis em qualquer etapa.</p>
+  {% if prefeitura and can_export %}
+  <div class="vigilancia-preview-actions" aria-label="Exportar dados do levantamento">
+    {% if step == 4 %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_campo_export', prefeitura_id=prefeitura, demo='true' if demo else 'false', levantamento=plano) }}">Exportar visitas</a>
+    {% else %}{% set kind, label = {1: ('levantamentos', 'Exportar levantamentos'), 2: ('territorio', 'Exportar quarteirões'), 3: ('amostra', 'Exportar estratos e amostra')}[step] %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.vigilancia_planejamento_export', kind=kind, prefeitura_id=prefeitura, demo='true' if demo else 'false', plano=plano) }}">{{ label }}</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endmacro %}

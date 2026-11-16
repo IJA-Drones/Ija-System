@@ -11,7 +11,7 @@ from app.modules.vigilancia.risk import analyze, example_files
 from app.modules.vigilancia.risk_store import RiskStore
 from app.modules.vigilancia.sample import build_geolocated_sample_csv
 from app.modules.vigilancia.service import preview_csv
-from app.modules.vigilancia.territory import condomar_territory, municipality_feature, pernambuco_context
+from app.modules.vigilancia.territory import condomar_territory, municipality_feature, pernambuco_context, territorial_context
 from test_vigilancia_field_routes import client, login, token, prepare, confirm
 from test_vigilancia_planning import planned
 from test_vigilancia_results import setup_results, POLYGON
@@ -50,6 +50,20 @@ def test_geolocated_csv_is_deterministic_and_every_point_is_inside_the_municipal
     assert all(row['imovel_codigo'].startswith('DEMO-MAPA-') for row in report['registros'])
     index = report['indicadores'][0]
     assert (index['imoveis_inspecionados'], index['imoveis_positivos'], index['imoveis_pendentes'], index['iip']) == (16, 4, 4, 25)
+
+
+def test_municipal_context_matches_sao_paulo_and_unknown_cities_never_receive_pernambuco():
+    context = territorial_context('3550308')
+    assert [feature['properties']['codigo'] for feature in context['features']] == ['3550308']
+    assert context['features'][0]['properties']['selecionado'] is True
+    assert context['metadata']['recorte'] == 'Município de São Paulo'
+    boundary = shape(municipality_feature('3550308')['geometry'])
+    assert boundary.is_valid and boundary.covers(Point(-46.634, -23.55))
+    context['features'].clear()
+    assert len(territorial_context('3550308')['features']) == 1
+    assert len(territorial_context('2610905')['features']) == 184
+    for ibge in [None, '3304557']:
+        assert territorial_context(ibge)['features'] == []
 
 
 def test_real_csv_import_confirmation_and_risk_map_share_the_persisted_records(planned):
@@ -105,6 +119,31 @@ def test_manual_planned_visits_and_their_preserved_boundaries_feed_the_same_map(
     assert len(data['pontos']) == 1 and data['pontos'][0]['origem'] == 'LIRAA'
     assert data['pontos'][0]['inspecao_codigo'] == 'VIS-001'
     assert data['geografia']['features'][0]['geometry']['coordinates'] == [POLYGON['coordinates']]
+
+
+@pytest.mark.parametrize('path', ['/vigilancia/risco', '/vigilancia/resultados'])
+def test_street_map_and_offline_contours_share_the_same_confirmed_data(planned, path):
+    client, _ = setup_results(planned)
+    login(client)
+    path += '?levantamento=L-2026-01'
+    without_key = client.get(path)
+    assert map_data(without_key)['mapa_ruas'] is False
+    client.application.jinja_env.globals['google_maps_key'] = 'test-only-not-a-real-key'
+    response = client.get(path)
+    assert response.status_code == 200
+    data = map_data(response)
+    assert data['mapa_ruas'] is True
+    assert data['geografia'] == map_data(without_key)['geografia']
+    assert data['pontos'] == map_data(without_key)['pontos']
+    assert 'id="campo-territorio-mapa"' in response.text
+    assert 'id="campo-territorio-fallback"' in response.text
+    assert 'Visualização dos contornos sem mapa de ruas.' in response.text
+    assert 'vigilancia-mapa-territorial.js?v=20261113-4' in response.text
+    props = data['geografia']['features'][0]['properties']
+    assert props['classificacao_iip'] == 'risco' and props['classificacao_rotulo'] == 'Risco'
+    assert props['cor'] == '#dc2626'
+    assert 'Classificação por IIP' in response.text and 'IIP de 1% a 3,9%' in response.text
+    assert 'Sem imóveis inspecionados no recorte' in response.text
 
 
 def test_demo_download_requires_municipal_scope_mapping_and_demo_mode(planned):

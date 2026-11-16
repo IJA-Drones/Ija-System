@@ -77,6 +77,7 @@
                             {% if audit.ip %}<span>IP: {{ audit.ip }}</span>{% endif %}
                         </div>
                         <div class="deleted-log-submeta">
+                            {% if operador.condutor_nome %}<span>Condutor: {{ operador.condutor_nome }}</span>{% endif %}
                             {% if operador.piloto_nome %}<span>Piloto: {{ operador.piloto_nome }}</span>{% endif %}
                             {% if operador.equipe_nome %}<span>Equipe: {{ operador.equipe_nome }}</span>{% endif %}
                             {% if veiculo.responsavel %}<span>Responsavel: {{ veiculo.responsavel }}</span>{% endif %}

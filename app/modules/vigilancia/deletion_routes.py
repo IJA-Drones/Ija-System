@@ -47,11 +47,20 @@ def register_routes(bp):
                     usuario_login=getattr(current_user, 'login', None),
                     tipo_usuario=current_user.tipo_usuario, prefeitura_usuario_id=getattr(current_user, 'prefeitura_id', None))
                 audit = event_values('EXCLUSAO', 'CONFIRMADO', actor=actor)
-                store.delete(prefeitura, demo, kind, code, origin, text(values, 'revisao', 64), audit)
+                deleted = store.delete(prefeitura, demo, kind, code, origin, text(values, 'revisao', 64), audit)
+                session['vigilancia_exclusao_concluida'] = dict(usuario=uid, prefeitura=prefeitura, demo=demo,
+                    item={key: deleted[key] for key in ('tipo', 'codigo', 'origem', 'titulo')})
                 flash('Exclusão concluída. Os resultados e mapas passam a considerar os registros restantes.', 'success')
-                return redirect(url_for('main.vigilancia_campo' if kind == 'visita' else 'main.vigilancia_planejamento',
-                    prefeitura_id=prefeitura, demo=mode, _anchor='resultados-campo' if kind == 'visita' else
-                    'territorio' if kind == 'quarteirao' else 'levantamentos'), code=303)
+                return redirect(url_for('main.vigilancia_excluir', prefeitura_id=prefeitura, demo=mode,
+                    tipo=kind, codigo=code, origem=origin, concluida='1'), code=303)
+            if request.args.get('concluida') == '1':
+                receipt = session.get('vigilancia_exclusao_concluida', {})
+                if (receipt.get('usuario') != str(current_user.get_id()) or receipt.get('prefeitura') != prefeitura
+                        or receipt.get('demo') != demo or receipt.get('item', {}).get('tipo') != kind
+                        or receipt.get('item', {}).get('codigo') != code or receipt.get('item', {}).get('origem') != origin):
+                    abort(404)
+                return render_template('vigilancia_excluir.html', item=receipt['item'], concluida=True,
+                    prefeitura_id=prefeitura, demo=demo, **_municipality_filter_context(prefeitura))
             item = store.preview(prefeitura, demo, kind, code, origin)
             return render_template('vigilancia_excluir.html', item=item, prefeitura_id=prefeitura, demo=demo,
                 **_municipality_filter_context(prefeitura), preview_csrf_token=session[CSRF_SESSION_KEY])

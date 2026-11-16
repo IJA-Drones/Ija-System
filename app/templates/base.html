@@ -1872,7 +1872,7 @@
     {% endif %}
     {% if ija_security %}
     <script id="ija-security-config" type="application/json">{{ ija_security|tojson }}</script>
-    <script src="{{ url_for('static', filename='js/session-security.js', v='20261007a') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/session-security.js', v='20261113-upload') }}" defer></script>
     {% endif %}
     {% if edit_control_enabled|default(false) %}
     <script src="{{ url_for('static', filename='js/edit-control.js', v='20261017a') }}"></script>

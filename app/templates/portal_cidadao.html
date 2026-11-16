@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261020-4') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css', v='20261113-4') }}">
 {% endblock %}
 
 {% macro portal_content() %}
@@ -433,5 +433,5 @@
 <script src="{{ url_for('static', filename='js/portal-push.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-report.js') }}"></script>
-{% if public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261020-2') }}" defer></script>{% endif %}
+{% if public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261113-4') }}" defer></script>{% endif %}
 {% endblock %}

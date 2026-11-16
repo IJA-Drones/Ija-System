@@ -77,7 +77,7 @@ Pontos de modelagem que precisam ser preservados em alterações:
 - `Usuario.equipe_uvis_uvis_usuario_id` vincula a conta operacional à UVIS dona. `EquipeUvis` representa membros; a equipe urbana Oceano utiliza `Equipe` e seus vínculos com pilotos.
 - `FinanceiroAgro` está ligado ao fluxo comercial; entradas/saídas manuais, categorias, bancos, caixa e controle de competência usam tabelas próprias. Alterações financeiras devem considerar todos esses fluxos.
 - `DjiFlight*` e `AgroFlight*` são famílias separadas para importações, registros e rotas. Os arquivos KML ficam fora do banco, com caminho e metadados persistidos.
-- Rastreamento utiliza `RastreamentoPosicao`, `RastreamentoHistorico` e `RastreamentoAlerta`. O serviço apresenta leituras existentes; um sincronizador RedGPS não foi localizado no repositório.
+- Rastreamento utiliza `RastreamentoPosicao`, `RastreamentoHistorico` e `RastreamentoAlerta`. O sincronizador RedGPS coleta posições; o worker permite recuperar histórico por dia. O Google Maps exibe os pontos, e a conferência os relaciona aos intervalos de `LogVeiculo`. Coleta contínua e recuperação precisam ser executadas no servidor; a tela não comprova cobertura integral.
 
 ## Perfis e escopos
 

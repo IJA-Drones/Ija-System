@@ -39,6 +39,8 @@ class Config:
     REDGPS_PASSWORD = os.getenv("REDGPS_PASSWORD", "")
     REDGPS_SYNC_ENABLED = os.getenv("REDGPS_SYNC_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
     REDGPS_POLL_INTERVAL_SECONDS = max(60, int(os.getenv("REDGPS_POLL_INTERVAL_SECONDS", "60")))
+    REDGPS_HISTORY_TIMEZONE = os.getenv("REDGPS_HISTORY_TIMEZONE", "America/Sao_Paulo")
+    REDGPS_HISTORY_SYNC_INTERVAL_SECONDS = max(60, int(os.getenv("REDGPS_HISTORY_SYNC_INTERVAL_SECONDS", "300")))
 
     # Dropbox Configs
     DROPBOX_APP_KEY = os.environ.get('DROPBOX_APP_KEY')

@@ -3,6 +3,7 @@ import math
 import re
 import threading
 from datetime import datetime, timedelta, timezone
+from time import monotonic
 
 from flask import current_app
 from sqlalchemy import select, text
@@ -44,6 +45,12 @@ def normalize_position(row):
     if when.year < 2000 or when > datetime.now(timezone.utc) + timedelta(minutes=5):
         return None
     speed, odometer = number(row.get("GpsSpeed")), number(row.get("Odometer"))
+    sensors = {}
+    for field, source in (("gps_battery", "BateriaGps"), ("vehicle_battery_v", "BateriaVeh"),
+                          ("satellites", "Satellites"), ("signal", "Senal")):
+        value = number(row.get(source))
+        sensors[field] = value if value is not None and value >= 0 else None
+    sensors["device_driver"] = str(row.get("Conductor") or "").strip()[:120] or None
     return {
         "latitude": lat, "longitude": lng,
         "velocidade_kmh": speed if speed is not None and speed >= 0 else None,
@@ -51,6 +58,7 @@ def normalize_position(row):
         "hodometro_km": odometer / 1000 if odometer is not None and odometer >= 0 else None,
         "reportado_em": when.replace(tzinfo=None),
         "endereco": str(row.get("Domicilio") or "")[:255] or None,
+        "telemetria": sensors,
     }
 
 
@@ -96,6 +104,7 @@ def sync_redgps():
                 current_app.logger.warning("Consulta RedGPS indisponível (%s).", state.erro)
                 return _metadata(state, interval)
 
+            current_app.extensions["redgps_units_cache"] = (monotonic(), rows)
             # Only existing, unambiguous local registrations may receive data.
             by_plate = {}
             for vehicle in session.scalars(select(Veiculos)):
@@ -131,7 +140,7 @@ def sync_redgps():
                 exists = session.scalar(select(RastreamentoHistorico.id).where(
                     RastreamentoHistorico.chave_fixture == identity))
                 if exists is None:
-                    history = {key: value for key, value in values.items() if key != "endereco"}
+                    history = {key: value for key, value in values.items() if key not in {"endereco", "telemetria"}}
                     session.add(RastreamentoHistorico(
                         veiculo_id=vehicle.id, prefeitura_id=vehicle.prefeitura_id,
                         provedor="RedGPS", is_demo=False, chave_fixture=identity, **history,

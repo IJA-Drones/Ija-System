@@ -2,6 +2,7 @@
 
 import importlib.util
 import io
+import re
 from pathlib import Path
 from unittest.mock import patch
 
@@ -81,8 +82,8 @@ def test_plan_lifecycle_preserves_rg_snapshot_and_links_visits(planned):
         prepare_planned(client, planning, inspecao_codigo='VIS-002')
 
 
-@pytest.mark.parametrize('bad', [{'data_inspecao':'2026-10-18'}, {'bairro':'Fora do plano'}, {'estrato_codigo':'E-02'}])
-def test_rejects_visits_outside_period_territory_or_stratum(planned, bad):
+@pytest.mark.parametrize('bad', [{'bairro':'Fora do plano'}, {'estrato_codigo':'E-02'}])
+def test_rejects_visits_outside_territory_or_stratum(planned, bad):
     client, planning = planned
     create(planning)
     change(planning, 'liberar', amostra_validada='sim')
@@ -91,6 +92,57 @@ def test_rejects_visits_outside_period_territory_or_stratum(planned, bad):
         planning.prepare(capture_csv(values, prefeitura=7), prefeitura=7, actor='a', source='Tentativa inválida',
             filename='campo.csv', demo=True, plan_reference={'plano':'L-2026-01','quarteirao':'Q-01'})
     assert planning.records(7, demo=True) == []
+
+
+@pytest.mark.parametrize('demo', [True, False])
+@pytest.mark.parametrize('inspection_date', ['2026-10-18', '2026-10-24'])
+@pytest.mark.parametrize('actor', ['a', '701'])
+def test_dates_outside_survey_period_are_allowed_only_in_demo_for_coordinator_and_agent(planned, demo, inspection_date, actor):
+    c, planning = planned
+    create(planning, demo=demo)
+    change(planning, 'liberar', demo=demo, amostra_validada='sim')
+    login(c, actor)
+    endpoint = '/vigilancia/agente' if actor == '701' else '/vigilancia/campo'
+    mode = 'true' if demo else 'false'
+    page = c.get(endpoint, query_string=dict(demo=mode, plano='L-2026-01', quarteirao='Q-01'))
+    assert page.status_code == 200
+    if actor == '701':
+        date_input = re.search(r'<input[^>]+name="data_inspecao"[^>]*>', page.text)[0]
+        assert ('min="2026-10-19"' in date_input) is not demo
+        assert ('max="2026-10-23"' in date_input) is not demo
+    values = {**record(estrato_codigo='E-01', data_inspecao=inspection_date),
+        'acao': 'registrar', 'demo': mode, 'plano': 'L-2026-01', 'quarteirao': 'Q-01',
+        'autorizado': 'sim', 'amostra_liraa': 'sim', '_csrf_token': token(c)}
+    response = c.post(endpoint, data=values)
+    if not demo:
+        assert response.status_code == (400 if actor == '701' else 409)
+        assert 'A data da visita está fora do período do levantamento.' in response.text
+        assert planning.records(7, demo=False) == []
+        return
+    assert response.status_code == 303, response.text
+    batch = planning.history(7)[0]
+    assert planning.records(7, demo=True) == []
+    confirmed = c.post(endpoint, data=dict(acao='confirmar', demo=mode, lote=batch['id'], _csrf_token=token(c)))
+    assert confirmed.status_code == 303, confirmed.text
+    assert planning.records(7, demo=True)[0]['data_inspecao'] == inspection_date
+    assert planning.records(7, demo=False) == []
+
+
+def test_authorized_visit_period_is_rechecked_at_confirmation(planned):
+    _, planning = planned
+    create(planning, demo=False)
+    change(planning, 'liberar', demo=False, amostra_validada='sim')
+    batch = planning.prepare(capture_csv(record(estrato_codigo='E-01'), prefeitura=7), prefeitura=7,
+        actor='a', source='Dados autorizados de teste', filename='campo.csv', demo=False,
+        plan_reference={'plano':'L-2026-01', 'quarteirao':'Q-01'})
+    from datetime import date
+    from app.modules.vigilancia.planning_models import CampoPlano
+    with planning.connection(write_prefeitura=7) as conn:
+        conn.execute(CampoPlano.__table__.update().where(CampoPlano.prefeitura == 7,
+            CampoPlano.demo.is_(False), CampoPlano.code == 'L-2026-01').values(inicio=date(2026, 10, 22)))
+    with pytest.raises(FieldConflict, match='fora do período'):
+        planning.confirm(batch['id'], prefeitura=7, actor='a')
+    assert planning.records(7, demo=False) == []
 
 
 def test_plan_cannot_be_bypassed_with_legacy_csv_or_changed_after_release(planned):
@@ -136,12 +188,12 @@ def test_visit_validation_does_not_query_the_database_for_each_csv_row(planned, 
 @pytest.mark.parametrize('bad', [{'data_inspecao': '2026-10-18'}, {'bairro': 'Outra área'}, {'estrato_codigo': 'E-02'}])
 def test_bulk_validation_still_checks_each_visit_after_reusing_the_plan(planned, bad):
     _, planning = planned
-    create(planning)
-    change(planning, 'liberar', amostra_validada='sim')
+    create(planning, demo=False)
+    change(planning, 'liberar', demo=False, amostra_validada='sim')
     values = record(estrato_codigo='E-01')
     reference = {'plano': 'L-2026-01', 'quarteirao': 'Q-01', 'agente_id': 701}
     with planning.connection() as conn, pytest.raises(FieldConflict):
-        validate_visits(conn, [values, values | bad], 7, True, reference, '701')
+        validate_visits(conn, [values, values | bad], 7, False, reference, '701')
 
 
 def test_pending_batch_revalidates_after_plan_closure(planned):
@@ -336,7 +388,8 @@ def test_covisa_coordinates_own_municipality_through_http(planned):
             acao=action, demo='true', _csrf_token=token(client), **values))
         assert response.status_code == 303, response.text
         # O destino explícito substitui o fragmento do formulário anterior.
-        assert response.location.endswith('#territorio' if action == 'territorio' else '#amostra')
+        expected = 'territorio' if action == 'territorio' else 'levantamentos' if action == 'criar' else 'amostra'
+        assert response.location.endswith('#' + expected)
     post('territorio', quarteirao='Q-01', bairro='Bairro Sete', area='A-01', imoveis='100', referencia='RG municipal')
     post('criar', plano='L-COVISA', titulo='Levantamento da COVISA', inicio='2026-10-19', fim='2026-10-23', responsavel='Coordenação municipal', fonte='Plano municipal')
     post('estrato', plano='L-COVISA', versao='1', estrato='E-01', imoveis_estrato='1000', meta_estrato='20', criterio='Área contínua')

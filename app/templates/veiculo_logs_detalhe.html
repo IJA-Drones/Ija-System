@@ -167,7 +167,7 @@
                 <div class="vehicle-day-body">
                     {% for turno in dia.turnos %}
                         <div class="vehicle-turno-card">
-                            <button class="vehicle-turno-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#turno{{ turno.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="turno{{ turno.id }}">
+                            <button id="turnoHeader{{ turno.id }}" class="vehicle-turno-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#turno{{ turno.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="turno{{ turno.id }}">
                                 <div>
                                     <div class="fw-bold text-dark">Turno #{{ turno.id }} | {{ turno.operador }}</div>
                                     <div class="small text-muted">
@@ -188,13 +188,18 @@
                                     {% endif %}
                                 </div>
                             </button>
-                            {% if can_edit_logs %}
                                 <div class="vehicle-turno-actions">
+                                    {% if turno.data_inicio %}
+                                    <a class="btn btn-sm btn-outline-primary rounded-pill px-3" href="{{ url_for('main.veiculos_rastreamento', date=turno.data_inicio.strftime('%Y-%m-%d'), vehicle=veiculo.id, log=turno.id) }}">
+                                        <i class="bi bi-map me-1"></i> Ver rastreamento do turno
+                                    </a>
+                                    {% endif %}
+                                    {% if can_edit_logs %}
                                     <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button" data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ turno.id }}">
                                         <i class="bi bi-pencil-square me-1"></i> Corrigir log
                                     </button>
+                                    {% endif %}
                                 </div>
-                            {% endif %}
                             <div class="collapse {% if loop.first %}show{% endif %}" id="turno{{ turno.id }}">
                                 <div class="vehicle-turno-body">
                                     <div class="vehicle-timeline">
@@ -393,7 +398,7 @@
                                                         <div class="timeline-kicker">Fechamento</div>
                                                         <div class="timeline-title">{{ 'Turno ainda em aberto' if turno.status == 'Aberto' else 'Fechamento do turno' }}</div>
                                                     </div>
-                                                    <div class="timeline-time">{{ turno.data.strftime('%d/%m/%Y %H:%M') if turno.data else '-' }}</div>
+                                                    <div class="timeline-time">{{ turno.encerrado_em.strftime('%d/%m/%Y %H:%M') if turno.encerrado_em else ('Em andamento' if turno.status == 'Aberto' else 'Horário não registrado') }}</div>
                                                 </div>
                                                 <div class="timeline-metrics">
                                                     <div class="timeline-metric">
@@ -551,6 +556,21 @@
 {% block scripts %}
 <script>
 (() => {
+    const targetId = window.location.hash.slice(1);
+    if (/^turnoHeader\d+$/.test(targetId)) {
+        const header = document.getElementById(targetId);
+        if (header) {
+            let parent = header.parentElement;
+            while (parent) {
+                if (parent.classList.contains('collapse')) parent.classList.add('show');
+                parent = parent.parentElement;
+            }
+            header.setAttribute('aria-expanded', 'true');
+            const content = document.querySelector(header.dataset.bsTarget);
+            if (content) content.classList.add('show');
+            header.scrollIntoView({ block: 'center' });
+        }
+    }
     const loadLazyVehicleMedia = (root) => {
         root.querySelectorAll('img[data-lazy-src]').forEach((img) => {
             if (!img.getClientRects().length) return;

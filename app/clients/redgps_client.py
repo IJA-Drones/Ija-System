@@ -1,5 +1,6 @@
 """Read-only RedGPS client. Never include response bodies or credentials in errors."""
 import time
+from datetime import timedelta
 from urllib.parse import urlsplit
 
 import certifi
@@ -48,12 +49,25 @@ class RedGPSClient:
         # Prevent accidental writes through the generic helper.
         if endpoint not in {"getdata", "vehicleGetAll"}:
             raise ValueError("Endpoint de leitura não permitido")
+        return self._read(endpoint, {"UseUTCDate": "1", "sensores": "1"} if endpoint == "getdata" else {})
+
+    def read_history(self, device, begin, end):
+        """The caller must explicitly select the provider's history timezone.
+
+        Unlike getdata, history/get does not document a UseUTCDate parameter.
+        """
+        if not device or end < begin or end - begin > timedelta(days=15):
+            raise ValueError("Dispositivo ou período de histórico inválido")
+        return self._read("history/get", {
+            "equipo": str(device), "fechaIni": begin.strftime("%Y-%m-%d %H:%M:%S"),
+            "fechaFin": end.strftime("%Y-%m-%d %H:%M:%S"), "format": "DateTime",
+        }, singleton=True)
+
+    def _read(self, endpoint, parameters, singleton=False):
         for attempt in range(2):
             if not self.token or time.monotonic() >= self.expires_at:
                 self._authenticate()
-            fields = {"token": self.token}
-            if endpoint == "getdata":
-                fields.update(UseUTCDate="1", sensores="1")
+            fields = {"token": self.token, **parameters}
             try:
                 result = self._post(endpoint, fields)
             except RedGPSError as error:
@@ -70,6 +84,8 @@ class RedGPSClient:
             if status != "200":
                 raise RedGPSError("consulta_recusada")
             rows = result.get("data")
+            if singleton and isinstance(rows, dict):
+                rows = [rows] if rows else []
             if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
                 raise RedGPSError("resposta_invalida")
             return rows

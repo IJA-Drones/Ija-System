@@ -11,16 +11,16 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Item | Quantidade |
 | --- | ---: |
 | Módulos em `app/modules` | 47 |
-| Arquivos Python em `app` | 281 |
-| Declarações de rotas | 504 |
+| Arquivos Python em `app` | 286 |
+| Declarações de rotas | 508 |
 | Modelos com tabela em `app/models.py` | 85 |
-| Templates HTML | 237 |
+| Templates HTML | 242 |
 | Arquivos CSS, incluindo bundle | 207 |
-| Arquivos JavaScript em `app/static`, incluindo service worker | 53 |
-| Revisões Alembic | 167 |
-| Arquivos Python de teste | 98 |
-| Funções/métodos Python com prefixo `test_` | 1183 |
-| Arquivos Node de teste | 23 |
+| Arquivos JavaScript em `app/static`, incluindo service worker | 55 |
+| Revisões Alembic | 168 |
+| Arquivos Python de teste | 103 |
+| Funções/métodos Python com prefixo `test_` | 1255 |
+| Arquivos Node de teste | 27 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
 
@@ -61,7 +61,7 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [integracoes](../app/modules/integracoes/) | 6 | 3 |
 | [mapas](../app/modules/mapas/) | 6 | 4 |
 | [mobile](../app/modules/mobile/) | 14 | 2 |
-| [ortomosaicos](../app/modules/ortomosaicos/) | 13 | 8 |
+| [ortomosaicos](../app/modules/ortomosaicos/) | 15 | 9 |
 | [painel_operacional](../app/modules/painel_operacional/) | 2 | 3 |
 | [piloto_checklists](../app/modules/piloto_checklists/) | 1 | 3 |
 | [piloto_os](../app/modules/piloto_os/) | 25 | 5 |
@@ -73,8 +73,8 @@ A contagem estática de testes não inclui subtestes e não substitui a execuç�
 | [treinamentos](../app/modules/treinamentos/) | 2 | 3 |
 | [usuarios](../app/modules/usuarios/) | 9 | 3 |
 | [uvis_equipes](../app/modules/uvis_equipes/) | 12 | 3 |
-| [veiculos](../app/modules/veiculos/) | 25 | 5 |
-| [vigilancia](../app/modules/vigilancia/) | 39 | 40 |
+| [veiculos](../app/modules/veiculos/) | 26 | 9 |
+| [vigilancia](../app/modules/vigilancia/) | 40 | 40 |
 
 ## Modelos e vínculos
 
@@ -143,10 +143,10 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 | `Baterias` | `baterias` | `id`, `ciclo`, `drone_id` | `id → equipamentos.id`; `drone_id → drones.id` |
 | `Veiculos` | `veiculos` | `id`, `frota`, `operacao`, `placa`, `responsavel`, `km_atual`, `km_prox_revisao`, `revisao_marcada_em`, `revisao_obs` | `id → equipamentos.id` |
 | `RastreamentoSincronizacao` | `rastreamento_sincronizacao` | `id`, `tentado_em`, `sincronizado_em`, `erro` | — |
-| `RastreamentoPosicao` | `rastreamento_posicoes` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `endereco`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
+| `RastreamentoPosicao` | `rastreamento_posicoes` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `endereco`, `telemetria`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
 | `RastreamentoHistorico` | `rastreamento_historicos` | `id`, `veiculo_id`, `prefeitura_id`, `latitude`, `longitude`, `velocidade_kmh`, `ignicao`, `hodometro_km`, `reportado_em`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
 | `RastreamentoAlerta` | `rastreamento_alertas` | `id`, `veiculo_id`, `prefeitura_id`, `tipo`, `severidade`, `mensagem`, `reportado_em`, `resolvido`, `provedor`, `is_demo`, `chave_fixture` | `veiculo_id → veiculos.id`; `prefeitura_id → prefeituras.id` |
-| `LogVeiculo` | `logs_veiculo` | `id`, `veiculo_id`, `piloto_id`, `equipe_id`, `data_registro`, `km_inicial`, `km_final`, `check_diario`, `qtd_fazendas_enderecos`, `foto_painel_path`, `foto_painel_final_path`, `assinatura_piloto`, `observacao` | `veiculo_id → veiculos.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
+| `LogVeiculo` | `logs_veiculo` | `id`, `veiculo_id`, `piloto_id`, `equipe_id`, `data_registro`, `encerrado_em`, `condutor_nome`, `km_inicial`, `km_final`, `check_diario`, `qtd_fazendas_enderecos`, `foto_painel_path`, `foto_painel_final_path`, `assinatura_piloto`, `observacao` | `veiculo_id → veiculos.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
 | `Abastecimento` | `abastecimentos` | `id`, `log_veiculo_id`, `data_hora`, `km_registro`, `tipo_abastecimento`, `litros`, `valor_total`, `foto_nf_path`, `foto_painel_path` | `log_veiculo_id → logs_veiculo.id` |
 | `LimpezaVeiculo` | `limpezas_veiculo` | `id`, `log_veiculo_id`, `veiculo_id`, `piloto_id`, `equipe_id`, `data_registro`, `data_hora`, `limpeza_realizada`, `tipo_limpeza`, `valor_total`, `observacao` | `log_veiculo_id → logs_veiculo.id`; `veiculo_id → veiculos.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
 | `LimpezaVeiculoAlertaCiencia` | `limpezas_veiculo_alertas_ciencia` | `id`, `veiculo_id`, `usuario_id`, `piloto_id`, `equipe_id`, `referencia_limpeza_em`, `prazo_dias`, `reconhecido_em`, `criado_em`, `atualizado_em` | `veiculo_id → veiculos.id`; `usuario_id → usuarios.id`; `piloto_id → pilotos.id`; `equipe_id → equipes.id` |
@@ -170,7 +170,7 @@ Os campos abaixo são declarações diretas da classe. Tipos, defaults, índices
 
 ## Migrações
 
-Heads: `f8d2a6c4e901`.
+Heads: `a3e5c7d901b2`.
 
 Bases: `1600d07df8f3`, `68a65e96dbfc`, `796a8641f68a`.
 
@@ -814,19 +814,28 @@ Fonte: [app/modules/ortomosaicos/routes.py](../app/modules/ortomosaicos/routes.p
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| POST | `/api/ortomosaicos/<int:oid>/agua/calcular` | `ortomosaico_agua_calcular` | 49 |
-| GET, POST | `/api/ortomosaicos/<int:oid>/agua` | `ortomosaico_agua` | 58 |
-| PUT, DELETE | `/api/ortomosaicos/<int:oid>/agua/<int:eid>` | `ortomosaico_agua_item` | 77 |
-| GET | `/ortomosaicos` | `ortomosaicos` | 93 |
-| GET | `/api/ortomosaicos` | `ortomosaicos_listar` | 102 |
-| POST | `/api/ortomosaicos` | `ortomosaico_upload` | 118 |
-| GET | `/api/ortomosaicos/<int:oid>` | `ortomosaico_status` | 149 |
-| POST | `/api/ortomosaicos/<int:oid>/reprocessar` | `ortomosaico_retry` | 158 |
-| GET, HEAD | `/ortomosaicos/<int:oid>/arquivo.tif` | `ortomosaico_arquivo` | 178 |
-| GET, HEAD | `/ortomosaicos/<int:oid>/curvas.geojson` | `ortomosaico_curvas` | 236 |
-| GET, HEAD | `/ortomosaicos/<int:oid>/curvas.jpg` | `ortomosaico_jpeg` | 241 |
-| GET | `/ortomosaicos/<int:oid>/original.tif` | `ortomosaico_original` | 246 |
-| GET | `/ortomosaicos/<int:oid>/exportar/<any(curvas, medicoes):camada>.<any(geojson, zip):formato>` | `ortomosaico_exportar` | 258 |
+| POST | `/api/ortomosaicos/<int:oid>/agua/calcular` | `ortomosaico_agua_calcular` | 50 |
+| GET, POST | `/api/ortomosaicos/<int:oid>/agua` | `ortomosaico_agua` | 59 |
+| PUT, DELETE | `/api/ortomosaicos/<int:oid>/agua/<int:eid>` | `ortomosaico_agua_item` | 78 |
+| GET | `/ortomosaicos` | `ortomosaicos` | 94 |
+| GET | `/api/ortomosaicos` | `ortomosaicos_listar` | 103 |
+| POST | `/api/ortomosaicos` | `ortomosaico_upload` | 119 |
+| GET | `/api/ortomosaicos/<int:oid>` | `ortomosaico_status` | 150 |
+| POST | `/api/ortomosaicos/<int:oid>/reprocessar` | `ortomosaico_retry` | 159 |
+| GET, HEAD | `/ortomosaicos/<int:oid>/arquivo.tif` | `ortomosaico_arquivo` | 179 |
+| GET, HEAD | `/ortomosaicos/<int:oid>/curvas.geojson` | `ortomosaico_curvas` | 237 |
+| GET, HEAD | `/ortomosaicos/<int:oid>/curvas.jpg` | `ortomosaico_jpeg` | 242 |
+| GET | `/ortomosaicos/<int:oid>/original.tif` | `ortomosaico_original` | 247 |
+| GET | `/ortomosaicos/<int:oid>/exportar/<any(curvas, medicoes):camada>.<any(geojson, zip):formato>` | `ortomosaico_exportar` | 259 |
+
+### app/modules/ortomosaicos/uploads.py
+
+Fonte: [app/modules/ortomosaicos/uploads.py](../app/modules/ortomosaicos/uploads.py).
+
+| Método | Caminho | Endpoint local | Linha |
+| --- | --- | --- | ---: |
+| POST | `/api/ortomosaicos/uploads` | `ortomosaico_transfer_start` | 142 |
+| GET, PUT, POST | `/api/ortomosaicos/uploads/<token>` | `ortomosaico_transfer` | 187 |
 
 ### app/modules/painel_operacional/routes.py
 
@@ -971,8 +980,8 @@ Fonte: [app/modules/treinamentos/routes.py](../app/modules/treinamentos/routes.p
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/treinamentos` | `treinamentos` | 37 |
-| GET | `/treinamentos/arquivos/<material_id>` | `treinamentos_arquivo` | 43 |
+| GET | `/treinamentos` | `treinamentos` | 40 |
+| GET | `/treinamentos/arquivos/<material_id>` | `treinamentos_arquivo` | 46 |
 
 ### app/modules/usuarios/routes.py
 
@@ -1015,31 +1024,32 @@ Fonte: [app/modules/veiculos/routes.py](../app/modules/veiculos/routes.py).
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET | `/veiculos/rastreamento` | `veiculos_rastreamento` | 119 |
-| GET | `/veiculos/rastreamento/dados` | `veiculos_rastreamento_dados` | 130 |
-| GET | `/veiculos/menu` | `veiculos_menu` | 140 |
-| GET | `/veiculos` | `listar_veiculos` | 154 |
-| POST | `/veiculos/equipes` | `atualizar_equipes_veiculos` | 167 |
-| GET | `/veiculos/logs` | `veiculos_logs` | 191 |
-| GET | `/veiculos/limpezas` | `veiculos_limpezas` | 200 |
-| GET | `/veiculos/limpeza/alertas` | `veiculos_alertas_limpeza` | 209 |
-| GET | `/veiculos/logs/veiculo/<int:veiculo_id>` | `veiculo_logs_detalhe` | 220 |
-| GET | `/veiculos/logs/exportar` | `exportar_logs_veiculos_xlsx` | 232 |
-| GET | `/admin/veiculos/logs-excluidos` | `veiculos_logs_excluidos` | 241 |
-| POST | `/veiculos/logs/<int:log_id>/corrigir-km` | `corrigir_log_veiculo` | 256 |
-| POST | `/veiculos/logs/<int:log_id>/deletar` | `deletar_log_veiculo` | 302 |
-| GET | `/veiculos/logs/<int:log_id>/midia/<tipo>` | `veiculo_log_midia_skybox` | 349 |
-| GET | `/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>` | `veiculo_abastecimento_midia_skybox` | 370 |
-| GET, POST | `/veiculos/cadastrar` | `cadastrar_veiculo` | 396 |
-| GET, POST | `/veiculos/<int:veiculo_id>/editar` | `editar_veiculo` | 447 |
-| POST | `/veiculos/<int:veiculo_id>/deletar` | `deletar_veiculo` | 502 |
-| GET | `/piloto/veiculos` | `piloto_veiculos` | 517 |
-| GET | `/piloto/caixa-entrada` | `piloto_caixa_entrada` | 536 |
-| POST | `/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar` | `piloto_confirmar_alerta_limpeza` | 549 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/km` | `piloto_atualizar_km_veiculo` | 572 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/abastecimento` | `piloto_registrar_abastecimento_turno` | 599 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/limpeza` | `piloto_registrar_limpeza_turno` | 630 |
-| POST | `/piloto/veiculos/<int:veiculo_id>/encerrar` | `piloto_encerrar_turno` | 659 |
+| GET | `/veiculos/rastreamento` | `veiculos_rastreamento` | 125 |
+| GET | `/veiculos/rastreamento/dados` | `veiculos_rastreamento_dados` | 145 |
+| POST | `/veiculos/rastreamento/historico` | `veiculos_rastreamento_historico` | 157 |
+| GET | `/veiculos/menu` | `veiculos_menu` | 195 |
+| GET | `/veiculos` | `listar_veiculos` | 209 |
+| POST | `/veiculos/equipes` | `atualizar_equipes_veiculos` | 222 |
+| GET | `/veiculos/logs` | `veiculos_logs` | 246 |
+| GET | `/veiculos/limpezas` | `veiculos_limpezas` | 255 |
+| GET | `/veiculos/limpeza/alertas` | `veiculos_alertas_limpeza` | 264 |
+| GET | `/veiculos/logs/veiculo/<int:veiculo_id>` | `veiculo_logs_detalhe` | 275 |
+| GET | `/veiculos/logs/exportar` | `exportar_logs_veiculos_xlsx` | 287 |
+| GET | `/admin/veiculos/logs-excluidos` | `veiculos_logs_excluidos` | 296 |
+| POST | `/veiculos/logs/<int:log_id>/corrigir-km` | `corrigir_log_veiculo` | 311 |
+| POST | `/veiculos/logs/<int:log_id>/deletar` | `deletar_log_veiculo` | 357 |
+| GET | `/veiculos/logs/<int:log_id>/midia/<tipo>` | `veiculo_log_midia_skybox` | 404 |
+| GET | `/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>` | `veiculo_abastecimento_midia_skybox` | 425 |
+| GET, POST | `/veiculos/cadastrar` | `cadastrar_veiculo` | 451 |
+| GET, POST | `/veiculos/<int:veiculo_id>/editar` | `editar_veiculo` | 502 |
+| POST | `/veiculos/<int:veiculo_id>/deletar` | `deletar_veiculo` | 557 |
+| GET | `/piloto/veiculos` | `piloto_veiculos` | 572 |
+| GET | `/piloto/caixa-entrada` | `piloto_caixa_entrada` | 591 |
+| POST | `/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar` | `piloto_confirmar_alerta_limpeza` | 604 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/km` | `piloto_atualizar_km_veiculo` | 627 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/abastecimento` | `piloto_registrar_abastecimento_turno` | 654 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/limpeza` | `piloto_registrar_limpeza_turno` | 685 |
+| POST | `/piloto/veiculos/<int:veiculo_id>/encerrar` | `piloto_encerrar_turno` | 714 |
 
 ### app/modules/vigilancia/agent_routes.py
 
@@ -1075,12 +1085,12 @@ Fonte: [app/modules/vigilancia/field_routes.py](../app/modules/vigilancia/field_
 
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
-| GET, POST | `/vigilancia/campo` | `vigilancia_campo` | 122 |
-| GET | `/vigilancia/campo/exportar.csv` | `vigilancia_campo_export` | 197 |
-| GET, POST | `/vigilancia/importacoes` | `vigilancia_importacoes` | 214 |
-| GET | `/vigilancia/importacoes/levantamentos` | `vigilancia_import_levantamentos` | 290 |
-| GET | `/vigilancia/importacoes/<batch_id>/origem.csv` | `vigilancia_import_origem` | 305 |
-| GET | `/vigilancia/importacoes/modelo.csv` | `vigilancia_import_modelo` | 320 |
+| GET, POST | `/vigilancia/campo` | `vigilancia_campo` | 124 |
+| GET | `/vigilancia/campo/exportar.csv` | `vigilancia_campo_export` | 247 |
+| GET, POST | `/vigilancia/importacoes` | `vigilancia_importacoes` | 264 |
+| GET | `/vigilancia/importacoes/levantamentos` | `vigilancia_import_levantamentos` | 344 |
+| GET | `/vigilancia/importacoes/<batch_id>/origem.csv` | `vigilancia_import_origem` | 359 |
+| GET | `/vigilancia/importacoes/modelo.csv` | `vigilancia_import_modelo` | 374 |
 
 ### app/modules/vigilancia/hub_routes.py
 
@@ -1116,7 +1126,8 @@ Fonte: [app/modules/vigilancia/planning_routes.py](../app/modules/vigilancia/pla
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
 | GET, POST | `/vigilancia/planejamento` | `vigilancia_planejamento` | 19 |
-| GET | `/vigilancia/planejamento/modelo/<kind>.csv` | `vigilancia_planejamento_modelo` | 74 |
+| GET | `/vigilancia/planejamento/exportar/<kind>.csv` | `vigilancia_planejamento_export` | 89 |
+| GET | `/vigilancia/planejamento/modelo/<kind>.csv` | `vigilancia_planejamento_modelo` | 110 |
 
 ### app/modules/vigilancia/results_routes.py
 
@@ -1134,8 +1145,8 @@ Fonte: [app/modules/vigilancia/risk_routes.py](../app/modules/vigilancia/risk_ro
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
 | GET, POST | `/vigilancia/risco` | `vigilancia_risco` | 68 |
-| GET | `/vigilancia/risco/modelo/<kind>` | `vigilancia_risco_modelo` | 134 |
-| GET | `/vigilancia/risco/<identifier>/exportar` | `vigilancia_risco_export` | 157 |
+| GET | `/vigilancia/risco/modelo/<kind>` | `vigilancia_risco_modelo` | 135 |
+| GET | `/vigilancia/risco/<identifier>/exportar` | `vigilancia_risco_export` | 158 |
 
 ### app/modules/vigilancia/routes.py
 
@@ -1242,6 +1253,8 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_ortomosaicos.py](../tests/test_ortomosaicos.py) | 28 |
 | [test_ortomosaicos_agua.py](../tests/test_ortomosaicos_agua.py) | 8 |
 | [test_ortomosaicos_integracoes.py](../tests/test_ortomosaicos_integracoes.py) | 3 |
+| [test_ortomosaicos_rgb16.py](../tests/test_ortomosaicos_rgb16.py) | 2 |
+| [test_ortomosaicos_uploads.py](../tests/test_ortomosaicos_uploads.py) | 9 |
 | [test_painel_operacional_weather.py](../tests/test_painel_operacional_weather.py) | 3 |
 | [test_password_expiration.py](../tests/test_password_expiration.py) | 19 |
 | [test_pdf_watermark.py](../tests/test_pdf_watermark.py) | 15 |
@@ -1249,8 +1262,9 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_portal_cidadao_chatbot.py](../tests/test_portal_cidadao_chatbot.py) | 22 |
 | [test_portal_cidadao_denuncias.py](../tests/test_portal_cidadao_denuncias.py) | 13 |
 | [test_portal_cidadao_health_data.py](../tests/test_portal_cidadao_health_data.py) | 21 |
-| [test_portal_public_risk.py](../tests/test_portal_public_risk.py) | 9 |
-| [test_redgps_sync.py](../tests/test_redgps_sync.py) | 13 |
+| [test_portal_public_risk.py](../tests/test_portal_public_risk.py) | 10 |
+| [test_redgps_history.py](../tests/test_redgps_history.py) | 11 |
+| [test_redgps_sync.py](../tests/test_redgps_sync.py) | 15 |
 | [test_redirects.py](../tests/test_redirects.py) | 4 |
 | [test_relatorios_region_team_filters.py](../tests/test_relatorios_region_team_filters.py) | 5 |
 | [test_relatorios_retornos_automaticos.py](../tests/test_relatorios_retornos_automaticos.py) | 11 |
@@ -1268,13 +1282,14 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_solicitacao_place_id_block.py](../tests/test_solicitacao_place_id_block.py) | 14 |
 | [test_sprint1_workflows.py](../tests/test_sprint1_workflows.py) | 11 |
 | [test_supervisor_veiculos.py](../tests/test_supervisor_veiculos.py) | 23 |
+| [test_tracking_jobs.py](../tests/test_tracking_jobs.py) | 4 |
 | [test_treinamentos.py](../tests/test_treinamentos.py) | 6 |
 | [test_uvis_os_media_access.py](../tests/test_uvis_os_media_access.py) | 13 |
-| [test_veiculos_operational_scope.py](../tests/test_veiculos_operational_scope.py) | 40 |
-| [test_veiculos_rastreamento.py](../tests/test_veiculos_rastreamento.py) | 11 |
+| [test_veiculos_operational_scope.py](../tests/test_veiculos_operational_scope.py) | 41 |
+| [test_veiculos_rastreamento.py](../tests/test_veiculos_rastreamento.py) | 38 |
 | [test_video_upload_sessions.py](../tests/test_video_upload_sessions.py) | 4 |
 | [test_vigilancia_agent_account.py](../tests/test_vigilancia_agent_account.py) | 2 |
-| [test_vigilancia_capture.py](../tests/test_vigilancia_capture.py) | 14 |
+| [test_vigilancia_capture.py](../tests/test_vigilancia_capture.py) | 15 |
 | [test_vigilancia_deletion.py](../tests/test_vigilancia_deletion.py) | 10 |
 | [test_vigilancia_field_migration.py](../tests/test_vigilancia_field_migration.py) | 3 |
 | [test_vigilancia_field_routes.py](../tests/test_vigilancia_field_routes.py) | 10 |
@@ -1285,8 +1300,9 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_vigilancia_migracao.py](../tests/test_vigilancia_migracao.py) | 3 |
 | [test_vigilancia_os.py](../tests/test_vigilancia_os.py) | 7 |
 | [test_vigilancia_planned_csv.py](../tests/test_vigilancia_planned_csv.py) | 4 |
-| [test_vigilancia_planning.py](../tests/test_vigilancia_planning.py) | 17 |
+| [test_vigilancia_planning.py](../tests/test_vigilancia_planning.py) | 19 |
 | [test_vigilancia_preview.py](../tests/test_vigilancia_preview.py) | 32 |
-| [test_vigilancia_results.py](../tests/test_vigilancia_results.py) | 7 |
-| [test_vigilancia_risk_map.py](../tests/test_vigilancia_risk_map.py) | 7 |
+| [test_vigilancia_results.py](../tests/test_vigilancia_results.py) | 9 |
+| [test_vigilancia_risk_map.py](../tests/test_vigilancia_risk_map.py) | 9 |
 | [test_vigilancia_routes.py](../tests/test_vigilancia_routes.py) | 23 |
+| [test_vigilancia_survey_flow.py](../tests/test_vigilancia_survey_flow.py) | 8 |

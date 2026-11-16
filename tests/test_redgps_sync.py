@@ -105,6 +105,15 @@ class RedGPSSyncTests(unittest.TestCase):
         self.assertIsNone(parsed["ignicao"])
         self.assertIsNone(parsed["hodometro_km"])
 
+    def test_real_telemetry_is_persisted_and_unknown_sensor_values_stay_unknown(self):
+        self.client.read.return_value = [reading(BateriaGps="-1", BateriaVeh="12.7", Satellites="15", Senal="62", Conductor="Condutor fictício")]
+        sync_redgps()
+        telemetry = RastreamentoPosicao.query.one().telemetria
+        self.assertIsNone(telemetry['gps_battery'])
+        self.assertEqual(telemetry['vehicle_battery_v'], 12.7)
+        self.assertEqual(telemetry['satellites'], 15)
+        self.assertEqual(telemetry['device_driver'], 'Condutor fictício')
+
     def test_disabled_does_not_call_api(self):
         self.app.config["REDGPS_SYNC_ENABLED"] = False
         self.assertFalse(sync_redgps()["enabled"])
@@ -154,6 +163,19 @@ class RedGPSClientTests(unittest.TestCase):
     def test_refuses_write_endpoints(self):
         with self.assertRaises(ValueError):
             self.client.read("createAsset")
+
+    @patch("app.clients.redgps_client.requests.post")
+    def test_history_uses_documented_fields_and_accepts_single_or_multiple_readings(self, post):
+        self.client.token, self.client.expires_at = "test-token", float("inf")
+        post.side_effect = [Mock(status_code=200, json=Mock(return_value={"status": 200, "data": {"equipo": "device"}})),
+                            Mock(status_code=200, json=Mock(return_value={"status": 200, "data": [{"equipo": "device"}]}))]
+        for _ in range(2):
+            self.assertEqual(self.client.read_history("device", datetime(2026, 10, 7), datetime(2026, 10, 7, 23, 59, 59)), [{"equipo": "device"}])
+        self.assertTrue(post.call_args.args[0].endswith('/history/get'))
+        self.assertEqual(post.call_args.kwargs['data']['fechaIni'], '2026-10-07 00:00:00')
+        self.assertEqual(post.call_args.kwargs['data']['format'], 'DateTime')
+        self.assertNotIn('limite', post.call_args.kwargs['data'])
+        self.assertNotIn('UseUTCDate', post.call_args.kwargs['data'])
 
 
 if __name__ == "__main__":

@@ -10,6 +10,8 @@
   "main.ortomosaico_jpeg": "Private contour JPEG; fixed diretor/dev guard and municipality access checks",
   "main.ortomosaicos": "Fixed role guard: only diretor and dev; cannot be delegated by Central TI",
   "main.ortomosaicos_listar": "Fixed role guard and municipality access checks",
+  "main.ortomosaico_transfer_start": "Private resumable upload; fixed diretor/dev guard and municipality access checks",
+  "main.ortomosaico_transfer": "Private resumable upload; fixed diretor/dev guard, owner and municipality access checks",
   "main.ortomosaico_upload": "Fixed role guard and municipality access checks",
   "main.ortomosaico_status": "Fixed role guard and municipality access checks",
   "main.ortomosaico_retry": "Fixed role guard and municipality access checks",

@@ -59,10 +59,11 @@
         const props = feature.properties;
         for (const polygon of feature.geometry.coordinates) {
           const points = polygon[0].slice(0,-1).map(point => ({lat:point[1],lng:point[0]}));
-          const shape = new google.maps.Polygon({ map, paths: points, strokeColor: "#1e40af", strokeWeight: 2,
-            fillColor: props.cor, fillOpacity: .65, zIndex: 1 });
+          const shape = new google.maps.Polygon({ map, paths: points, strokeColor: "#475569", strokeWeight: 2,
+            fillColor: props.cor, fillOpacity: .85, zIndex: 1 });
           shape.addListener("click", event => popup(`Estrato ${props.estrato_codigo} · Área ${props.area_codigo}`,
             [`Levantamento ${props.levantamento_codigo}`, `IIP preliminar: ${props.iip === null ? "indisponível" : props.iip.toLocaleString("pt-BR") + "%"}`,
+             `Classificação: ${props.classificacao_rotulo || "Não informada"}`,
              `${props.imoveis_inspecionados} imóveis inspecionados · ${props.imoveis_positivos} positivos · ${props.imoveis_pendentes} pendentes`,
              "Contornos dos quarteirões preservados no plano; índice calculado para o estrato/área."], event.latLng));
           layers.iip.push({shape,points});

@@ -89,10 +89,10 @@ A senha passa pelo método do modelo; com os controles habilitados, a política 
 python run.py
 ```
 
-Abra **http://localhost:5002/login**. O [run.py](../run.py) usa porta **5002**, escuta em `0.0.0.0`, ativa debug por padrão e desativa o reloader. Use-o em um ambiente local confiável. Para bind apenas no loopback, use a CLI do Flask:
+Abra **http://localhost:5001/login**. O [run.py](../run.py) usa porta **5001**, escuta em `0.0.0.0`, ativa debug por padrão e desativa o reloader. Use-o em um ambiente local confiável. Para bind apenas no loopback, use a CLI do Flask:
 
 ```bash
-FLASK_DEBUG=1 flask --app app:create_app run --host 127.0.0.1 --port 5002 --no-reload
+FLASK_DEBUG=1 flask --app app:create_app run --host 127.0.0.1 --port 5001 --no-reload
 ```
 
 Na CLI, os defaults adicionais de `run.py` não se aplicam. Com `FLASK_DEBUG=0`, o Talisman força HTTPS; isso explica redirecionamento de HTTP em ambientes sem proxy TLS. Em produção, utilize o fluxo de Gunicorn descrito no [guia de operação](operacao.md).

@@ -22,6 +22,7 @@ def register_routes(bp):
         prefeitura = _scope()
         _ensure_preview_csrf_token()
         values = request.form if request.method == "POST" else request.args
+        survey_flow = values.get("fluxo") == "levantamento"
         demo, code, error, status, overview = True, "", None, 200, {}
         legacy = can_coordinate_field(current_user)
         try:
@@ -30,6 +31,8 @@ def register_routes(bp):
                 raise FieldConflict("Selecione demonstração ou dados autorizados.")
             demo = not supplied or supplied[0] == "true"
             code = text(values, "plano", optional=True)
+            if survey_flow and values.get("acao") in {"territorio", "importar_territorio"}:
+                code = text(values, "retorno_plano", optional=True)
             if request.method == "POST":
                 _validate_preview_csrf()
                 if not prefeitura:
@@ -40,11 +43,20 @@ def register_routes(bp):
                 content = _uploaded_csv() if action in {"importar_territorio", "importar_plano"} else None
                 code = PlanningStore().mutate(prefeitura, demo, str(current_user.get_id()), action, values, content)
                 block = text(values, "quarteirao", optional=True) if action == "territorio" else ""
-                if action == "territorio":
+                if action in {"territorio", "importar_territorio"}:
                     code = text(values, "retorno_plano", optional=True)
-                target = "territorio" if action in {"territorio", "importar_territorio"} else "amostra" if code else "levantamentos"
+                target = "levantamentos" if action == "criar" else "territorio" if action in {"territorio", "importar_territorio"} else "amostra" if code else "levantamentos"
+                flow_params = {}
+                if survey_flow:
+                    fallback_step = "1" if action == "criar" else "2" if action in {"territorio", "importar_territorio"} else "3"
+                    step = values.get("etapa") if values.get("etapa") in {"1", "2", "3"} else fallback_step
+                    flow_params = {"fluxo": "levantamento", "etapa": step}
+                    target = {"1": "levantamentos", "2": "territorio", "3": "amostra"}[step]
+                    if step == "3" and action == "estrato":
+                        target = "cadastrar-estrato"
                 return redirect(url_for("main.vigilancia_planejamento", prefeitura_id=prefeitura,
-                                        demo="true" if demo else "false", plano=code, territorio=block, _anchor=target), code=303)
+                                        demo="true" if demo else "false", plano=code, territorio=block,
+                                        **flow_params, _anchor=target), code=303)
             if prefeitura:
                 overview = PlanningStore().overview(prefeitura, demo, code)
                 if code and not overview["plano"]:
@@ -66,10 +78,34 @@ def register_routes(bp):
             item["versao"] = str(item.pop("atualizado_em"))
         return render_template("vigilancia_planejamento.html", prefeitura_id=prefeitura,
             **_municipality_filter_context(prefeitura), demo=demo,
+            survey_flow=survey_flow,
+            survey_step=int(values.get("etapa")) if values.get("etapa") in {"1", "2", "3"} else 3 if overview.get("plano") else 1,
+            can_export=can_access_endpoint(current_user, "main.vigilancia_planejamento_export", "GET", legacy=legacy),
             preview_csrf_token=session[CSRF_SESSION_KEY], erro=error, overview=overview,
             form=values, map_data=map_data,
             territory_form=values if request.method == "POST" and values.get("acao") == "territorio" else {},
             can_write=can_access_endpoint(current_user, "main.vigilancia_planejamento", "POST", legacy=legacy)), status
+
+    @bp.get("/vigilancia/planejamento/exportar/<kind>.csv", endpoint="vigilancia_planejamento_export")
+    @_access
+    def export(kind):
+        if kind not in {"levantamentos", "territorio", "amostra"}:
+            abort(404)
+        prefeitura = _scope()
+        if prefeitura is None:
+            abort(400, description="Selecione uma prefeitura cadastrada.")
+        try:
+            mode = request.args.get("demo", "true")
+            if mode not in {"true", "false"} or len(request.args.getlist("demo")) > 1:
+                raise FieldConflict("Selecione demonstração ou dados autorizados.")
+            code = text(request.args, "plano", optional=True)
+            content = PlanningStore().export_csv(prefeitura, mode == "true", kind, code)
+        except FieldConflict as exc:
+            abort(400, description=str(exc))
+        except FieldStoreError as exc:
+            abort(503, description=str(exc))
+        return Response(content, mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="liraa-{kind}-{mode}-{prefeitura}.csv"'})
 
     @bp.get("/vigilancia/planejamento/modelo/<kind>.csv", endpoint="vigilancia_planejamento_modelo")
     @_access

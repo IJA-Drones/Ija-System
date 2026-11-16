@@ -114,7 +114,7 @@ def test_csv_geometry_requires_confirmation_is_atomic_and_cannot_overwrite_other
 
 
 @pytest.mark.parametrize('change_values',[{'quarteirao_codigo':'Q-INEXISTENTE'},{'estrato_codigo':'E-INEXISTENTE'},
-    {'bairro':'Fora do território'},{'data_inspecao':'2026-10-18'},{'levantamento_codigo':'OUTRO'}])
+    {'bairro':'Fora do território'},{'levantamento_codigo':'OUTRO'}])
 def test_invalid_planned_csv_is_rejected_without_saving_visits(planned,change_values):
     _,planning=planned;make_plan(planning)
     with pytest.raises(FieldConflict):

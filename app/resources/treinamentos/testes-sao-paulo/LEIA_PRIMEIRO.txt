@@ -1,0 +1,67 @@
+TREINAMENTO — SÃO PAULO / SP — UVIS SÉ — DEMONSTRAÇÃO
+Preparado em 12/11/2026. CSVs UTF-8 com BOM, separados por ponto e vírgula.
+Os cabeçalhos e a ordem das colunas são os mesmos dos quatro CSVs de Pesqueira.
+
+REFERÊNCIAS REAIS
+01: Biblioteca Mário de Andrade — Rua da Consolação, 94 — República.
+02: Museu da Caixa Econômica Federal — Praça da Sé, 111 — Sé.
+03: Museu Anchieta — Praça Pateo do Collegio, 2 — Sé.
+Endereços, coordenadas dos equipamentos e quadras fiscais vieram do GeoSampa,
+Prefeitura de São Paulo. Consulta: 12/11/2026. Os nomes e endereços originais,
+URLs das consultas e polígonos originais estão em FONTES_GEOGRAFICAS.json.
+As quadras fiscais não representam uma amostra LIRAa oficial ou toda a UVIS Sé.
+Os contornos foram simplificados e arredondados a seis casas para o importador.
+Referência UVIS: Sé, código 81; República consta no material oficial da Saúde.
+
+DADOS FICTÍCIOS
+Imóveis, visitas, população de imóveis, metas, estratos, seleção amostral,
+positividade e casos SINAN são simulados. Os pontos de visitas foram gerados
+dentro das quadras reais. Não são endereços de pacientes ou focos reais.
+Os equipamentos culturais servem apenas como referências cartográficas.
+Use sempre Demonstração nas telas. Não apresente estes resultados como oficiais.
+
+PASSO 1 — CADASTRAR LEVANTAMENTO
+Selecione Prefeitura de Sao Paulo e Demonstração.
+Código sugerido: DEMO-SP-SE-2026-11.
+Nome: Demonstração UVIS Sé — Centro de São Paulo.
+Período: 09/11/2026 a 13/11/2026. As visitas do kit são de 11/11/2026.
+Responsável e fonte: Coordenação DEMO / Kit UVIS Sé — dados fictícios.
+
+PASSO 2 — QUARTEIRÕES
+Na tela de quarteirões, anexe o arquivo 01, confira os contornos e importe.
+São 3 quadras fiscais de referência: 006.014.001, 002.068.001 e 002.059.001.
+No sistema, os códigos do kit começam com DEMO-SP-SE-Q para evitar colisões.
+
+PASSO 3 — ESTRATOS E AMOSTRA
+Na tela de estratos, anexe o arquivo 02 no levantamento em rascunho.
+O campo agente_id fica vazio para não atribuir os testes a uma conta real.
+Para demonstrar a conta do agente, selecione uma conta de campo de São Paulo
+em Vincular quarteirões e agentes antes de liberar o levantamento.
+Revise a amostra e libere quando quiser confirmar as visitas planejadas.
+Exportações funcionam mesmo antes da liberação.
+
+PASSO 4 — VISITAS
+Na tela de visitas, anexe o arquivo 03 e selecione o levantamento de destino.
+Valide, confira a prévia e confirme a carga.
+municipio_id=1 é o ID interno de Prefeitura de Sao Paulo conferido neste ambiente
+em 12/11/2026. Em outra instalação, ajuste-o ao cadastro local nas 24 linhas.
+IBGE 3550308 não substitui esse ID interno no arquivo de visitas.
+
+RESULTADOS ESPERADOS
+3 quarteirões, 3 estratos, 24 visitas: 21 inspecionados, 3 positivos, 3 pendências.
+IIP por estrato: E01 16,67%; E02 28,57%; E03 0%. Resultados fictícios.
+
+SINAN — MÓDULO SEPARADO
+Anexe o arquivo 04 em SINAN → Importar dados → Arquivo CSV.
+Selecione São Paulo capital, dengue, 2026 e Demonstração. IBGE 3550308.
+Esperado: 6 registros fictícios, 2 confirmados, 3 suspeitos e 1 descartado.
+O layout SINAN deste sistema tem escopo municipal: ele não aplica um filtro UVIS.
+Este arquivo contém apenas os 6 pontos sintéticos do recorte demonstrativo Sé.
+
+FONTES
+GeoSampa e serviços WFS:
+https://geoinfo-smdu.github.io/tutorial-geosampa-internet-2.0/
+Referência UVIS da Secretaria Municipal da Saúde:
+https://www.prefeitura.sp.gov.br/cidade/secretarias/upload/saude/vigilancia_em_saude/arquivos/Ferramenta_territorios_UVIS.pdf
+Código municipal:
+https://www.ibge.gov.br/cidades-e-estados/sp/sao-paulo.html

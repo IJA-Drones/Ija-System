@@ -87,6 +87,7 @@ def _store():
 
 
 def _municipality_filter_context(prefeitura):
+    from app.modules.treinamentos.catalog import demo_csv_examples
     editable = is_admin_global_user(current_user)
     try:
         choices = Prefeitura.query.order_by(Prefeitura.nome).all() if editable else []
@@ -99,6 +100,7 @@ def _municipality_filter_context(prefeitura):
         "municipio_editavel": editable,
         "prefeituras": choices,
         "prefeitura_nome": selected.nome if selected else "",
+        "csv_examples": demo_csv_examples(selected.nome if selected else "") if "main.treinamentos_arquivo" in current_app.view_functions else {},
     }
 
 
@@ -125,10 +127,12 @@ def register_routes(bp):
         prefeitura = _scope()
         _ensure_preview_csrf_token()
         filters = {key: "" for key in ("origem", "levantamento", "estrato", "inicio", "fim")}
-        report = None
+        report, review_batch = None, None
         error, code, demo, page_number = None, 200, True, 1
         form = request.form.to_dict() if request.method == "POST" else {}
+        survey_flow = request.values.get("fluxo") == "levantamento"
         selected, os_context, plan_reference = None, None, None
+        flow_overview = {}
         try:
             demo = data_mode(request.form if request.method == "POST" else request.args)
             from .planning import PlanningStore, text
@@ -151,6 +155,11 @@ def register_routes(bp):
                     if plan_reference:
                         form.update(planned)
             filters = parse_filters(request.args)
+            if survey_flow and prefeitura:
+                flow_plan = filters["levantamento"] or (plan_reference or {}).get("plano", "") or text(values, "levantamento_destino", optional=True)
+                flow_overview = PlanningStore().overview(prefeitura, demo, flow_plan)
+                if flow_plan and request.method == "GET" and not plan_reference:
+                    form["levantamento_codigo"] = flow_plan
             raw_page = request.args.get("pagina", "1")
             if len(raw_page) > 2 or not raw_page.isascii() or not raw_page.isdecimal() or not 1 <= int(raw_page) <= 50:
                 raise FieldInputError("Página inválida.")
@@ -159,15 +168,49 @@ def register_routes(bp):
                 if prefeitura is None:
                     raise FieldInputError("Selecione uma prefeitura cadastrada.")
                 _validate_preview_csrf()
-                if not demo and request.form.get("autorizado") != "sim":
+                action = text(values, "acao", optional=True) or "registrar"
+                if not demo and action != "confirmar" and request.form.get("autorizado") != "sim":
                     raise FieldInputError("Confirme a autorização para registrar dados reais.")
-                content = capture_csv(request.form, prefeitura=prefeitura)
-                declaration = os_capture.declaration(request.form, selected) if selected else None
-                batch = _store().prepare(content, prefeitura=prefeitura, actor=str(current_user.get_id()),
-                                         source=f"Registro de campo · OS #{selected.id}" if selected else "Registro direto de campo",
-                                         filename="registro-campo.csv", demo=demo, os_declaration=declaration,
-                                         plan_reference=plan_reference)
-                return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
+                store = _store()
+                if action == "confirmar":
+                    review_batch = store.get(text(values, "lote", 32), prefeitura)
+                    if not review_batch or review_batch["demo"] != demo or review_batch["actor"] != str(current_user.get_id()):
+                        abort(404)
+                    if review_batch["report"].get("vinculo_os"):
+                        from werkzeug.datastructures import MultiDict
+                        os_capture.selected_os(MultiDict({"os_id": str(review_batch["report"]["vinculo_os"]["id"])}), prefeitura)
+                    batch = store.confirm(review_batch["id"], prefeitura=prefeitura, actor=str(current_user.get_id()))
+                elif action == "preparar":
+                    content = _uploaded_csv()
+                    batch = store.prepare(content, prefeitura=prefeitura, actor=str(current_user.get_id()),
+                        source=request.form.get("fonte", ""), filename=secure_filename(request.files["arquivo"].filename)[:120],
+                        demo=demo, levantamento_destino=text(values, "levantamento_destino", optional=True) or None)
+                elif action == "registrar":
+                    content = capture_csv(request.form, prefeitura=prefeitura)
+                    declaration = os_capture.declaration(request.form, selected) if selected else None
+                    batch = store.prepare(content, prefeitura=prefeitura, actor=str(current_user.get_id()),
+                        source=f"Registro de campo · OS #{selected.id}" if selected else "Registro direto de campo",
+                        filename="registro-campo.csv", demo=demo, os_declaration=declaration, plan_reference=plan_reference)
+                else:
+                    raise FieldInputError("Ação inválida.")
+                reference = batch["report"].get("planejamento", {})
+                surveys = {row["levantamento_codigo"] for row in batch["report"]["registros"] if row.get("levantamento_codigo")}
+                destination = reference.get("plano") or text(values, "levantamento_destino", optional=True) or (next(iter(surveys)) if len(surveys) == 1 else "")
+                query = dict(prefeitura_id=prefeitura, demo="true" if demo else "false", lote=batch["id"],
+                    pagina=page_number, **filters)
+                if not query["levantamento"]:
+                    query["levantamento"] = destination
+                if survey_flow:
+                    query["fluxo"] = "levantamento"
+                if reference.get("plano") and reference.get("quarteirao"):
+                    query.update(plano=reference["plano"], quarteirao=reference["quarteirao"])
+                if batch["report"].get("vinculo_os"):
+                    query["os_id"] = batch["report"]["vinculo_os"]["id"]
+                return redirect(url_for("main.vigilancia_campo", **query), code=303)
+            if prefeitura and request.args.get("lote"):
+                review_batch = _store().get(text(request.args, "lote", 32), prefeitura)
+                if not review_batch or review_batch["demo"] != demo:
+                    abort(404)
             if prefeitura:
                 report = consolidate(_store().records(prefeitura, demo=demo), prefeitura=prefeitura, filters=filters)
         except _RequestError as exc:
@@ -179,11 +222,18 @@ def register_routes(bp):
         except FieldStoreError as exc:
             error, code = str(exc), 503
         query = {"prefeitura_id": prefeitura, "demo": "true" if demo else "false", **filters}
+        if survey_flow:
+            query["fluxo"] = "levantamento"
         rows = report["registros"] if report else []
         last_page = max(1, (len(rows) + 99) // 100)
         page_number = min(page_number, last_page)
         legacy = can_coordinate_field(current_user)
         return render_template("vigilancia_campo.html", prefeitura_id=prefeitura,
+                               survey_flow=survey_flow,
+                               flow_overview=flow_overview,
+                               review_batch=review_batch,
+                               field_datetime=lambda value: datetime.fromtimestamp(value, timezone.utc).strftime("%d/%m/%Y %H:%M UTC"),
+                               max_file_bytes=MAX_FILE_BYTES,
                                **_municipality_filter_context(prefeitura), demo=demo,
                                form=form, filters=filters, report=report, rows=rows[(page_number-1)*100:page_number*100],
                                page_number=page_number, last_page=last_page, erro=error, query=query,
@@ -217,6 +267,8 @@ def register_routes(bp):
         prefeitura = _scope()
         _ensure_preview_csrf_token()
         batch, error, code, history = None, None, 200, []
+        survey_flow = request.values.get("fluxo") == "levantamento"
+        flow_params = {"fluxo": "levantamento"} if survey_flow else {}
         demo, selected_plan, available_plans = True, "", []
         try:
             from .planning import PlanningStore, text
@@ -234,7 +286,7 @@ def register_routes(bp):
                             from werkzeug.datastructures import MultiDict
                             os_capture.selected_os(MultiDict({"os_id": str(pending["report"]["vinculo_os"]["id"])}), prefeitura)
                         batch = store.confirm(request.form.get("lote", ""), prefeitura=prefeitura, actor=str(current_user.get_id()))
-                        return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
+                        return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"], **flow_params), code=303)
                     if request.form.get("acao") != "preparar":
                         raise _RequestError("Ação inválida.")
                     mode = request.form.get("demo")
@@ -247,7 +299,7 @@ def register_routes(bp):
                                           source=request.form.get("fonte", ""),
                                           filename=secure_filename(request.files["arquivo"].filename)[:120], demo=mode == "true",
                                           levantamento_destino=selected_plan or None)
-                    return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"]), code=303)
+                    return redirect(url_for("main.vigilancia_importacoes", prefeitura_id=prefeitura, lote=batch["id"], **flow_params), code=303)
                 if request.args.get("lote"):
                     batch = store.get(request.args["lote"], prefeitura)
                     if batch is None:
@@ -255,7 +307,8 @@ def register_routes(bp):
                 history = store.history(prefeitura)
                 if batch:
                     demo = batch["demo"]
-                    selected_plan = batch["report"].get("vinculo_levantamento", {}).get("destino", "")
+                    selected_plan = (batch["report"].get("vinculo_levantamento", {}).get("destino", "")
+                                     or batch["report"].get("planejamento", {}).get("plano", ""))
         except _RequestError as exc:
             error, code = str(exc), exc.status_code
         except FieldConflict as exc:
@@ -280,6 +333,7 @@ def register_routes(bp):
                 if not error:
                     error, code = str(exc), 503
         return render_template("vigilancia_validacao.html", field_mode=True, batch=batch, history=history,
+                               survey_flow=survey_flow,
                                result=batch["report"] if batch else None, erro=error,
                                demo=demo, import_demo=demo, import_plan=selected_plan, import_plans=available_plans,
                                prefeitura_id=prefeitura, **_municipality_filter_context(prefeitura),

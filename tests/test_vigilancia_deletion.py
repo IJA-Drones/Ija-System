@@ -1,5 +1,6 @@
 """Exclusão HTTP e efeitos no consolidado; somente SQLite descartável com FKs ativas."""
 import re
+from urllib.parse import urlsplit
 from unittest.mock import patch
 
 import pytest
@@ -79,9 +80,23 @@ def test_single_visit_disappears_from_all_batches_maps_and_execution_but_origina
     assert len(store.records(7, demo=True)) == 2  # GET só revisa.
     response = c.post('/vigilancia/excluir', data=form)
     assert response.status_code == 303, response.text
+    assert urlsplit(response.location).path == '/vigilancia/excluir'
+    page = c.get(response.location)
+    assert page.status_code == 200 and 'Exclusão concluída' in page.text
+    assert 'Confirmar exclusão' not in page.text
+    assert c.get(response.location).status_code == 200  # Refresh never repeats the deletion.
     assert [r['inspecao_codigo'] for r in store.records(7, demo=True)] == ['VIS-2']
     report = public(store)
-    assert report['liraa']['visitas'] == 1 and len(report['geografia']['features']) == 1
+    assert report['liraa']['visitas'] == 1 and len(report['geografia']['features']) == 2
+    # A visita excluída não deixa índice no mapa; o contorno do plano permanece
+    # em cinza para diferenciar ausência de inspeções de um IIP válido igual a zero.
+    mapped = {feature['properties']['estrato_codigo']: feature['properties']
+              for feature in report['geografia']['features']}
+    assert mapped['E-1']['classificacao_iip'] == 'sem_dados'
+    assert mapped['E-1']['iip'] is None and mapped['E-1']['cor'] == '#94a3b8'
+    assert mapped['E-1']['imoveis_inspecionados'] == mapped['E-1']['imoveis_positivos'] == 0
+    assert mapped['E-2']['classificacao_iip'] == 'satisfatorio'
+    assert mapped['E-2']['iip'] == 0 and mapped['E-2']['imoveis_inspecionados'] == 1
     assert report['liraa']['indicadores'][0]['imoveis_positivos'] == 0
     assert store.overview(7, True, 'L-2026-01')['quarteiroes'][0]['inspecionados'] == 0
     assert store.original(batch['id'], 7) == original

@@ -309,3 +309,16 @@ test("password hints accept Unicode, flag weak input and allow empty edits", () 
     assert.equal(input.validationMessage, "");
   }
 });
+
+
+test("orthomosaic progress renews activity but cannot revive an expired session", async () => {
+  const page = browser({ expiresIn: 30, idleSeconds: 30 });
+  page.document.visibilityState = "hidden";
+  await page.event("ija:ortho-upload-progress", false);
+  assert.equal(page.requests[0].method, "POST");
+  await page.tick(31);
+  const posts = page.requests.filter(request => request.method === "POST").length;
+  await page.event("ija:ortho-upload-progress", false);
+  assert.equal(page.requests.filter(request => request.method === "POST").length, posts);
+  assert.deepEqual(page.redirects, ["/agro/login"]);
+});
