@@ -201,3 +201,50 @@ def test_raster_failure_logs_diagnostic_without_credentials(app, monkeypatch, ca
     diagnostic = caplog.text
     assert 'HTTP 503' in diagnostic and 'Tile x=4 y=5' in diagnostic
     assert 'private-' not in diagnostic
+
+
+@pytest.mark.parametrize('change', [None, 'etag', 'path', 'size', 'sha256'])
+def test_verified_remote_version_reuses_only_same_object(app, monkeypatch, change):
+    import hashlib
+    body = b'original verified bytes'
+    row = SimpleNamespace(id=7, original_path='skybox://original.tif', tamanho_bytes=len(body),
+                          sha256=hashlib.sha256(body).hexdigest())
+    proof = dict(path=row.original_path, size=row.tamanho_bytes, sha256=row.sha256, etag='"verified"')
+    if change:
+        proof[change] = 'changed'
+    row.metadados = {'_verified_original': proof}
+    with server(body) as (url,calls), app.app_context():
+        monkeypatch.setattr(skybox, '_request', lambda method,path,**kw: requests.request(method,url,auth=('mapping','secret'),**kw))
+        result = service._verified_remote_version(row)
+    assert result['etag'] == '"verified"' and result['sha256'] == row.sha256
+    assert sum(method == 'GET' for method,_ in calls) == (0 if change is None else 1)
+
+
+def test_verified_original_checkpoint_survives_conversion_failure(app, monkeypatch):
+    app.config.update(ORTHOMOSAIC_MAX_UPLOAD_MB=16, ORTHOMOSAIC_REMOTE_SOURCE_MIN_MB=1)
+    body = rgb16()
+    oid = upload(client(app), body).json['item']['id']
+    previous = skybox._request
+    with server(body) as (url,calls):
+        def request(method,path,**kwargs):
+            if path.endswith('/original.tif'):return requests.request(method,url,auth=('mapping','secret'),**kwargs)
+            return previous(method,path,**kwargs)
+        monkeypatch.setattr(skybox,'_request',request)
+        monkeypatch.setattr(skybox,'_remote_url',lambda _:url)
+        monkeypatch.setattr(skybox,'_auth',lambda:('mapping','secret'))
+        raster_command = service.raster_command
+        def interrupted(*args,**kwargs): raise ValueError('simulated conversion failure')
+        monkeypatch.setattr(service,'raster_command',interrupted)
+        with app.app_context():
+            assert not service.process_one(oid)
+            row = db.session.get(Ortomosaico,oid)
+            assert row.status == 'falha'
+            assert row.metadados['_verified_original']['sha256'] == row.sha256
+            row.status = 'pendente';db.session.commit()
+        monkeypatch.setattr(service,'raster_command',raster_command)
+        with app.app_context():
+            assert service.process_one(oid)
+            row = db.session.get(Ortomosaico,oid)
+            assert row.status == 'pronto'
+            assert row.metadados['_verified_original']['etag'] == '"verified"'
+    assert sum(method=='GET' and 'Range' not in headers for method,headers in calls)==1

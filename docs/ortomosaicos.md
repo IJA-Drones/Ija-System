@@ -261,7 +261,7 @@ pelo botão **Processar novamente**, sem novo upload.
 Para arquivos a partir de `ORTHOMOSAIC_REMOTE_SOURCE_MIN_MB=512`, o worker verifica
 o tamanho e SHA-256 lendo uma vez o original em blocos, sem gravá-lo em disco.
 Depois o GDAL lê as partes necessárias via `/vsicurl/`, com cache de rede limitado
-a 128 MiB. Cada leitura exige `If-Match` do ETag verificado; o servidor deve oferecer
+a 512 MiB, com blocos de leitura de 4 MiB. Cada leitura exige `If-Match` do ETag verificado; o servidor deve oferecer
 HTTP 206 e uma versão estável. Sem isso, a tentativa falha de forma explícita,
 sem fallback para baixar 17 GB no disco. A autenticação fica em um arquivo privado
 0600, removido ao terminar, nunca no URL, nos logs ou no mapa gerado.
@@ -312,3 +312,22 @@ injetada; a conversão terminou em 508 segundos, lendo 20.342.914.848 bytes em
 8.182 requisições e produzindo um COG de 2.411.145.406 bytes, 35.308×27.947 RGBA.
 As 25 amostras de 128×128 pixels coincidiram integralmente com a conversão local
 anterior. Esses tempos são do computador local, não uma previsão para o Render.
+
+#### Redução das leituras remotas
+
+A verificação completa é registrada em `metadados._verified_original` antes da
+conversão, vinculada ao caminho, tamanho, SHA-256 e ETag forte. Uma tentativa
+posterior só reaproveita essa verificação se os campos coincidirem e um HEAD
+condicional confirmar o mesmo ETag e tamanho. Caso contrário, verifica novamente
+o conteúdo completo. As leituras parciais continuam exigindo `If-Match`, inclusive
+se o arquivo mudar entre o HEAD e a conversão. O registro sobrevive a uma falha
+de conversão ou encerramento do worker; não retoma janelas após um reinício.
+
+No mesmo ensaio HTTP local com o original real e uma falha injetada, aumentar
+os blocos de 1 para 4 MiB e o cache de 128 para 512 MiB reduziu as requisições
+de 8.182 para 2.701 e os bytes lidos de 20.342.914.848 para 13.883.686.688.
+O tempo total foi 454 segundos contra 508; o maior range observado foi 16 MiB.
+As 25 amostras de pixels coincidiram com a referência, com COG e níveis de zoom
+preservados. Isso mede o ambiente local; latência, memória e duração no Render
+ainda precisam de validação após uma publicação autorizada. A tentativa ativa
+em produção não recebe mudanças locais e deve terminar sem novo deploy.

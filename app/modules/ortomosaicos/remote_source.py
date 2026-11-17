@@ -36,8 +36,10 @@ def remote_source(row, folder, verified_etag):
             'GDAL_HTTP_MULTIRANGE': 'SERIAL',
             'GDAL_HTTP_MAX_RETRY': '3', 'GDAL_HTTP_RETRY_DELAY': '2',
             'GDAL_HTTP_CONNECTTIMEOUT': '30', 'GDAL_HTTP_TIMEOUT': '120',
-            'CPL_VSIL_CURL_CHUNK_SIZE': str(1024 * 1024),
-            'CPL_VSIL_CURL_CACHE_SIZE': str(128 * 1024 * 1024),
+            # Keep adjacent source tiles cached across output windows, reducing
+            # remote round trips without downloading the original to disk.
+            'CPL_VSIL_CURL_CHUNK_SIZE': str(4 * 1024 * 1024),
+            'CPL_VSIL_CURL_CACHE_SIZE': str(512 * 1024 * 1024),
             'VSI_CACHE': 'FALSE',
         }
     finally:

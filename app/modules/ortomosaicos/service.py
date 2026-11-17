@@ -231,6 +231,23 @@ def _download(row, destination):
     return etag
 
 
+def _verified_remote_version(row):
+    """Reuse a completed SHA-256 check only for the same strongly pinned object."""
+    identity = dict(path=row.original_path, size=row.tamanho_bytes, sha256=row.sha256)
+    previous = (row.metadados or {}).get('_verified_original')
+    if isinstance(previous, dict) and all(previous.get(k) == v for k, v in identity.items()):
+        etag = previous.get('etag')
+        if isinstance(etag, str) and etag and not etag.startswith('W/') and '\n' not in etag and '\r' not in etag:
+            with skybox._request('HEAD', skybox.remote_path_from_marker(row.original_path),
+                                 headers={'If-Match': etag}) as response:
+                if (response.status_code == 200 and response.headers.get('ETag') == etag
+                        and response.headers.get('Content-Length') == str(row.tamanho_bytes)):
+                    logger.info('ortho_process verified_reused id=%s bytes=%s', row.id, row.tamanho_bytes)
+                    return previous
+    etag = _download(row, None)
+    return dict(identity, etag=etag)
+
+
 def process_one(oid):
     # Gunicorn has multiple processes; one executor per process is insufficient
     # to prevent simultaneous multi-GB conversions on the same volume.
@@ -275,7 +292,20 @@ def _process_claimed(oid, token):
         with tempfile.TemporaryDirectory(prefix='ija-orto-process-', dir=root) as folder:
             source, cog = Path(folder)/'original.tif', Path(folder)/'mapa.tif'
             logger.info('ortho_process start id=%s bytes=%s remote_source=%s', oid, row.tamanho_bytes, use_remote)
-            etag = _download(row, None if use_remote else source)
+            if use_remote:
+                proof = _verified_remote_version(row)
+                etag = proof['etag']
+                # Persist the successful check before expensive raster work, so
+                # recovery after a worker restart does not transfer 17 GB again.
+                saved_metadata = dict(row.metadados or {}, _verified_original=proof)
+                saved = db.session.execute(update(Ortomosaico).where(
+                    Ortomosaico.id == oid, Ortomosaico.processamento_token == token,
+                ).values(metadados=saved_metadata).execution_options(synchronize_session=False))
+                db.session.commit()
+                if saved.rowcount != 1:
+                    return False
+            else:
+                etag = _download(row, source)
             from .remote_source import remote_source
             source_context = remote_source(row, folder, etag) if use_remote else nullcontext((source, None))
             remote_base = skybox.remote_path_from_marker(row.original_path).rsplit('/', 1)[0]
@@ -300,6 +330,8 @@ def _process_claimed(oid, token):
                 with skybox._request('GET', remote, headers={'Range':'bytes=0-15'}, stream=True) as response:
                     if response.status_code != 206 or not response.headers.get('Content-Range', '').startswith('bytes 0-15/'):
                         raise ValueError('O armazenamento não oferece leitura parcial do TIF. Solicite a configuração ao suporte.')
+            if use_remote:
+                metadata['_verified_original'] = proof
             updated = db.session.execute(update(Ortomosaico).where(Ortomosaico.id == oid,
                 Ortomosaico.processamento_token == token).values(status='pronto', metadados=metadata,
                 **outputs, erro=None, processamento_ate=None, atualizado_em=now()).execution_options(synchronize_session=False))
