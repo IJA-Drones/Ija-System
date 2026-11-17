@@ -194,6 +194,8 @@ def register_audit(app):
     app.extensions['audit_trail'] = True
     from app.modules.auditoria.diagnostics import register_diagnostics, request_diagnostics
     register_diagnostics(app)
+    from app.modules.auditoria.releases import register_release_observation
+    register_release_observation(app)
 
     @app.before_request
     def capture_identity():

@@ -71,12 +71,16 @@ def context(log_id):
     if row.usuario_id is not None and row.endpoint and row.criado_em:
         nearby = AuditoriaUsuario.query.filter(
             AuditoriaUsuario.usuario_id == row.usuario_id, AuditoriaUsuario.endpoint == row.endpoint,
+            AuditoriaUsuario.prefeitura_id == row.prefeitura_id,
             AuditoriaUsuario.path == row.path, AuditoriaUsuario.id != row.id,
             AuditoriaUsuario.criado_em >= row.criado_em - timedelta(minutes=5),
             AuditoriaUsuario.criado_em <= row.criado_em + timedelta(minutes=5),
         ).order_by(AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc()).limit(11).all()
+    from app.modules.chatbot.dev_timeline import build
+    timeline = build(row, same[:20], nearby[:10], request_truncated=len(same) > 20,
+                     nearby_truncated=len(nearby) > 10)
     selected = _row(row, include_diagnostics=True)
-    return {'registro_selecionado': selected, 'mesma_requisicao': [_row(item) for item in same[:20]],
+    return {'linha_do_tempo': timeline, 'registro_selecionado': selected, 'mesma_requisicao': [_row(item) for item in same[:20]],
             'mesma_requisicao_truncada': len(same) > 20,
             'proximos_mesma_rota_e_usuario': [_row(item) for item in nearby[:10]],
             'proximos_truncados': len(nearby) > 10,
@@ -107,4 +111,12 @@ def summary(data):
         parts.append('Mesma requisição: ' + ', '.join(f"#{item['id']} ({item.get('evento')})" for item in related[:5]) + '.')
     if data.get('proximos_mesma_rota_e_usuario'):
         parts.append('Há eventos próximos na mesma rota e usuário; proximidade não comprova causa.')
+    timeline = data.get('linha_do_tempo', {})
+    if timeline.get('eventos'):
+        parts.append('Linha do tempo (horário de São Paulo):')
+        for item in timeline['eventos'][-8:]:
+            parts.append(f"{item['horario_brasilia']} · #{item['id']} · {item['evento']} · HTTP {item['status']} · {item['vinculo']}"
+                         + (f" · {item['motivo']}" if item.get('motivo') else ''))
+        if timeline.get('truncada') or len(timeline['eventos']) > 8:
+            parts.append('Exibição parcial da linha do tempo.')
     return '\n'.join(parts)

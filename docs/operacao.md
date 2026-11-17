@@ -162,3 +162,15 @@ Para encaminhar um incidente, registre horário/fuso, versão, perfil, endpoint,
 ## Reserva de edição
 
 Aplicar `b7f2c9d41e60` antes de reiniciar todos os processos com o controle de edição. O padrão de reserva é de 300 segundos; `EDIT_LEASE_SECONDS` aceita 60 a 1800. Ver escopo, funcionamento, liberação pelo DEV e roteiro de homologação em [Controle de edição simultânea](controle-edicao.md).
+
+
+### Investigação de erros com a Azul
+
+No detalhe de uma ocorrência do Painel Dev, **Analisar com a Azul** consulta a auditoria autorizada e monta uma linha do tempo com horário de São Paulo e IDs dos eventos. A correlação distingue mesma requisição, mesmo recurso (tipo, ID e prefeitura) e simples proximidade. Para solicitações/OS municipais e denúncias com identificadores registrados, a janela do recurso cobre 30 minutos antes e 5 minutos depois do erro, incluindo reservas de outros editores. Eventos sem identificadores não são associados a um recurso por suposição; respostas HTTP não são tratadas como início de upload. A linha do tempo informa quando a seleção foi limitada.
+
+A Azul recebe até cinco trechos de código da instância atual: handler da rota, funções do stack trace que ainda correspondam ao código e dependências diretas. Os trechos têm arquivo, linhas e SHA-256, com limites de 45 linhas por trecho e 12 mil caracteres no total. A consulta não executa código nem aceita caminhos de arquivos pelo chat. Arquivos externos, configurações, uploads e variáveis locais ficam fora dessa leitura. O código atual não comprova a versão que produziu um erro antigo; trechos parciais não comprovam ausência de validações.
+
+
+A análise também inclui o histórico de deploys disponível. O watchdog fornece acionamentos e recuperação do serviço, não comprovação de conclusão de um deploy. Na primeira requisição de cada versão, a aplicação registra um evento `DEPLOY_OBSERVADO` com o SHA completo de `APP_RELEASE_SHA` ou, quando vazio, `RENDER_GIT_COMMIT`. O registro é único por SHA, inclusive entre workers; reinício ou rollback para o mesmo SHA não cria uma nova observação. Novos erros guardam o SHA em seu diagnóstico. Sem essas variáveis, não é inventada uma versão, e registros antigos continuam sem essa informação.
+
+A Azul consulta até seis versões observadas até o horário do erro e cinco eventos do watchdog na janela de sete dias antes até uma hora depois. Eventos posteriores são contexto e não podem ser a causa do erro. Para a observação aplicável, compara janelas de duração igual (até uma hora) da mesma rota, método e status, encerradas no máximo no instante do erro. As contagens abrangem somente requisições auditadas. Se o erro registrar um SHA diferente da observação mais recente, a comparação fica indisponível. Havendo duas versões e histórico Git local, compara os nomes de até cem arquivos em `app/` e destaca os que aparecem nos trechos da investigação. Git indisponível, histórico incompleto e ausência de versão são informados explicitamente; proximidade temporal nunca comprova regressão.
