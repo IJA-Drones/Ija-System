@@ -134,7 +134,7 @@ def deliver_batch():
             return False
         conn.execute(update(events).where(events.c.arquivo_id == row['id']).values(arquivado_em=sent))
         from app.modules.auditoria.service import trim_auditoria_usuarios
-        trim_auditoria_usuarios(conn, current_app.config.get('AUDIT_RETENTION_MAX_RECORDS', 15000))
+        trim_auditoria_usuarios(conn, current_app.config.get('AUDIT_RETENTION_MAX_RECORDS', 0))
     return True
 
 

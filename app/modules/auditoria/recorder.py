@@ -192,6 +192,8 @@ def register_audit(app):
     if 'audit_trail' in app.extensions:
         return
     app.extensions['audit_trail'] = True
+    from app.modules.auditoria.diagnostics import register_diagnostics, request_diagnostics
+    register_diagnostics(app)
 
     @app.before_request
     def capture_identity():
@@ -234,6 +236,8 @@ def register_audit(app):
         # Only numeric route identifiers, never arbitrary query strings/form data.
         identifiers = {key: value for key, value in (request.view_args or {}).items() if isinstance(value, int)}
         row['detalhes'] = {'identificadores': identifiers}
+        if response.status_code >= 400:
+            row['detalhes']['diagnostico'] = request_diagnostics()
         if identifiers:
             row['objeto_id'] = str(next(iter(identifiers.values())))
         row['objeto_tipo'] = (endpoint or 'requisicao')[:100]

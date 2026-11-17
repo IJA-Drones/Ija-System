@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
-from app.modules.chatbot import exports, operations, search, topics, voice, settings, metering, control_store
+from app.modules.chatbot import exports, operations, search, topics, voice, settings, metering, control_store, dev_diagnostics
 from app.modules.chatbot.scope import chat_key
 from pathlib import Path
 
@@ -338,6 +338,27 @@ def reply(channel):
                          profile=profile_code(current_user), export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result
+    selected_error = dev_diagnostics.selected_id(message, history, payload.get('intent'))
+    if selected_error is not None:
+        try:
+            if not dev_diagnostics.allowed(current_user):
+                raise PermissionError('A análise de erros está disponível somente para DEV com acesso ao painel e aos detalhes.')
+            if not consume_help_quota(current_user.id):
+                return jsonify(answer='Limite de consultas atingido. Tente mais tarde.'), 429
+            evidence = dev_diagnostics.evidence(current_user, selected_error)
+            answer, mode = dev_diagnostics.analyze(evidence, message, history)
+            status = 200
+        except PermissionError as exc:
+            answer, mode, status = str(exc), 'guided', 403
+        except ValueError as exc:
+            answer, mode, status = str(exc), 'guided', 400
+        except (SQLAlchemyError, sqlite3.Error):
+            db.session.rollback()
+            answer, mode, status = 'Não foi possível consultar o erro. Tente novamente.', 'guided', 503
+        result = jsonify(answer=answer, mode=mode, links=[], profile=profile_code(current_user),
+                         export_preview=None, chat_key=current_key)
+        result.headers['Cache-Control'] = 'private, no-store'
+        return result, status
     context = help_context(current_user, page)
     normalized_request = service.normalize_chatbot_text(message).strip(' ?!.')
     if payload.get('intent') == 'access_overview' or (not payload.get('intent') and normalized_request in {

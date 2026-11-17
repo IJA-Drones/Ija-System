@@ -145,7 +145,7 @@ class Config:
         "yes",
         "on",
     }
-    AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "15000"))
+    AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "0"))
     EDIT_LEASE_SECONDS = int(os.getenv("EDIT_LEASE_SECONDS", "300"))
     # Mount persistent storage here to preserve pending uploads across deployments.
     VIDEO_UPLOAD_TEMP_DIR = os.getenv("VIDEO_UPLOAD_TEMP_DIR", "")
