@@ -68,6 +68,7 @@
               <option value="financeiro_admin" {% if tipo_sel == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
               <option value="financeiro" {% if tipo_sel == 'financeiro' %}selected{% endif %}>Financeiro</option>
               <option value="agente_endemias" {% if tipo_sel == 'agente_endemias' %}selected{% endif %}>Agente de Endemias</option>
+              <option value="ortomosaico" {% if tipo_sel == 'ortomosaico' %}selected{% endif %}>Ortomosaicos e curvas de nível</option>
               <option value="prefeitura_admin" {% if tipo_sel == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
               <option value="sup_veiculos" {% if tipo_sel == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
             </select>
@@ -135,7 +136,7 @@
             {% if errors.get('prefeitura_id') %}
               <div class="invalid-feedback">{{ errors.get('prefeitura_id') }}</div>
             {% endif %}
-            <div class="form-text small">Obrigatorio apenas para tipo Prefeitura (Admin).</div>
+            <div class="form-text small">Obrigatória para perfis vinculados a uma prefeitura, incluindo Ortomosaicos e curvas de nível.</div>
           </div>
 
           <div class="col-md-4">

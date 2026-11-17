@@ -4,7 +4,9 @@ import math
 import os
 import shutil
 import sys
-from contextlib import contextmanager
+import time
+import traceback
+from contextlib import contextmanager, ExitStack
 from xml.etree import ElementTree as ET
 
 import rasterio
@@ -18,7 +20,7 @@ MAX_PIXELS = max(0, int(os.environ.get('ORTHOMOSAIC_MAX_PIXELS', '0')))
 
 
 def inspect_raster(path):
-    with rasterio.Env(GDAL_CACHEMAX=64*1024*1024, GDAL_NUM_THREADS='1'):
+    with rasterio.Env(GDAL_CACHEMAX=256*1024*1024, GDAL_NUM_THREADS='1'):
         with rasterio.open(path, driver='GTiff') as src:
             if not src.crs:
                 raise ValueError('O TIF não possui sistema de coordenadas. Exporte um GeoTIFF georreferenciado.')
@@ -79,24 +81,100 @@ def display_source(src):
         yield view
 
 
+@contextmanager
+def warped_source(source):
+    with rasterio.open(source, driver='GTiff') as original, display_source(original) as src:
+        with WarpedVRT(src, crs='EPSG:3857', resampling=Resampling.bilinear,
+                       add_alpha=src.count == 3, warp_mem_limit=64) as warped:
+            yield warped
+
+
+def check_conversion_space(warped, destination):
+    if MAX_PIXELS and warped.width * warped.height > MAX_PIXELS:
+        raise ValueError('A reprojeção excede o limite de pixels permitido.')
+    required = warped.width * warped.height * warped.count * 3 + 256 * 1024 * 1024
+    job_limit = int(os.environ.get('ORTHOMOSAIC_JOB_MAX_BYTES', '0'))
+    if job_limit and required > job_limit:
+        raise ValueError('A conversão exige mais espaço que o limite seguro do processamento. O original permanece no Skybox; configure um disco de trabalho maior.')
+    if shutil.disk_usage(os.path.dirname(os.path.abspath(destination))).free < required:
+        raise ValueError('Espaço insuficiente na pasta de trabalho para gerar o ortomosaico e seus níveis de zoom. Libere espaço no servidor e tente novamente.')
+
+
+def remote_display_copy(source, destination):
+    """Stage only display pixels, retrying an interrupted window, not the whole map.
+
+    Closing the source on failure evicts its HTTP cache (NON_CACHED), so a short
+    response cannot poison retries. If-Match still pins every read to the verified
+    original. Completed output windows survive transient source-read failures.
+    """
+    stage = str(destination) + '.display.tif'
+    try:
+        with ExitStack() as inputs:
+            for attempt in range(4):
+                try:
+                    warped = inputs.enter_context(warped_source(source))
+                    break
+                except rasterio.errors.RasterioError:
+                    inputs.close()
+                    if attempt == 3:
+                        raise
+                    time.sleep(2 ** attempt)
+            check_conversion_space(warped, destination)
+            profile = dict(driver='GTiff', width=warped.width, height=warped.height,
+                           count=warped.count, dtype='uint8', crs=warped.crs,
+                           transform=warped.transform, tiled=True, blockxsize=512,
+                           blockysize=512, compress='DEFLATE', BIGTIFF='IF_SAFER')
+            with rasterio.open(stage, 'w', **profile) as output:
+                output.colorinterp = warped.colorinterp
+                total = math.ceil(warped.width/512) * math.ceil(warped.height/512)
+                last_progress = 0
+                for completed, (_, window) in enumerate(output.block_windows(1), 1):
+                    for attempt in range(4):
+                        try:
+                            if warped is None:
+                                warped = inputs.enter_context(warped_source(source))
+                            pixels = warped.read(window=window)
+                            break
+                        except rasterio.errors.RasterioError:
+                            inputs.close()
+                            warped = None
+                            if attempt == 3:
+                                raise
+                            print(f'ortho_stage retry x={int(window.col_off)} y={int(window.row_off)} attempt={attempt+1}', file=sys.stderr, flush=True)
+                            time.sleep(2 ** attempt)
+                    output.write(pixels, window=window)
+                    if time.monotonic() - last_progress >= 30 or completed == total:
+                        print(f'ortho_stage pixels windows={completed} total={total}', file=sys.stderr, flush=True)
+                        last_progress = time.monotonic()
+        print('ortho_stage overviews', file=sys.stderr, flush=True)
+        raster_copy(stage, destination, driver='COG', COMPRESS='DEFLATE', BLOCKSIZE=256,
+                    OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS='1')
+    finally:
+        if os.path.exists(stage):
+            os.unlink(stage)
+
+
 def convert(source, destination):
-    metadata = inspect_raster(source)
-    with rasterio.Env(GDAL_CACHEMAX=64*1024*1024, GDAL_NUM_THREADS='1'):
-        with rasterio.open(source, driver='GTiff') as original, display_source(original) as src:
-            with WarpedVRT(src, crs='EPSG:3857', resampling=Resampling.bilinear,
-                           add_alpha=src.count == 3, warp_mem_limit=64) as warped:
-                if MAX_PIXELS and warped.width * warped.height > MAX_PIXELS:
-                    raise ValueError('A reprojeção excede o limite de pixels permitido.')
-                # Budget the output plus GDAL's intermediate raster/overviews.
-                # This checks filesystem space, not a provider's external quota.
-                required = warped.width * warped.height * warped.count * 3 + 256 * 1024 * 1024
-                if shutil.disk_usage(os.path.dirname(os.path.abspath(destination))).free < required:
-                    raise ValueError('Espaço insuficiente na pasta de trabalho para gerar o ortomosaico e seus níveis de zoom. Libere espaço no servidor e tente novamente.')
+    remote = str(source).startswith('/vsicurl/')
+    settings = {'CPL_VSIL_CURL_NON_CACHED': str(source)} if remote else {}
+    with rasterio.Env(GDAL_CACHEMAX=256*1024*1024, GDAL_NUM_THREADS='1', **settings):
+        for attempt in range(4 if remote else 1):
+            try:
+                metadata = inspect_raster(source)
+                break
+            except rasterio.errors.RasterioError:
+                if not remote or attempt == 3:
+                    raise
+                time.sleep(2 ** attempt)
+        if remote:
+            remote_display_copy(source, destination)
+        else:
+            with warped_source(source) as warped:
+                check_conversion_space(warped, destination)
                 raster_copy(warped, destination, driver='COG', COMPRESS='DEFLATE',
                             BLOCKSIZE=256, OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS='1')
         with rasterio.open(destination) as result:
-            metadata.update(crs_visualizacao=str(result.crs),
-                            resolucao_m=round(abs(result.res[0]), 4))
+            metadata.update(crs_visualizacao=str(result.crs), resolucao_m=round(abs(result.res[0]), 4))
     return metadata
 
 
@@ -105,5 +183,9 @@ if __name__ == '__main__':
         result = inspect_raster(sys.argv[2]) if sys.argv[1] == 'inspect' else convert(sys.argv[2], sys.argv[3])
         print(json.dumps({'ok': True, 'metadata': result}))
     except Exception as exc:
-        print(json.dumps({'ok': False, 'error': str(exc) if isinstance(exc, ValueError) else 'Não foi possível ler este GeoTIFF. Verifique se o arquivo está íntegro.'}))
+        traceback.print_exc(file=sys.stderr)
+        message = ('A leitura remota do GeoTIFF falhou durante a conversão. O original permanece salvo no Skybox.'
+                   if sys.argv[2].startswith('/vsicurl/') else
+                   'Não foi possível ler este GeoTIFF. Verifique se o arquivo está íntegro.')
+        print(json.dumps({'ok': False, 'error': str(exc) if isinstance(exc, ValueError) else message}))
         sys.exit(1)

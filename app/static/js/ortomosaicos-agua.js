@@ -99,7 +99,7 @@ window.createOrthoWater = ({map, api, onRequest}) => {
     el('name').value=item.nome;el('kind').value=item.tipo;el('method').value=item.metodo;
     el('origin').value=item.origem;el('notes').value=item.observacoes;
     Object.entries(inputs).forEach(([key,name])=>{el(name).value=item.parametros[key]??'';});
-    setGeometry(item.geometria);configure();showResult(item);el('save').textContent='Salvar alterações';el('request').hidden=false;
+    setGeometry(item.geometria);configure();showResult(item);el('save').textContent='Salvar alterações';el('request').hidden=!onRequest;
     status('Estimativa salva. Altere os campos para recalcular.');open(true);
     const geometry=draft.getFeatures()[0].getGeometry();
     const size=map.getSize(), panelWidth=size[0]>700?380:30;
@@ -164,7 +164,7 @@ window.createOrthoWater = ({map, api, onRequest}) => {
   el('refresh').onclick=refresh;
   el('request').onclick=()=>{
     if(dirty&&!window.confirm('A solicitação usará a última versão salva desta estimativa. Continuar?'))return;
-    const item=saved.find(i=>i.id===editing);if(item)onRequest(item);
+    const item=saved.find(i=>i.id===editing);if(item && onRequest)onRequest(item);
   };
   el('form').onsubmit=async event=>{
     event.preventDefault();if(busy||el('save').disabled||!survey)return;
@@ -174,7 +174,7 @@ window.createOrthoWater = ({map, api, onRequest}) => {
     try{
       const data=await api(id?`${url}/${id}`:url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
       if(current!==context)return;
-      editing=data.item.id;dirty=false;showResult(data.item);el('save').textContent='Salvar alterações';el('save').disabled=true;el('request').hidden=false;
+      editing=data.item.id;dirty=false;showResult(data.item);el('save').textContent='Salvar alterações';el('save').disabled=true;el('request').hidden=!onRequest;
       status('Estimativa salva neste levantamento.');await refresh();
     }catch(e){if(current===context)status(e.message,true);}
     finally{busy=false;el('fields').disabled=false;}

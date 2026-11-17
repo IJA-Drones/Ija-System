@@ -43,10 +43,14 @@
     }
     while(state.status==='receiving' && state.offset<file.size) {
       const previousOffset=state.offset;
+      let reconcile=false;
       state=await retry(async()=>{
-        const latest=await request(state.url);
+        // A successful PUT already returns the authoritative next offset.
+        // Reconcile only after an ambiguous failure, before sending more bytes.
+        const latest=reconcile ? await request(state.url) : state;
         if(latest.status!=='receiving' || latest.offset===file.size)return latest;
         if(!Number.isSafeInteger(latest.offset) || latest.offset<0 || latest.offset>file.size || latest.chunk_bytes<1 || latest.chunk_bytes>8*1024*1024)throw new Error('Posição de envio inválida.');
+        reconcile=true;
         return request(latest.url,{method:'PUT',headers:{'Content-Type':'application/octet-stream','Upload-Offset':String(latest.offset)},
           body:file.slice(latest.offset,latest.offset+latest.chunk_bytes)});
       });

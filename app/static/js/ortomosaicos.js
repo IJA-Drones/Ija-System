@@ -29,14 +29,15 @@
     map.on('pointermove',event=>{const point=ol.proj.toLonLat(event.coordinate);el('coordinates').textContent=`${point[1].toFixed(6)}°, ${point[0].toFixed(6)}° · WGS 84`;});
   } catch (_) {message('Não foi possível iniciar o mapa neste navegador.',true);}
   const rasterCache = map ? window.createOrthoRasterCache({map, onStatus: rasterStatus}) : null;
-  const water = map ? window.createOrthoWater({map,api,onRequest:item=>{
+  const water = map ? window.createOrthoWater({map,api,onRequest:app.dataset.requestUrl ? item=>{
     const geometry=item.geometria.type==='Point'?new ol.geom.Point(item.geometria.coordinates):new ol.geom.Polygon(item.geometria.coordinates).getInteriorPoint();
     const result=item.resultado, number=(n,unit)=>n==null?null:`${n.toLocaleString('pt-BR',{maximumFractionDigits:2})} ${unit}`;
     openRequest(geometry.getCoordinates(),[`Medição "${item.nome}" (${item.tipo})`,number(result.area_m2,'m²')&&`área ${number(result.area_m2,'m²')}`,
       `capacidade ${number(result.capacidade_l,'L')}`,number(result.agua_l,'L')&&`água presente ${number(result.agua_l,'L')}`].filter(Boolean).join(', '));
-  }}) : null;
+  } : null}) : null;
   // Opens the existing request form, prefilled by querystring, in a new tab so the map keeps its state.
   function openRequest(lonLat, note='') {
+    if (!app.dataset.requestUrl) return;
     const origin=selected?`Ponto marcado no ortomosaico "${selected.nome}" (#${selected.id})`:'Ponto marcado no mapa de ortomosaicos';
     const params=new URLSearchParams({latitude:lonLat[1].toFixed(7),longitude:lonLat[0].toFixed(7),origem:'ortomosaico',
       observacao:[origin,note].filter(Boolean).join('. ')});

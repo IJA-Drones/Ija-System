@@ -4,6 +4,23 @@ const {upload}=require('../app/static/js/ortomosaicos-upload.js');
 const response=(body,status=200)=>({ok:status<400,status,json:async()=>body});
 const store=()=>{const data=new Map();return {getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),data};};
 
+test('successful chunks need no redundant status round trips',async()=>{
+ const file=new File(['abcdefgh'],'mapa.tif',{lastModified:1});
+ let received='',gets=0,puts=0;
+ const state=()=>({url:'/uploads/fast',offset:received.length,chunk_bytes:4,status:'receiving'});
+ const fetcher=async(url,options)=>{
+  if(url==='/uploads')return response(state(),201);
+  if(options.method==='PUT'){
+   assert.equal(Number(options.headers['Upload-Offset']),received.length);
+   received+=await options.body.text();puts++;return response(state());
+  }
+  if(options.method==='POST')return response({...state(),status:'complete',item:{id:7}});
+  gets++;return response(state());
+ };
+ await upload({file,fields:{},url:'/uploads',csrf:()=>'',progress:()=>{},storage:store(),fetcher});
+ assert.equal(received,'abcdefgh');assert.equal(puts,2);assert.equal(gets,0);
+});
+
 test('lost chunk response resumes at server offset without duplicating bytes',async()=>{
  const file=new File(['abcdefgh'],'mapa.tif',{lastModified:1}), storage=store();
  let state={url:'/uploads/abc',offset:0,chunk_bytes:4,status:'receiving'}, received='',fail=true, puts=0;

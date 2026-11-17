@@ -82,6 +82,7 @@
                 <option value="gestor_ti" {% if tipo == 'gestor_ti' %}selected{% endif %}>Gestor de TI</option>
                 <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
                 <option value="agente_endemias" {% if tipo == 'agente_endemias' %}selected{% endif %}>Agente de Endemias</option>
+                <option value="ortomosaico" {% if tipo == 'ortomosaico' %}selected{% endif %}>Ortomosaicos e curvas de nível</option>
               <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
                 <option value="sup_veiculos" {% if tipo == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
               </select>
@@ -158,6 +159,8 @@
                     <span class="badge bg-success-subtle text-success border border-success-subtle">FINANCEIRO</span>
                   {% elif u.tipo_usuario == 'agente_endemias' %}
                     <span class="badge bg-primary">AGENTE DE ENDEMIAS</span>
+                  {% elif u.tipo_usuario == 'ortomosaico' %}
+                    <span class="badge bg-info text-dark">ORTOMOSAICOS E CURVAS</span>
                   {% elif u.tipo_usuario == 'manutencao' %}
                     <span class="badge bg-info text-dark">MANUTENÇÃO E ESTOQUE</span>
                   {% elif u.tipo_usuario == 'prefeitura_admin' %}
