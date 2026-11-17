@@ -384,6 +384,8 @@ def _build_range_response_from_full_upstream(upstream, remote_path, range_header
                     chunk = chunk[:remaining_send]
                 remaining_send -= len(chunk)
                 yield chunk
+                if remaining_send == 0:
+                    break
 
     return Response(
         stream_with_context(generate()),
