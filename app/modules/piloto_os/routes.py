@@ -430,6 +430,8 @@ def _build_webdav_range_response_from_full_upstream(upstream, remote_path, range
                     chunk = chunk[:remaining_send]
                 remaining_send -= len(chunk)
                 yield chunk
+                if remaining_send == 0:
+                    break
 
     return current_app.response_class(
         generate(),

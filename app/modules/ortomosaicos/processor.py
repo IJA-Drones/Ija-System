@@ -16,11 +16,15 @@ from rasterio.shutil import copy as raster_copy
 from rasterio.vrt import WarpedVRT
 from rasterio.warp import transform_bounds
 
+# Bounded tuning validated against the full 17 GB raster over HTTP Range.
+RASTER_THREADS = str(max(1, min(2, int(os.environ.get('ORTHOMOSAIC_RASTER_THREADS', '2')))))
+RASTER_CACHE_MB = max(128, min(512, int(os.environ.get('ORTHOMOSAIC_RASTER_CACHE_MB', '512'))))
+
 MAX_PIXELS = max(0, int(os.environ.get('ORTHOMOSAIC_MAX_PIXELS', '0')))
 
 
 def inspect_raster(path):
-    with rasterio.Env(GDAL_CACHEMAX=256*1024*1024, GDAL_NUM_THREADS='1'):
+    with rasterio.Env(GDAL_CACHEMAX=RASTER_CACHE_MB*1024*1024, GDAL_NUM_THREADS='1'):
         with rasterio.open(path, driver='GTiff') as src:
             if not src.crs:
                 raise ValueError('O TIF não possui sistema de coordenadas. Exporte um GeoTIFF georreferenciado.')
@@ -148,7 +152,7 @@ def remote_display_copy(source, destination):
                         last_progress = time.monotonic()
         print('ortho_stage overviews', file=sys.stderr, flush=True)
         raster_copy(stage, destination, driver='COG', COMPRESS='DEFLATE', BLOCKSIZE=256,
-                    OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS='1')
+                    OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS=RASTER_THREADS)
     finally:
         if os.path.exists(stage):
             os.unlink(stage)
@@ -157,7 +161,10 @@ def remote_display_copy(source, destination):
 def convert(source, destination):
     remote = str(source).startswith('/vsicurl/')
     settings = {'CPL_VSIL_CURL_NON_CACHED': str(source)} if remote else {}
-    with rasterio.Env(GDAL_CACHEMAX=256*1024*1024, GDAL_NUM_THREADS='1', **settings):
+    # Remote decoding must stay sequential: threaded GTiff reads fragment HTTP
+    # ranges. Apply parallel compression only to the completed local stage.
+    with rasterio.Env(GDAL_CACHEMAX=RASTER_CACHE_MB*1024*1024,
+                      GDAL_NUM_THREADS='1' if remote else RASTER_THREADS, **settings):
         for attempt in range(4 if remote else 1):
             try:
                 metadata = inspect_raster(source)
@@ -172,7 +179,7 @@ def convert(source, destination):
             with warped_source(source) as warped:
                 check_conversion_space(warped, destination)
                 raster_copy(warped, destination, driver='COG', COMPRESS='DEFLATE',
-                            BLOCKSIZE=256, OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS='1')
+                            BLOCKSIZE=256, OVERVIEWS='AUTO', RESAMPLING='BILINEAR', BIGTIFF='IF_SAFER', NUM_THREADS=RASTER_THREADS)
         with rasterio.open(destination) as result:
             metadata.update(crs_visualizacao=str(result.crs), resolucao_m=round(abs(result.res[0]), 4))
     return metadata
