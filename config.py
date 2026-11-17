@@ -7,6 +7,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 class Config:
+    APP_RELEASE_SHA = os.getenv("APP_RELEASE_SHA", "")
     PORTAL_CHATBOT_WEB_SEARCH_ENABLED = os.getenv("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     AZUL_HELP_DAILY_LIMIT = int(os.getenv("AZUL_HELP_DAILY_LIMIT", "500"))

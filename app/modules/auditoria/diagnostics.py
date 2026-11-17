@@ -88,6 +88,10 @@ def register_diagnostics(app):
 def request_diagnostics():
     data = {'versao': 1, 'logs': getattr(g, 'audit_diagnostic_logs', []),
             'logs_truncados': getattr(g, 'audit_diagnostic_truncated', False)}
+    from app.modules.auditoria.releases import release_sha
+    sha = release_sha(current_app)
+    if sha:
+        data['release_sha'] = sha
     if getattr(g, 'audit_exception', None):
         data['excecao'] = g.audit_exception
     return data
