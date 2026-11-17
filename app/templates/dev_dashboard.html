@@ -296,9 +296,9 @@
         <div class="card dev-card">
           <div class="card-body p-4">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-              <h2 class="h5 fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Erros recentes</h2>
+              <h2 class="h5 fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Ocorrências para investigar</h2>
               <div class="dev-filter">
-                <input class="form-control form-control-sm" type="search" id="devRecentFilter" placeholder="Filtrar usuário, rota ou endpoint">
+                <input class="form-control form-control-sm" type="search" id="devRecentFilter" aria-label="Filtrar ocorrências" placeholder="Filtrar erro, rota ou último usuário">
                 <select class="form-select form-select-sm" id="devRecentStatusFilter">
                   <option value="">Todos</option>
                   <option value="4">4xx</option>
@@ -306,19 +306,20 @@
                 </select>
               </div>
             </div>
+            <p class="small text-muted">Últimos 7 dias · até 30 grupos por rota, método e status. Falhas 5xx aparecem primeiro. Sessões expiradas e conflitos de reserva de edição ficam na auditoria.</p>
             <div class="table-responsive">
               <table class="table align-middle mb-0">
-                <thead><tr><th>Data</th><th>Status</th><th>Usuário</th><th>Rota</th></tr></thead>
+                <thead><tr><th>Última vez</th><th>Problema</th><th>Vezes</th><th>Rota / último usuário</th></tr></thead>
                 <tbody id="devRecentErrorsBody">
                   {% for log in recent_errors %}
-                  <tr class="dev-clickable" data-error-id="{{ log.id }}" data-filter-text="{{ log.usuario_nome ~ ' ' ~ (log.tipo_usuario or '') ~ ' ' ~ (log.endpoint or '') ~ ' ' ~ log.path }}" data-status-family="{{ (log.status_code|string)[0] }}">
+                  <tr class="dev-clickable" data-error-id="{{ log.id }}" data-filter-text="{{ log.error_title ~ ' ' ~ log.usuario_nome ~ ' ' ~ (log.tipo_usuario or '') ~ ' ' ~ (log.endpoint or '') ~ ' ' ~ log.path }}" data-status-family="{{ (log.status_code|string)[0] }}">
                     <td>{{ brazil_datetime(log.criado_em).strftime('%d/%m/%Y %H:%M') if log.criado_em else '-' }}</td>
-                    <td><span class="badge text-bg-{{ 'danger' if log.status_code >= 500 else 'warning' }}">{{ log.status_code }}</span></td>
-                    <td>{{ log.usuario_nome }} <span class="text-muted small">({{ log.tipo_usuario or '-' }})</span></td>
-                    <td class="dev-path"><code>{{ log.endpoint or log.path }}</code></td>
+                    <td><span class="badge text-bg-{{ 'danger' if log.status_code >= 500 else 'warning' }}">{{ log.status_code }}</span><div class="small mt-1">{{ log.error_title }}</div></td>
+                    <td>{{ log.occurrences }}</td>
+                    <td class="dev-path"><button type="button" class="btn btn-link btn-sm p-0 text-start" data-error-id="{{ log.id }}" aria-label="Investigar {{ log.error_title }}"><code>{{ log.metodo }} {{ log.endpoint or log.path }}</code></button><div class="small text-muted">{{ log.usuario_nome or '-' }}</div></td>
                   </tr>
                   {% else %}
-                  <tr><td colspan="4" class="text-center text-muted py-4">Nenhum erro registrado.</td></tr>
+                  <tr><td colspan="4" class="text-center text-muted py-4">Nenhuma ocorrência para investigar nos últimos 7 dias.</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -329,7 +330,7 @@
         <aside class="card dev-card">
           <div class="card-body p-4">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-              <h2 class="h5 fw-bold mb-0"><i class="bi bi-activity text-danger me-2"></i>Rotas com falha</h2>
+              <h2 class="h5 fw-bold mb-0"><i class="bi bi-activity text-danger me-2"></i>Mais frequentes · 7 dias</h2>
               <select class="form-select form-select-sm w-auto" id="devRouteStatusFilter">
                 <option value="">Todos</option>
                 <option value="4">4xx</option>
@@ -561,15 +562,15 @@
       const body = document.getElementById("devRecentErrorsBody");
       if (!body) return;
       if (!errors.length) {
-        body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhum erro registrado.</td></tr>';
+        body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhuma ocorrência para investigar nos últimos 7 dias.</td></tr>';
         return;
       }
       body.innerHTML = errors.map((log) => `
-        <tr class="dev-clickable" data-error-id="${escapeHtml(log.id)}" data-filter-text="${escapeHtml(`${log.user_name || ""} ${log.user_type || ""} ${log.endpoint || ""} ${log.path || ""}`)}" data-status-family="${String(log.status_code || "")[0] || ""}">
+        <tr class="dev-clickable" data-error-id="${escapeHtml(log.id)}" data-filter-text="${escapeHtml(`${log.title || ""} ${log.user_name || ""} ${log.user_type || ""} ${log.endpoint || ""} ${log.path || ""}`)}" data-status-family="${String(log.status_code || "")[0] || ""}">
           <td>${formatDateTime(log.created_at)}</td>
-          <td>${statusBadge(log.status_code)}</td>
-          <td>${escapeHtml(log.user_name || "-")} <span class="text-muted small">(${escapeHtml(log.user_type || "-")})</span></td>
-          <td class="dev-path"><code>${escapeHtml(log.endpoint || log.path || "-")}</code></td>
+          <td>${statusBadge(log.status_code)}<div class="small mt-1">${escapeHtml(log.title)}</div></td>
+          <td>${escapeHtml(log.occurrences || 1)}</td>
+          <td class="dev-path"><button type="button" class="btn btn-link btn-sm p-0 text-start" data-error-id="${escapeHtml(log.id)}" aria-label="Investigar ${escapeHtml(log.title)}"><code>${escapeHtml(log.method)} ${escapeHtml(log.endpoint || log.path || "-")}</code></button><div class="small text-muted">${escapeHtml(log.user_name || "-")}</div></td>
         </tr>
       `).join("");
       applyTableFilters("devRecentFilter", "devRecentStatusFilter", "devRecentErrorsBody");
@@ -633,12 +634,23 @@
       if (!input || !select || !body) return;
       const query = input.value.trim().toLowerCase();
       const statusFamily = select.value;
+      body.querySelector(".dev-filter-empty")?.remove();
+      let visible = 0;
       body.querySelectorAll("tr").forEach((row) => {
         if (!row.dataset.filterText) return;
         const matchesText = !query || row.dataset.filterText.toLowerCase().includes(query);
         const matchesStatus = !statusFamily || row.dataset.statusFamily === statusFamily;
         row.classList.toggle("d-none", !(matchesText && matchesStatus));
+        if (matchesText && matchesStatus) visible++;
       });
+      if (!visible && body.querySelector("tr[data-filter-text]")) {
+        const row = body.insertRow();
+        row.className = "dev-filter-empty";
+        const cell = row.insertCell();
+        cell.colSpan = bodyId === "devRecentErrorsBody" ? 4 : 3;
+        cell.className = "text-center text-muted py-4";
+        cell.textContent = "Nenhuma ocorrência corresponde aos filtros nesta lista.";
+      }
     }
 
     function applyPresenceFilters() {
@@ -700,6 +712,8 @@
 
       lastErrorDetailText = [
         detail.title || `Erro ${detail.status_code}`,
+        `Registro: #${detail.id}`,
+        `O que verificar: ${detail.guidance || "-"}`,
         `Data: ${formatDateTime(detail.created_at)}`,
         `Usuário: ${detail.user_name || "-"} (${detail.user_type || "-"})`,
         `Método: ${detail.method || "-"}`,
@@ -714,6 +728,8 @@
       if (title) title.textContent = detail.title || `Erro ${detail.status_code}`;
       if (subtitle) subtitle.textContent = `${formatDateTime(detail.created_at)} - ${detail.endpoint || detail.path || "-"}`;
       const rows = [
+        ["Registro", escapeHtml(`#${detail.id}`)],
+        ["O que verificar", escapeHtml(detail.guidance || "-")],
         ["Status", statusBadge(detail.status_code)],
         ["Data", escapeHtml(formatDateTime(detail.created_at))],
         ["Usuário", escapeHtml(`${detail.user_name || "-"} (${detail.user_type || "-"})`)],
@@ -727,17 +743,25 @@
         ["Referrer", escapeHtml(detail.referrer || "-")],
         ["User-Agent", escapeHtml(detail.user_agent || "-")],
       ];
-      list.innerHTML = rows.map(([label, value]) => `
+      const technicalLabels = new Set(["Login", "Evento", "Query", "IP", "Referrer", "User-Agent"]);
+      const renderRows = (items) => items.map(([label, value]) => `
         <dt class="col-sm-3">${escapeHtml(label)}</dt>
         <dd class="col-sm-9 dev-path">${value}</dd>
       `).join("");
+      list.innerHTML = renderRows(rows.filter(([label]) => !technicalLabels.has(label))) +
+        `<dd class="col-12"><details><summary class="small text-muted mb-3">Detalhes técnicos</summary><dl class="row mb-0">${renderRows(rows.filter(([label]) => technicalLabels.has(label)))}</dl></details></dd>`;
     }
 
+    let errorDetailRequest = 0;
     async function openErrorDetail(logId) {
       const modalElement = document.getElementById("devErrorModal");
       if (!modalElement) return;
       const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
       modal.show();
+      const requestNumber = ++errorDetailRequest;
+      lastErrorDetailText = "";
+      const copyButton = document.getElementById("devCopyErrorDetail");
+      if (copyButton) copyButton.disabled = true;
       setText("devErrorModalTitle", "Detalhe do erro");
       setText("devErrorModalSubtitle", "Carregando registro...");
       setText("devErrorDetailList", "");
@@ -746,8 +770,12 @@
         const url = endpoints.errorDetailBase.replace("/0", `/${encodeURIComponent(logId)}`);
         const response = await fetch(url, { headers: { "Accept": "application/json" } });
         if (!response.ok) throw new Error("detail_failed");
-        renderErrorDetail(await response.json());
+        const detail = await response.json();
+        if (requestNumber !== errorDetailRequest) return;
+        renderErrorDetail(detail);
+        if (copyButton) copyButton.disabled = false;
       } catch (error) {
+        if (requestNumber !== errorDetailRequest) return;
         setText("devErrorModalSubtitle", "Não foi possível carregar o detalhe desse erro.");
       }
     }

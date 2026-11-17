@@ -123,3 +123,47 @@ def test_detail_route_keeps_old_rows_available_after_clear(dashboard, monkeypatc
     assert response.json['id'] == 5
     assert client.get('/dev/errors/1').json['title'] == 'Sessão expirada'
     assert client.get('/dev/errors/99999').status_code == 404
+
+
+def test_edit_reservations_are_auditable_but_not_failures(dashboard):
+    from app.modules.dev_dashboard.service import _failure_filter
+
+    for status, endpoint in [(409, 'edit_control.lease'), (500, 'edit_control.lease'),
+                             (403, 'edit_control.lease'), (409, 'upload.finish')]:
+        log = AuditoriaUsuario(usuario_nome='Teste', metodo='POST', path='/edit',
+                               tipo_evento='ACESSO', status_code=status,
+                               endpoint=endpoint, criado_em=dashboard)
+        db.session.add(log)
+        db.session.flush()
+        included = AuditoriaUsuario.query.filter(_failure_filter(), AuditoriaUsuario.id == log.id).count()
+        assert included == (0 if status == 409 and endpoint == 'edit_control.lease' else 1)
+        assert get_dev_error_detail(log.id)['status_code'] == status
+    db.session.commit()
+
+
+def test_incidents_group_repeats_keep_status_method_and_prioritize_server(dashboard):
+    from app.modules.dev_dashboard.service import _serialize_error_log
+
+    AuditoriaUsuario.query.delete()
+    cases = [(403, 'GET', dashboard), (403, 'GET', dashboard - timedelta(hours=1)),
+             (403, 'POST', dashboard), (404, 'GET', dashboard),
+             (500, 'GET', dashboard - timedelta(days=1)),
+             (500, 'GET', dashboard - timedelta(days=8))]
+    for status, method, created in cases:
+        db.session.add(AuditoriaUsuario(usuario_nome='Teste', metodo=method, path='/test',
+                                        tipo_evento='ACESSO', status_code=status,
+                                        endpoint='test.route', criado_em=created))
+    db.session.commit()
+    context = _base_dev_dashboard_context()
+    incidents = [_serialize_error_log(log) for log in context['recent_errors']]
+    assert len(incidents) == 4
+    assert incidents[0]['status_code'] == 500
+    assert incidents[0]['occurrences'] == 1
+    repeated = next(item for item in incidents if item['status_code'] == 403 and item['method'] == 'GET')
+    assert repeated['occurrences'] == 2
+    assert repeated['created_at'] == _serialize_datetime(dashboard)
+    assert repeated['title'] == 'Acesso negado'
+    assert repeated['guidance']
+    assert context['metrics']['errors_24h'] == 4
+    assert sum(row.total for row in context['top_error_routes']) == 5
+    assert len(context['top_error_routes']) == 3
