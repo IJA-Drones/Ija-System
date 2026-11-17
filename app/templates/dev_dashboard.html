@@ -417,6 +417,9 @@
         <dl class="row mb-0" id="devErrorDetailList"></dl>
       </div>
       <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" type="button" id="devAnalyzeError" disabled>
+          <i class="bi bi-stars me-1" aria-hidden="true"></i> Analisar com a Azul
+        </button>
         <button class="btn btn-outline-secondary btn-sm" type="button" id="devCopyErrorDetail">
           <i class="bi bi-copy me-1"></i> Copiar detalhe
         </button>
@@ -442,6 +445,7 @@
     let diagnosticSnapshot = {{ diagnostic_snapshot|tojson }};
     let liveRefreshTimer = null;
     let lastErrorDetailText = "";
+    let selectedErrorId = null;
     let map = null;
     let marker = null;
     let geocoder = null;
@@ -760,6 +764,9 @@
       modal.show();
       const requestNumber = ++errorDetailRequest;
       lastErrorDetailText = "";
+      selectedErrorId = null;
+      const analyzeButton = document.getElementById("devAnalyzeError");
+      if (analyzeButton) analyzeButton.disabled = true;
       const copyButton = document.getElementById("devCopyErrorDetail");
       if (copyButton) copyButton.disabled = true;
       setText("devErrorModalTitle", "Detalhe do erro");
@@ -773,6 +780,8 @@
         const detail = await response.json();
         if (requestNumber !== errorDetailRequest) return;
         renderErrorDetail(detail);
+        selectedErrorId = detail.id;
+        if (analyzeButton) analyzeButton.disabled = !document.querySelector("[data-azul-help]");
         if (copyButton) copyButton.disabled = false;
       } catch (error) {
         if (requestNumber !== errorDetailRequest) return;
@@ -924,6 +933,21 @@
 
       document.querySelectorAll("[data-dev-check]").forEach((button) => {
         button.addEventListener("click", () => runManualCheck(button.dataset.devCheck, button));
+      });
+
+      document.getElementById("devAnalyzeError")?.addEventListener("click", () => {
+        const root = document.querySelector("[data-azul-help]");
+        if (!root || !selectedErrorId) return;
+        const modalElement = document.getElementById("devErrorModal");
+        const id = selectedErrorId;
+        modalElement.addEventListener("hidden.bs.modal", () => {
+          root.dispatchEvent(new CustomEvent("azul:open"));
+          root.dispatchEvent(new CustomEvent("azul:ask", {detail: {
+            message: `Analise o erro #${id} do Painel Dev: explique o que aconteceu, onde corrigir no sistema e como validar a correção.`,
+            intent: `dev_error:${id}`,
+          }}));
+        }, {once: true});
+        bootstrap.Modal.getOrCreateInstance(modalElement).hide();
       });
 
       document.addEventListener("click", (event) => {

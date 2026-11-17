@@ -1,6 +1,6 @@
 import uuid
 
-from flask import current_app, jsonify, render_template, request
+from flask import current_app, g, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 from app.shared.pdf_watermark import WatermarkError
 
@@ -26,7 +26,7 @@ def _error_payload(code: int):
 
 
 def _render_error(code: int, titulo=None, mensagem=None):
-    request_id = request.headers.get("X-Request-Id") or str(uuid.uuid4())[:8]
+    request_id = getattr(g, "audit_request_id", None) or str(uuid.uuid4())[:8]
     if not titulo or not mensagem:
         default_title, default_message = _error_payload(code)
         titulo = titulo or default_title
@@ -76,6 +76,8 @@ def register_error_handlers(bp):
 
     @bp.app_errorhandler(500)
     def erro_interno(e):
+        from app.modules.auditoria.diagnostics import record_exception
+        record_exception(getattr(e, "original_exception", None) or e)
         return _render_error(
             500,
             titulo="Erro Interno do Servidor",
@@ -88,6 +90,8 @@ def register_error_handlers(bp):
 
     @bp.app_errorhandler(Exception)
     def handle_exception(e: Exception):
+        from app.modules.auditoria.diagnostics import record_exception
+        record_exception(e)
         try:
             current_app.logger.exception(e)
         except Exception:
