@@ -204,13 +204,18 @@ def find_solicitacao_bloqueada_por_place_id(place_id, prefeitura_id=None, endere
 
     candidates = (
         query
+        .with_entities(
+            Solicitacao.id, Solicitacao.logradouro, Solicitacao.numero,
+            Solicitacao.bairro, Solicitacao.cidade, Solicitacao.uf, Solicitacao.cep,
+        )
         .order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
-        .limit(300)
-        .all()
+        # Read small batches without dropping older address blocks or loading
+        # all relationships from every candidate into the session.
+        .yield_per(300)
     )
     for solicitacao in candidates:
         if _same_address_key(address_key, _address_key_from_solicitacao(solicitacao)):
-            return solicitacao
+            return db.session.get(Solicitacao, solicitacao.id)
 
     return None
 

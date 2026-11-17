@@ -244,6 +244,12 @@
               {% if s.protocolo %}
                 <div class="mt-1"><code class="text-muted small">{{ s.protocolo }}</code></div>
               {% endif %}
+              {% set anexos = anexos_por_os.get(s.id, {'imagens': 0, 'videos': 0}) %}
+              <div class="d-flex flex-wrap gap-2 justify-content-center mt-2 small text-muted"
+                   role="group" aria-label="Anexos salvos da OS {{ s.id }}" data-os-media-counts="{{ s.id }}">
+                <span data-media-count="imagens"><i class="bi bi-images me-1" aria-hidden="true"></i>{{ anexos.imagens }} {{ 'imagem' if anexos.imagens == 1 else 'imagens' }}</span>
+                <span data-media-count="videos"><i class="bi bi-camera-video me-1" aria-hidden="true"></i>{{ anexos.videos }} {{ 'vídeo' if anexos.videos == 1 else 'vídeos' }}</span>
+              </div>
             </td>
             <td class="text-center pe-4">
               <div class="d-flex gap-2 justify-content-center flex-wrap">

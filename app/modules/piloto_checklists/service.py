@@ -143,17 +143,20 @@ def build_piloto_checklist_context(user, args):
 
     veiculo_ids = [item.id for item in state["veiculos_equipe"]]
     drone_ids = [item.id for item in state["drones_equipe"]]
-    equipe_principal = state["equipe"] if is_veiculos_supervisor(user) else None
+    equipe_principal = state["equipe"]
 
     veiculo_padrao_id = args.get("veiculo_id", type=int)
+    veiculo_autopreenchido = veiculo_padrao_id not in veiculo_ids
     if veiculo_padrao_id not in veiculo_ids:
-        principais = [item for item in state["veiculos_equipe"] if is_veiculos_supervisor(user) and item.supervisor_usuario_id == user.id]
+        ativos = [item for item in state["veiculos_equipe"] if (item.status or "").strip().lower() == "ativo"]
+        principais = [item for item in ativos if is_veiculos_supervisor(user) and item.supervisor_usuario_id == user.id]
         if not principais:
-            principais = [item for item in state["veiculos_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
-        opcoes = principais or state["veiculos_equipe"]
+            principais = [item for item in ativos if equipe_principal and item.equipe_id == equipe_principal.id]
+        opcoes = principais or ativos
         veiculo_padrao_id = opcoes[0].id if len(opcoes) == 1 else None
 
     drone_padrao_id = args.get("drone_id", type=int)
+    drone_autopreenchido = drone_padrao_id not in drone_ids
     if drone_padrao_id not in drone_ids:
         principais = [item for item in state["drones_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
         opcoes = principais or state["drones_equipe"]
@@ -167,6 +170,8 @@ def build_piloto_checklist_context(user, args):
         "drones_equipe": state["drones_equipe"],
         "veiculo_padrao_id": veiculo_padrao_id,
         "drone_padrao_id": drone_padrao_id,
+        "veiculo_autopreenchido": veiculo_autopreenchido and veiculo_padrao_id is not None,
+        "drone_autopreenchido": drone_autopreenchido and drone_padrao_id is not None,
         "veiculo_meta": state["veiculo_meta"],
         "drone_meta": state["drone_meta"],
         "veiculo_prefill": state["veiculo_prefill"],

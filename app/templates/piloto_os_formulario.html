@@ -43,7 +43,7 @@
       {% include "_retorno_ciclo.html" %}
 
       {% set current_os_tab = active_os_tab|default('dados') %}
-      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main" data-equipment-readonly="{{ 'true' if modo_visualizacao else 'false' }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% if edit_fields is defined and (not modo_visualizacao or can_edit_uvis_tab) %}
           {{ edit_fields(solicitacao, request.endpoint) }}
         {% endif %}
@@ -122,12 +122,17 @@
           <h5 class="m-0 text-primary fw-bold">Seleção de Aeronaves</h5>
         </div>
 
+        {% set selected_pulv_id = drone_pulverizacao_default_id|default(ordem.drone_id if ordem else none) %}
+        {% set selected_monit_id = drone_monitoramento_default_id|default(ordem.drone_monitoramento_id if ordem else none) %}
         <div class="row g-4">
           {# --- DRONE DE PULVERIZAÇÃO --- #}
           <div class="col-md-6">
             <label class="form-label-header">Drone de Pulverização (Principal) *</label>
-            <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3">
+            <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3" data-auto-selected="{{ 'true' if drone_pulverizacao_autofill|default(false) else 'false' }}">
               <option value="">Selecione o drone de pulverização...</option>
+              {% if selected_pulv_id and selected_pulv_id not in ((drones_pulverizacao or [])|map(attribute='id')|list) %}
+                <option value="{{ selected_pulv_id }}" selected>{{ ordem.drone_denominacao or ordem.prefixo_aeronave_pulverizacao or 'Drone' }} · registrado nesta OS</option>
+              {% endif %}
               {% for d in drones_pulverizacao or [] %}
                 <option value="{{ d.id }}"
                         data-serie="{{ d.numero_serie or '' }}"
@@ -135,11 +140,13 @@
                         data-renomacao="{{ d.renomacao or '' }}"
                         data-anatel="{{ d.registro_anatel or '' }}"
                         data-anac="{{ d.registro_anac or '' }}"
-                        {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
-                  {{ d.renomacao }} — {{ d.modelo }}
+                        {% if selected_pulv_id == d.id %}selected{% endif %}>
+                  {{ ordem.drone_denominacao if ordem and ordem.drone_id == d.id and ordem.drone_denominacao else d.renomacao }} — {{ ordem.drone_modelo if ordem and ordem.drone_id == d.id and ordem.drone_modelo else d.modelo }}
                 </option>
               {% endfor %}
             </select>
+
+            {% if drone_pulverizacao_autofill|default(false) %}<p class="form-text" id="drone-pulv-autofill-note">Drone da equipe selecionado automaticamente. Confira o equipamento utilizado.</p>{% endif %}
 
             {# Detalhes Técnicos Pulverização #}
             <div class="p-3 rounded-3 bg-snapshot border">
@@ -181,8 +188,11 @@
           {# --- DRONE DE MONITORAMENTO --- #}
           <div class="col-md-6">
             <label class="form-label-header">Drone de Monitoramento</label>
-            <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3">
+            <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3" data-auto-selected="{{ 'true' if drone_monitoramento_autofill|default(false) else 'false' }}">
               <option value="">Selecione o drone de monitoramento...</option>
+              {% if selected_monit_id and selected_monit_id not in ((drones_monitoramento or [])|map(attribute='id')|list) %}
+                <option value="{{ selected_monit_id }}" selected>{{ ordem.drone_monitoramento_denominacao or ordem.prefixo_aeronave_monitoramento or 'Drone' }} · registrado nesta OS</option>
+              {% endif %}
               {% for d in drones_monitoramento or [] %}
                 <option value="{{ d.id }}"
                         data-serie="{{ d.numero_serie or '' }}"
@@ -190,11 +200,13 @@
                         data-renomacao="{{ d.renomacao or '' }}"
                         data-anatel="{{ d.registro_anatel or '' }}"
                         data-anac="{{ d.registro_anac or '' }}"
-                        {% if ordem and ordem.drone_monitoramento_id == d.id %}selected{% endif %}>
-                  {{ d.renomacao }} — {{ d.modelo }}
+                        {% if selected_monit_id == d.id %}selected{% endif %}>
+                  {{ ordem.drone_monitoramento_denominacao if ordem and ordem.drone_monitoramento_id == d.id and ordem.drone_monitoramento_denominacao else d.renomacao }} — {{ ordem.drone_monitoramento_modelo if ordem and ordem.drone_monitoramento_id == d.id and ordem.drone_monitoramento_modelo else d.modelo }}
                 </option>
               {% endfor %}
             </select>
+
+            {% if drone_monitoramento_autofill|default(false) %}<p class="form-text" id="drone-monit-autofill-note">Drone da equipe selecionado automaticamente. Confira o equipamento utilizado.</p>{% endif %}
 
             {# Detalhes Técnicos Monitoramento #}
             <div class="p-3 rounded-3 bg-snapshot border">
@@ -1089,69 +1101,9 @@
 <script type="application/json" id="os-execucao-regras">{{ os_execucao_regras | tojson }}</script>
 <script src="{{ url_for('static', filename='js/piloto-os-situacao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/video-upload-recovery.js') }}"></script>
+<script src="{{ url_for('static', filename='js/piloto-os-equipamentos.js', v='20261117-1') }}" defer></script>
 <script>
 (function () {
-  // ✅ Lógica de Drones e Datetime (Mantida original)
-  const selPulv = document.getElementById("drone_id");
-  const selMonit = document.getElementById("drone_monitoramento_id");
-
-  const pulvSnapshot = {
-    serie: document.getElementById("drone_serie_pulv"),
-    modelo: document.getElementById("drone_modelo_pulv"),
-    renomacao: document.getElementById("drone_renomacao_pulv"),
-    anatel: document.getElementById("drone_registro_anatel_pulv"),
-    anac: document.getElementById("drone_registro_anac_pulv"),
-  };
-
-  const monitSnapshot = {
-    serie: document.getElementById("drone_serie_monit"),
-    modelo: document.getElementById("drone_modelo_monit"),
-    renomacao: document.getElementById("drone_renomacao_monit"),
-    anatel: document.getElementById("drone_registro_anatel_monit"),
-    anac: document.getElementById("drone_registro_anac_monit"),
-  };
-
-  const prefixoPulv = document.getElementById("prefixo_pulverizacao");
-  const prefixoMonit = document.getElementById("prefixo_monitoramento");
-
-  function clearSnapshot(snapshot) {
-    Object.values(snapshot).forEach((el) => { if (el) el.value = ""; });
-  }
-
-  function loadDroneData(select, type) {
-    const selectedOption = select?.selectedOptions?.[0];
-    if (!selectedOption?.value) {
-      if (type === "pulv") {
-        clearSnapshot(pulvSnapshot);
-        if (prefixoPulv) prefixoPulv.value = "";
-      } else {
-        clearSnapshot(monitSnapshot);
-        if (prefixoMonit) prefixoMonit.value = "";
-      }
-      return;
-    }
-
-    const data = selectedOption.dataset;
-    if (type === "pulv") {
-      if (pulvSnapshot.serie) pulvSnapshot.serie.value = data.serie || "";
-      if (pulvSnapshot.modelo) pulvSnapshot.modelo.value = data.modelo || "";
-      if (pulvSnapshot.renomacao) pulvSnapshot.renomacao.value = data.renomacao || "";
-      if (pulvSnapshot.anatel) pulvSnapshot.anatel.value = data.anatel || "";
-      if (pulvSnapshot.anac) pulvSnapshot.anac.value = data.anac || "";
-      if (prefixoPulv) prefixoPulv.value = data.renomacao || "";
-    } else {
-      if (monitSnapshot.serie) monitSnapshot.serie.value = data.serie || "";
-      if (monitSnapshot.modelo) monitSnapshot.modelo.value = data.modelo || "";
-      if (monitSnapshot.renomacao) monitSnapshot.renomacao.value = data.renomacao || "";
-      if (monitSnapshot.anatel) monitSnapshot.anatel.value = data.anatel || "";
-      if (monitSnapshot.anac) monitSnapshot.anac.value = data.anac || "";
-      if (prefixoMonit) prefixoMonit.value = data.renomacao || "";
-    }
-  }
-
-  if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv, "pulv"));
-  if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit, "monit"));
-
   const responded = document.getElementById("respondido_em");
   if (responded && !responded.value) {
     const now = new Date();
@@ -1171,8 +1123,6 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    if (selPulv && selPulv.value) loadDroneData(selPulv, "pulv");
-    if (selMonit && selMonit.value) loadDroneData(selMonit, "monit");
     syncTratamentoAdicional();
   });
 })();

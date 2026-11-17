@@ -151,6 +151,29 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         self.assertIn(f"OS #{bloqueada.id}", exc.exception.message)
         self.assertEqual(Solicitacao.query.count(), 1)
 
+    def test_older_address_block_survives_more_than_three_hundred_newer_blocks(self):
+        bloqueada = self._bloqueio_existente(place_id=None)
+        bloqueada.data_criacao = datetime(2026, 1, 1)
+        for i in range(301):
+            other = self._solicitacao_no_limite(
+                status="CONCLUÍDO", data_agendamento=date(2026, 8, 1),
+                data_criacao=datetime(2026, 1, 2) + timedelta(seconds=i),
+            )
+            other.logradouro = "Rua Sintetica"
+            other.numero = str(1000 + i)
+            other.endereco_bloqueado = True
+        db.session.commit()
+        form = self._solicitacao_form("place-novo")
+        form["logradouro"] = "R. Hiroshima"
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(solicitacoes_service, "validate_foco_selection", return_value=("Visita", "Casa", "Foco Teste")),
+        ):
+            with self.assertRaises(NovoCadastroValidationError) as exc:
+                solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+        self.assertIn(f"OS #{bloqueada.id}", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 302)
+
     def test_create_allows_same_place_id_in_other_prefeitura(self):
         self._bloqueio_existente(prefeitura_id=1, place_id="place-123")
 
@@ -170,6 +193,23 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         self.assertEqual(nova.prefeitura_id, 2)
         self.assertEqual(nova.place_id, "place-123")
         self.assertEqual(Solicitacao.query.count(), 2)
+
+    def test_address_without_completed_block_remains_eligible_for_a_new_request(self):
+        for i, (status, blocked) in enumerate((("CONCLUÍDO", False), ("APROVADO", True))):
+            with self.subTest(status=status, blocked=blocked):
+                existing = self._bloqueio_existente(place_id=f"place-permitido-{i}")
+                existing.status = status
+                existing.endereco_bloqueado = blocked
+                db.session.commit()
+                with (
+                    patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+                    patch.object(solicitacoes_service, "validate_foco_selection", return_value=("Visita", "Casa", "Foco Teste")),
+                ):
+                    created = solicitacoes_service.create_nova_solicitacao(
+                        self.uvis, self._solicitacao_form(f"place-permitido-{i}"),
+                    )
+                self.assertNotEqual(created.id, existing.id)
+                self.assertEqual(created.status, "PENDENTE")
 
     def test_create_resolves_place_id_on_backend_when_form_does_not_have_it(self):
         form = self._solicitacao_form("")

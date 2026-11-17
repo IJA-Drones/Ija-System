@@ -1307,6 +1307,7 @@ def register_routes(bp):
         return render_template(
             "piloto_os.html",
             pedidos=context["pedidos"],
+            anexos_por_os=context["anexos_por_os"],
             paginacao=context["paginacao"],
             status_ok=context["status_ok"],
             pilot_team_nome=context["pilot_team_nome"],

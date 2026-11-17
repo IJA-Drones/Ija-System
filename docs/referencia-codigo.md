@@ -16,11 +16,11 @@ A presença de uma rota não comprova permissão de acesso, funcionamento em pro
 | Modelos com tabela em `app/models.py` | 85 |
 | Templates HTML | 242 |
 | Arquivos CSS, incluindo bundle | 207 |
-| Arquivos JavaScript em `app/static`, incluindo service worker | 55 |
+| Arquivos JavaScript em `app/static`, incluindo service worker | 56 |
 | Revisões Alembic | 168 |
-| Arquivos Python de teste | 103 |
-| Funções/métodos Python com prefixo `test_` | 1255 |
-| Arquivos Node de teste | 27 |
+| Arquivos Python de teste | 105 |
+| Funções/métodos Python com prefixo `test_` | 1273 |
+| Arquivos Node de teste | 28 |
 
 A contagem estática de testes não inclui subtestes e não substitui a execução da suíte.
 
@@ -861,30 +861,30 @@ Fonte: [app/modules/piloto_os/routes.py](../app/modules/piloto_os/routes.py).
 | Método | Caminho | Endpoint local | Linha |
 | --- | --- | --- | ---: |
 | GET | `/piloto/os` | `piloto_os` | 1288 |
-| GET | `/piloto/dosagem` | `piloto_dosagem` | 1326 |
-| GET, POST | `/piloto/os/<int:os_id>/dosagem` | `piloto_os_dosagem` | 1332 |
-| GET | `/piloto/os/historico` | `piloto_os_historico` | 1361 |
-| POST | `/piloto/os/<int:os_id>/concluir` | `piloto_concluir_os` | 1377 |
-| GET | `/piloto/os/formulario` | `piloto_os_formulario_redirect` | 1390 |
-| GET, POST | `/piloto/os/<int:os_id>/formulario` | `piloto_os_formulario_view` | 1402 |
-| GET | `/os/<int:os_id>/video` | `os_video` | 1450 |
-| GET | `/os/<int:os_id>/imagem-principal` | `os_imagem_principal` | 1460 |
-| GET | `/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_imagem_complementar` | 1470 |
-| GET | `/piloto/api/drone/<int:drone_id>` | `piloto_api_drone` | 1480 |
-| PUT | `/api/os/<int:os_id>/upload-stream` | `os_upload_stream` | 1490 |
-| PUT | `/api/os/<int:os_id>/upload-video-stream` | `os_upload_video_stream` | 1537 |
-| PUT | `/api/os/<int:os_id>/upload-video-background` | `os_upload_video_background` | 1584 |
-| POST | `/api/os/<int:os_id>/upload-video-background/init` | `os_upload_video_background_init` | 1665 |
-| PUT | `/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>` | `video_upload_session_chunk` | 1734 |
-| POST | `/api/video-upload-sessions/<session_id>/complete` | `video_upload_session_complete` | 1797 |
-| GET | `/api/video-upload-jobs/<job_id>` | `video_upload_job_status` | 1864 |
-| PUT | `/api/os/<int:os_id>/upload-complementary-stream` | `os_upload_complementary_stream` | 1900 |
-| DELETE | `/api/os/<int:os_id>/imagem-principal` | `os_delete_principal_image` | 1956 |
-| DELETE | `/api/os/<int:os_id>/video` | `os_delete_video` | 1994 |
-| DELETE | `/api/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_delete_complementary_image` | 2030 |
-| GET, POST | `/admin/os/<int:os_id>/formulario` | `admin_os_formulario_view` | 2072 |
-| GET | `/admin/os/<int:os_id>/export/pdf/v2` | `admin_export_os_pdf_v2` | 2115 |
-| GET | `/admin/os/<int:os_id>/export/excel/v2` | `admin_export_os_excel_v2` | 2129 |
+| GET | `/piloto/dosagem` | `piloto_dosagem` | 1327 |
+| GET, POST | `/piloto/os/<int:os_id>/dosagem` | `piloto_os_dosagem` | 1333 |
+| GET | `/piloto/os/historico` | `piloto_os_historico` | 1362 |
+| POST | `/piloto/os/<int:os_id>/concluir` | `piloto_concluir_os` | 1378 |
+| GET | `/piloto/os/formulario` | `piloto_os_formulario_redirect` | 1391 |
+| GET, POST | `/piloto/os/<int:os_id>/formulario` | `piloto_os_formulario_view` | 1403 |
+| GET | `/os/<int:os_id>/video` | `os_video` | 1451 |
+| GET | `/os/<int:os_id>/imagem-principal` | `os_imagem_principal` | 1461 |
+| GET | `/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_imagem_complementar` | 1471 |
+| GET | `/piloto/api/drone/<int:drone_id>` | `piloto_api_drone` | 1481 |
+| PUT | `/api/os/<int:os_id>/upload-stream` | `os_upload_stream` | 1491 |
+| PUT | `/api/os/<int:os_id>/upload-video-stream` | `os_upload_video_stream` | 1538 |
+| PUT | `/api/os/<int:os_id>/upload-video-background` | `os_upload_video_background` | 1585 |
+| POST | `/api/os/<int:os_id>/upload-video-background/init` | `os_upload_video_background_init` | 1666 |
+| PUT | `/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>` | `video_upload_session_chunk` | 1735 |
+| POST | `/api/video-upload-sessions/<session_id>/complete` | `video_upload_session_complete` | 1798 |
+| GET | `/api/video-upload-jobs/<job_id>` | `video_upload_job_status` | 1865 |
+| PUT | `/api/os/<int:os_id>/upload-complementary-stream` | `os_upload_complementary_stream` | 1901 |
+| DELETE | `/api/os/<int:os_id>/imagem-principal` | `os_delete_principal_image` | 1957 |
+| DELETE | `/api/os/<int:os_id>/video` | `os_delete_video` | 1995 |
+| DELETE | `/api/os/<int:os_id>/imagem-complementar/<int:image_index>` | `os_delete_complementary_image` | 2031 |
+| GET, POST | `/admin/os/<int:os_id>/formulario` | `admin_os_formulario_view` | 2073 |
+| GET | `/admin/os/<int:os_id>/export/pdf/v2` | `admin_export_os_pdf_v2` | 2116 |
+| GET | `/admin/os/<int:os_id>/export/excel/v2` | `admin_export_os_excel_v2` | 2130 |
 
 ### app/modules/pilotos/routes.py
 
@@ -1236,11 +1236,12 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_css_bundle.py](../tests/test_css_bundle.py) | 3 |
 | [test_dem_contours.py](../tests/test_dem_contours.py) | 10 |
 | [test_denuncias_triagem.py](../tests/test_denuncias_triagem.py) | 8 |
-| [test_denuncias_workflow.py](../tests/test_denuncias_workflow.py) | 7 |
+| [test_denuncias_workflow.py](../tests/test_denuncias_workflow.py) | 9 |
 | [test_dev_access.py](../tests/test_dev_access.py) | 12 |
 | [test_dev_dashboard.py](../tests/test_dev_dashboard.py) | 5 |
 | [test_dji_kml_auto_link.py](../tests/test_dji_kml_auto_link.py) | 10 |
 | [test_edit_control.py](../tests/test_edit_control.py) | 29 |
+| [test_equipment_autofill.py](../tests/test_equipment_autofill.py) | 11 |
 | [test_file_recovery_postgres.py](../tests/test_file_recovery_postgres.py) | 24 |
 | [test_financeiro_central.py](../tests/test_financeiro_central.py) | 53 |
 | [test_historico_os_templates.py](../tests/test_historico_os_templates.py) | 1 |
@@ -1255,6 +1256,7 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_ortomosaicos_integracoes.py](../tests/test_ortomosaicos_integracoes.py) | 3 |
 | [test_ortomosaicos_rgb16.py](../tests/test_ortomosaicos_rgb16.py) | 2 |
 | [test_ortomosaicos_uploads.py](../tests/test_ortomosaicos_uploads.py) | 9 |
+| [test_os_media_dashboard.py](../tests/test_os_media_dashboard.py) | 3 |
 | [test_painel_operacional_weather.py](../tests/test_painel_operacional_weather.py) | 3 |
 | [test_password_expiration.py](../tests/test_password_expiration.py) | 19 |
 | [test_pdf_watermark.py](../tests/test_pdf_watermark.py) | 15 |
@@ -1279,7 +1281,7 @@ Fonte: [app/shared/session_security.py](../app/shared/session_security.py).
 | [test_skybox_collections.py](../tests/test_skybox_collections.py) | 8 |
 | [test_skybox_read_pool.py](../tests/test_skybox_read_pool.py) | 4 |
 | [test_skybox_upload.py](../tests/test_skybox_upload.py) | 7 |
-| [test_solicitacao_place_id_block.py](../tests/test_solicitacao_place_id_block.py) | 14 |
+| [test_solicitacao_place_id_block.py](../tests/test_solicitacao_place_id_block.py) | 16 |
 | [test_sprint1_workflows.py](../tests/test_sprint1_workflows.py) | 11 |
 | [test_supervisor_veiculos.py](../tests/test_supervisor_veiculos.py) | 23 |
 | [test_tracking_jobs.py](../tests/test_tracking_jobs.py) | 4 |

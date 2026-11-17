@@ -161,6 +161,28 @@ def _split_drones_by_category(drones):
     return pulverizacao, monitoramento
 
 
+def _build_os_drone_defaults(solicitacao, ordem, pulverizacao, monitoramento, *, editable=True):
+    """Suggest only unambiguous equipment; never infer a historical selection."""
+    situation = (getattr(ordem, "situacao_aplicacao", None) or "").strip().upper()
+    editable = editable and (solicitacao.status or "").strip().upper() not in STATUS_OS_CONCLUIDAS
+    result = {}
+    for kind, options, id_field, snapshot_prefix in (
+        ("pulverizacao", pulverizacao, "drone_id", "drone_"),
+        ("monitoramento", monitoramento, "drone_monitoramento_id", "drone_monitoramento_"),
+    ):
+        recorded_id = getattr(ordem, id_field, None)
+        recorded_details = any(getattr(ordem, snapshot_prefix + field, None) for field in (
+            "denominacao", "modelo", "numero_serie", "registro_anatel", "registro_anac",
+        )) or getattr(ordem, "prefixo_aeronave_" + kind, None)
+        applicable = situation != OS_SITUACAO_SEM_VOO and not (
+            kind == "pulverizacao" and situation == "APENAS MONITORADO"
+        )
+        automatic = bool(editable and applicable and not recorded_id and not recorded_details and len(options) == 1)
+        result["drone_" + kind + "_default_id"] = options[0].id if automatic else recorded_id
+        result["drone_" + kind + "_autofill"] = automatic
+    return result
+
+
 def _is_blank_os_value(value):
     if value is None:
         return True
@@ -425,6 +447,7 @@ def build_piloto_os_context(user, args, google_maps_key):
         return {
             "sem_equipe_ativa": True,
             "pedidos": [],
+            "anexos_por_os": {},
             "paginacao": None,
             "status_ok": STATUS_OS_APROVADAS_COM_ACENTO,
             "pilot_team_nome": None,
@@ -445,6 +468,7 @@ def build_piloto_os_context(user, args, google_maps_key):
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
         )
         .filter(
             Solicitacao.equipe_id == equipe.id,
@@ -487,6 +511,10 @@ def build_piloto_os_context(user, args, google_maps_key):
     return {
         "sem_equipe_ativa": False,
         "pedidos": paginacao.items,
+        "anexos_por_os": {
+            pedido.id: build_os_media_counts(pedido.ordem_servico)
+            for pedido in paginacao.items
+        },
         "paginacao": paginacao,
         "status_ok": STATUS_OS_APROVADAS_COM_ACENTO,
         "pilot_team_nome": equipe.nome_equipe,
@@ -704,6 +732,7 @@ def build_piloto_os_form_context(user, os_id):
         "dji_kml_routes": dji_kml_routes,
         "selected_dji_route": selected_dji_route,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
+        **_build_os_drone_defaults(solicitacao, ordem, drones_pulverizacao, drones_monitoramento),
         **build_os_execution_context(ordem),
         **_build_os_media_context(ordem),
     }
@@ -861,6 +890,8 @@ def build_admin_os_form_context(user, os_id):
         "dji_kml_routes": dji_kml_routes,
         "selected_dji_route": selected_dji_route,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
+        **_build_os_drone_defaults(solicitacao, ordem, drones_pulverizacao, drones_monitoramento,
+                                  editable=pode_editar_formulario),
         **build_os_execution_context(ordem),
         **_build_os_media_context(ordem),
     }
@@ -1078,6 +1109,32 @@ def _admin_can_edit_os_form(user, solicitacao) -> bool:
     return (getattr(solicitacao, "status", "") or "").strip().upper() != "CANCELADO"
 
 
+def _aplicar_drone_formulario(user, solicitacao, ordem, form_data, kind):
+    primary = kind == "pulverizacao"
+    id_field = "drone_id" if primary else "drone_monitoramento_id"
+    prefix = "drone_" if primary else "drone_monitoramento_"
+    aircraft_field = "prefixo_aeronave_" + kind
+    saved_id = getattr(ordem, id_field, None)
+    if id_field not in form_data and saved_id:
+        return
+    selected_id = _to_int(form_data.get(id_field))
+    if selected_id and selected_id == saved_id:
+        # An unchanged aircraft retains the identification recorded for this OS,
+        # even if its registration or team assignment has subsequently changed.
+        return
+    drone = _get_valid_os_drone(
+        user, solicitacao, selected_id,
+        DRONE_CATEGORY_PULVERIZACAO if primary else DRONE_CATEGORY_MONITORAMENTO,
+        "drone de pulverizacao" if primary else "drone de monitoramento",
+    ) if selected_id else None
+    setattr(ordem, id_field, drone.id if drone else None)
+    for field, source in (("denominacao", "renomacao"), ("modelo", "modelo"),
+                          ("numero_serie", "numero_serie"), ("registro_anatel", "registro_anatel"),
+                          ("registro_anac", "registro_anac")):
+        setattr(ordem, prefix + field, getattr(drone, source) if drone else "")
+    setattr(ordem, aircraft_field, drone.renomacao if drone else _clean_str(form_data.get(aircraft_field)))
+
+
 def _aplicar_campos_formulario(
     *,
     user,
@@ -1090,56 +1147,8 @@ def _aplicar_campos_formulario(
     auxiliar_padrao,
     respondido_por_padrao,
 ):
-    drone_pulv_id = _to_int(form_data.get("drone_id"))
-    drone_monit_id = _to_int(form_data.get("drone_monitoramento_id"))
-
-    if drone_pulv_id:
-        drone_p = _get_valid_os_drone(
-            user,
-            solicitacao,
-            drone_pulv_id,
-            DRONE_CATEGORY_PULVERIZACAO,
-            "drone de pulverizacao",
-        )
-        ordem.drone_id = drone_p.id
-        ordem.drone_denominacao = drone_p.renomacao
-        ordem.drone_modelo = drone_p.modelo
-        ordem.drone_numero_serie = drone_p.numero_serie
-        ordem.drone_registro_anatel = drone_p.registro_anatel
-        ordem.drone_registro_anac = drone_p.registro_anac
-        ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
-    else:
-        ordem.drone_id = None
-        ordem.drone_denominacao = ""
-        ordem.drone_modelo = ""
-        ordem.drone_numero_serie = ""
-        ordem.drone_registro_anatel = ""
-        ordem.drone_registro_anac = ""
-        ordem.prefixo_aeronave_pulverizacao = _clean_str(form_data.get("prefixo_aeronave_pulverizacao"))
-
-    if drone_monit_id:
-        drone_m = _get_valid_os_drone(
-            user,
-            solicitacao,
-            drone_monit_id,
-            DRONE_CATEGORY_MONITORAMENTO,
-            "drone de monitoramento",
-        )
-        ordem.drone_monitoramento_id = drone_m.id
-        ordem.drone_monitoramento_denominacao = drone_m.renomacao
-        ordem.drone_monitoramento_modelo = drone_m.modelo
-        ordem.drone_monitoramento_numero_serie = drone_m.numero_serie
-        ordem.drone_monitoramento_registro_anatel = drone_m.registro_anatel
-        ordem.drone_monitoramento_registro_anac = drone_m.registro_anac
-        ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
-    else:
-        ordem.drone_monitoramento_id = None
-        ordem.drone_monitoramento_denominacao = ""
-        ordem.drone_monitoramento_modelo = ""
-        ordem.drone_monitoramento_numero_serie = ""
-        ordem.drone_monitoramento_registro_anatel = ""
-        ordem.drone_monitoramento_registro_anac = ""
-        ordem.prefixo_aeronave_monitoramento = _clean_str(form_data.get("prefixo_aeronave_monitoramento"))
+    _aplicar_drone_formulario(user, solicitacao, ordem, form_data, "pulverizacao")
+    _aplicar_drone_formulario(user, solicitacao, ordem, form_data, "monitoramento")
 
     if "dji_kml_route_code" in form_data or "dji_kml_route_id" in form_data:
         dji_kml_route = _resolve_dji_kml_route_from_form(user, form_data)
@@ -1295,16 +1304,24 @@ def _build_os_media_context(ordem):
     outras_imagens_paths = _parse_json_list(getattr(ordem, "outras_imagens", None) if ordem else None)
     video_path = getattr(ordem, "video", None) if ordem else None
     video_filename = os.path.basename(str(video_path or "").replace("\\", "/")) if video_path else ""
+    counts = build_os_media_counts(ordem)
     return {
         "imagem_principal_path": imagem_principal_path,
         "outras_imagens_paths": outras_imagens_paths,
         "video_path": video_path,
         "video_filename": video_filename,
-        "total_midias_formulario": (
-            (1 if imagem_principal_path else 0)
-            + len(outras_imagens_paths)
-            + (1 if video_path else 0)
-        ),
+        "total_imagens_formulario": counts["imagens"],
+        "total_videos_formulario": counts["videos"],
+        "total_midias_formulario": counts["imagens"] + counts["videos"],
+    }
+
+
+def build_os_media_counts(ordem):
+    """Count saved attachments, independently of manually reported quantities."""
+    return {
+        "imagens": int(bool(getattr(ordem, "imagem_principal", None)))
+        + len(_parse_json_list(getattr(ordem, "outras_imagens", None))),
+        "videos": int(bool(getattr(ordem, "video", None))),
     }
 
 
