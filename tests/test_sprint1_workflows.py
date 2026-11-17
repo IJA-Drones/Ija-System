@@ -282,3 +282,46 @@ def test_no_flight_form_renders_consistently_for_admin_uvis_and_pilot(app, uid):
     assert re.search(r'name="motivo_nao_realizacao"[^>]*required', source)
     assert not re.search(r'<select name="larva_visualizada"[^>]*required', source)
     assert 'piloto-os-situacao.js' in source
+
+
+@pytest.mark.parametrize('uid,url', [
+    (1, '/admin/os/1/formulario'), (2, '/uvis/os/1/formulario'),
+    (3, '/piloto/os/1/formulario'), (2, '/equipe-uvis/os/1/formulario'),
+])
+def test_quadra_criadouro_starts_empty_and_preserves_saved_description(app, uid, url):
+    prepare_os(app)
+    with app.app_context():
+        pedido = db.session.get(Solicitacao, 1)
+        pedido.tipo_visita = 'Quadra'
+        pedido.foco = 'QUADRA'
+        pedido.tipo_operacao = 'Tratamento e monitoramento de quadra'
+        db.session.commit()
+    response = client(app, uid).get(url)
+    assert response.status_code == 200
+    assert hidden_value(response, 'criadouro_os_tipo_volume') == ''
+    assert '<datalist id="criadouros-quadra">' in response.get_data(as_text=True)
+    assert '<option value="Piscina">' in response.get_data(as_text=True)
+    fields = execution_form('APENAS MONITORADO', larva_visualizada='SIM',
+                            criadouro_os_tipo_volume='Piscina 500 L; caixa d\'água 1000 L',
+                            tratamento_adicional_realizado='NAO')
+    assert client(app, 3).post('/piloto/os/1/formulario', data=fields).status_code == 302
+    reopened = client(app, uid).get(url)
+    assert hidden_value(reopened, 'criadouro_os_tipo_volume') == fields['criadouro_os_tipo_volume']
+    with app.app_context():
+        from app.modules.relatorios.exporters import _build_formulario_rd_row
+        pedido = db.session.get(Solicitacao, 1)
+        assert pedido.foco == 'QUADRA'
+        assert fields['criadouro_os_tipo_volume'] in _build_formulario_rd_row(pedido.ordem_servico)
+
+
+def test_uvis_creates_quadra_with_canonical_focus_and_operation(app):
+    from app.modules.solicitacoes.service import create_nova_solicitacao
+    with app.app_context():
+        pedido = create_nova_solicitacao(db.session.get(Usuario, 2), dict(
+            data=(date.today() + timedelta(days=400)).isoformat(), hora='10:00',
+            tipo_visita='Quadra', foco='Piscina', tipo_operacao='Monitoramento',
+            distrito_administrativo='Distrito de teste', cep='00000000', logradouro='Rua de teste', numero='999',
+            bairro='Centro', cidade='Municipio de teste', uf='SP'))
+        assert pedido.tipo_visita == 'Quadra'
+        assert pedido.foco == 'QUADRA'
+        assert pedido.tipo_operacao == 'Tratamento e monitoramento de quadra'

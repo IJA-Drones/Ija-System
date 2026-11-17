@@ -158,8 +158,13 @@ def test_full_application_is_exclusive_even_with_ti_grants(enforce):
         html = response.get_data(as_text=True)
         sidebar = html.split('id="appSidebar"', 1)[1].split('id="appContent"', 1)[0]
         assert 'Ortomosaicos e curvas' in sidebar
-        for label in ('Treinamentos', 'Dashboard', 'Configurações', 'Agenda', 'Azul'):
+        assert 'Treinamentos' in sidebar
+        for label in ('Dashboard', 'Configurações', 'Agenda', 'Azul'):
             assert label not in sidebar
+        training_page = case.client.get('/treinamentos')
+        assert training_page.status_code == 200
+        assert '/treinamentos/arquivos/guia-ortomosaicos' in training_page.text
+        assert case.client.get('/treinamentos/arquivos/guia-frota-turnos').status_code == 403
     finally:
         case.tearDown()
 

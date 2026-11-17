@@ -15,7 +15,7 @@ from app.shared.place_id import resolve_google_place_id_for_address
 from app.shared.query_filters import id_search_clause
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 from app.shared.timezone import datetime_local_input_value, now_brazil_naive
-from app.modules.piloto_os.service import build_os_media_context
+from app.modules.piloto_os.service import build_os_media_context, build_os_criadouro_context, build_os_execution_context
 
 
 class EquipeUvisDashboardError(Exception):
@@ -452,6 +452,8 @@ def build_equipe_uvis_os_unificado_context(user, os_id):
         "retorno_monitoramento_value": _retorno_monitoramento_value(ordem_uvis, retorno_existente),
         "calculo_dosagem_planejado": {},
         "calculo_dosagem_planejado_json": "",
+        **build_os_criadouro_context(solicitacao, ordem),
+        **build_os_execution_context(ordem),
         "drones_equipe": [],
         "drones_pulverizacao": [],
         "drones_monitoramento": [],

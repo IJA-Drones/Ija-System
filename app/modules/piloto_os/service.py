@@ -60,6 +60,7 @@ from app.shared.skybox import (
     upload_file_to_skybox,
 )
 from app.shared.timezone import current_brazil_date, datetime_local_input_value, now_brazil_naive
+from app.shared.solicitacao_focos import FORM_FOCOS_OUTRO, same_normalized
 
 
 STATUS_OS_APROVADAS = [
@@ -127,6 +128,16 @@ def build_os_execution_context(ordem):
             "situacao_sem_voo": OS_SITUACAO_SEM_VOO,
             "campos_observacao": sorted(OS_CAMPOS_OBSERVACAO),
         },
+    }
+
+
+def build_os_criadouro_context(solicitacao, ordem):
+    is_quadra = same_normalized(getattr(solicitacao, "tipo_visita", None), "Quadra")
+    saved = getattr(ordem, "criadouro_os_tipo_volume", None) or ""
+    return {
+        "os_quadra": is_quadra,
+        "os_criadouro_value": saved or ("" if is_quadra else (solicitacao.foco or "")),
+        "os_criadouro_opcoes": list(FORM_FOCOS_OUTRO) if is_quadra else [],
     }
 
 
@@ -734,6 +745,7 @@ def build_piloto_os_form_context(user, os_id):
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
         **_build_os_drone_defaults(solicitacao, ordem, drones_pulverizacao, drones_monitoramento),
         **build_os_execution_context(ordem),
+        **build_os_criadouro_context(solicitacao, ordem),
         **_build_os_media_context(ordem),
     }
 
@@ -893,6 +905,7 @@ def build_admin_os_form_context(user, os_id):
         **_build_os_drone_defaults(solicitacao, ordem, drones_pulverizacao, drones_monitoramento,
                                   editable=pode_editar_formulario),
         **build_os_execution_context(ordem),
+        **build_os_criadouro_context(solicitacao, ordem),
         **_build_os_media_context(ordem),
     }
 

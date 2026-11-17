@@ -1,0 +1,235 @@
+{
+  "revision": "2026-11-17",
+  "guides": [
+    {
+      "id": "guia-agenda-notificacoes",
+      "title": "Agenda e notificações",
+      "pages": 3,
+      "sources": [
+        "app/modules/agenda_notificacoes/routes.py",
+        "app/modules/agenda_notificacoes/service.py",
+        "app/templates/agenda.html",
+        "app/templates/notificacoes.html"
+      ],
+      "sha256": "34f8e78aa07ab9cdb5f798451e7a2ae6549b7fb9da8a1028f1c2400684d4d861"
+    },
+    {
+      "id": "guia-equipes-acesso-uvis",
+      "title": "Equipes e acesso UVIS",
+      "pages": 3,
+      "sources": [
+        "app/modules/uvis_equipes/routes.py",
+        "app/modules/uvis_equipes/service.py",
+        "app/templates/uvis_equipe_criar.html",
+        "app/templates/uvis_acesso_operacional.html"
+      ],
+      "sha256": "cda4135ca4151f05e68b24a5fcc6540ec96eb8413b320fc0a8cdd2b0397515a5"
+    },
+    {
+      "id": "guia-checklists-semanais",
+      "title": "Checklists semanais",
+      "pages": 3,
+      "sources": [
+        "app/modules/piloto_checklists/routes.py",
+        "app/modules/piloto_checklists/service.py",
+        "app/templates/piloto_checklist_semanal.html",
+        "app/modules/admin_checklists/routes.py"
+      ],
+      "sha256": "07eff202e3ed8e651ace4e27dbd91d5351809a7f602f616e0c4c771178f8f756"
+    },
+    {
+      "id": "guia-frota-turnos",
+      "title": "Frota e turnos",
+      "pages": 3,
+      "sources": [
+        "app/modules/veiculos/routes.py",
+        "app/modules/veiculos/service.py",
+        "app/templates/piloto_veiculos.html",
+        "docs/perfil-supervisor-operacional-veiculos.md"
+      ],
+      "sha256": "04c10b05f7958ed1e68bc33302ff74b1a3347e8c58723b13d08a8e2982f4b1f2"
+    },
+    {
+      "id": "guia-rastreamento-veiculos",
+      "title": "Rastreamento de veículos",
+      "pages": 3,
+      "sources": [
+        "app/modules/veiculos/rastreamento.py",
+        "app/modules/veiculos/routes.py",
+        "app/static/js/veiculos-rastreamento.js",
+        "app/templates/veiculos_rastreamento.html"
+      ],
+      "sha256": "fac5834f86e56bd714b1b2d6f7cce3d591fc3dc85bb8440b4c844622c778e3a4"
+    },
+    {
+      "id": "guia-estoque-pecas",
+      "title": "Estoque de peças",
+      "pages": 3,
+      "sources": [
+        "app/modules/estoque/routes.py",
+        "app/modules/estoque/service.py",
+        "app/templates/estoque_form.html",
+        "app/templates/estoque_listar.html"
+      ],
+      "sha256": "8eee0c61acf3728d22f3d5638f5d15cae22b0d9a86dc04e8f8c5748e6103cad5"
+    },
+    {
+      "id": "guia-manutencao-equipamentos",
+      "title": "Manutenção de equipamentos",
+      "pages": 3,
+      "sources": [
+        "app/modules/equipamentos/routes.py",
+        "app/modules/equipamentos/service.py",
+        "app/templates/equipamento_manutencao_pecas.html",
+        "app/templates/equipamentos_manutencoes_historico.html"
+      ],
+      "sha256": "375919a39837e3d851f3364ac72b8e584fb94a73a555f1fce72ddfd84afbf00f"
+    },
+    {
+      "id": "guia-central-ti-permissoes",
+      "title": "Central de TI",
+      "pages": 3,
+      "sources": [
+        "app/modules/gestao_ti/routes.py",
+        "app/modules/gestao_ti/permissions.py",
+        "app/modules/gestao_ti/catalog.json",
+        "docs/central-ti-permissoes.md"
+      ],
+      "sha256": "c7774c110cb399701461a613e2ef4a61fe053d0785bdc4f0c3bb24c67860b2c2"
+    },
+    {
+      "id": "guia-reporte-acompanhamento-bugs",
+      "title": "Reporte de bugs",
+      "pages": 3,
+      "sources": [
+        "app/modules/feedback/routes.py",
+        "app/modules/feedback/service.py",
+        "app/templates/feedback_form.html",
+        "docs/notion_reporte_bugs.md"
+      ],
+      "sha256": "a2282af0d5d1254d274bae49892b7664ef5cffd8e05c96610eb5213595baa8db"
+    },
+    {
+      "id": "guia-painel-operacional",
+      "title": "Painel operacional",
+      "pages": 3,
+      "sources": [
+        "app/modules/painel_operacional/routes.py",
+        "app/modules/painel_operacional/service.py",
+        "app/templates/painel_operacional.html"
+      ],
+      "sha256": "c7590eca099b0d437f23ff6cc7ae14fbc73892e578d448b128f5371b7e2b82bb"
+    },
+    {
+      "id": "guia-banco-talentos-agro",
+      "title": "Banco de talentos Agro",
+      "pages": 3,
+      "sources": [
+        "app/modules/agro/talent_bank_routes.py",
+        "app/modules/agro/talent_bank_service.py",
+        "app/templates/agro_talentos_listar.html",
+        "app/templates/agro_talento_detalhe.html"
+      ],
+      "sha256": "bc0a199acb37316a97169f340feecb5901fc21a382d7f939c2cbb122c87065d8"
+    },
+    {
+      "id": "guia-central-financeiro",
+      "title": "Central Financeiro",
+      "pages": 3,
+      "sources": [
+        "app/modules/financeiro/routes.py",
+        "app/modules/financeiro/service.py",
+        "app/templates/financeiro_central.html",
+        "app/templates/financeiro_empresa.html"
+      ],
+      "sha256": "5c424e915594f8262219d692b20e49f9280985d84ea919829a0a243fc4737666"
+    },
+    {
+      "id": "guia-ortomosaicos",
+      "title": "Ortomosaicos e curvas",
+      "pages": 3,
+      "sources": [
+        "app/modules/ortomosaicos/routes.py",
+        "app/modules/ortomosaicos/access.py",
+        "app/modules/ortomosaicos/service.py",
+        "docs/ortomosaicos.md"
+      ],
+      "sha256": "8b78f05bc4b54f7384069ffd7cafbf9586cce92961c3dfbd4a8da4ff24bf24b1"
+    },
+    {
+      "id": "guia-relatorios-operacionais",
+      "title": "Relatórios operacionais",
+      "pages": 3,
+      "sources": [
+        "app/modules/relatorios/routes.py",
+        "app/modules/relatorios/service.py",
+        "app/templates/relatorios.html",
+        "docs/README-retorno-automatico.md"
+      ],
+      "sha256": "50a2d596f868714e39a6f645116c7520c8bcf29cae855bf18946b039f485b4ad"
+    },
+    {
+      "id": "guia-mapas-operacionais",
+      "title": "Mapas operacionais",
+      "pages": 3,
+      "sources": [
+        "app/modules/mapas/routes.py",
+        "app/modules/mapas/service.py",
+        "app/templates/mapa_relatorio.html"
+      ],
+      "sha256": "f30050fd9d425e1c31c1427425fb095f13a58e53bf0298c9f0042680fae06404"
+    },
+    {
+      "id": "guia-agro-comercial-operacao",
+      "title": "Agro: comercial e operação",
+      "pages": 3,
+      "sources": [
+        "app/modules/agro/routes.py",
+        "app/modules/agro/service.py",
+        "app/templates/agro_orcamento_form.html",
+        "app/templates/agro_os_form.html"
+      ],
+      "sha256": "1518cb00f19017ace51eac0c4907fa0ec688b8288e4ebfe3aa64234d30729a4e"
+    },
+    {
+      "id": "guia-usuarios-prefeituras",
+      "title": "Usuários e prefeituras",
+      "pages": 3,
+      "sources": [
+        "app/modules/usuarios/routes.py",
+        "app/modules/usuarios/service.py",
+        "app/modules/admin_uvis/routes.py",
+        "app/templates/admin_usuario_novo.html"
+      ],
+      "sha256": "9c57ecc1f6798d3c86a148a8041b4bd10dc83abe6413d9419c68d4b5c7b9f8d0"
+    }
+  ],
+  "total_pages": 51,
+  "note": "Validação estrutural. A revisão visual é registrada no inventário.",
+  "visual_review": {
+    "pages_reviewed": 51,
+    "text_geometry_issues": 0,
+    "screenshots": "Telas reais com dados ficticios; 17 capturas HTTP 200."
+  },
+  "permissions_tests": {
+    "passed": 65,
+    "subtests_passed": 519,
+    "ui_profiles": [
+      "uvis",
+      "piloto",
+      "financeiro",
+      "admin",
+      "dev"
+    ],
+    "ui_widths": [
+      1440,
+      390
+    ],
+    "horizontal_overflow": false,
+    "cross_city_files": "Teste aprovado com pyshp 3.1.6 instalado somente em pasta temporaria."
+  },
+  "broader_suite_notes": [
+    "A dependencia pyshp declarada no projeto estava ausente no ambiente local.",
+    "Testes antigos do Financeiro esperam ausencia de formulario e de chave de chat na sessao; ambos comportamentos ja ocorrem com o template base original."
+  ]
+}

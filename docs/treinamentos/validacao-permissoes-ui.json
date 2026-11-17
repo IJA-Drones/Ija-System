@@ -1,0 +1,122 @@
+[
+  {
+    "role": "uvis",
+    "status": 200,
+    "path": "/treinamentos",
+    "tabs": [
+      "Prefeitura e Sistema"
+    ],
+    "materials": [
+      "guia-agenda-notificacoes",
+      "guia-equipes-acesso-uvis",
+      "guia-rastreamento-veiculos",
+      "guia-mapas-operacionais",
+      "atualizacoes-treinamentos",
+      "guia-triagem-denuncias",
+      "guia-suspeitas-adoecimento",
+      "guia-assistente-cidadao",
+      "guia-protecao-login",
+      "guia-expiracao-senhas",
+      "guia-edicao-protegida"
+    ],
+    "desktopOverflow": false,
+    "mobileOverflow": false
+  },
+  {
+    "role": "piloto",
+    "status": 200,
+    "path": "/treinamentos",
+    "tabs": [
+      "Prefeitura e Sistema"
+    ],
+    "materials": [
+      "guia-agenda-notificacoes",
+      "guia-checklists-semanais",
+      "guia-frota-turnos",
+      "guia-rastreamento-veiculos",
+      "guia-mapas-operacionais",
+      "atualizacoes-treinamentos",
+      "guia-protecao-login",
+      "guia-expiracao-senhas",
+      "guia-edicao-protegida"
+    ],
+    "desktopOverflow": false,
+    "mobileOverflow": false
+  },
+  {
+    "role": "financeiro",
+    "status": 200,
+    "path": "/financeiro/treinamentos",
+    "tabs": [
+      "Financeiro"
+    ],
+    "materials": [
+      "guia-central-financeiro",
+      "atualizacoes-treinamentos",
+      "guia-protecao-login",
+      "guia-expiracao-senhas"
+    ],
+    "desktopOverflow": false,
+    "mobileOverflow": false
+  },
+  {
+    "role": "admin",
+    "status": 200,
+    "path": "/agro/treinamentos",
+    "tabs": [
+      "Prefeitura e Sistema",
+      "Agro"
+    ],
+    "materials": [
+      "guia-agro-comercial-operacao",
+      "guia-banco-talentos-agro",
+      "atualizacoes-treinamentos",
+      "guia-protecao-login",
+      "guia-expiracao-senhas"
+    ],
+    "desktopOverflow": false,
+    "mobileOverflow": false
+  },
+  {
+    "role": "dev",
+    "status": 200,
+    "path": "/treinamentos",
+    "tabs": [
+      "Prefeitura e Sistema",
+      "Agro",
+      "Financeiro"
+    ],
+    "materials": [
+      "guia-geral",
+      "manual-sinan",
+      "csv-sinan",
+      "guia-agenda-notificacoes",
+      "guia-equipes-acesso-uvis",
+      "guia-checklists-semanais",
+      "guia-frota-turnos",
+      "guia-rastreamento-veiculos",
+      "guia-estoque-pecas",
+      "guia-manutencao-equipamentos",
+      "guia-usuarios-prefeituras",
+      "guia-central-ti-permissoes",
+      "guia-reporte-acompanhamento-bugs",
+      "guia-painel-operacional",
+      "guia-relatorios-operacionais",
+      "guia-mapas-operacionais",
+      "guia-ortomosaicos",
+      "atualizacoes-treinamentos",
+      "guia-triagem-denuncias",
+      "guia-suspeitas-adoecimento",
+      "guia-assistente-cidadao",
+      "guia-contatos-municipais",
+      "guia-consultas-personalizadas",
+      "guia-documentos-prefeitura",
+      "guia-protecao-login",
+      "guia-expiracao-senhas",
+      "guia-edicao-protegida",
+      "guia-sinan-implementacao"
+    ],
+    "desktopOverflow": false,
+    "mobileOverflow": false
+  }
+]

@@ -333,8 +333,14 @@
             <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ (ordem.nome_rf_ace_responsavel_os or '') if ordem else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Criadouro OS (tipo/volume)<span data-obrigatorio-observacao="criadouro_os_tipo_volume" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
-            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" {% if not os_sem_voo %}required{% endif %} />
+            <label for="criadouro-os" class="form-label-header">Criadouro OS (tipo/volume)<span data-obrigatorio-observacao="criadouro_os_tipo_volume" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <input id="criadouro-os" type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ os_criadouro_value }}" {% if os_quadra %}list="criadouros-quadra" aria-describedby="criadouros-quadra-ajuda" placeholder="Selecione ou descreva o criadouro encontrado"{% endif %} {% if not os_sem_voo %}required{% endif %} />
+            {% if os_quadra %}
+            <datalist id="criadouros-quadra">
+              {% for opcao in os_criadouro_opcoes %}<option value="{{ opcao }}"></option>{% endfor %}
+            </datalist>
+            <small id="criadouros-quadra-ajuda" class="text-muted">Informe o criadouro encontrado na quadra. Você pode usar uma sugestão ou descrever os tipos e volumes observados.</small>
+            {% endif %}
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Data do atendimento / aplicação *</label>

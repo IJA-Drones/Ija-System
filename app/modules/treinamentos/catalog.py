@@ -64,6 +64,39 @@ SECTIONS = (
 # O catálogo é explícito: publicar um arquivo em output/ não o torna acessível.
 # Cada entrada corresponde a uma cópia conferida junto da aplicação.
 GUIDE_GROUPS = (
+    dict(id="operacao-equipes", title="Operação e equipes", icon="bi-people",
+         documents=(
+             ("guia-agenda-notificacoes", "Agenda e notificações", 3, "guia-agenda-notificacoes.pdf"),
+             ("guia-equipes-acesso-uvis", "Equipes e acesso UVIS", 3, "guia-equipes-acesso-uvis.pdf"),
+             ("guia-checklists-semanais", "Checklists semanais", 3, "guia-checklists-semanais.pdf"),
+         )),
+    dict(id="frota-recursos", title="Frota, estoque e manutenção", icon="bi-truck",
+         documents=(
+             ("guia-frota-turnos", "Frota e turnos", 3, "guia-frota-turnos.pdf"),
+             ("guia-rastreamento-veiculos", "Rastreamento de veículos", 3, "guia-rastreamento-veiculos.pdf"),
+             ("guia-estoque-pecas", "Estoque de peças", 3, "guia-estoque-pecas.pdf"),
+             ("guia-manutencao-equipamentos", "Manutenção de equipamentos", 3, "guia-manutencao-equipamentos.pdf"),
+         )),
+    dict(id="gestao-suporte", title="Gestão, acessos e suporte", icon="bi-shield-lock",
+         documents=(
+             ("guia-usuarios-prefeituras", "Usuários e prefeituras", 3, "guia-usuarios-prefeituras.pdf"),
+             ("guia-central-ti-permissoes", "Central de TI", 3, "guia-central-ti-permissoes.pdf"),
+             ("guia-reporte-acompanhamento-bugs", "Reporte de bugs", 3, "guia-reporte-acompanhamento-bugs.pdf"),
+             ("guia-painel-operacional", "Painel operacional", 3, "guia-painel-operacional.pdf"),
+         )),
+    dict(id="agro", title="Agro", icon="bi-tree",
+         documents=(
+             ("guia-agro-comercial-operacao", "Agro: comercial e operação", 3, "guia-agro-comercial-operacao.pdf"),
+             ("guia-banco-talentos-agro", "Banco de talentos Agro", 3, "guia-banco-talentos-agro.pdf"),
+         )),
+    dict(id="financeiro", title="Financeiro", icon="bi-bank",
+         documents=(("guia-central-financeiro", "Central Financeiro", 3, "guia-central-financeiro.pdf"),)),
+    dict(id="mapas-documentos", title="Mapas e relatórios operacionais", icon="bi-pin-map",
+         documents=(
+             ("guia-relatorios-operacionais", "Relatórios operacionais", 3, "guia-relatorios-operacionais.pdf"),
+             ("guia-mapas-operacionais", "Mapas operacionais", 3, "guia-mapas-operacionais.pdf"),
+             ("guia-ortomosaicos", "Ortomosaicos e curvas", 3, "guia-ortomosaicos.pdf"),
+         )),
     dict(id="apresentacoes", title="Apresentações das atualizações", icon="bi-easel",
          documents=(
              ("atualizacoes-liraa-mapas", "LIRAa e mapas de risco", 6,

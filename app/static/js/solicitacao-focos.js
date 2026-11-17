@@ -142,6 +142,15 @@
       return;
     }
 
+    var firstSync = true;
+    var quadraOperation = "Tratamento e monitoramento de quadra";
+    var operationInputs = Array.prototype.slice.call(root.querySelectorAll('[name="tipo_operacao"]'));
+    var previousOperation = "";
+    operationInputs.forEach(function (input) {
+      if (input.tagName === "SELECT" || input.checked) previousOperation = input.value;
+    });
+    var wasQuadra = false;
+
     function syncFields() {
       var visitValue = tipoVisitaSelect.value;
       var isQuadra = normalize(visitValue) === "quadra";
@@ -172,7 +181,8 @@
         return normalize(option) === normalizedCurrentFocus;
       });
 
-      if (normalizedCurrentFocus && !focusStillValid) {
+      // Keep historical values on load, but never carry a different visit's focus into Quadra.
+      if (firstSync && !isQuadra && normalizedCurrentFocus && !focusStillValid) {
         options = [currentFocus].concat(options);
         focusStillValid = true;
       }
@@ -180,7 +190,7 @@
       rebuildSelect(
         focoSelect,
         options,
-        focusStillValid ? currentFocus : "",
+        isQuadra ? "QUADRA" : (focusStillValid ? currentFocus : ""),
         (config && config.focoPlaceholder) || "Selecione o foco da acao..."
       );
       focoSelect.disabled = isQuadra;
@@ -191,23 +201,40 @@
           lockedFocus.type = "hidden";
           lockedFocus.name = "foco";
           lockedFocus.setAttribute("data-quadra-foco-hidden", "true");
-          root.querySelector("form")?.appendChild(lockedFocus);
+          var form = root.tagName === "FORM" ? root : root.querySelector("form");
+          form?.appendChild(lockedFocus);
         }
         lockedFocus.value = "QUADRA";
       } else if (lockedFocus) {
         lockedFocus.remove();
       }
 
-      var operationInputs = Array.prototype.slice.call(root.querySelectorAll('[name="tipo_operacao"]'));
+      if (isQuadra && !wasQuadra) {
+        operationInputs.forEach(function (input) {
+          if (input.tagName === "SELECT" || input.checked) previousOperation = input.value;
+        });
+      }
       operationInputs.forEach(function (input) {
-        var isQuadraOperation = normalize(input.value) === "tratamento e monitoramento de quadra";
+        if (input.tagName === "SELECT") {
+          if (isQuadra) input.value = quadraOperation;
+          else if (wasQuadra) input.value = normalize(previousOperation) === normalize(quadraOperation)
+            ? "Tratamento" : previousOperation;
+          input.disabled = isQuadra;
+          return;
+        }
+        var isQuadraOperation = normalize(input.value) === normalize(quadraOperation);
         if (isQuadra) {
           input.checked = isQuadraOperation;
           input.disabled = true;
         } else {
           input.disabled = false;
+          if (wasQuadra) input.checked = normalize(input.value) === normalize(
+            normalize(previousOperation) === normalize(quadraOperation) ? "Tratamento" : previousOperation
+          );
         }
       });
+      wasQuadra = isQuadra;
+      firstSync = false;
     }
 
     tipoVisitaSelect.addEventListener("change", syncFields);

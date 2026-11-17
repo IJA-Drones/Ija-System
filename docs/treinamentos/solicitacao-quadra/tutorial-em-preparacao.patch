@@ -1,0 +1,197 @@
+diff --git a/app/modules/treinamentos/catalog.py b/app/modules/treinamentos/catalog.py
+index 253d624..2ae227f 100644
+--- a/app/modules/treinamentos/catalog.py
++++ b/app/modules/treinamentos/catalog.py
+@@ -6,6 +6,9 @@ RESOURCE_DIR = Path(__file__).resolve().parents[2] / "resources" / "treinamentos
+ 
+ MATERIALS = {
+     "guia-geral": ("manuais/guia-do-sistema.pdf", "application/pdf"),
++    "manual-quadra": ("manuais/tutorial-solicitacao-quadra.pdf", "application/pdf"),
++    "video-quadra": ("videos/solicitacao-quadra.mp4", "video/mp4"),
++    "legendas-quadra": ("videos/solicitacao-quadra.pt-BR.vtt", "text/vtt"),
+     "manual-liraa": ("manuais/tutorial-liraa.pdf", "application/pdf"),
+     "manual-sinan": ("manuais/tutorial-sinan.pdf", "application/pdf"),
+     "manual-mapa": ("manuais/tutorial-mapa-de-risco.pdf", "application/pdf"),
+@@ -25,6 +28,21 @@ MATERIALS = {
+     "kit-instrucoes-sp": ("testes-sao-paulo/LEIA_PRIMEIRO.txt", "text/plain"),
+ }
+ 
++QUADRA_STEPS = (
++    ("Abra uma nova solicitação",
++     "No painel de solicitações, clique em Nova Solicitação. O formulário se chama Novo Pedido de Voo. O acesso depende das permissões da sua conta."),
++    ("Preencha o agendamento",
++     "Informe a data da visita e o horário previsto. A data não pode ser retroativa. A sua conta UVIS identifica a unidade responsável pelo pedido."),
++    ("Selecione Quadra",
++     "Em Tipo de visita, escolha Quadra. O sistema preenche o foco QUADRA e seleciona Tratamento e monitoramento de quadra automaticamente. Informe a altura do voo definida pela equipe responsável e o DA (Distrito)."),
++    ("Descreva a necessidade",
++     "Indique se é necessário apoio CET. Em Observações, descreva o trecho da quadra, os limites e as referências que ajudarão a equipe a identificar a área."),
++    ("Confira o endereço",
++     "Preencha CEP, logradouro, número, bairro, cidade e UF. Use complemento quando necessário. Digite somente o nome da rua em Logradouro e um número predial em Número; use S/N para endereço sem número. Aguarde o preenchimento de latitude e longitude antes de enviar."),
++    ("Envie e acompanhe",
++     "Revise os campos e clique em Enviar Pedido. Aguarde a mensagem de sucesso e confira o registro no painel, inicialmente como PENDENTE. A confirmação administrativa de Quadra e a aprovação são etapas posteriores."),
++)
++
+ 
+ def demo_csv_examples(municipality_name):
+     """Match the registered municipality name, never assume an internal database ID."""
+diff --git a/app/modules/treinamentos/routes.py b/app/modules/treinamentos/routes.py
+index 791d758..f76961c 100644
+--- a/app/modules/treinamentos/routes.py
++++ b/app/modules/treinamentos/routes.py
+@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
+ 
+ from app.modules.gestao_ti.permissions import can_access_endpoint, profile_code
+ from app.modules.vigilancia.access import can_coordinate_field
+-from .catalog import GUIDE_GROUPS, MATERIALS, RESOURCE_DIR, SECTIONS
++from .catalog import GUIDE_GROUPS, MATERIALS, QUADRA_STEPS, RESOURCE_DIR, SECTIONS
+ 
+ 
+ def _module_url(section):
+@@ -41,7 +41,8 @@ def register_routes(bp):
+     @login_required
+     def index():
+         sections = [dict(section, module_url=_module_url(section)) for section in SECTIONS]
+-        return render_template("treinamentos.html", sections=sections, guide_groups=GUIDE_GROUPS)
++        return render_template("treinamentos.html", sections=sections, guide_groups=GUIDE_GROUPS,
++                               quadra_steps=QUADRA_STEPS)
+ 
+     @bp.get("/treinamentos/arquivos/<material_id>", endpoint="treinamentos_arquivo")
+     @login_required
+@@ -54,5 +55,6 @@ def register_routes(bp):
+         if not path.is_file():
+             abort(404)
+         return send_file(path, mimetype=mimetype, download_name=path.name,
+-                         as_attachment=mimetype != "application/pdf" or request.args.get("baixar") == "1")
++                         as_attachment=mimetype not in {"application/pdf", "video/mp4", "text/vtt"}
++                         or request.args.get("baixar") == "1")
+ 
+diff --git a/app/static/css/pages/treinamentos.css b/app/static/css/pages/treinamentos.css
+index d7eecf7..10c0198 100644
+--- a/app/static/css/pages/treinamentos.css
++++ b/app/static/css/pages/treinamentos.css
+@@ -51,8 +51,28 @@
+ .training-library-meta { flex-shrink: 0; color: var(--color-text-muted); font-size: .74rem; white-space: nowrap; }
+ .training-page .btn { white-space: normal; }
+ .training-page a:focus-visible, .training-page summary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 4px; }
++.training-tutorial { padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid var(--color-accent-soft); border-radius: var(--radius-lg); background: var(--color-bg-white); }
++.training-tutorial-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
++.training-tutorial-heading h2 { font-size: clamp(1.3rem, 2.5vw, 1.65rem); margin: 0 0 .5rem; line-height: 1.35; }
++.training-tutorial-heading > div > p:last-child { color: var(--color-text-muted); font-size: .88rem; margin: 0; line-height: 1.6; }
++.training-tutorial-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .7rem; border-radius: var(--radius-md); background: var(--color-accent-soft); color: var(--color-accent); font-size: .76rem; flex-shrink: 0; }
++.training-tutorial-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 1.5rem; align-items: center; }
++.training-player { min-width: 0; }
++.training-player video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-md); background: var(--color-accent-soft); }
++.training-tutorial-summary { min-width: 0; }
++.training-tutorial-summary h3 { font-size: 1rem; margin: 0 0 .75rem; }
++.training-tutorial-summary ul { margin: 0 0 1.2rem; padding-left: 1.1rem; color: var(--color-text-muted); font-size: .85rem; line-height: 1.7; }
++.training-tutorial-summary li { margin-bottom: .45rem; }
++.training-tutorial-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
++.training-tutorial-script { margin-top: 1.25rem; }
++.training-tutorial-script strong { color: var(--color-text-main); }
++.training-tutorial-script ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 2rem; }
++.training-tutorial-script li { break-inside: avoid; padding-left: .25rem; }
+ @media (max-width: 1100px) { .training-grid { grid-template-columns: minmax(0, 1fr); } }
+ @media (max-width: 767px) {
++  .training-tutorial { padding: 1.1rem; }
++  .training-tutorial-heading { flex-direction: column; }
++  .training-tutorial-grid, .training-tutorial-script ol { grid-template-columns: minmax(0, 1fr); }
+   .training-header { align-items: flex-start; flex-direction: column; gap: 1rem; }
+   .training-guide { flex-wrap: wrap; }
+   .training-guide > .btn { width: 100%; }
+diff --git a/app/templates/treinamentos.html b/app/templates/treinamentos.html
+index c69cf9f..f61a9e2 100644
+--- a/app/templates/treinamentos.html
++++ b/app/templates/treinamentos.html
+@@ -1,13 +1,43 @@
+ {% extends "base.html" %}
+ {% block title %}Treinamentos | Oceano Azul{% endblock %}
+-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261021-3') }}">{% endblock %}
++{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261117-quadra') }}">{% endblock %}
+ {% block content %}
+ <div class="training-page">
+   <header class="training-header">
+-    <div><p class="training-eyebrow">Materiais de apoio</p><h1>Treinamentos</h1><p>Manuais e arquivos para praticar os fluxos do sistema.</p></div>
++    <div><p class="training-eyebrow">Materiais de apoio</p><h1>Treinamentos</h1><p>Tutoriais com voz, guias e arquivos para aprender os fluxos do sistema.</p></div>
+     <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes') }}">Kit Pesqueira <span class="training-format">ZIP</span></a><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes-sp') }}">Kit UVIS Sé · São Paulo <span class="training-format">ZIP</span></a></div>
+   </header>
+ 
++  <section class="training-tutorial" aria-labelledby="quadra-title">
++    <header class="training-tutorial-heading">
++      <div><p class="training-eyebrow">Comece por aqui · Solicitações</p><h2 id="quadra-title">Como criar uma solicitação de quadra</h2><p>Do preenchimento ao acompanhamento do pedido, com telas reais e dados fictícios.</p></div>
++      <span class="training-tutorial-badge"><i class="bi bi-volume-up" aria-hidden="true"></i> Com narração em português</span>
++    </header>
++    <div class="training-tutorial-grid">
++      <div class="training-player">
++        <video controls playsinline preload="none" poster="{{ url_for('static', filename='img/treinamentos/solicitacao-quadra.jpg') }}" aria-label="Tutorial narrado: como criar uma solicitação de quadra">
++          <source src="{{ url_for('main.treinamentos_arquivo', material_id='video-quadra') }}" type="video/mp4">
++          <track kind="captions" src="{{ url_for('main.treinamentos_arquivo', material_id='legendas-quadra') }}" srclang="pt-BR" label="Português (Brasil)" default>
++          Seu navegador não reproduz este vídeo. Use o link Baixar vídeo abaixo.
++        </video>
++        <p class="training-hint">Ative o som para ouvir as orientações. As legendas e o roteiro abaixo também permitem acompanhar sem áudio.</p>
++      </div>
++      <div class="training-tutorial-summary">
++        <h3>O que você vai aprender</h3>
++        <ul><li>Preencher o agendamento pela conta da UVIS.</li><li>Selecionar Quadra e conferir os campos automáticos.</li><li>Descrever o trecho, revisar o endereço e enviar.</li><li>Localizar o pedido pendente no painel.</li></ul>
++        <div class="training-tutorial-actions">
++          <a class="btn btn-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='manual-quadra') }}" target="_blank" rel="noopener">Abrir guia <span class="training-format">PDF</span><span class="visually-hidden"> de solicitação de quadra (abre em nova aba)</span></a>
++          <a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='video-quadra', baixar=1) }}">Baixar vídeo <span class="training-format">MP4</span></a>
++        </div>
++      </div>
++    </div>
++    <details class="training-details training-tutorial-script">
++      <summary>Ver o passo a passo escrito</summary>
++      <ol>{% for title, text in quadra_steps %}<li><strong>{{ title }}</strong><p>{{ text }}</p></li>{% endfor %}</ol>
++      <p>As telas do vídeo usam um ambiente local com dados fictícios. Para praticar, utilize o ambiente de treinamento indicado pela sua equipe.</p>
++    </details>
++  </section>
++
+   <section class="training-guide" aria-labelledby="guia-title">
+     <span class="training-icon"><i class="bi bi-book" aria-hidden="true"></i></span>
+     <div><h2 id="guia-title">Guia do sistema</h2><p>Conheça as telas, os acessos e as principais funções.</p></div>
+diff --git a/tests/test_treinamentos.py b/tests/test_treinamentos.py
+index ef4a31a..1a42aba 100644
+--- a/tests/test_treinamentos.py
++++ b/tests/test_treinamentos.py
+@@ -34,7 +34,8 @@ def training():
+ 
+ 
+ def test_training_and_files_require_login(training):
+-    for path in ("/treinamentos", "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/kit-testes"):
++    for path in ("/treinamentos", "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/kit-testes",
++                 "/treinamentos/arquivos/video-quadra", "/treinamentos/arquivos/legendas-quadra"):
+         response = training.client.get(path)
+         assert response.status_code == 302
+         assert "/login" in response.location
+@@ -77,7 +78,7 @@ def test_resources_are_fixed_private_and_correctly_served(training):
+         assert response.data == (RESOURCE_DIR / relative).read_bytes()
+         assert response.headers["Cache-Control"] == "private, no-store"
+         assert response.headers["X-Content-Type-Options"] == "nosniff"
+-        expected = "inline" if mimetype == "application/pdf" else "attachment"
++        expected = "inline" if mimetype in {"application/pdf", "video/mp4", "text/vtt"} else "attachment"
+         assert response.headers["Content-Disposition"].startswith(expected)
+         response.close()
+     response = training.client.get("/treinamentos/arquivos/guia-geral?baixar=1")
+@@ -86,6 +87,23 @@ def test_resources_are_fixed_private_and_correctly_served(training):
+         assert training.client.get("/treinamentos/arquivos/" + path).status_code == 404
+ 
+ 
++def test_tutorial_supports_private_video_playback_and_download(training):
++    training.login("agent")
++    page = training.client.get("/treinamentos")
++    assert "Como criar uma solicitação de quadra" in page.text
++    assert '<track kind="captions"' in page.text
++    video = RESOURCE_DIR / MATERIALS["video-quadra"][0]
++    response = training.client.get("/treinamentos/arquivos/video-quadra", headers={"Range": "bytes=0-1023"})
++    assert response.status_code == 206
++    assert response.headers["Content-Range"] == f"bytes 0-1023/{video.stat().st_size}"
++    assert response.data == video.read_bytes()[:1024]
++    assert response.headers["Cache-Control"] == "private, no-store"
++    response.close()
++    download = training.client.get("/treinamentos/arquivos/video-quadra?baixar=1")
++    assert download.headers["Content-Disposition"].startswith("attachment")
++    download.close()
++
++
+ def test_page_and_downloads_do_not_write_database(training):
+     training.login()
+     from sqlalchemy import event

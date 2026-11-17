@@ -4,6 +4,13 @@ from flask_login import current_user, login_required
 from app.modules.gestao_ti.permissions import can_access_endpoint, profile_code
 from app.modules.vigilancia.access import can_coordinate_field
 from .catalog import GUIDE_GROUPS, MATERIALS, RESOURCE_DIR, SECTIONS
+from .access import POLICIES, can_read_material
+
+TRAINING_ENDPOINTS = {"main.treinamentos", "main.agro_treinamentos", "main.financeiro_treinamentos",
+                      "main.treinamentos_arquivo"}
+AREAS = {"prefeitura": ("Prefeitura e Sistema", "main.treinamentos"),
+         "agro": ("Agro", "main.agro_treinamentos"),
+         "financeiro": ("Financeiro", "main.financeiro_treinamentos")}
 
 
 def _module_url(section):
@@ -32,7 +39,7 @@ def _module_url(section):
 def register_routes(bp):
     @bp.after_request
     def training_private_cache(response):
-        if (request.endpoint or "").startswith("main.treinamentos"):
+        if request.endpoint in TRAINING_ENDPOINTS:
             response.headers["Cache-Control"] = "private, no-store"
             response.headers["X-Content-Type-Options"] = "nosniff"
         return response
@@ -40,8 +47,17 @@ def register_routes(bp):
     @bp.get("/treinamentos", endpoint="treinamentos")
     @login_required
     def index():
-        sections = [dict(section, module_url=_module_url(section)) for section in SECTIONS]
-        return render_template("treinamentos.html", sections=sections, guide_groups=GUIDE_GROUPS)
+        return _index()
+
+    @bp.get("/agro/treinamentos", endpoint="agro_treinamentos")
+    @login_required
+    def agro_index():
+        return _index("agro")
+
+    @bp.get("/financeiro/treinamentos", endpoint="financeiro_treinamentos")
+    @login_required
+    def financeiro_index():
+        return _index("financeiro")
 
     @bp.get("/treinamentos/arquivos/<material_id>", endpoint="treinamentos_arquivo")
     @login_required
@@ -49,10 +65,44 @@ def register_routes(bp):
         entry = MATERIALS.get(material_id)
         if entry is None:
             abort(404)
+        if not can_read_material(current_user, material_id):
+            abort(403)
         relative_path, mimetype = entry
         path = RESOURCE_DIR / relative_path
         if not path.is_file():
             abort(404)
         return send_file(path, mimetype=mimetype, download_name=path.name,
                          as_attachment=mimetype != "application/pdf" or request.args.get("baixar") == "1")
+
+
+def _index(area=None):
+    from flask import redirect
+    from app.modules.agro.service import can_access_agro_panel
+    from app.shared.access import can_access_financeiro_panel
+    allowed = {key for key in MATERIALS if can_read_material(current_user, key)}
+    areas = {POLICIES[key].area for key in allowed} - {"common"}
+    if can_access_agro_panel(current_user) or profile_code(current_user) == "piloto_agro":
+        areas.add("agro")
+    if can_access_financeiro_panel(current_user):
+        areas.add("financeiro")
+    if not areas:
+        areas.add("prefeitura")
+    if area is None:
+        area = next(key for key in AREAS if key in areas)
+        if area != "prefeitura":
+            return redirect(url_for(AREAS[area][1]))
+    if area not in areas:
+        abort(403)
+    visible = {key for key in allowed if POLICIES[key].area in {area, "common"}}
+    sections = [dict(section, module_url=_module_url(section)) for section in SECTIONS
+                if section["manual"] in visible]
+    groups = []
+    for group in GUIDE_GROUPS:
+        documents = tuple(doc for doc in group["documents"] if doc[0] in visible)
+        if documents:
+            groups.append(dict(group, documents=documents))
+    tabs = [dict(id=key, title=label, url=url_for(endpoint))
+            for key, (label, endpoint) in AREAS.items() if key in areas]
+    return render_template("treinamentos.html", sections=sections, guide_groups=groups,
+                           training_tabs=tabs, training_area=area, available_materials=visible)
 

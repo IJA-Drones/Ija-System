@@ -5,9 +5,10 @@ import zipfile
 import pytest
 
 from app.extensions import db
-from app.models import Usuario, Prefeitura, CentralTiPerfilConfiguracao
+from app.models import Usuario, Prefeitura, CentralTiPerfilConfiguracao, CentralTiSelecao
 from app.modules.gestao_ti.permissions import validate_route_policy
 from app.modules.treinamentos.catalog import MATERIALS, RESOURCE_DIR
+from app.modules.treinamentos.access import POLICIES
 from app.modules.vigilancia.sinan_import import parse_cases
 from tests import test_central_ti as base
 
@@ -21,12 +22,18 @@ def training():
                             ACOES_PUBLICAS_ENABLED=True)
     prefeitura = Prefeitura(id=14, nome="Pesqueira", slug="pesqueira-treinamento")
     db.session.add(prefeitura)
+    for user in setup.users.values():
+        user.prefeitura_id = 14
+    setup.users["dev"].trabalha_agro = True
     for key, role, regiao in (("covisa", "visualizar", "COVISA"), ("agent", "agente_endemias", "")):
         user = Usuario(login=f"training_{key}", nome_uvis=f"Conta fictícia {key}", senha_hash="unused",
                        tipo_usuario=role, regiao=regiao, prefeitura_id=14)
         db.session.add(user)
         setup.users[key] = user
     db.session.commit()
+    # O widget global inicializa sua configuração antes da verificação de leitura.
+    from app.modules.chatbot import settings as chatbot_settings
+    chatbot_settings.policy()
     try:
         yield setup
     finally:
@@ -34,7 +41,8 @@ def training():
 
 
 def test_training_and_files_require_login(training):
-    for path in ("/treinamentos", "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/kit-testes"):
+    for path in ("/treinamentos", "/agro/treinamentos", "/financeiro/treinamentos",
+                 "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/kit-testes"):
         response = training.client.get(path)
         assert response.status_code == 302
         assert "/login" in response.location
@@ -44,28 +52,30 @@ def test_training_and_files_require_login(training):
 @pytest.mark.parametrize("role", ["dev", "covisa", "agent"])
 def test_learning_center_available_without_granting_other_modules(training, role):
     training.login(role)
-    # Um perfil com seleções vazias ainda pode ler materiais de apoio.
+    # Sem funções de negócio, permanecem apenas os materiais de acesso comum.
     code = "agente_endemias" if role == "agent" else role
     db.session.add(CentralTiPerfilConfiguracao(perfil_codigo=code, versao=2))
     db.session.commit()
     response = training.client.get("/treinamentos")
     assert response.status_code == 200
     assert '<span>Treinamentos</span>' in response.text
-    assert "Cadastro territorial" in response.text and "21/10/2026" in response.text
+    assert "Proteção de login" in response.text
+    assert "Cadastro territorial" not in response.text
     assert 'href="/vigilancia/planejamento' not in response.text
     assert 'href="/acoes-realizadas' not in response.text
-    assert training.client.get("/treinamentos/arquivos/csv-visitas").status_code == 200
+    assert training.client.get("/treinamentos/arquivos/csv-visitas").status_code == 403
     if role == "agent":
         assert training.client.get("/vigilancia/planejamento").status_code == 403
         assert training.client.get("/admin/usuarios/novo").status_code == 403
 
 
-def test_agent_gets_only_their_operational_shortcut(training):
+def test_agent_does_not_receive_coordination_and_import_guides(training):
     training.login("agent")
     response = training.client.get("/treinamentos")
-    assert 'href="/vigilancia/agente?demo=true"' in response.text
+    assert 'href="/vigilancia/agente?demo=true"' not in response.text
     assert 'href="/vigilancia/planejamento' not in response.text
     assert 'href="/vigilancia/sinan' not in response.text
+    assert training.client.get("/treinamentos/arquivos/manual-liraa").status_code == 403
 
 
 def test_resources_are_fixed_private_and_correctly_served(training):
@@ -84,6 +94,103 @@ def test_resources_are_fixed_private_and_correctly_served(training):
     assert response.headers["Content-Disposition"].startswith("attachment")
     for path in ("inexistente", "..%2F..%2F.env", "guia-geral/../../.env"):
         assert training.client.get("/treinamentos/arquivos/" + path).status_code == 404
+
+
+def configure(training, role, codes):
+    profile = "covisa" if role == "covisa" else training.users[role].tipo_usuario
+    db.session.add(CentralTiPerfilConfiguracao(perfil_codigo=profile, versao=2))
+    for code in codes:
+        db.session.add(CentralTiSelecao(perfil_codigo=profile, codigo=code))
+    db.session.commit()
+
+
+def test_every_material_has_an_explicit_valid_access_policy():
+    from app.modules.gestao_ti.catalog import PERMISSION_CODES, AREA_CODES
+    assert set(POLICIES) == set(MATERIALS)
+    for policy in POLICIES.values():
+        assert policy.area in {"prefeitura", "agro", "financeiro", "common"}
+        assert all(code in PERMISSION_CODES or code.removeprefix("area:") in AREA_CODES
+                   for code in policy.permissions)
+
+
+@pytest.mark.parametrize("enforce", [True, False])
+def test_uvis_sees_own_guides_and_cannot_download_pilot_agro_or_finance(training, enforce):
+    training.app.config["CENTRAL_TI_ENFORCE_PERMISSIONS"] = enforce
+    training.login("uvis")
+    page = training.client.get("/treinamentos")
+    assert page.status_code == 200
+    for key in ("guia-equipes-acesso-uvis", "guia-agenda-notificacoes", "guia-mapas-operacionais"):
+        assert f'/treinamentos/arquivos/{key}' in page.text
+        response = training.client.get(f'/treinamentos/arquivos/{key}')
+        assert response.status_code == 200
+        response.close()
+    for key in ("guia-checklists-semanais", "guia-frota-turnos", "guia-central-financeiro", "guia-banco-talentos-agro", "guia-agro-comercial-operacao", "guia-geral"):
+        assert f'/treinamentos/arquivos/{key}' not in page.text
+        for method in ("get", "head"):
+            response = getattr(training.client, method)(f'/treinamentos/arquivos/{key}', headers={"Range": "bytes=0-99"})
+            assert response.status_code == 403, key
+            assert response.headers["Cache-Control"] == "private, no-store"
+    assert training.client.get('/agro/treinamentos').status_code == 403
+    assert training.client.get('/financeiro/treinamentos').status_code == 403
+
+
+def test_pilot_can_read_operational_guides(training):
+    training.login("piloto")
+    page = training.client.get('/treinamentos')
+    for key in ("guia-checklists-semanais", "guia-frota-turnos"):
+        assert f'/treinamentos/arquivos/{key}' in page.text
+        response = training.client.get(f'/treinamentos/arquivos/{key}')
+        assert response.status_code == 200
+        response.close()
+    assert '/treinamentos/arquivos/guia-equipes-acesso-uvis' not in page.text
+
+
+def test_finance_and_agro_are_separate_tabs_and_contexts(training):
+    training.login("financeiro")
+    response = training.client.get('/treinamentos')
+    assert response.status_code == 302 and response.location.endswith('/financeiro/treinamentos')
+    page = training.client.get(response.location)
+    assert page.status_code == 200
+    assert '/treinamentos/arquivos/guia-central-financeiro' in page.text
+    assert '/treinamentos/arquivos/guia-banco-talentos-agro' not in page.text
+    assert 'href="/agro/treinamentos"' not in page.text
+    assert 'href="/treinamentos"' not in page.text
+    training.login("admin")
+    page = training.client.get('/agro/treinamentos')
+    assert page.status_code == 200
+    assert '/treinamentos/arquivos/guia-agro-comercial-operacao' in page.text
+    assert '/treinamentos/arquivos/guia-central-financeiro' not in page.text
+    assert '/treinamentos/arquivos/guia-checklists-semanais' not in page.text
+    assert training.client.get('/financeiro/treinamentos').status_code == 403
+
+
+def test_central_ti_grants_and_revokes_guides_without_borrowing_operations(training):
+    training.login("uvis")
+    assert training.client.get('/treinamentos/arquivos/guia-agenda-notificacoes').status_code == 200
+    configure(training, "uvis", ["area:prefeitura", "prefeitura.veiculos.consultar"])
+    page = training.client.get('/treinamentos')
+    assert '/treinamentos/arquivos/guia-rastreamento-veiculos' in page.text
+    assert '/treinamentos/arquivos/guia-frota-turnos' not in page.text
+    assert '/treinamentos/arquivos/guia-agenda-notificacoes' not in page.text
+    assert training.client.get('/treinamentos/arquivos/guia-agenda-notificacoes').status_code == 403
+    assert training.client.get('/treinamentos/arquivos/guia-frota-turnos').status_code == 403
+
+
+def test_orthomosaic_fixed_access_is_preserved(training):
+    user = Usuario(login='training_mapping', nome_uvis='Mapeamento fictício', senha_hash='unused',
+                   tipo_usuario='ortomosaico', prefeitura_id=14)
+    db.session.add(user)
+    db.session.commit()
+    training.users['mapping'] = user
+    training.login('mapping')
+    page = training.client.get('/treinamentos')
+    assert page.status_code == 200
+    assert '/treinamentos/arquivos/guia-ortomosaicos' in page.text
+    response = training.client.get('/treinamentos/arquivos/guia-ortomosaicos')
+    assert response.status_code == 200
+    response.close()
+    assert training.client.get('/treinamentos/arquivos/guia-checklists-semanais').status_code == 403
+    assert training.client.get('/admin/usuarios/novo').status_code == 403
 
 
 def test_page_and_downloads_do_not_write_database(training):

@@ -1,13 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Treinamentos | Oceano Azul{% endblock %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261021-3') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261117-permissoes') }}">{% endblock %}
 {% block content %}
 <div class="training-page">
   <header class="training-header">
     <div><p class="training-eyebrow">Materiais de apoio</p><h1>Treinamentos</h1><p>Manuais e arquivos para praticar os fluxos do sistema.</p></div>
-    <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes') }}">Kit Pesqueira <span class="training-format">ZIP</span></a><a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes-sp') }}">Kit UVIS Sé · São Paulo <span class="training-format">ZIP</span></a></div>
+    {% if 'kit-testes' in available_materials or 'kit-testes-sp' in available_materials %}
+    <div class="d-flex flex-wrap gap-2">{% if 'kit-testes' in available_materials %}<a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes') }}">Kit Pesqueira <span class="training-format">ZIP</span></a>{% endif %}{% if 'kit-testes-sp' in available_materials %}<a class="btn btn-outline-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='kit-testes-sp') }}">Kit UVIS Sé · São Paulo <span class="training-format">ZIP</span></a>{% endif %}</div>
+    {% endif %}
   </header>
 
+  <nav class="training-area-tabs" aria-label="Áreas de treinamento">
+    {% for tab in training_tabs %}<a href="{{ tab.url }}"{% if tab.id == training_area %} aria-current="page"{% endif %}>{{ tab.title }}</a>{% endfor %}
+  </nav>
+  <p class="training-scope">Materiais disponíveis para suas permissões nesta área.</p>
+
+  {% if 'guia-geral' in available_materials %}
   <section class="training-guide" aria-labelledby="guia-title">
     <span class="training-icon"><i class="bi bi-book" aria-hidden="true"></i></span>
     <div><h2 id="guia-title">Guia do sistema</h2><p>Conheça as telas, os acessos e as principais funções.</p></div>
@@ -19,9 +27,14 @@
     <div><h2 id="video-title">Vídeo de apresentação do sistema</h2><p>Visão geral das telas e dos principais fluxos.</p></div>
     <a class="btn btn-outline-primary" href="https://drive.google.com/drive/folders/1gtqsbUG4bizj4ZNbFy-O3FVs3_hlDTCq?usp=drive_link" target="_blank" rel="noopener noreferrer">Abrir no Google Drive<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i><span class="visually-hidden"> (abre em nova aba)</span></a>
   </section>
+  {% endif %}
 
+  {% if 'kit-testes' in available_materials %}
   <aside class="training-demo" aria-label="Contexto dos arquivos de teste"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Demonstração · Pesqueira / PE</strong><p>Use a origem <strong>Demonstração</strong> nos módulos. Visitas de <strong>21/10/2026</strong>; somente em Demonstração são aceitas datas fora do período do levantamento. Resultados de saúde e imóveis são fictícios.</p></div></aside>
+  {% endif %}
+  {% if 'kit-testes-sp' in available_materials %}
   <aside class="training-demo" aria-label="Kit da UVIS Sé"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Demonstração · UVIS Sé · São Paulo</strong><p>Nas telas de quarteirões, estratos e visitas, selecione São Paulo para baixar o CSV correspondente ao lado do campo de anexo. Endereços e quadras fiscais são referências reais do GeoSampa; visitas de <strong>11/11/2026</strong>, metas e resultados são fictícios. <a href="{{ url_for('main.treinamentos_arquivo', material_id='kit-instrucoes-sp') }}">Ver instruções e fontes</a>.</p></div></aside>
+  {% endif %}
 
   <div class="training-grid">
     {% for section in sections %}
@@ -32,7 +45,7 @@
       {% if section.files %}
       <ul class="training-files" aria-label="Arquivos de {{ section.title }}">
         {% for id, title, description in section.files %}
-        <li><div><a href="{{ url_for('main.treinamentos_arquivo', material_id=id) }}">{{ title }}<i class="bi bi-download ms-2" aria-hidden="true"></i></a><p>{{ description }}</p></div></li>
+        {% if id in available_materials %}<li><div><a href="{{ url_for('main.treinamentos_arquivo', material_id=id) }}">{{ title }}<i class="bi bi-download ms-2" aria-hidden="true"></i></a><p>{{ description }}</p></div></li>{% endif %}
         {% endfor %}
       </ul>
       {% endif %}
@@ -51,11 +64,11 @@
   </div>
 
   <section class="training-library" aria-labelledby="training-library-title">
-    <header class="training-library-heading"><h2 id="training-library-title">Outros guias e apresentações</h2><p>Selecione um assunto para consultar os documentos em PDF. Para importar os arquivos de teste, siga os tutoriais acima.</p></header>
+    <header class="training-library-heading"><h2 id="training-library-title">Guias e apresentações por módulo</h2><p>Selecione um assunto para consultar os documentos em PDF.</p></header>
     <div class="training-library-grid">
       {% for group in guide_groups %}
       <details class="training-library-group">
-        <summary><i class="bi {{ group.icon }}" aria-hidden="true"></i><span>{{ group.title }}</span><small>{{ group.documents|length }} PDFs</small><i class="bi bi-chevron-down training-library-chevron" aria-hidden="true"></i></summary>
+        <summary><i class="bi {{ group.icon }}" aria-hidden="true"></i><span>{{ group.title }}</span><small>{{ group.documents|length }} {{ 'PDF' if group.documents|length == 1 else 'PDFs' }}</small><i class="bi bi-chevron-down training-library-chevron" aria-hidden="true"></i></summary>
         <ul class="training-library-files" aria-label="{{ group.title }}">
           {% for material_id, title, pages, filename in group.documents %}
           <li><a href="{{ url_for('main.treinamentos_arquivo', material_id=material_id) }}" target="_blank" rel="noopener"><span>{{ title }}</span><span class="training-library-meta">{{ pages }} páginas<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i></span><span class="visually-hidden"> (abre em nova aba)</span></a></li>
