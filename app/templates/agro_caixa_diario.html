@@ -181,6 +181,46 @@
     </div>
   </div>
 
+  {% if report.caixa %}
+    <div class="card shadow-sm rounded-4 mb-4 border-0">
+      <div class="card-body p-4">
+        <h5 class="text-dark">Ajustes do saldo inicial</h5>
+        <p class="small text-muted">A correção vale somente para {{ report.data_caixa.strftime('%d/%m/%Y') }}. Registre também a tarifa ou despesa como saída na data correta. Os saldos iniciais dos outros dias não mudam automaticamente.</p>
+        {% if can_adjust_balance %}
+          <details class="mb-3">
+            <summary class="text-primary">Corrigir saldo inicial deste dia</summary>
+            <form method="post" action="{{ url_for('main.agro_caixa_ajustar_saldo', caixa_id=report.caixa.id) }}" class="row g-3 mt-1">
+              {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+              <input type="hidden" name="saldo_original" value="{{ report.caixa.saldo_abertura_decimal }}">
+              <div class="col-md-4">
+                <label for="ajuste-saldo" class="form-label">Novo saldo inicial</label>
+                <input id="ajuste-saldo" name="saldo_abertura" type="text" inputmode="decimal" value="{{ report.caixa.saldo_abertura_decimal|currencybr }}" class="form-control" required>
+                <div class="form-text">Saldo atual: {{ report.caixa.saldo_abertura_decimal|currencybr }}. Use vírgula para os centavos.</div>
+              </div>
+              <div class="col-md-8">
+                <label for="ajuste-motivo" class="form-label">Motivo do ajuste</label>
+                <textarea id="ajuste-motivo" name="motivo" class="form-control" maxlength="1000" rows="2" placeholder="Ex.: correção após registrar uma tarifa do dia anterior." required></textarea>
+              </div>
+              <div class="col-12">
+                <p class="small text-muted">O fechamento será recalculado. O status aberto ou fechado será mantido. O valor anterior, o novo valor, o motivo e o responsável ficarão no histórico.</p>
+                <button type="submit" class="btn btn-primary">Salvar ajuste do saldo inicial</button>
+              </div>
+            </form>
+          </details>
+        {% endif %}
+        {% for ajuste in ajustes_saldo %}
+          <div class="border-top pt-3 mt-3">
+            <div><strong>{{ ajuste.saldo_anterior|currencybr }} → {{ ajuste.saldo_novo|currencybr }}</strong></div>
+            <div class="small text-muted">{{ ajuste.criado_em.strftime('%d/%m/%Y às %H:%M') }} · {{ ajuste.usuario_nome }}</div>
+            <p class="mb-0 mt-1 text-break">{{ ajuste.motivo }}</p>
+          </div>
+        {% else %}
+          <p class="small text-muted mb-0">Nenhum ajuste registrado para este dia.</p>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <div class="row g-3 mb-4">
     <div class="col-lg-6">
       <div class="card shadow-sm rounded-4 border-0 h-100">

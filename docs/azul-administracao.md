@@ -77,3 +77,17 @@ base revisada. Não há aprendizado permanente automático, armazenamento adicio
 de mensagens, consulta de extratos ou edição financeira pelo chat. Ao mudar uma
 regra nas rotas financeiras, atualize o guia e seus testes; mensagens dos usuários
 não substituem as regras do sistema.
+
+### Ajuste do saldo inicial do caixa (18/11/2026)
+
+No Caixa Diário, após selecionar um dia já aberto anteriormente, o financeiro admin
+pode usar **Ajustes do saldo inicial → Corrigir saldo inicial deste dia**. Informe o
+novo saldo em formato brasileiro e o motivo obrigatório. Perfis configurados pela
+Central TI precisam de administração das configurações financeiras e operação do
+caixa. O histórico permanente guarda data, usuário, motivo e valores anterior/novo
+na mesma transação da correção. A tela rejeita um envio com saldo original desatualizado.
+
+O ajuste recalcula o fechamento do dia, mantendo o status aberto/fechado e os
+lançamentos. Não propaga alterações aos saldos iniciais de dias seguintes. A tarifa
+ou despesa deve ser registrada como saída na data correta; corrigir o saldo não
+substitui esse registro. A Azul explica o procedimento, mas não executa o ajuste.

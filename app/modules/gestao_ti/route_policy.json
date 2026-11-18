@@ -1190,6 +1190,9 @@
   "main.agro_caixa_abrir": {
     "POST": "financeiro.caixa.operar"
   },
+  "main.agro_caixa_ajustar_saldo": {
+    "POST": "financeiro.configuracoes.configurar"
+  },
   "main.agro_caixa_fechar": {
     "POST": "financeiro.caixa.operar"
   },

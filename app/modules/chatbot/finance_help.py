@@ -44,7 +44,8 @@ TOPICS = [
           '2. Use Abrir caixa do dia ou Reabrir caixa do dia. É possível fechar e reabrir quantas vezes precisar, inclusive em datas anteriores. Se já estiver aberto, não é necessário abrir novamente.\n'
           '3. A primeira abertura usa o saldo anterior quando disponível; na reabertura, o saldo inicial do próprio dia é preservado. As movimentações não são duplicadas.\n'
           '4. Confira o Livro-caixa: fechamento calculado = saldo de abertura + entradas − saídas. O livro pode incluir movimentos previstos; confira também a situação de cada item.\n'
-          '5. Quando terminar a conferência, use Fechar caixa do dia.\n'
+          '5. Se precisar corrigir o saldo inicial, o financeiro admin pode usar Ajustes do saldo inicial > Corrigir saldo inicial deste dia, informar o novo valor e o motivo e salvar. O histórico guarda os valores, o responsável e a data. Isso recalcula somente o fechamento desse dia, sem alterar seu status ou outros dias. Registre a tarifa como saída também.\n'
+          '6. Quando terminar a conferência, use Fechar caixa do dia.\n'
           'Para cadastrar ou editar movimentações, o caixa de hoje precisa estar aberto. Reabrir uma data antiga não libera uma competência bloqueada nem recalcula automaticamente os saldos iniciais de dias já registrados.',
           'Como abrir, fechar e reabrir o caixa?'),
     topic('entradas', 'Entradas e contas a receber', 'financeiro.contas',
