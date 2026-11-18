@@ -462,6 +462,8 @@ def register_edit_control(app):
         message = error.description if isinstance(error, EditConflict) else 'Este registro foi alterado por outra operação. Nada foi sobrescrito. Recarregue para revisar.'
         from app.modules.auditoria.recorder import mark_outcome
         mark_outcome('CONFLITO_EDICAO', 'NEGADO')
+        from app.modules.auditoria.diagnostics import record_exception
+        record_exception(error, reason=getattr(error, 'reason', 'stale'))
         if request.is_json or '/api/' in request.path or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify(ok=False, error=message, code=getattr(error, 'reason', 'stale'),
                            owner=getattr(error, 'owner', None), expires=getattr(error, 'expires', None)), 409

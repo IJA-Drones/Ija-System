@@ -7,6 +7,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 class Config:
+    APP_RELEASE_SHA = os.getenv("APP_RELEASE_SHA", "")
     PORTAL_CHATBOT_WEB_SEARCH_ENABLED = os.getenv("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     AZUL_HELP_DAILY_LIMIT = int(os.getenv("AZUL_HELP_DAILY_LIMIT", "500"))
@@ -145,7 +146,7 @@ class Config:
         "yes",
         "on",
     }
-    AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "15000"))
+    AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "0"))
     EDIT_LEASE_SECONDS = int(os.getenv("EDIT_LEASE_SECONDS", "300"))
     # Mount persistent storage here to preserve pending uploads across deployments.
     VIDEO_UPLOAD_TEMP_DIR = os.getenv("VIDEO_UPLOAD_TEMP_DIR", "")

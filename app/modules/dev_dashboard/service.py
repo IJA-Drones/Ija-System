@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from flask import current_app
 from flask_login import current_user
-from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy import and_, case, func, or_, select, text
 
 from app.extensions import db
 from app.models import AuditoriaUsuario, Usuario, UsuarioPresenca, WatchdogDeployEvent
@@ -27,13 +27,41 @@ def _expected_session_event():
     )
 
 
+def _expected_edit_event():
+    return and_(AuditoriaUsuario.status_code == 409,
+                func.coalesce(AuditoriaUsuario.endpoint, "") == "edit_control.lease")
+
+
+def _error_guidance(log):
+    status = log.status_code or 0
+    if status == 409 and log.endpoint == "edit_control.lease":
+        return {"title": "Conflito de reserva de edição", "guidance": "Reserva ocupada ou expirada. Reabra a edição; este evento não indica falha do servidor."}
+    titles = {400: "Requisição inválida", 401: "Autenticação necessária", 403: "Acesso negado",
+              404: "Recurso não encontrado", 405: "Método não permitido", 408: "Tempo esgotado",
+              409: "Conflito na operação", 413: "Arquivo muito grande", 415: "Formato não aceito",
+              422: "Dados não processados", 429: "Limite de requisições"}
+    guidance = {
+        401: "Verifique a autenticação e a validade da sessão.",
+        403: "Confira o perfil do usuário e a permissão exigida pela rota.",
+        404: "Confira o endereço e se o recurso ainda existe.",
+        405: "Compare o método HTTP enviado com os métodos aceitos pela rota.",
+        409: "Verifique o estado do registro e possíveis alterações simultâneas.",
+        413: "Confira o tamanho do arquivo e os limites de upload.",
+        429: "Verifique chamadas repetidas e os limites de requisições.",
+    }
+    return {
+        "title": "Falha no servidor" if status >= 500 else titles.get(status, f"Resposta HTTP {status}"),
+        "guidance": "Consulte os logs do servidor no horário e na rota desta ocorrência para identificar a causa." if status >= 500 else guidance.get(status, "Confira os dados enviados e a resposta da operação."),
+    }
+
+
 def _failure_filter():
     reset = AuditoriaUsuario.__table__.alias("dev_error_reset")
     cutoff = select(func.coalesce(func.max(reset.c.id), 0)).where(
         reset.c.tipo_evento == "DEV_ERROS_LIMPOS",
     ).scalar_subquery()
     return and_(AuditoriaUsuario.status_code >= 400,
-                ~_expected_session_event(), AuditoriaUsuario.id > cutoff)
+                ~_expected_session_event(), ~_expected_edit_event(), AuditoriaUsuario.id > cutoff)
 
 
 def clear_dev_errors():
@@ -126,6 +154,8 @@ def _format_brazil_datetime(value):
 
 def _serialize_error_log(log):
     return {
+        **_error_guidance(log),
+        "occurrences": getattr(log, "occurrences", 1),
         "id": log.id,
         "created_at": _serialize_datetime(log.criado_em),
         "status_code": log.status_code,
@@ -137,7 +167,7 @@ def _serialize_error_log(log):
         "title": "Sessão expirada" if (
             (log.tipo_evento == "SESSAO_EXPIRADA" and log.status_code < 500)
             or (log.status_code == 401 and log.endpoint in {"session_security.status", "session_security.activity"})
-        ) else f"Erro {log.status_code}",
+        ) else _error_guidance(log)["title"],
         "endpoint": log.endpoint,
         "path": log.path,
         "query_string": log.query_string,
@@ -167,7 +197,7 @@ def _parse_iso_datetime(value):
     except ValueError:
         return None
     if parsed.tzinfo is not None:
-        parsed = parsed.astimezone().replace(tzinfo=None)
+        parsed = parsed.astimezone(UTC_TZ).replace(tzinfo=None)
     return parsed
 
 
@@ -371,19 +401,33 @@ def _base_dev_dashboard_context():
             AuditoriaUsuario.criado_em >= since_7d,
             _failure_filter(),
         )
-        .group_by(AuditoriaUsuario.endpoint, AuditoriaUsuario.path)
+        .group_by(AuditoriaUsuario.endpoint, AuditoriaUsuario.path, AuditoriaUsuario.status_code)
         .order_by(func.count(AuditoriaUsuario.id).desc())
         .limit(8)
         .all()
     )
 
-    recent_errors = (
-        AuditoriaUsuario.query
-        .filter(_failure_filter())
-        .order_by(AuditoriaUsuario.criado_em.desc())
-        .limit(10)
-        .all()
-    )
+    # Window functions keep the latest representative and count repetitions before limiting.
+    grouping = (AuditoriaUsuario.endpoint, AuditoriaUsuario.path,
+                AuditoriaUsuario.metodo, AuditoriaUsuario.status_code)
+    ranked = db.session.query(
+        AuditoriaUsuario.id.label("log_id"),
+        func.count().over(partition_by=grouping).label("occurrences"),
+        func.row_number().over(partition_by=grouping, order_by=(
+            AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc(),
+        )).label("position"),
+    ).filter(_failure_filter(), AuditoriaUsuario.criado_em >= since_7d).subquery()
+    incident_rows = db.session.query(AuditoriaUsuario, ranked.c.occurrences).join(
+        ranked, ranked.c.log_id == AuditoriaUsuario.id,
+    ).filter(ranked.c.position == 1).order_by(
+        case((AuditoriaUsuario.status_code >= 500, 0), else_=1),
+        AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc(),
+    ).limit(30).all()
+    recent_errors = []
+    for log, occurrences in incident_rows:
+        log.occurrences = occurrences
+        log.error_title = _error_guidance(log)["title"]
+        recent_errors.append(log)
 
     expired_sessions_24h = AuditoriaUsuario.query.filter(
         AuditoriaUsuario.criado_em >= since_24h, _expected_session_event(),

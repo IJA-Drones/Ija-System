@@ -17,7 +17,8 @@ Referência conferida em 25/09/2026 contra [config.py](../config.py), [run.py](.
 | `VIGILANCIA_PREVIEW_ENABLED` | `0` | Libera a prévia provisória de CSV focal/LIRAa para administradores autorizados, sem persistência. Ver [guia de validação](vigilancia-validacao-inicial.md). |
 | `IJA_CREATE_ALL` | Inativo | Somente o valor `1` aciona `db.create_all()` ao executar `run.py` diretamente; não substitui Alembic. |
 | `USER_PRESENCE_UPDATE_INTERVAL_SECONDS` | `300` | Intervalo de atualização de presença. Não é o timeout da sessão. |
-| `AUDIT_RETENTION_MAX_RECORDS` | `15000` | Limita quantidade de registros de auditoria; não expressa dias de retenção. Deve ser inteiro. |
+| `APP_RELEASE_SHA` | vazio | SHA completo do build para correlação de erros com versões observadas. Quando vazio, usa `RENDER_GIT_COMMIT`; não usar o SHA de um workflow que apenas dispara deploy. |
+| `AUDIT_RETENTION_MAX_RECORDS` | `0` | Sem limite de registros no banco por padrão, preservando o histórico consultado pela Azul. Um inteiro positivo ativa um limite opcional, aplicado apenas a registros já arquivados e verificados; não expressa dias de retenção. |
 | `AUDIT_SKYBOX_INTERVAL_SECONDS` | `60` | Intervalo de consulta da fila de auditoria no banco; consultar não implica enviar ao Skybox. |
 | `AUDIT_SKYBOX_BATCH_MAX_RECORDS` | `1000` | Máximo de eventos por lote e volume que libera o envio, separado por prefeitura e limitado também a 4 MiB. |
 | `AUDIT_SKYBOX_BATCH_MAX_WAIT_SECONDS` | `300` | Espera máxima para acumular um lote menor, verificada no próximo ciclo do trabalhador. |

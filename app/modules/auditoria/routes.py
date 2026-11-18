@@ -50,7 +50,7 @@ def register_routes(bp):
             prefeituras=Prefeitura.query.order_by(Prefeitura.nome).all(),
             skybox=archive_status(),
             syslog=syslog_status(),
-            retention=current_app.config.get('AUDIT_RETENTION_MAX_RECORDS', 15000),
+            retention=current_app.config.get('AUDIT_RETENTION_MAX_RECORDS', 0),
         )
 
     @bp.get('/admin/logs-usuarios/arquivo/<string:arquivo_id>', endpoint='admin_auditoria_arquivo')

@@ -52,7 +52,7 @@ SYSTEM = re.compile(
     r'drones?|mapas?|mapeamento|ortomosaico\w*|treinament\w*|tutorial|guia|'
     r'financeiro|lancamento\w*|empresa|talentos|curriculo\w*|filtros?|'
     r'export\w*|planilha\w*|excel|pdf|baixar|anexo\w*|fotos?|protocolo\w*|recursos?|privacidade|lgpd|filtr\w*|'
-    r'periodo|agendamento|status|prazo|atencao|pendentes?|pendencia\w*|operacao\w*|erros?|falhas?|audio|microfone|ouvir|voz)\b'
+    r'deploys?|versao|regressao|commits?|linha do tempo|trechos?|codigo|logs?|auditoria|stack trace|diagnostico|corrigir|correcao|consertar|validar|investigar|testar|arquivo|periodo|agendamento|status|prazo|atencao|pendentes?|pendencia\w*|operacao\w*|erros?|falhas?|audio|microfone|ouvir|voz)\b'
 )
 PUBLIC_SYSTEM = re.compile(
     r'\b(?:portal|sistema|tela|menu|botao|aplicativo|app|pwa|relat\w*|'

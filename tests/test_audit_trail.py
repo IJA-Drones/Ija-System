@@ -475,3 +475,26 @@ def test_migration_preserves_legacy_rows_and_has_reversible_schema(tmp_path):
             assert conn.exec_driver_sql('SELECT usuario_nome FROM auditoria_usuarios').scalar()=='Legado'
             assert 'auditoria_arquivos' not in inspect(conn).get_table_names()
     engine.dispose()
+
+
+def test_default_retention_preserves_more_than_15000_after_skybox_delivery(app):
+    from sqlalchemy import func
+    app.config.pop('AUDIT_RETENTION_MAX_RECORDS', None)
+    with app.app_context():
+        # Previously verified history plus a new batch: delivery used to trim
+        # the old events even when no retention setting had been supplied.
+        with db.engine.begin() as conn:
+            conn.execute(AuditoriaUsuario.__table__.insert(), [
+                dict(usuario_nome='Teste', metodo='GET', path='/test', status_code=200,
+                     tipo_evento='CONSULTA', criado_em=utcnow(), arquivado_em=utcnow())
+                for _ in range(15001)
+            ])
+        batch_id = prepare_batch(force=True)
+        batch = db.session.get(AuditoriaArquivo, batch_id)
+        payload = batch.conteudo.encode()
+        db.session.remove()
+        with patch('app.modules.auditoria.archive.upload_file_to_skybox', return_value='skybox://test'), \
+             patch('app.modules.auditoria.archive.download_skybox_bytes', return_value=payload):
+            assert deliver_batch() is True
+        assert db.session.query(func.count(AuditoriaUsuario.id)).scalar() == 15001
+        assert db.session.get(AuditoriaArquivo, batch_id).enviado_em is not None
