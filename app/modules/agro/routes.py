@@ -1027,9 +1027,13 @@ def _build_agro_installment_schedule(first_due_date: date, quantidade_parcelas: 
     ]
 
 
-def _split_agro_installment_values(total: Decimal, quantidade_parcelas: int) -> list[Decimal]:
+def _split_agro_installment_values(total: Decimal, quantidade_parcelas: int, modo: str = "dividir") -> list[Decimal]:
     total_value = FinanceiroAgro._decimal_or_zero(total).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     quantidade = max(int(quantidade_parcelas or 1), 1)
+    if modo == "repetir":
+        return [total_value] * quantidade
+    if modo != "dividir":
+        raise ValueError("Modo de parcelamento inválido")
     total_cents = int((total_value * 100).to_integral_value(rounding=ROUND_HALF_UP))
     base_cents, remainder = divmod(total_cents, quantidade)
     values = []
@@ -1159,6 +1163,7 @@ def _normalize_financeiro_agro_entrada_form(form_source):
         "data_recebimento": (form_source.get("data_recebimento") or "").strip(),
         "valor": (form_source.get("valor") or "").strip(),
         "quantidade_parcelas": (form_source.get("quantidade_parcelas") or "1").strip(),
+        "modo_parcelamento": (form_source.get("modo_parcelamento") or "dividir").strip(),
         "status": (form_source.get("status") or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
         "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
@@ -1182,6 +1187,7 @@ def _normalize_financeiro_agro_saida_form(form_source):
         "data_pagamento": (form_source.get("data_pagamento") or "").strip(),
         "valor": (form_source.get("valor") or "").strip(),
         "quantidade_parcelas": (form_source.get("quantidade_parcelas") or "1").strip(),
+        "modo_parcelamento": (form_source.get("modo_parcelamento") or "dividir").strip(),
         "status": (form_source.get("status") or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
         "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
@@ -2129,8 +2135,11 @@ def _validate_financeiro_agro_entrada_form(form):
     if form["data_recebimento"] and data_recebimento is None:
         errors["data_recebimento"] = "Informe uma data valida."
 
-    if valor is None or valor <= 0:
+    if valor is None or not valor.is_finite() or valor <= 0 or valor > Decimal("9999999999.99"):
         errors["valor"] = "Informe um valor monetario valido maior que zero."
+
+    if form.get("modo_parcelamento", "dividir") not in {"dividir", "repetir"}:
+        errors["modo_parcelamento"] = "Escolha como gerar as parcelas."
 
     if quantidade_parcelas is None:
         errors["quantidade_parcelas"] = "Informe uma quantidade de parcelas valida."
@@ -2160,6 +2169,7 @@ def _validate_financeiro_agro_entrada_form(form):
         "data_recebimento": data_recebimento,
         "valor": valor or Decimal("0"),
         "quantidade_parcelas": quantidade_parcelas or 1,
+        "modo_parcelamento": form.get("modo_parcelamento", "dividir"),
         "status": resolved_status,
         "competencia": competencia,
     }
@@ -2204,8 +2214,11 @@ def _validate_financeiro_agro_saida_form(form):
     if form["data_pagamento"] and data_pagamento is None:
         errors["data_pagamento"] = "Informe uma data valida."
 
-    if valor is None or valor <= 0:
+    if valor is None or not valor.is_finite() or valor <= 0 or valor > Decimal("9999999999.99"):
         errors["valor"] = "Informe um valor monetario valido maior que zero."
+
+    if form.get("modo_parcelamento", "dividir") not in {"dividir", "repetir"}:
+        errors["modo_parcelamento"] = "Escolha como gerar as parcelas."
 
     if quantidade_parcelas is None:
         errors["quantidade_parcelas"] = "Informe uma quantidade de parcelas valida."
@@ -2237,6 +2250,7 @@ def _validate_financeiro_agro_saida_form(form):
         "data_pagamento": data_pagamento,
         "valor": valor or Decimal("0"),
         "quantidade_parcelas": quantidade_parcelas or 1,
+        "modo_parcelamento": form.get("modo_parcelamento", "dividir"),
         "status": resolved_status,
         "competencia": competencia,
     }
@@ -6032,7 +6046,7 @@ def register_routes(bp):
                 form["categoria"],
                 form["subcategoria"],
             )
-            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
+            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas, payload["modo_parcelamento"])
             grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
 
             for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
@@ -6323,7 +6337,7 @@ def register_routes(bp):
                 form["categoria"],
                 form["subcategoria"],
             )
-            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
+            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas, payload["modo_parcelamento"])
             grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
 
             for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):

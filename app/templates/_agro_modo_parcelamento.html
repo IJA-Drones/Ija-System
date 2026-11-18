@@ -1,0 +1,10 @@
+<div class="col-md-6">
+  <label for="modo_parcelamento" class="form-label fw-bold small text-muted">Como gerar as parcelas?</label>
+  <select id="modo_parcelamento" name="modo_parcelamento" class="form-select {% if errors.get('modo_parcelamento') %}is-invalid{% endif %}">
+    <option value="dividir" {% if form.get('modo_parcelamento', 'dividir') == 'dividir' %}selected{% endif %}>Dividir o valor total</option>
+    <option value="repetir" {% if form.get('modo_parcelamento') == 'repetir' %}selected{% endif %}>Repetir o valor em cada parcela</option>
+  </select>
+  {% if errors.get('modo_parcelamento') %}<div class="invalid-feedback">{{ errors.get('modo_parcelamento') }}</div>{% endif %}
+  <small class="text-muted d-block mt-2">Dividir: R$ 120 em 12 parcelas de R$ 10. Repetir: 12 parcelas de R$ 120, total de R$ 1.440.</small>
+  <p id="parcelamento-resumo" class="small fw-semibold text-primary mt-2 mb-0" aria-live="polite"></p>
+</div>

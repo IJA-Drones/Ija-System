@@ -54,7 +54,7 @@ TOPICS = [
           '1. Abra Contas a Receber e confira os filtros e a origem. Recebíveis de contratos e entradas manuais são origens diferentes.\n'
           '2. Para um movimento avulso, use Nova Entrada Manual, com o caixa de hoje aberto.\n'
           '3. Confira cliente, banco, descrição, categoria, valor, datas, forma de pagamento e situação. Informe recebimento apenas quando ele tiver ocorrido.\n'
-          '4. Se houver parcelas, confira a quantidade e os vencimentos; cada mês envolvido pode ter bloqueio de competência.\n'
+          '4. Em Como gerar as parcelas?, escolha Dividir o valor total (R$ 120 em 12 parcelas de R$ 10) ou Repetir o valor em cada parcela (12 parcelas de R$ 120, total de R$ 1.440). Confira a quantidade e os vencimentos; cada mês envolvido pode ter bloqueio de competência.\n'
           '5. Revise e salve no formulário; confira depois na listagem. Evite cadastrar uma entrada manual para um recebível de contrato já existente.\n'
           'O chat explica o fluxo; não registra recebimentos nem confirma valores reais.',
           'Como cadastrar uma entrada e conferir contas a receber?'),
@@ -64,7 +64,7 @@ TOPICS = [
           '1. Confira em Contas a Pagar se o lançamento já existe. Abra o caixa de hoje para cadastrar ou editar.\n'
           '2. Use Nova Saída Manual e confira fornecedor, banco, tipo de saída, categoria, descrição, valor e documento de referência.\n'
           '3. Preencha lançamento, emissão e vencimento com as datas corretas. Pagamento e situação devem refletir o que ocorreu; vencimento não é confirmação de pagamento.\n'
-          '4. Se parcelar, confira quantidade, vencimentos e competências antes de salvar.\n'
+          '4. Em Como gerar as parcelas?, escolha Dividir o valor total ou Repetir o valor em cada parcela. Para prever seis despesas mensais de R$ 120, escolha Repetir e 6 parcelas: total de R$ 720. Confira o resumo, os vencimentos e as competências antes de salvar.\n'
           '5. Revise o resultado na listagem e no banco correspondente.\n'
           'Para a classificação fiscal de um imposto, confirme com o responsável contábil. A Azul explica o formulário e não executa pagamentos.',
           'Como cadastrar uma saída e conferir contas a pagar?'),
