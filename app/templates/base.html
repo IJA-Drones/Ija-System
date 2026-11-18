@@ -312,14 +312,19 @@
         <ul class="nav flex-column flex-grow-1">
           {% if current_user.tipo_usuario == 'ortomosaico' %}
           <li class="nav-item">
-            <a class="nav-link active" href="{{ url_for('main.ortomosaicos') }}">
+            <a class="nav-link {% if request.endpoint == 'main.treinamentos' %}active{% endif %}" href="{{ url_for('main.treinamentos') }}"{% if request.endpoint == 'main.treinamentos' %} aria-current="page"{% endif %}>
+              <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint != 'main.treinamentos' %}active{% endif %}" href="{{ url_for('main.ortomosaicos') }}">
               <i class="bi bi-layers me-2"></i><span>Ortomosaicos e curvas</span>
             </a>
           </li>
           {% else %}
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.treinamentos') %}active{% endif %}"
-               href="{{ url_for('main.treinamentos') }}" {% if request.endpoint == 'main.treinamentos' %}aria-current="page"{% endif %}>
+            <a class="nav-link {% if request.endpoint in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}active{% endif %}"
+               href="{{ url_for('main.financeiro_treinamentos' if is_financeiro_context else ('main.agro_treinamentos' if is_agro_context else 'main.treinamentos')) }}" {% if request.endpoint in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}aria-current="page"{% endif %}>
               <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
             </a>
           </li>
@@ -1226,7 +1231,7 @@
       };
     </script>
 
-    {% if not is_financeiro_context %}
+    {% if not is_financeiro_context and request.endpoint not in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}
     <script
       async
       src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&v=weekly&libraries=geometry,marker&callback=initGoogleMaps&loading=async">

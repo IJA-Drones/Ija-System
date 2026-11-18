@@ -272,7 +272,7 @@
 
                     {% if p.status == 'PENDENTE' or p.status == 'NEGADO' %}
                       <li>
-                        <a class="dropdown-item py-2" href="{{ url_for('main.editar_solicitacao', id=p.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
+                        <a class="dropdown-item py-2" href="{{ url_for('main.editar_solicitacao', id=p.id, next=request.full_path.rstrip('?')) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                           <i class="bi bi-pencil-square text-success me-2"></i> Editar Solicitação
                         </a>
                       </li>
@@ -508,7 +508,7 @@
 
         <div class="modal-footer bg-light border-0 justify-content-center py-3">
           <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Entendi</button>
-          <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}" class="btn btn-danger px-4 rounded-pill" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
+          <a href="{{ url_for('main.editar_solicitacao', id=p.id, next=request.full_path.rstrip('?')) }}" class="btn btn-danger px-4 rounded-pill" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
             <i class="bi bi-pencil-square me-2"></i> Corrigir Agora
           </a>
         </div>

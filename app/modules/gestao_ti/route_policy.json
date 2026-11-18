@@ -1,4 +1,6 @@
 {
+  "main.agro_treinamentos": {"GET": "area:agro"},
+  "main.financeiro_treinamentos": {"GET": "area:financeiro"},
   "main.acoes_listar": {
     "GET": "prefeitura.acoes_publicas.consultar"
   },

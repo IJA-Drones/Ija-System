@@ -37,7 +37,7 @@ from app.modules.admin_dashboard.service import (
 )
 from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
 from app.shared.os_history_filters import get_os_history_filters
-from app.shared.query_filters import get_multi_values, multi_value_to_query, query_args_without_page
+from app.shared.query_filters import get_multi_values, multi_value_to_query, query_args_without_page, paginate_available_page
 from app.shared.redirects import redirect_back
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
@@ -327,11 +327,15 @@ def register_routes(bp):
         )
         attention_selection = attention.parse(request.args)
         query = attention.apply(query, attention_selection)
-        paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
+        paginacao = paginate_available_page(
+            query.order_by(build_status_order(), Solicitacao.data_criacao.desc()),
             page=page,
             per_page=per_page,
-            error_out=False,
         )
+        if paginacao.page != page:
+            params = request.args.to_dict(flat=False)
+            params["page"] = paginacao.page
+            return redirect(url_for("main.admin_dashboard", **params))
 
         return render_template(
             "admin.html",

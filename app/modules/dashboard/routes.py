@@ -44,6 +44,10 @@ def register_routes(bp):
             return redirect(url_for("main.admin_dashboard"))
 
         context = build_dashboard_context(current_user, request.args, google_maps_key)
+        if context["paginacao"].page != request.args.get("page", 1, type=int):
+            params = request.args.to_dict(flat=False)
+            params["page"] = context["paginacao"].page
+            return redirect(url_for("main.dashboard", **params))
         context["pagination_args"] = query_args_without_page(request.args)
         return render_template("dashboard.html", **context)
 

@@ -43,7 +43,7 @@
       {% include "_retorno_ciclo.html" %}
 
       {% set current_os_tab = active_os_tab|default('dados') %}
-      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main" data-equipment-readonly="{{ 'true' if modo_visualizacao else 'false' }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
         {% if edit_fields is defined and (not modo_visualizacao or can_edit_uvis_tab) %}
           {{ edit_fields(solicitacao, request.endpoint) }}
         {% endif %}
@@ -122,12 +122,17 @@
           <h5 class="m-0 text-primary fw-bold">Seleção de Aeronaves</h5>
         </div>
 
+        {% set selected_pulv_id = drone_pulverizacao_default_id|default(ordem.drone_id if ordem else none) %}
+        {% set selected_monit_id = drone_monitoramento_default_id|default(ordem.drone_monitoramento_id if ordem else none) %}
         <div class="row g-4">
           {# --- DRONE DE PULVERIZAÇÃO --- #}
           <div class="col-md-6">
             <label class="form-label-header">Drone de Pulverização (Principal) *</label>
-            <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3">
+            <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3" data-auto-selected="{{ 'true' if drone_pulverizacao_autofill|default(false) else 'false' }}">
               <option value="">Selecione o drone de pulverização...</option>
+              {% if selected_pulv_id and selected_pulv_id not in ((drones_pulverizacao or [])|map(attribute='id')|list) %}
+                <option value="{{ selected_pulv_id }}" selected>{{ ordem.drone_denominacao or ordem.prefixo_aeronave_pulverizacao or 'Drone' }} · registrado nesta OS</option>
+              {% endif %}
               {% for d in drones_pulverizacao or [] %}
                 <option value="{{ d.id }}"
                         data-serie="{{ d.numero_serie or '' }}"
@@ -135,11 +140,13 @@
                         data-renomacao="{{ d.renomacao or '' }}"
                         data-anatel="{{ d.registro_anatel or '' }}"
                         data-anac="{{ d.registro_anac or '' }}"
-                        {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
-                  {{ d.renomacao }} — {{ d.modelo }}
+                        {% if selected_pulv_id == d.id %}selected{% endif %}>
+                  {{ ordem.drone_denominacao if ordem and ordem.drone_id == d.id and ordem.drone_denominacao else d.renomacao }} — {{ ordem.drone_modelo if ordem and ordem.drone_id == d.id and ordem.drone_modelo else d.modelo }}
                 </option>
               {% endfor %}
             </select>
+
+            {% if drone_pulverizacao_autofill|default(false) %}<p class="form-text" id="drone-pulv-autofill-note">Drone da equipe selecionado automaticamente. Confira o equipamento utilizado.</p>{% endif %}
 
             {# Detalhes Técnicos Pulverização #}
             <div class="p-3 rounded-3 bg-snapshot border">
@@ -181,8 +188,11 @@
           {# --- DRONE DE MONITORAMENTO --- #}
           <div class="col-md-6">
             <label class="form-label-header">Drone de Monitoramento</label>
-            <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3">
+            <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3" data-auto-selected="{{ 'true' if drone_monitoramento_autofill|default(false) else 'false' }}">
               <option value="">Selecione o drone de monitoramento...</option>
+              {% if selected_monit_id and selected_monit_id not in ((drones_monitoramento or [])|map(attribute='id')|list) %}
+                <option value="{{ selected_monit_id }}" selected>{{ ordem.drone_monitoramento_denominacao or ordem.prefixo_aeronave_monitoramento or 'Drone' }} · registrado nesta OS</option>
+              {% endif %}
               {% for d in drones_monitoramento or [] %}
                 <option value="{{ d.id }}"
                         data-serie="{{ d.numero_serie or '' }}"
@@ -190,11 +200,13 @@
                         data-renomacao="{{ d.renomacao or '' }}"
                         data-anatel="{{ d.registro_anatel or '' }}"
                         data-anac="{{ d.registro_anac or '' }}"
-                        {% if ordem and ordem.drone_monitoramento_id == d.id %}selected{% endif %}>
-                  {{ d.renomacao }} — {{ d.modelo }}
+                        {% if selected_monit_id == d.id %}selected{% endif %}>
+                  {{ ordem.drone_monitoramento_denominacao if ordem and ordem.drone_monitoramento_id == d.id and ordem.drone_monitoramento_denominacao else d.renomacao }} — {{ ordem.drone_monitoramento_modelo if ordem and ordem.drone_monitoramento_id == d.id and ordem.drone_monitoramento_modelo else d.modelo }}
                 </option>
               {% endfor %}
             </select>
+
+            {% if drone_monitoramento_autofill|default(false) %}<p class="form-text" id="drone-monit-autofill-note">Drone da equipe selecionado automaticamente. Confira o equipamento utilizado.</p>{% endif %}
 
             {# Detalhes Técnicos Monitoramento #}
             <div class="p-3 rounded-3 bg-snapshot border">
@@ -268,7 +280,7 @@
 
         {# ===================== APLICAÇÃO ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Aplicação</h5>
+          <h5 class="m-0 text-primary fw-bold">Execução do atendimento</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -296,8 +308,8 @@
             </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Larva visualizada *</label>
-            <select name="larva_visualizada" class="form-select" required>
+            <label class="form-label-header">Larva visualizada<span data-obrigatorio-observacao="larva_visualizada" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <select name="larva_visualizada" class="form-select" {% if not os_sem_voo %}required{% endif %}>
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.larva_visualizada == 'SIM' %}selected{% endif %}>SIM</option>
               <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NÃO</option>
@@ -318,14 +330,20 @@
           </div>
           <div class="col-md-5">
             <label class="form-label-header">Nome/RF do ACE responsável *</label>
-            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" required />
+            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ (ordem.nome_rf_ace_responsavel_os or '') if ordem else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Criadouro OS (tipo/volume) *</label>
-            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" required />
+            <label for="criadouro-os" class="form-label-header">Criadouro OS (tipo/volume)<span data-obrigatorio-observacao="criadouro_os_tipo_volume" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <input id="criadouro-os" type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ os_criadouro_value }}" {% if os_quadra %}list="criadouros-quadra" aria-describedby="criadouros-quadra-ajuda" placeholder="Selecione ou descreva o criadouro encontrado"{% endif %} {% if not os_sem_voo %}required{% endif %} />
+            {% if os_quadra %}
+            <datalist id="criadouros-quadra">
+              {% for opcao in os_criadouro_opcoes %}<option value="{{ opcao }}"></option>{% endfor %}
+            </datalist>
+            <small id="criadouros-quadra-ajuda" class="text-muted">Informe o criadouro encontrado na quadra. Você pode usar uma sugestão ou descrever os tipos e volumes observados.</small>
+            {% endif %}
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Data aplicação *</label>
+            <label class="form-label-header">Data do atendimento / aplicação *</label>
             <input type="date" name="data_aplicacao" class="form-control" value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
@@ -337,8 +355,8 @@
             <input type="time" name="hora_termino_aplicacao" class="form-control" value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Tratamento adicional? *</label>
-            <select name="tratamento_adicional_realizado" class="form-select" required>
+            <label class="form-label-header">Tratamento adicional?<span data-obrigatorio-observacao="tratamento_adicional_realizado" {% if os_sem_voo %}hidden{% endif %}> *</span></label>
+            <select name="tratamento_adicional_realizado" class="form-select" {% if not os_sem_voo %}required{% endif %}>
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.tratamento_adicional_realizado == 'SIM' %}selected{% endif %}>SIM</option>
               <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NÃO</option>
@@ -346,12 +364,20 @@
           </div>
           <div class="col-md-8">
             <label class="form-label-header">Quantos? Quais?</label>
-            <input type="text" name="quantos_quais" class="form-control" value="{{ ordem.quantos_quais if ordem else '' }}" />
+            <input type="text" name="quantos_quais" class="form-control" value="{{ (ordem.quantos_quais or '') if ordem else '' }}" />
           </div>
         </div>
 
         <hr class="opacity-25 my-4" />
 
+        <div class="alert alert-info" id="os-sem-aplicacao-aviso" role="status" {% if not os_sem_aplicacao %}hidden{% endif %}>
+          {% if os_sem_voo %}
+            Nenhum voo realizado: informe o motivo e os dados do atendimento. Produto e dosagem não se aplicam. Registre observações de campo somente se foram realizadas.
+          {% else %}
+            Apenas monitorado: preencha as observações do atendimento. Produto e dosagem não se aplicam.
+          {% endif %}
+        </div>
+        <fieldset id="os-campos-aplicacao" {% if os_sem_aplicacao %}disabled hidden{% endif %}>
         {# ===================== DOSAGEM E PARAMETROS ===================== #}
         <div class="section-title">
           <h5 class="m-0 text-primary fw-bold">Dosagem e Parâmetros de Aplicação</h5>
@@ -565,6 +591,7 @@
 
         <hr class="opacity-25 my-4" />
 
+        </fieldset>
         {# ===================== AERONAVE / AMBIENTE ===================== #}
         <div class="section-title">
           <h5 class="m-0 text-primary fw-bold">Condições Ambientais</h5>
@@ -611,10 +638,10 @@
 
           {# Linha 2: Motivo não realização (Inteira) #}
           <div class="col-12">
-            <label class="form-label-header">MOTIVO NÃO REALIZAÇÃO</label>
+            <label class="form-label-header">MOTIVO NÃO REALIZAÇÃO<span id="os-motivo-obrigatorio" {% if not os_sem_voo %}hidden{% endif %}> *</span></label>
             <input type="text" name="motivo_nao_realizacao" class="form-control" 
-                  value="{{ ordem.motivo_nao_realizacao if ordem else '' }}" 
-                  placeholder="Descreva o motivo caso a aplicação não tenha sido concluída..." />
+                  value="{{ (ordem.motivo_nao_realizacao or '') if ordem else '' }}"
+                  placeholder="Descreva o motivo caso a aplicação não tenha sido concluída..." {% if os_sem_voo %}required{% endif %} />
           </div>
 
           {# Linha 3: Equipe (Metade) e Proprietário (Metade) #}
@@ -1077,70 +1104,12 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="os-execucao-regras">{{ os_execucao_regras | tojson }}</script>
+<script src="{{ url_for('static', filename='js/piloto-os-situacao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/video-upload-recovery.js') }}"></script>
+<script src="{{ url_for('static', filename='js/piloto-os-equipamentos.js', v='20261117-1') }}" defer></script>
 <script>
 (function () {
-  // ✅ Lógica de Drones e Datetime (Mantida original)
-  const selPulv = document.getElementById("drone_id");
-  const selMonit = document.getElementById("drone_monitoramento_id");
-
-  const pulvSnapshot = {
-    serie: document.getElementById("drone_serie_pulv"),
-    modelo: document.getElementById("drone_modelo_pulv"),
-    renomacao: document.getElementById("drone_renomacao_pulv"),
-    anatel: document.getElementById("drone_registro_anatel_pulv"),
-    anac: document.getElementById("drone_registro_anac_pulv"),
-  };
-
-  const monitSnapshot = {
-    serie: document.getElementById("drone_serie_monit"),
-    modelo: document.getElementById("drone_modelo_monit"),
-    renomacao: document.getElementById("drone_renomacao_monit"),
-    anatel: document.getElementById("drone_registro_anatel_monit"),
-    anac: document.getElementById("drone_registro_anac_monit"),
-  };
-
-  const prefixoPulv = document.getElementById("prefixo_pulverizacao");
-  const prefixoMonit = document.getElementById("prefixo_monitoramento");
-
-  function clearSnapshot(snapshot) {
-    Object.values(snapshot).forEach((el) => { if (el) el.value = ""; });
-  }
-
-  function loadDroneData(select, type) {
-    const selectedOption = select?.selectedOptions?.[0];
-    if (!selectedOption?.value) {
-      if (type === "pulv") {
-        clearSnapshot(pulvSnapshot);
-        if (prefixoPulv) prefixoPulv.value = "";
-      } else {
-        clearSnapshot(monitSnapshot);
-        if (prefixoMonit) prefixoMonit.value = "";
-      }
-      return;
-    }
-
-    const data = selectedOption.dataset;
-    if (type === "pulv") {
-      if (pulvSnapshot.serie) pulvSnapshot.serie.value = data.serie || "";
-      if (pulvSnapshot.modelo) pulvSnapshot.modelo.value = data.modelo || "";
-      if (pulvSnapshot.renomacao) pulvSnapshot.renomacao.value = data.renomacao || "";
-      if (pulvSnapshot.anatel) pulvSnapshot.anatel.value = data.anatel || "";
-      if (pulvSnapshot.anac) pulvSnapshot.anac.value = data.anac || "";
-      if (prefixoPulv) prefixoPulv.value = data.renomacao || "";
-    } else {
-      if (monitSnapshot.serie) monitSnapshot.serie.value = data.serie || "";
-      if (monitSnapshot.modelo) monitSnapshot.modelo.value = data.modelo || "";
-      if (monitSnapshot.renomacao) monitSnapshot.renomacao.value = data.renomacao || "";
-      if (monitSnapshot.anatel) monitSnapshot.anatel.value = data.anatel || "";
-      if (monitSnapshot.anac) monitSnapshot.anac.value = data.anac || "";
-      if (prefixoMonit) prefixoMonit.value = data.renomacao || "";
-    }
-  }
-
-  if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv, "pulv"));
-  if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit, "monit"));
-
   const responded = document.getElementById("respondido_em");
   if (responded && !responded.value) {
     const now = new Date();
@@ -1160,8 +1129,6 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    if (selPulv && selPulv.value) loadDroneData(selPulv, "pulv");
-    if (selMonit && selMonit.value) loadDroneData(selMonit, "monit");
     syncTratamentoAdicional();
   });
 })();

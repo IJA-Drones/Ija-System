@@ -1,0 +1,1431 @@
+{
+  "revision": "2026-11-17",
+  "guides": [
+    {
+      "id": "guia-agenda-notificacoes",
+      "title": "Agenda e notificações",
+      "subtitle": "Consulte a programação, ajuste os filtros e acompanhe os avisos da operação.",
+      "group": "operacao-equipes",
+      "screenshot": "agenda",
+      "audience": "UVIS, equipes e perfis de gestão com acesso à agenda.",
+      "menu": "Menu lateral > Agenda; sino de notificações",
+      "route": "/agenda",
+      "flow": [
+        "Filtrar a programação",
+        "Conferir os registros",
+        "Exportar ou acompanhar"
+      ],
+      "before": [
+        "Entre com a conta vinculada à sua unidade ou equipe.",
+        "Tenha o período que deseja consultar e confira o contexto municipal da conta."
+      ],
+      "steps": [
+        [
+          "Abra a Agenda",
+          "Use Agenda no menu lateral. A relação de serviços respeita os vínculos da sua conta; uma UVIS acompanha seus próprios registros e a equipe operacional acompanha os registros do seu alcance."
+        ],
+        [
+          "Escolha o período",
+          "Abra Filtros de busca e ajuste mês e ano ou as datas de agendamento. Use um intervalo que inclua o dia procurado. Os filtros disponíveis variam conforme o perfil."
+        ],
+        [
+          "Refine a consulta",
+          "Quando disponíveis, combine UVIS, status, tipo na agenda, tipo de visita, tipo de imóvel e foco da ação. Aplique a busca e confira se os filtros ainda correspondem à sua necessidade."
+        ],
+        [
+          "Leia os agendamentos",
+          "Confira dia, horário, endereço, situação e equipe antes do deslocamento. A agenda reúne serviços aprovados e concluídos; uma solicitação pendente pode não aparecer nessa programação."
+        ],
+        [
+          "Use as saídas disponíveis",
+          "Exportar Atual usa os parâmetros da consulta. Confira a opção Exportar Minha Agenda quando exibida. Rota do Dia depende de serviços aprovados com localização e pode não incluir registros sem coordenadas."
+        ],
+        [
+          "Acompanhe as notificações",
+          "Abra o sino ou a página de notificações. Leia o aviso e use seu vínculo para consultar o registro correspondente. A leitura do aviso não muda, por si só, a situação do serviço."
+        ]
+      ],
+      "fields": [
+        [
+          "Período",
+          "Mês/ano ou intervalo de agendamento."
+        ],
+        [
+          "Tipo na agenda",
+          "Distingue agendamentos comuns e retornos automáticos."
+        ],
+        [
+          "Status",
+          "Restringe a situação dos registros apresentados."
+        ]
+      ],
+      "checks": [
+        "O período e os filtros correspondem à consulta desejada.",
+        "O endereço e a situação foram conferidos no registro.",
+        "A exportação contém o mesmo recorte esperado na tela."
+      ],
+      "faq": [
+        [
+          "O pedido não aparece na Agenda",
+          "Confira a data e consulte o painel de solicitações. Pedidos ainda pendentes não equivalem a serviços aprovados para a programação."
+        ],
+        [
+          "Rota do Dia está vazia",
+          "Confira o dia, os filtros e a presença de coordenadas nos serviços aprovados."
+        ],
+        [
+          "Não aparece Exportar",
+          "Solicite ao responsável a conferência da permissão de exportação da agenda."
+        ]
+      ],
+      "sources": [
+        "app/modules/agenda_notificacoes/routes.py",
+        "app/modules/agenda_notificacoes/service.py",
+        "app/templates/agenda.html",
+        "app/templates/notificacoes.html"
+      ]
+    },
+    {
+      "id": "guia-equipes-acesso-uvis",
+      "title": "Equipes e acesso UVIS",
+      "subtitle": "Organize os membros e diferencie a conta da unidade dos acessos operacionais.",
+      "group": "operacao-equipes",
+      "screenshot": "equipes-uvis",
+      "audience": "Responsáveis pela conta UVIS e pelo cadastro de suas equipes.",
+      "menu": "Equipe OA / equipes da UVIS; Acesso Operacional",
+      "route": "/uvis/equipes",
+      "flow": [
+        "Criar a equipe",
+        "Cadastrar os membros",
+        "Conferir o acesso"
+      ],
+      "before": [
+        "Use a conta UVIS vinculada à prefeitura correta.",
+        "Defina quem ficará responsável pelo acesso e tenha os dados dos membros da equipe."
+      ],
+      "steps": [
+        [
+          "Consulte as equipes da UVIS",
+          "Abra a relação de equipes e confira as já existentes. A conta da UVIS, o login de uma equipe específica e o acesso operacional da unidade têm funções distintas."
+        ],
+        [
+          "Crie uma nova equipe",
+          "Use a opção de nova equipe. Confira o nome gerado automaticamente e defina um login disponível. Preencha senha e confirmação conforme as exigências exibidas na tela."
+        ],
+        [
+          "Cadastre os membros",
+          "Após criar a equipe, o sistema encaminha ao cadastro do primeiro membro. Preencha os campos solicitados. Cada equipe comporta até cinco pessoas; confira as posições já ocupadas."
+        ],
+        [
+          "Revise os dados e as credenciais",
+          "Abra a equipe para conferir os membros. Use as ações de edição quando necessário. Para mudar o acesso, atualize o login e a senha da equipe nos controles específicos de credenciais."
+        ],
+        [
+          "Configure o acesso operacional da unidade",
+          "Quando a operação utilizar uma conta geral da UVIS, abra Acesso Operacional. Defina o login e confirme a senha. Ao editar um acesso existente, observe a orientação da tela para manter ou substituir a senha."
+        ],
+        [
+          "Confirme o vínculo",
+          "Confira a confirmação de salvamento e o acesso pela tela operacional UVIS. Se os serviços esperados não estiverem disponíveis, confira a UVIS dona e os vínculos da equipe com a gestão."
+        ]
+      ],
+      "fields": [
+        [
+          "Nome da equipe",
+          "Gerado pelo sistema a partir da unidade e da sequência de equipes."
+        ],
+        [
+          "Login da equipe",
+          "Deve estar disponível; a tela orienta os caracteres aceitos."
+        ],
+        [
+          "Membros",
+          "Até cinco pessoas por equipe."
+        ]
+      ],
+      "checks": [
+        "A equipe pertence à UVIS correta.",
+        "Os membros foram cadastrados e estão sem duplicidades.",
+        "O acesso utilizado corresponde à equipe ou à unidade pretendida."
+      ],
+      "faq": [
+        [
+          "O login já está em uso",
+          "Escolha outro login ou confira se a conta da equipe já foi criada."
+        ],
+        [
+          "Não há posição para novo membro",
+          "Confira os cinco membros e corrija a composição da equipe antes de incluir outra pessoa."
+        ],
+        [
+          "A conta entra, mas não vê os serviços",
+          "Confira os vínculos de unidade e equipe. Criar uma credencial não atribui automaticamente todos os serviços."
+        ]
+      ],
+      "sources": [
+        "app/modules/uvis_equipes/routes.py",
+        "app/modules/uvis_equipes/service.py",
+        "app/templates/uvis_equipe_criar.html",
+        "app/templates/uvis_acesso_operacional.html"
+      ]
+    },
+    {
+      "id": "guia-checklists-semanais",
+      "title": "Checklists semanais",
+      "subtitle": "Registre a inspeção do veículo e do drone e confira as pendências da semana.",
+      "group": "operacao-equipes",
+      "screenshot": "checklists",
+      "audience": "Pilotos, equipes operacionais e supervisores autorizados.",
+      "menu": "Menu operacional > Checklist Semanal",
+      "route": "/piloto/checklists/semanais",
+      "flow": [
+        "Identificar o equipamento",
+        "Inspecionar e registrar",
+        "Assinar e conferir"
+      ],
+      "before": [
+        "Confira se o veículo e o drone estão vinculados à equipe correta e disponíveis na seleção.",
+        "Realize a inspeção dos itens antes de preencher o formulário."
+      ],
+      "steps": [
+        [
+          "Abra o checklist",
+          "Acesse Checklist Semanal e confira a semana de referência exibida. O formulário registra a inspeção da semana corrente e identifica o responsável logado."
+        ],
+        [
+          "Confira veículo e drone",
+          "O sistema pode sugerir os equipamentos quando há uma única opção da equipe. O supervisor pode receber seu veículo como padrão. Confirme a identificação mesmo quando os campos vierem preenchidos."
+        ],
+        [
+          "Inspecione o veículo",
+          "Percorra os grupos de luzes, direção, manutenção, freios, vidros, pneus, segurança, itens internos e lataria. Marque a condição observada e descreva os problemas nos campos correspondentes."
+        ],
+        [
+          "Inspecione o drone",
+          "Confira hélices, tanque, trem de pouso, câmeras, carregador, baterias, cabos e correia. Registre as condições e as observações do equipamento conforme os controles apresentados."
+        ],
+        [
+          "Identifique e assine",
+          "Revise o nome do responsável e faça a assinatura no campo digital. Use Limpar se precisar refazer o traço, sem alterar as respostas que já foram conferidas."
+        ],
+        [
+          "Salve e confirme",
+          "Clique em Salvar checklist e aguarde a confirmação. Confira os equipamentos e os dados registrados. Os itens defeituosos alimentam o acompanhamento de pendências; o salvamento não equivale ao reparo do equipamento."
+        ]
+      ],
+      "fields": [
+        [
+          "Semana",
+          "Referência exibida pelo sistema."
+        ],
+        [
+          "Condição dos itens",
+          "Marque a situação realmente encontrada na inspeção."
+        ],
+        [
+          "Observações e assinatura",
+          "Descrevem os problemas e identificam o responsável."
+        ]
+      ],
+      "checks": [
+        "A identificação do veículo e do drone foi confirmada.",
+        "Os defeitos estão marcados e descritos com clareza.",
+        "O checklist foi salvo com a assinatura solicitada."
+      ],
+      "faq": [
+        [
+          "O equipamento não aparece",
+          "Confira se está ativo, pertence à equipe e está dentro do alcance da sua conta."
+        ],
+        [
+          "O sistema escolheu um equipamento",
+          "A sugestão facilita o preenchimento; confira a identificação antes de salvar."
+        ],
+        [
+          "Uma pendência continua aparecendo",
+          "Consulte o registro da semana e solicite a conferência administrativa. Registrar um defeito não encerra sua manutenção."
+        ]
+      ],
+      "sources": [
+        "app/modules/piloto_checklists/routes.py",
+        "app/modules/piloto_checklists/service.py",
+        "app/templates/piloto_checklist_semanal.html",
+        "app/modules/admin_checklists/routes.py"
+      ]
+    },
+    {
+      "id": "guia-frota-turnos",
+      "title": "Frota e turnos",
+      "subtitle": "Abra o turno, registre abastecimentos e limpezas e confira o encerramento.",
+      "group": "frota-recursos",
+      "screenshot": "frota",
+      "audience": "Pilotos, supervisores de veículos e equipes com permissão operacional.",
+      "menu": "Menu operacional > Abrir Turno / Gestão de Frota",
+      "route": "/piloto/veiculos",
+      "flow": [
+        "Registrar o início",
+        "Lançar a movimentação",
+        "Encerrar o turno"
+      ],
+      "before": [
+        "Confira a placa, o veículo atribuído e a situação do turno.",
+        "Tenha as fotos do painel e os comprovantes necessários para a movimentação real."
+      ],
+      "steps": [
+        [
+          "Localize o veículo",
+          "Abra a Gestão de Frota e confira a placa, o status, a quilometragem e quem está usando o veículo. O supervisor deve observar a identificação do veículo sob sua responsabilidade."
+        ],
+        [
+          "Inicie o turno",
+          "Clique em Iniciar Turno. Confira o KM inicial preenchido pelo sistema, anexe a foto do painel e faça a assinatura solicitada. Use Registrar Início e aguarde a confirmação."
+        ],
+        [
+          "Registre cada abastecimento",
+          "Com seu turno aberto, use Abastecimento. Escolha Veículo ou Gerador, informe KM, litros e valor total e inclua as fotos do painel e da nota fiscal solicitadas. Salve cada lançamento separadamente."
+        ],
+        [
+          "Confira a referência de KM",
+          "No abastecimento do tipo Veículo, o limite é de até 500 km acima do último abastecimento do veículo. Sem histórico anterior, a referência é o KM inicial do turno. O tipo Gerador não altera essa referência."
+        ],
+        [
+          "Registre a limpeza",
+          "Use Limpeza no turno aberto. Informe quando ocorreu, se foi realizada, o tipo de limpeza, valor e observações. A data do registro no sistema é distinta da data de realização informada."
+        ],
+        [
+          "Finalize o turno",
+          "Use Finalizar Turno, informe KM final, quantidade de fazendas ou endereços atendidos, observações e foto do painel. Clique em Encerrar Turno. O KM final deve respeitar o início e os abastecimentos do turno."
+        ]
+      ],
+      "fields": [
+        [
+          "KM inicial",
+          "Vem do último encerramento ou do cadastro, quando não há fechamento anterior."
+        ],
+        [
+          "Tipo de abastecimento",
+          "Veículo e Gerador possuem tratamentos diferentes."
+        ],
+        [
+          "KM final e foto",
+          "Devem retratar o painel no encerramento do turno."
+        ]
+      ],
+      "checks": [
+        "O turno aberto pertence ao operador correto.",
+        "Abastecimentos e limpezas aparecem nos registros do turno.",
+        "O encerramento foi confirmado e o turno deixou de estar aberto."
+      ],
+      "faq": [
+        [
+          "Outro usuário está com turno aberto",
+          "Confira o responsável informado e aguarde a regularização do turno antes de iniciar outro."
+        ],
+        [
+          "O abastecimento foi bloqueado pelo KM",
+          "Confira o painel, o tipo selecionado e o último abastecimento. Solicite a correção do histórico quando houver divergência."
+        ],
+        [
+          "A foto não foi salva",
+          "Aguarde a confirmação do upload e do envio do formulário. Confira o registro antes de repetir a operação."
+        ]
+      ],
+      "sources": [
+        "app/modules/veiculos/routes.py",
+        "app/modules/veiculos/service.py",
+        "app/templates/piloto_veiculos.html",
+        "docs/perfil-supervisor-operacional-veiculos.md"
+      ]
+    },
+    {
+      "id": "guia-rastreamento-veiculos",
+      "title": "Rastreamento de veículos",
+      "subtitle": "Consulte posições, percorra o histórico e interprete as informações da rota.",
+      "group": "frota-recursos",
+      "screenshot": "rastreamento",
+      "audience": "Gestão e perfis autorizados a consultar o rastreamento da frota.",
+      "menu": "Veículos > Rastreamento",
+      "route": "/veiculos/rastreamento",
+      "flow": [
+        "Escolher veículo e período",
+        "Consultar o histórico",
+        "Reproduzir a rota"
+      ],
+      "before": [
+        "Confira o veículo, o período de interesse e a atualização dos pontos.",
+        "A disponibilidade das posições depende da integração e dos dados recebidos pelo sistema."
+      ],
+      "steps": [
+        [
+          "Abra o Rastreamento",
+          "Entre pelo módulo de Veículos e selecione o veículo desejado. A lista e as posições respeitam o alcance da sua conta e os vínculos municipais."
+        ],
+        [
+          "Confira a posição apresentada",
+          "Observe o horário do ponto, a posição e as informações disponíveis de velocidade, ignição e hodômetro. Use o horário do ponto para avaliar a atualidade da informação."
+        ],
+        [
+          "Defina o período",
+          "Selecione o intervalo ou dia no controle de histórico e solicite a consulta. Aguarde o carregamento. Períodos sem dados não comprovam que o veículo ficou parado."
+        ],
+        [
+          "Use o Flashback",
+          "Abra a reprodução do histórico para percorrer a sequência de pontos. Pause e use os controles de reprodução para observar o trecho desejado e seu horário correspondente."
+        ],
+        [
+          "Consulte um ponto da rota",
+          "Selecione o ponto para conferir os detalhes disponíveis. Quando exibidos, use Abrir posição no Google Maps ou Reproduzir a partir daqui. Telemetria ausente não deve ser interpretada como valor zero."
+        ],
+        [
+          "Compare com o turno",
+          "Quando precisar conferir quem estava operando, consulte os registros de turno e seus horários. O motorista apresentado pode seguir o piloto titular da equipe; o responsável cadastrado do veículo é uma informação diferente."
+        ]
+      ],
+      "fields": [
+        [
+          "Horário do ponto",
+          "Indica quando a posição foi reportada."
+        ],
+        [
+          "Período consultado",
+          "Delimita os pontos usados no histórico e na reprodução."
+        ],
+        [
+          "Motorista / responsável",
+          "Confira o contexto do turno e da equipe antes de atribuir a condução."
+        ]
+      ],
+      "checks": [
+        "Veículo, dia e intervalo estão corretos.",
+        "A hora do ponto foi conferida antes de tratá-lo como posição atual.",
+        "Os detalhes da rota foram comparados com os registros operacionais quando necessário."
+      ],
+      "faq": [
+        [
+          "Não aparecem posições",
+          "Confira o período, a integração e se houve recebimento de dados para o veículo."
+        ],
+        [
+          "A última posição está antiga",
+          "Observe o horário reportado e solicite a conferência da coleta; recarregar a tela não cria pontos."
+        ],
+        [
+          "Há lacunas na rota",
+          "A consulta exibe os pontos disponíveis. Solicite a verificação do histórico antes de concluir o que ocorreu no intervalo."
+        ]
+      ],
+      "sources": [
+        "app/modules/veiculos/rastreamento.py",
+        "app/modules/veiculos/routes.py",
+        "app/static/js/veiculos-rastreamento.js",
+        "app/templates/veiculos_rastreamento.html"
+      ]
+    },
+    {
+      "id": "guia-estoque-pecas",
+      "title": "Estoque de peças",
+      "subtitle": "Cadastre peças e confira identificação, localização, compatibilidade e saldo.",
+      "group": "frota-recursos",
+      "screenshot": "estoque",
+      "audience": "Responsáveis autorizados pelo cadastro e pela conferência do estoque.",
+      "menu": "Menu lateral > Estoque",
+      "route": "/estoque",
+      "flow": [
+        "Cadastrar a peça",
+        "Organizar o estoque",
+        "Conferir o saldo"
+      ],
+      "before": [
+        "Confira o equipamento, seu modelo e a quantidade física de peças disponíveis.",
+        "O acesso ao estoque e as ações de manutenção dependem das permissões do perfil."
+      ],
+      "steps": [
+        [
+          "Consulte o estoque",
+          "Abra Estoque e confira as peças existentes antes de incluir outra. Use o filtro de local para encontrar o armário, a prateleira ou a localização desejada."
+        ],
+        [
+          "Cadastre a identificação",
+          "Use Nova peça e informe o modelo. Complete o número de série quando houver; esse número deve ser único. Descreva o item de forma que outra pessoa consiga identificá-lo."
+        ],
+        [
+          "Defina os vínculos e a localização",
+          "Selecione o equipamento vinculado quando aplicável. Informe modelos compatíveis separados por vírgula e a prateleira ou o local em que a peça é guardada."
+        ],
+        [
+          "Informe quantidade e status",
+          "Use uma quantidade inteira não negativa e confira o status. Disponível para manutenção, Reservada, Baixada e Indisponível representam condições diferentes do item."
+        ],
+        [
+          "Salve e confira a relação",
+          "Salve o cadastro e confira modelo, série, saldo, localização e equipamento na listagem. Use Editar para corrigir o cadastro quando sua conta estiver autorizada."
+        ],
+        [
+          "Acompanhe o consumo",
+          "O registro de peças usadas na manutenção reduz o saldo do estoque. Se todo o saldo for consumido, a peça passa a Baixada. Use Exportar Excel quando disponível para apoiar a conferência dos itens."
+        ]
+      ],
+      "fields": [
+        [
+          "Modelo e série",
+          "Identificam a peça; a série informada deve ser única."
+        ],
+        [
+          "Prateleira / local",
+          "Ajuda a localizar fisicamente o item."
+        ],
+        [
+          "Quantidade e status",
+          "Representam o saldo cadastrado e a condição de disponibilidade."
+        ]
+      ],
+      "checks": [
+        "A identificação do cadastro corresponde à peça.",
+        "Localização, compatibilidade e vínculo foram conferidos.",
+        "O saldo cadastrado corresponde à conferência do estoque."
+      ],
+      "faq": [
+        [
+          "A série já existe",
+          "Procure o cadastro anterior e confira se deve editar o registro existente."
+        ],
+        [
+          "A quantidade foi recusada",
+          "Use um número inteiro não negativo e confira a quantidade física."
+        ],
+        [
+          "O saldo diminuiu após uma manutenção",
+          "Consulte as peças usadas no atendimento e confira o consumo registrado."
+        ]
+      ],
+      "sources": [
+        "app/modules/estoque/routes.py",
+        "app/modules/estoque/service.py",
+        "app/templates/estoque_form.html",
+        "app/templates/estoque_listar.html"
+      ]
+    },
+    {
+      "id": "guia-manutencao-equipamentos",
+      "title": "Manutenção de equipamentos",
+      "subtitle": "Registre avarias, peças utilizadas e o encerramento técnico da manutenção.",
+      "group": "frota-recursos",
+      "screenshot": "manutencao",
+      "audience": "Responsáveis autorizados pelo atendimento técnico e manutenção de equipamentos.",
+      "menu": "Equipamentos > Em Manutenção",
+      "route": "/equipamentos/em-manutencao",
+      "flow": [
+        "Abrir a manutenção",
+        "Registrar o atendimento",
+        "Encerrar e conferir"
+      ],
+      "before": [
+        "Identifique o drone, seu modelo e o relato da avaria.",
+        "Confira a situação do equipamento e as peças disponíveis para o atendimento."
+      ],
+      "steps": [
+        [
+          "Envie o drone para manutenção",
+          "Abra a relação de drones e use a ação de manutenção do equipamento correto. Confira sua presença em Equipamentos em Manutenção. O fluxo reaproveita a manutenção aberta, quando já existir."
+        ],
+        [
+          "Abra o atendimento",
+          "Use Peças usadas no drone em manutenção. Confira modelo, identificação e histórico antes de lançar novas informações."
+        ],
+        [
+          "Descreva a avaria e os responsáveis",
+          "Preencha o relato técnico, as avarias identificadas e os responsáveis apresentados no formulário. Adicione observações e as imagens do ocorrido quando necessárias."
+        ],
+        [
+          "Registre o consumo de peças",
+          "Selecione as peças disponibilizadas para o drone e informe a quantidade realmente utilizada. O consumo deve ser positivo e caber no saldo. O salvamento dá baixa no estoque."
+        ],
+        [
+          "Registre o teste e as assinaturas",
+          "Informe o teste do drone e suas observações quando aplicável. Faça as assinaturas solicitadas e salve o atendimento. É possível registrar o relato técnico mesmo sem consumir peças, conforme os dados preenchidos."
+        ],
+        [
+          "Encerre e confira o histórico",
+          "Após a conclusão técnica, use Encerrar e confira o retorno do drone a Ativo. Abra Histórico ou Peças para revisar o atendimento e gerar o PDF da manutenção."
+        ]
+      ],
+      "fields": [
+        [
+          "Relato e avarias",
+          "Descrevem o problema e o atendimento realizado."
+        ],
+        [
+          "Peças e quantidades",
+          "Registram o consumo do estoque na manutenção."
+        ],
+        [
+          "Teste e responsáveis",
+          "Identificam a conferência técnica e quem participou do atendimento."
+        ]
+      ],
+      "checks": [
+        "O atendimento pertence ao drone correto.",
+        "Avarias, consumo, responsáveis e teste foram conferidos.",
+        "O encerramento e o histórico refletem o atendimento realizado."
+      ],
+      "faq": [
+        [
+          "A peça não aparece",
+          "Confira saldo, status e vínculo ou compatibilidade com o modelo do drone."
+        ],
+        [
+          "Não houve troca de peças",
+          "Registre os dados do relato técnico e do atendimento nos campos correspondentes."
+        ],
+        [
+          "Preciso consultar uma manutenção encerrada",
+          "Use o histórico de manutenções e abra o detalhe ou seu PDF."
+        ]
+      ],
+      "sources": [
+        "app/modules/equipamentos/routes.py",
+        "app/modules/equipamentos/service.py",
+        "app/templates/equipamento_manutencao_pecas.html",
+        "app/templates/equipamentos_manutencoes_historico.html"
+      ]
+    },
+    {
+      "id": "guia-central-ti-permissoes",
+      "title": "Central de TI",
+      "subtitle": "Configure as telas e ações por perfil e confira o acesso resultante.",
+      "group": "gestao-suporte",
+      "screenshot": "central-ti",
+      "audience": "Dev e Gestor de TI responsáveis pela configuração dos perfis.",
+      "menu": "Menu lateral > Central de TI",
+      "route": "/central-ti",
+      "flow": [
+        "Selecionar o perfil",
+        "Definir telas e ações",
+        "Salvar e conferir"
+      ],
+      "before": [
+        "Defina o que cada tipo de usuário deve consultar e executar.",
+        "A alteração de um perfil alcança todas as contas desse tipo, dentro de seus vínculos e escopos."
+      ],
+      "steps": [
+        [
+          "Selecione o tipo de usuário",
+          "Abra a Central de TI e escolha o perfil desejado. Quando ainda não existe uma configuração própria, a tela apresenta as seleções correspondentes às regras existentes."
+        ],
+        [
+          "Habilite a área e a consulta",
+          "Ative a área e marque Consultar no módulo que deve aparecer. Sem consulta, o usuário não recebe a tela. Desabilitar a área impede suas funções mesmo que haja seleções em seus módulos."
+        ],
+        [
+          "Separe as ações",
+          "Marque somente as ações necessárias: Cadastrar, Editar, Excluir, Exportar e as ações específicas disponíveis. Permitir edição não equivale a permitir aprovação, conclusão ou gerenciamento de mídias."
+        ],
+        [
+          "Revise os perfis alterados",
+          "Confira todas as alterações pendentes antes de salvar. A seleção de uma ação também marca Consultar; retirar Consultar remove as ações daquele módulo. Uma lista explícita vazia bloqueia as funções de negócio do perfil."
+        ],
+        [
+          "Salve e confirme",
+          "Use Salvar alterações e confira o alerta de confirmação. O salvamento inclui os perfis com alterações pendentes. Se houver aviso de versão, recarregue e compare as seleções antes de tentar novamente."
+        ],
+        [
+          "Confira com a conta do perfil",
+          "Recarregue a página de uma conta representativa e confira menu, botões e alcance dos registros. A configuração não muda prefeitura, região, equipe ou empresa, nem transforma o perfil em administrador."
+        ]
+      ],
+      "fields": [
+        [
+          "Área",
+          "Habilita o conjunto de módulos correspondente."
+        ],
+        [
+          "Consultar",
+          "Autoriza a tela e sustenta as demais ações do módulo."
+        ],
+        [
+          "Ações específicas",
+          "Concedem operações distintas da consulta ou edição comum."
+        ]
+      ],
+      "checks": [
+        "O tipo de usuário alterado é o pretendido.",
+        "As áreas e ações necessárias foram revisadas antes de salvar.",
+        "Uma conta desse perfil abriu as telas e ações previstas, no escopo correto."
+      ],
+      "faq": [
+        [
+          "O menu aparece, mas não há registros",
+          "Confira os vínculos de prefeitura, região, equipe ou empresa da conta."
+        ],
+        [
+          "Editar não libera uma aprovação",
+          "Confira a ação específica de aprovação ou alteração de situação."
+        ],
+        [
+          "Uma tela possui restrição própria",
+          "Alguns módulos mantêm regras fixas, como Ortomosaicos. A Central não substitui essas restrições."
+        ]
+      ],
+      "sources": [
+        "app/modules/gestao_ti/routes.py",
+        "app/modules/gestao_ti/permissions.py",
+        "app/modules/gestao_ti/catalog.json",
+        "docs/central-ti-permissoes.md"
+      ]
+    },
+    {
+      "id": "guia-reporte-acompanhamento-bugs",
+      "title": "Reporte de bugs",
+      "subtitle": "Registre o erro com informações úteis e acompanhe a tratativa.",
+      "group": "gestao-suporte",
+      "screenshot": "bugs",
+      "audience": "Coordenadorias e COVISA autorizadas a reportar erros.",
+      "menu": "Reportar bug; Caixa de bugs",
+      "route": "/bugs/novo",
+      "flow": [
+        "Descrever o erro",
+        "Enviar o reporte",
+        "Acompanhar a tratativa"
+      ],
+      "before": [
+        "Anote a tela, a ação tentada e a mensagem exibida.",
+        "Separe capturas que ajudem a identificar o problema, evitando dados pessoais desnecessários."
+      ],
+      "steps": [
+        [
+          "Abra Reportar bug",
+          "Entre com a conta autorizada da coordenadoria ou COVISA. O fluxo de abertura de bugs é destinado a erros do sistema. A UVIS deve encaminhar o relato ao responsável autorizado da sua estrutura."
+        ],
+        [
+          "Identifique o problema",
+          "Preencha um assunto específico e o impacto percebido. Exemplo: Falha ao salvar o checklist. A subcategoria Erro no sistema e o destino Suporte técnico são definidos pelo fluxo."
+        ],
+        [
+          "Descreva como reproduzir",
+          "Informe o que tentou fazer, o que aconteceu, o que esperava e a mensagem de erro. Descreva os passos na ordem em que ocorreram e indique se o problema se repete."
+        ],
+        [
+          "Inclua as evidências",
+          "Anexe as imagens permitidas pelo formulário, quando houver. Confira a legibilidade e a necessidade das informações expostas. Não inclua senhas ou credenciais no texto nem nas capturas."
+        ],
+        [
+          "Envie e confira a confirmação",
+          "Revise os campos e envie. Cada origem possui limite de três bugs ativos: por coordenadoria/região ou pela conta COVISA. Se houver bloqueio por limite, acompanhe os já abertos."
+        ],
+        [
+          "Acompanhe pela Caixa de bugs",
+          "Use a busca e o filtro de situação para localizar o reporte. Consulte responsável e atualizações quando disponíveis. O fluxo do solicitante é de acompanhamento; a tratativa e o encerramento cabem ao suporte técnico."
+        ]
+      ],
+      "fields": [
+        [
+          "Assunto",
+          "Identifique a tela ou a ação com falha."
+        ],
+        [
+          "Impacto",
+          "Descreva o impedimento observado na operação."
+        ],
+        [
+          "Descrição e imagens",
+          "Permitem reproduzir e compreender o erro informado."
+        ]
+      ],
+      "checks": [
+        "O relato informa a tela e os passos que levaram ao erro.",
+        "O envio recebeu confirmação e pode ser localizado na Caixa de bugs.",
+        "As atualizações foram conferidas no registro correspondente."
+      ],
+      "faq": [
+        [
+          "O menu não aparece para a UVIS",
+          "A abertura direta está reservada aos perfis autorizados. Encaminhe o caso à coordenadoria ou à COVISA."
+        ],
+        [
+          "Há três bugs ativos",
+          "Acompanhe a conclusão dos registros existentes antes de enviar um novo pela mesma origem."
+        ],
+        [
+          "A dúvida é sobre o uso do sistema",
+          "Consulte os treinamentos e o suporte da equipe. O reporte de bug deve descrever um erro observado."
+        ]
+      ],
+      "sources": [
+        "app/modules/feedback/routes.py",
+        "app/modules/feedback/service.py",
+        "app/templates/feedback_form.html",
+        "docs/notion_reporte_bugs.md"
+      ]
+    },
+    {
+      "id": "guia-painel-operacional",
+      "title": "Painel operacional",
+      "subtitle": "Consulte o contexto do endereço antes de programar o deslocamento da equipe.",
+      "group": "gestao-suporte",
+      "screenshot": "painel-operacional",
+      "audience": "Diretor e demais perfis autorizados ao Painel Operacional.",
+      "menu": "Menu lateral > Painel Operacional",
+      "route": "/diretor/painel-operacional",
+      "flow": [
+        "Informar o endereço",
+        "Conferir o contexto",
+        "Preparar a operação"
+      ],
+      "before": [
+        "Tenha um endereço completo, com município e UF.",
+        "Considere o horário e a disponibilidade das informações externas exibidas na consulta."
+      ],
+      "steps": [
+        [
+          "Abra o Painel Operacional",
+          "Entre pelo menu e localize a consulta de endereço. O acesso segue a autorização específica do painel e os limites da sua conta."
+        ],
+        [
+          "Informe o local",
+          "Digite o endereço completo e solicite a consulta. Confira o ponto encontrado antes de interpretar os demais blocos. Endereços semelhantes podem corresponder a locais diferentes."
+        ],
+        [
+          "Confira o clima",
+          "Leia temperatura, vento, rajadas, chuva, nuvens e umidade quando disponíveis. Confira também os avisos sobre falhas ou indisponibilidade da fonte de dados."
+        ],
+        [
+          "Leia a indicação de risco",
+          "Consulte a classificação e os fatores apresentados pelo painel. Use essas informações como apoio ao planejamento; a avaliação do local e a decisão operacional continuam com a equipe responsável."
+        ],
+        [
+          "Revise contexto e recursos",
+          "Confira o histórico de OS próximas, os recursos exibidos e o checklist de preparação. Dados ausentes ou equipamentos listados não confirmam, por si só, a disponibilidade para uma operação específica."
+        ],
+        [
+          "Use os atalhos e atualize",
+          "Abra os atalhos de rota, mapa ou previsão quando disponíveis. Antes de uma decisão posterior, atualize a consulta para o endereço correto e confira novamente o contexto e os avisos."
+        ]
+      ],
+      "fields": [
+        [
+          "Endereço",
+          "Use logradouro, número, cidade e UF para localizar o ponto."
+        ],
+        [
+          "Clima e risco",
+          "Observe os valores, o contexto e os avisos da consulta."
+        ],
+        [
+          "Checklist e recursos",
+          "Apoiam a preparação e precisam de conferência da equipe."
+        ]
+      ],
+      "checks": [
+        "O ponto consultado corresponde ao endereço pretendido.",
+        "Os dados disponíveis e os avisos foram considerados.",
+        "A equipe conferiu recursos e condições antes de programar a atividade."
+      ],
+      "faq": [
+        [
+          "O endereço não foi encontrado",
+          "Complete cidade, UF e referências e refaça a consulta."
+        ],
+        [
+          "O clima está indisponível",
+          "Observe o aviso e aguarde ou confira a fonte indicada; ausência de dados não é condição favorável confirmada."
+        ],
+        [
+          "O painel aponta condição favorável",
+          "Confira também local, equipamentos e avaliação da equipe. A indicação apoia a decisão, sem substituir a conferência operacional."
+        ]
+      ],
+      "sources": [
+        "app/modules/painel_operacional/routes.py",
+        "app/modules/painel_operacional/service.py",
+        "app/templates/painel_operacional.html"
+      ]
+    },
+    {
+      "id": "guia-banco-talentos-agro",
+      "title": "Banco de talentos Agro",
+      "subtitle": "Envie o currículo, revise o perfil extraído e acompanhe a avaliação do candidato.",
+      "group": "agro",
+      "screenshot": "talentos-agro",
+      "audience": "Responsáveis administrativos autorizados no módulo Agro.",
+      "menu": "Agro > Banco de talentos",
+      "route": "/agro/banco-de-talentos",
+      "flow": [
+        "Enviar o currículo",
+        "Revisar o perfil",
+        "Acompanhar a avaliação"
+      ],
+      "before": [
+        "Use um currículo legível em PDF e confira a autorização para tratar os dados do candidato.",
+        "Tenha acesso à consulta e, para inclusão ou alteração, às ações correspondentes do módulo."
+      ],
+      "steps": [
+        [
+          "Consulte antes de incluir",
+          "Abra o Banco de talentos e procure pelo nome, área ou habilidade. Confira se já existe cadastro para o documento ou candidato antes de criar outro registro."
+        ],
+        [
+          "Envie o PDF",
+          "Use a opção de novo currículo. Selecione um arquivo PDF de até 20 MB e confira os demais campos do formulário. Envie e aguarde a confirmação do cadastro e da leitura automatizada."
+        ],
+        [
+          "Confira a situação da análise",
+          "Observe se o processamento foi concluído ou apresentou erro. Um erro de análise não deve ser tratado como rejeição do candidato. Consulte o documento original armazenado no registro."
+        ],
+        [
+          "Revise o perfil gerado",
+          "Abra o detalhe e compare resumo, formação, experiências e habilidades com o currículo. Sugestões de desenvolvimento não representam competências já comprovadas; a avaliação deve permanecer sob responsabilidade humana."
+        ],
+        [
+          "Atualize o acompanhamento",
+          "Registre a etapa e as observações administrativas conforme a avaliação da equipe. Use anotações objetivas relacionadas à candidatura e mantenha o registro atualizado."
+        ],
+        [
+          "Reprocesse quando necessário",
+          "Quando houver falha de leitura e a ação estiver disponível, use Reprocessar IA. Aguarde a nova análise e revise o resultado. Consulte o PDF original sempre que houver divergência."
+        ]
+      ],
+      "fields": [
+        [
+          "PDF do currículo",
+          "Documento original usado para a extração e a conferência."
+        ],
+        [
+          "Perfil estruturado",
+          "Resumo e informações extraídas que exigem revisão."
+        ],
+        [
+          "Etapa e observações",
+          "Registram o acompanhamento administrativo do candidato."
+        ]
+      ],
+      "checks": [
+        "O PDF original pode ser consultado no registro.",
+        "As informações extraídas foram comparadas com o currículo.",
+        "A etapa e as observações refletem a avaliação da equipe."
+      ],
+      "faq": [
+        [
+          "O mesmo arquivo já foi enviado",
+          "Confira o cadastro existente: o fluxo verifica duplicidade do PDF no escopo correspondente."
+        ],
+        [
+          "A leitura automática falhou",
+          "Confira o documento armazenado e use Reprocessar IA quando disponível."
+        ],
+        [
+          "O resumo diverge do currículo",
+          "Use o PDF como referência e encaminhe a divergência para conferência. Não baseie uma decisão apenas no resumo automático."
+        ]
+      ],
+      "sources": [
+        "app/modules/agro/talent_bank_routes.py",
+        "app/modules/agro/talent_bank_service.py",
+        "app/templates/agro_talentos_listar.html",
+        "app/templates/agro_talento_detalhe.html"
+      ]
+    },
+    {
+      "id": "guia-central-financeiro",
+      "title": "Central Financeiro",
+      "subtitle": "Escolha a empresa, confira a identidade e navegue pelas funções disponíveis.",
+      "group": "financeiro",
+      "screenshot": "financeiro",
+      "audience": "Financeiro, administrador financeiro e perfis com autorização específica.",
+      "menu": "Seletor de centrais > Financeiro",
+      "route": "/financeiro",
+      "flow": [
+        "Selecionar a empresa",
+        "Conferir o ambiente",
+        "Usar a função autorizada"
+      ],
+      "before": [
+        "Confira a empresa e o CNPJ antes de consultar ou registrar informações.",
+        "Para cadastrar ou configurar empresas, utilize uma conta com as permissões correspondentes."
+      ],
+      "steps": [
+        [
+          "Abra a Central Financeiro",
+          "Entre com a conta financeira ou use o seletor de centrais quando disponível. Busque a empresa pelo nome ou CNPJ no catálogo."
+        ],
+        [
+          "Selecione a empresa",
+          "Use Acessar empresa e confira a identificação no cabeçalho. As páginas preservam a empresa na navegação. Use Trocar empresa para voltar ao catálogo e escolher outro cadastro."
+        ],
+        [
+          "Confira as funções disponíveis",
+          "No ambiente IJA, os atalhos incluem contas, entradas, saídas, caixa, bancos, comprovantes e relatórios conforme as permissões. Empresas novas possuem inicialmente suas configurações; cadastrar outra empresa não copia os lançamentos da IJA."
+        ],
+        [
+          "Navegue pelo objetivo",
+          "Para uma movimentação, escolha a ação de entrada ou saída apropriada. Para conferência, abra contas, comprovantes, caixa ou relatórios. Confira o contexto e os campos do formulário antes de confirmar qualquer registro."
+        ],
+        [
+          "Configure a identificação",
+          "Quando autorizado, abra Configurações para dados da empresa, logo, competências e cadastro fiscal. Ao cadastrar uma empresa, informe nome, razão social e CNPJ válido e único. A logo deve atender aos formatos e limites indicados na tela."
+        ],
+        [
+          "Confirme o resultado",
+          "Após salvar, confira a mensagem e reabra a página ou o registro. Nos relatórios, revise o período e os filtros. O cadastro fiscal organiza os dados da empresa; não confirma emissão de documento fiscal."
+        ]
+      ],
+      "fields": [
+        [
+          "Empresa / CNPJ",
+          "Identificam o ambiente que está aberto."
+        ],
+        [
+          "Configurações",
+          "Reúnem identidade, logo, competências e dados fiscais."
+        ],
+        [
+          "Período e filtros",
+          "Definem o recorte das consultas e relatórios."
+        ]
+      ],
+      "checks": [
+        "A empresa exibida é a pretendida.",
+        "A função utilizada está disponível para a empresa e o perfil.",
+        "A alteração foi confirmada no cadastro ou registro correspondente."
+      ],
+      "faq": [
+        [
+          "A empresa nova só mostra Configurações",
+          "Esse é o escopo inicial de novos cadastros. Os lançamentos existentes permanecem no ambiente IJA."
+        ],
+        [
+          "O CNPJ foi recusado",
+          "Confira os dígitos e se o documento já está cadastrado."
+        ],
+        [
+          "Não aparece o cadastro de empresa",
+          "Confira com a gestão a autorização de cadastro e configuração do perfil."
+        ]
+      ],
+      "sources": [
+        "app/modules/financeiro/routes.py",
+        "app/modules/financeiro/service.py",
+        "app/templates/financeiro_central.html",
+        "app/templates/financeiro_empresa.html"
+      ]
+    },
+    {
+      "id": "guia-ortomosaicos",
+      "title": "Ortomosaicos e curvas",
+      "subtitle": "Envie o levantamento e acompanhe a preparação das camadas de visualização.",
+      "group": "mapas-documentos",
+      "screenshot": "ortomosaicos",
+      "audience": "Dev, Diretor e perfil dedicado de Ortomosaicos, conforme o escopo de cada conta.",
+      "menu": "Menu lateral > Ortomosaicos",
+      "route": "/ortomosaicos",
+      "flow": [
+        "Enviar o levantamento",
+        "Acompanhar o processamento",
+        "Conferir as camadas"
+      ],
+      "before": [
+        "Confira o município, o tipo de arquivo e o georreferenciamento do levantamento.",
+        "Para RGB, use GeoTIFF com bandas de cor identificadas. Para curvas, selecione o tipo de DEM oferecido no envio."
+      ],
+      "steps": [
+        [
+          "Abra o módulo e escolha o envio",
+          "Use Enviar levantamento. Informe o nome e a prefeitura do levantamento. A conta dedicada de Ortomosaicos fica limitada à sua prefeitura ativa vinculada."
+        ],
+        [
+          "Selecione o tipo e o arquivo",
+          "Escolha a opção RGB ou DEM / curvas de nível conforme o arquivo. Confira os parâmetros solicitados. Um modelo de elevação não deve ser enviado como imagem RGB."
+        ],
+        [
+          "Acompanhe o upload",
+          "Aguarde o recebimento das partes e a confirmação do arquivo. Se o envio cair, selecione o mesmo arquivo original, com os mesmos campos, no mesmo navegador, para retomar enquanto a sessão de envio estiver disponível."
+        ],
+        [
+          "Espere o estado Pronto",
+          "Após o envio, acompanhe Pendente, Processando, Pronto ou Falha. O recebimento do arquivo não significa que a visualização terminou. Em falha, consulte a mensagem e use Processar novamente quando disponível."
+        ],
+        [
+          "Confira a visualização",
+          "Abra o levantamento pronto. Use zoom, enquadramento, tela cheia, coordenadas, visibilidade e opacidade. Alterne o fundo de mapa quando necessário. Um aviso no fundo de mapa é diferente de falha do levantamento."
+        ],
+        [
+          "Revise as camadas do levantamento",
+          "Para DEM, confira as curvas e os controles apresentados. As ferramentas e camadas disponíveis dependem do tipo e do resultado processado. Confira os parâmetros e a origem do arquivo antes de utilizar a visualização em um relatório."
+        ]
+      ],
+      "fields": [
+        [
+          "Prefeitura",
+          "Define o município ao qual pertence o levantamento."
+        ],
+        [
+          "Tipo de levantamento",
+          "Distingue visualização RGB de processamento de elevação e curvas."
+        ],
+        [
+          "Estado",
+          "Pronto indica que o resultado pode ser consultado."
+        ]
+      ],
+      "checks": [
+        "Nome, município e tipo de arquivo estão corretos.",
+        "O resultado chegou ao estado Pronto.",
+        "As camadas e os parâmetros foram conferidos no visualizador."
+      ],
+      "faq": [
+        [
+          "O arquivo foi recusado como RGB",
+          "Confira georreferenciamento e identificação das bandas de cor. Para elevação, use a opção de DEM adequada."
+        ],
+        [
+          "O upload foi interrompido",
+          "Retome com o mesmo arquivo, os mesmos campos e o mesmo navegador enquanto a sessão estiver disponível."
+        ],
+        [
+          "O satélite de fundo falhou",
+          "Confira o aviso e use o mapa de ruas ou outro fundo disponível; confira separadamente o estado do levantamento."
+        ]
+      ],
+      "sources": [
+        "app/modules/ortomosaicos/routes.py",
+        "app/modules/ortomosaicos/access.py",
+        "app/modules/ortomosaicos/service.py",
+        "docs/ortomosaicos.md"
+      ]
+    },
+    {
+      "id": "guia-relatorios-operacionais",
+      "title": "Relatórios operacionais",
+      "subtitle": "Defina o recorte, confira os registros e exporte o resultado da consulta.",
+      "group": "mapas-documentos",
+      "screenshot": "relatorios",
+      "audience": "UVIS e perfis de gestão autorizados aos relatórios correspondentes.",
+      "menu": "Relatórios; Coleta de Imagens; Histórico OS",
+      "route": "/relatorios",
+      "flow": [
+        "Definir o recorte",
+        "Conferir os registros",
+        "Exportar o resultado"
+      ],
+      "before": [
+        "Defina município ou unidade, período e situação que deseja analisar.",
+        "Confira se sua conta possui consulta e, para baixar arquivos, a permissão de exportação correspondente."
+      ],
+      "steps": [
+        [
+          "Escolha o relatório",
+          "Abra Relatórios e selecione a visão necessária, como solicitações, OS ou coleta de imagens. Use os atalhos disponíveis para o seu perfil. Cada visão possui seus próprios filtros."
+        ],
+        [
+          "Defina o período e o contexto",
+          "Preencha as datas e os filtros de unidade, equipe, situação e demais campos apresentados. Confira qual data o filtro considera, como agendamento ou execução, antes de interpretar o resultado."
+        ],
+        [
+          "Confira a listagem",
+          "Aplique a busca e confira totais e linhas. Abra o detalhe de um registro para validar os dados quando necessário. Totais dependem do período e dos critérios selecionados."
+        ],
+        [
+          "Confira a informação no detalhe",
+          "Abra os registros necessários para conferir os dados apresentados. Para imagens e anexos, consulte o atendimento correspondente. A quantidade apresentada não substitui a abertura do arquivo quando for necessário verificar seu conteúdo."
+        ],
+        [
+          "Revise histórico e retornos",
+          "No Histórico OS, confira a solicitação de origem e as etapas do retorno quando apresentadas. A origem e o retorno são registros vinculados; confira a etapa antes de somar atendimentos."
+        ],
+        [
+          "Exporte e confira",
+          "Use PDF ou Excel quando disponíveis. Abra o arquivo e confira título, período, filtros e totais. Para montar uma seleção própria de campos e condições, utilize o guia de Consultas personalizadas já disponível na Central."
+        ]
+      ],
+      "fields": [
+        [
+          "Período",
+          "Observe qual data é usada no relatório escolhido."
+        ],
+        [
+          "Filtros",
+          "Devem corresponder ao recorte que será interpretado e compartilhado."
+        ],
+        [
+          "Origem e retorno",
+          "Identificam etapas diferentes de um mesmo ciclo de atendimento."
+        ]
+      ],
+      "checks": [
+        "O recorte da tela corresponde ao objetivo da análise.",
+        "Os registros e seus detalhes foram conferidos quando necessário.",
+        "O arquivo exportado apresenta o mesmo contexto esperado."
+      ],
+      "faq": [
+        [
+          "O total difere de outro relatório",
+          "Confira período, tipo de data, situação e unidade antes de comparar."
+        ],
+        [
+          "O arquivo esperado não aparece",
+          "Confira o atendimento, seu vínculo e se o envio do arquivo foi confirmado na operação."
+        ],
+        [
+          "Preciso escolher as colunas",
+          "Use Consultas personalizadas e seu guia específico, em vez de alterar o relatório padrão."
+        ]
+      ],
+      "sources": [
+        "app/modules/relatorios/routes.py",
+        "app/modules/relatorios/service.py",
+        "app/templates/relatorios.html",
+        "docs/README-retorno-automatico.md"
+      ]
+    },
+    {
+      "id": "guia-mapas-operacionais",
+      "title": "Mapas operacionais",
+      "subtitle": "Filtre os atendimentos e confira a localização dos registros no território.",
+      "group": "mapas-documentos",
+      "screenshot": "mapas",
+      "audience": "UVIS e perfis de gestão com acesso aos mapas operacionais.",
+      "menu": "Menu lateral > Mapas",
+      "route": "/mapa-relatorio",
+      "flow": [
+        "Selecionar o recorte",
+        "Aplicar os filtros",
+        "Consultar os pontos"
+      ],
+      "before": [
+        "Defina o mês e o ano de agendamento que deseja consultar.",
+        "Confira a unidade e a visão operacional que devem compor o mapa."
+      ],
+      "steps": [
+        [
+          "Abra Mapas",
+          "Entre pelo menu lateral e confira o município e a unidade do seu contexto. O mapa considera o alcance da sua conta."
+        ],
+        [
+          "Defina o período de agendamento",
+          "Ajuste mês e ano do agendamento. Esses campos se referem à programação do pedido; observe essa referência ao comparar com relatórios de execução."
+        ],
+        [
+          "Selecione os demais filtros",
+          "Quando disponíveis, selecione unidade, foco, larva visualizada e visão operacional. A visão permite consultar aprovados e concluídos, todas as solicitações, pendentes e atrasados ou retornos vinculados."
+        ],
+        [
+          "Aplique os filtros",
+          "Use a ação de atualização do mapa e aguarde o carregamento. Confira o contador de registros do recorte e os filtros selecionados."
+        ],
+        [
+          "Consulte pontos e listagem",
+          "Explore os pontos e a lista Solicitações deste recorte. Use Anterior e Próxima para percorrer a relação quando disponíveis. Registros sem coordenadas podem não aparecer como ponto."
+        ],
+        [
+          "Confira o registro e os indicadores",
+          "Abra o atendimento correspondente para conferir endereço e situação. Distância, consumo e custo estimado, quando apresentados, são indicadores do recorte e devem ser interpretados com o contexto do cálculo."
+        ]
+      ],
+      "fields": [
+        [
+          "Mês / ano do agendamento",
+          "Definem a referência temporal do mapa."
+        ],
+        [
+          "Visão operacional",
+          "Seleciona a situação ou o tipo de vínculo do recorte."
+        ],
+        [
+          "Larva visualizada",
+          "Distingue Sim, Não e Não informado quando esse filtro estiver disponível."
+        ]
+      ],
+      "checks": [
+        "Período, unidade e visão operacional estão corretos.",
+        "O contador e a relação correspondem ao recorte aplicado.",
+        "Endereço, situação e coordenadas foram conferidos nos registros relevantes."
+      ],
+      "faq": [
+        [
+          "O mapa está vazio",
+          "Confira período, visão e coordenadas dos registros. Aguarde também o carregamento da base do mapa."
+        ],
+        [
+          "O total difere de uma listagem",
+          "Compare o mesmo tipo de data, os filtros e a disponibilidade de coordenadas."
+        ],
+        [
+          "A base cartográfica não carregou",
+          "Confira o aviso exibido e a conexão. A lista de registros e a base do mapa são partes diferentes da visualização."
+        ]
+      ],
+      "sources": [
+        "app/modules/mapas/routes.py",
+        "app/modules/mapas/service.py",
+        "app/templates/mapa_relatorio.html"
+      ]
+    },
+    {
+      "id": "guia-agro-comercial-operacao",
+      "title": "Agro: comercial e operação",
+      "subtitle": "Entenda a sequência entre cliente, orçamento, contrato e ordem de serviço.",
+      "group": "agro",
+      "screenshot": "agro-comercial",
+      "audience": "Gestão e equipes autorizadas aos cadastros e à operação Agro.",
+      "menu": "Central Agro > Clientes / Comercial / Ordens de serviço",
+      "route": "/agro/admin",
+      "flow": [
+        "Preparar o orçamento",
+        "Formalizar o contrato",
+        "Organizar a OS"
+      ],
+      "before": [
+        "Confira o cliente, a área e o serviço que serão atendidos.",
+        "Use uma conta com vínculo e permissões para as ações operacionais do Agro."
+      ],
+      "steps": [
+        [
+          "Confira o cliente",
+          "Abra Clientes e fornecedores e localize o contratante. Confira os dados de identificação e contato. Cadastre ou corrija as informações quando sua conta tiver permissão."
+        ],
+        [
+          "Prepare o orçamento",
+          "Abra Comercial > Orçamentos e use o cadastro correspondente. Selecione o cliente e preencha os dados do serviço, áreas, valores e demais campos do formulário. Salve e confira o documento e a situação."
+        ],
+        [
+          "Organize o mapeamento",
+          "Quando o atendimento exigir, abra o RD de mapeamento vinculado ao orçamento. Confira os dados e o template antes de gerar ou encaminhar o documento."
+        ],
+        [
+          "Confira o contrato",
+          "Use a ação de contrato vinculada ao orçamento. Revise partes, serviço, condições e documentos. A existência de um contrato cadastrado não comprova sua aprovação ou a autorização para iniciar a operação."
+        ],
+        [
+          "Cadastre a OS do contrato",
+          "No contrato apto ao fluxo, abra a opção de cadastro de OS. Confira os vínculos e preencha os dados operacionais exigidos, incluindo responsáveis e programação quando apresentados."
+        ],
+        [
+          "Acompanhe a execução",
+          "Use a listagem de OS e o acesso do piloto Agro correspondente. Confira a situação e os registros da execução. Pagamentos e lançamentos são acompanhados na Central Financeiro por perfis autorizados."
+        ]
+      ],
+      "fields": [
+        [
+          "Cliente",
+          "É o contratante relacionado ao orçamento e aos documentos."
+        ],
+        [
+          "Orçamento e contrato",
+          "Mantêm os vínculos e as condições do serviço."
+        ],
+        [
+          "OS",
+          "Organiza a etapa operacional vinculada ao contrato."
+        ]
+      ],
+      "checks": [
+        "Cliente, orçamento e contrato correspondem ao mesmo atendimento.",
+        "A situação e os documentos foram conferidos antes da operação.",
+        "A OS foi vinculada ao contrato e aos responsáveis corretos."
+      ],
+      "faq": [
+        [
+          "A conta financeira não abre a operação Agro",
+          "Os acessos financeiros e operacionais são distintos. Confira o perfil e os vínculos com a gestão."
+        ],
+        [
+          "Não aparece a opção de criar OS",
+          "Confira a situação do contrato e a autorização de cadastro da sua conta."
+        ],
+        [
+          "O orçamento foi salvo, mas o serviço não começou",
+          "Confira contrato, programação e OS. O orçamento é uma etapa comercial, não um registro de execução."
+        ]
+      ],
+      "sources": [
+        "app/modules/agro/routes.py",
+        "app/modules/agro/service.py",
+        "app/templates/agro_orcamento_form.html",
+        "app/templates/agro_os_form.html"
+      ]
+    },
+    {
+      "id": "guia-usuarios-prefeituras",
+      "title": "Usuários e prefeituras",
+      "subtitle": "Cadastre as contas com os vínculos necessários e confira o primeiro acesso.",
+      "group": "gestao-suporte",
+      "screenshot": "usuarios",
+      "audience": "Administradores autorizados ao cadastro de usuários, UVIS e prefeituras.",
+      "menu": "Usuário > Prefeituras / Listar / Cadastrar; Clientes e UVIS",
+      "route": "/admin/usuarios",
+      "flow": [
+        "Conferir a prefeitura",
+        "Cadastrar a conta",
+        "Validar os vínculos"
+      ],
+      "before": [
+        "Defina a função da pessoa, sua unidade e o alcance que ela deve receber.",
+        "Confira se a prefeitura ou UVIS já existe antes de incluir outro cadastro."
+      ],
+      "steps": [
+        [
+          "Confira a prefeitura",
+          "Na listagem de Prefeituras, procure o município e sua situação. Quando autorizado e necessário, cadastre a prefeitura com os dados exigidos pela tela. Evite duplicar o mesmo município."
+        ],
+        [
+          "Escolha o cadastro adequado",
+          "Use Usuário > Cadastrar para contas do sistema. Para informações institucionais e contato de uma UVIS, confira também o cadastro de Clientes e UVIS. Uma conta de login e um contato institucional são registros com finalidades diferentes."
+        ],
+        [
+          "Defina a identificação e o perfil",
+          "Preencha nome, login e tipo de usuário. Vincule a prefeitura e, quando aplicáveis, região, piloto, equipe ou demais responsabilidades solicitadas. O administrador só pode gerenciar os perfis permitidos ao seu alcance."
+        ],
+        [
+          "Defina a credencial",
+          "Preencha senha e confirmação conforme a orientação da tela. Use as ações de redefinição de senha da listagem quando necessário. Não registre senhas em observações, relatórios ou capturas de treinamento."
+        ],
+        [
+          "Salve e confira a conta",
+          "Aguarde a confirmação e localize o usuário na listagem. Reabra os dados e confira o tipo e todos os vínculos. Uma conta sem o vínculo municipal necessário pode não consultar ou cadastrar os registros pretendidos."
+        ],
+        [
+          "Valide o primeiro acesso",
+          "Solicite o acesso da pessoa pelo canal correspondente ao seu perfil. Confira a tela inicial, o menu e os registros esperados. Se faltar uma função, revise a permissão do perfil na Central de TI e os vínculos da conta."
+        ]
+      ],
+      "fields": [
+        [
+          "Tipo de usuário",
+          "Define a função da conta e as regras específicas de acesso."
+        ],
+        [
+          "Prefeitura e região",
+          "Participam do alcance dos dados municipais."
+        ],
+        [
+          "Vínculos operacionais",
+          "Relacionam a pessoa à unidade, equipe ou piloto correspondente."
+        ]
+      ],
+      "checks": [
+        "A conta foi criada sem duplicar usuários ou municípios.",
+        "O perfil e os vínculos correspondem à responsabilidade definida.",
+        "O primeiro acesso apresenta o alcance esperado."
+      ],
+      "faq": [
+        [
+          "O login já existe",
+          "Procure a conta na listagem e confira se deve editar o cadastro existente."
+        ],
+        [
+          "A conta não encontra registros",
+          "Confira prefeitura, região e vínculos operacionais antes de ampliar permissões."
+        ],
+        [
+          "O perfil desejado não pode ser cadastrado",
+          "Solicite o cadastro ao administrador autorizado. As restrições de perfis mais privilegiados permanecem no sistema."
+        ]
+      ],
+      "sources": [
+        "app/modules/usuarios/routes.py",
+        "app/modules/usuarios/service.py",
+        "app/modules/admin_uvis/routes.py",
+        "app/templates/admin_usuario_novo.html"
+      ]
+    }
+  ]
+}

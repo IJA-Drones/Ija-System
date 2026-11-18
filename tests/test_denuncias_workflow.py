@@ -5,10 +5,15 @@ from unittest.mock import patch
 
 from flask import Blueprint, Flask, g
 from flask_login import LoginManager
+from werkzeug.datastructures import MultiDict
 from app.extensions import db
 from app.models import Denuncia, Solicitacao, Usuario, Prefeitura
 from app.modules.denuncias.routes import register_routes
-from app.modules.denuncias.service import count_denuncias_alerta
+from app.modules.denuncias.service import (
+    build_denuncias_coordenadoria_query,
+    build_uvis_options_for_denuncia,
+    count_denuncias_alerta,
+)
 
 
 class DenunciasWorkflowTests(unittest.TestCase):
@@ -84,6 +89,7 @@ class DenunciasWorkflowTests(unittest.TestCase):
         db.session.refresh(self.report)
         self.assertEqual(self.report.status, "CONVERTIDA_SOLICITACAO")
         self.assertEqual(self.report.solicitacao.usuario_id, 3)
+        self.assertEqual(self.report.solicitacao.distrito_administrativo, "Santana")
         self.assertIn("Observação de teste", self.report.solicitacao.observacao)
         self.assertEqual(self.report.cidadao_rg, "")
         self.assertEqual(count_denuncias_alerta(db.session.get(Usuario, 3)), 0)
@@ -109,6 +115,35 @@ class DenunciasWorkflowTests(unittest.TestCase):
         self.as_user(2)
         self.client.post("/coordenadoria/denuncias/1/designar-uvis", data={"uvis_usuario_id":5})
         self.assertIsNone(self.report.uvis_usuario_id)
+
+    def test_uvis_options_match_assignment_normalization_and_municipality(self):
+        self.forward()
+        db.session.get(Usuario, 3).regiao = " norte "
+        db.session.add(Prefeitura(id=2, nome="Outro municipio de teste", slug="outro-teste"))
+        db.session.add_all([
+            Usuario(id=9, login="9", senha_hash="test", nome_uvis="Outra UVIS de teste",
+                    tipo_usuario="uvis", regiao="NORTE ", prefeitura_id=1),
+            Usuario(id=10, login="10", senha_hash="test", nome_uvis="UVIS de outro municipio",
+                    tipo_usuario="uvis", regiao="NORTE", prefeitura_id=2),
+        ])
+        db.session.commit()
+        self.assertEqual({u.id for u in build_uvis_options_for_denuncia(self.report)}, {3, 9})
+        self.as_user(2)
+        self.client.post("/coordenadoria/denuncias/1/designar-uvis", data={"uvis_usuario_id": 9})
+        db.session.refresh(self.report)
+        self.assertEqual(self.report.uvis_usuario_id, 9)
+        self.assertEqual(self.report.status, Denuncia.STATUS_ENCAMINHADA_UVIS)
+
+    def test_regional_listing_and_alert_normalize_spaces_without_mixing_regions(self):
+        self.forward()
+        self.report.coordenadoria = " norte "
+        db.session.commit()
+        north = db.session.get(Usuario, 2)
+        south = db.session.get(Usuario, 4)
+        self.assertEqual(count_denuncias_alerta(north), 1)
+        self.assertEqual(count_denuncias_alerta(south), 0)
+        self.assertEqual([r.id for r in build_denuncias_coordenadoria_query(north, MultiDict()).all()], [1])
+        self.assertEqual(build_denuncias_coordenadoria_query(south, MultiDict()).count(), 0)
 
     def test_reassignment_revokes_previous_uvis(self):
         self.assign()

@@ -1,0 +1,142 @@
+{
+  "revision": "2026-11-17",
+  "environment": "SQLite descartavel; dados ficticios; HTTP somente leitura",
+  "captures": [
+    {
+      "name": "agenda",
+      "role": "uvis",
+      "path": "/agenda",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "3af012ae662cdfd9a9e31e2e5145d3c261f8e6ad2c45193dcd6a299f61c54f99"
+    },
+    {
+      "name": "equipes-uvis",
+      "role": "uvis",
+      "path": "/uvis/equipes/nova",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "94ad2e2c7b74e871cc35f12aaee8ba7b4d2dc9a3a9285186a4a6ca7670e497dc"
+    },
+    {
+      "name": "checklists",
+      "role": "supervisor",
+      "path": "/piloto/checklists/semanais",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "5541f319939394e1ee6cef52144c5bef2cae7bf0056eddce5115df50d1aaf37c"
+    },
+    {
+      "name": "frota",
+      "role": "supervisor",
+      "path": "/piloto/veiculos",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "8536b1b04be02d638035c6f82ecb3281f38033510aadcd867d9037683b8fe164"
+    },
+    {
+      "name": "rastreamento",
+      "role": "dev",
+      "path": "/veiculos/rastreamento",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "e3e1b3631fe1bbbfa749eb9a04ce25ca043b426f19803a13d2f67eff27c1fd99"
+    },
+    {
+      "name": "estoque",
+      "role": "dev",
+      "path": "/estoque/novo",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "c0a1ef5fd5e7fa5f35617c48ec073fd2a249689c4c6cad4efa3a1dd50dc526e4"
+    },
+    {
+      "name": "manutencao",
+      "role": "dev",
+      "path": "/equipamentos/903/manutencao/pecas",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "322c8ba82f2ba2920358f03c072b243daf75a04d5d80f606cce2f1637c2f7e38"
+    },
+    {
+      "name": "central-ti",
+      "role": "dev",
+      "path": "/central-ti",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "4310fa126b4b1325f7138b353f79bf531925654e50ac8695195d3a265fa0e37f"
+    },
+    {
+      "name": "bugs",
+      "role": "covisa",
+      "path": "/bugs/novo",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "988a166744d7d40b0d0893225f514e962354e9c59d0f60356fe4a20eeaad6333"
+    },
+    {
+      "name": "painel-operacional",
+      "role": "diretor",
+      "path": "/diretor/painel-operacional",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "17a491d42a46039ce35821441137264c18f7ab6b5df2729b9a675d177d740084"
+    },
+    {
+      "name": "talentos-agro",
+      "role": "dev",
+      "path": "/agro/banco-de-talentos",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "2c44dafe8b9d6a84d107fbb56b590715aa57a180576479876afcd15e92666d37"
+    },
+    {
+      "name": "financeiro",
+      "role": "financeiro_admin",
+      "path": "/financeiro",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "1ce19655693cc1d630f2dec4fc0c47d3742cce6d7f3a1751a6039c610722b203"
+    },
+    {
+      "name": "ortomosaicos",
+      "role": "diretor",
+      "path": "/ortomosaicos",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "b64f5fb73fddff863ea2e162609fa588a88048f6aea5abf08da708dbc19c9f2a"
+    },
+    {
+      "name": "relatorios",
+      "role": "dev",
+      "path": "/relatorios",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "4c83e7adc3517e2610f51dca8420816759ce786b607bf171e71fe0c9dd7a1ea7"
+    },
+    {
+      "name": "mapas",
+      "role": "dev",
+      "path": "/mapa-relatorio",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "d8833bca9cc127a33d44fae63acd583b9ad57e5ca5efe9c97dc7b7617dadff96"
+    },
+    {
+      "name": "usuarios",
+      "role": "dev",
+      "path": "/admin/usuarios/novo",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "18f7b81aba3f67ccdd960f64543faa907b8b57eceaaef3b041b1bad2c22d80b9"
+    },
+    {
+      "name": "agro-comercial",
+      "role": "dev",
+      "path": "/agro/orcamentos",
+      "status": 200,
+      "ok": true,
+      "image_sha256": "43b7fc895f364160b674f35efa54a9896da4d4fcbc0c224cd58df80adf891886"
+    }
+  ]
+}

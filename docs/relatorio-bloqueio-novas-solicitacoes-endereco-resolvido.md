@@ -308,7 +308,9 @@ Atualmente, o campo registra o estado do bloqueio, mas não possui campos espec�
 
 ### 18.3. Desempenho da comparação textual
 
-A busca alternativa analisa até os 300 bloqueios mais recentes do escopo quando não encontra correspondência por `place_id`. Esse limite protege o desempenho, mas pode deixar de localizar um bloqueio textual mais antigo em uma base muito grande.
+A busca alternativa percorre os bloqueios do escopo em lotes de 300 quando não encontra correspondência por `place_id`. A consulta traz apenas o identificador e os componentes do endereço, carregando o registro completo somente quando encontra uma correspondência. O lote não limita a quantidade total de bloqueios considerados; registros antigos continuam sendo verificados.
+
+Em bases muito grandes, a comparação textual ainda pode ser custosa, pois o tempo de consulta cresce com o histórico de bloqueios do município.
 
 Como evolução, recomenda-se persistir uma chave normalizada e indexada do endereço, permitindo comparação direta no banco de dados.
 

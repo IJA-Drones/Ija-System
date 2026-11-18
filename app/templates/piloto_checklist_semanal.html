@@ -97,6 +97,7 @@
               <option value="{{ v.id }}" {% if veiculo_padrao_id == v.id %}selected{% endif %}>{{ v.placa }} - {{ v.modelo }}</option>
             {% endfor %}
           </select>
+          {% if veiculo_autopreenchido %}<div class="form-text">Veículo selecionado automaticamente pelo vínculo da equipe ou responsável. Confira o equipamento utilizado.</div>{% endif %}
         </div>
         <div class="col-md-4">
           <label class="form-label small fw-bold text-muted">KILOMETRAGEM</label>
@@ -256,6 +257,7 @@
               <option value="{{ d.id }}" {% if drone_padrao_id == d.id %}selected{% endif %}>{{ d.renomacao }} - {{ d.modelo }}</option>
             {% endfor %}
           </select>
+          {% if drone_autopreenchido %}<div class="form-text">Drone da equipe selecionado automaticamente. Confira o equipamento utilizado.</div>{% endif %}
         </div>
         <div class="col-lg-3 col-md-6">
           <label class="form-label small fw-bold text-muted">NUMERO DE BATERIAS</label>

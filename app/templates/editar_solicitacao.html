@@ -41,6 +41,7 @@
             {# Rota genérica atualizada #}
             <form action="{{ url_for('main.editar_solicitacao', id=pedido.id) }}" method="POST" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=pedido.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
 {% if edit_fields is defined %}{{ edit_fields(pedido, 'main.editar_solicitacao') }}{% endif %}
+                <input type="hidden" name="next" value="{{ return_url }}">
                 <input type="hidden" name="latitude" value="{{ pedido.latitude if pedido.latitude is not none else '' }}">
                 <input type="hidden" name="longitude" value="{{ pedido.longitude if pedido.longitude is not none else '' }}">
                 <input type="hidden" name="risco_aereo" value="{{ '1' if pedido.area_restrita else '0' }}">
@@ -75,12 +76,14 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">Tipo de Visita</label>
-                        <select name="tipo_visita" class="form-select">
+                        <select name="tipo_visita" class="form-select" required>
+                            <option value="" disabled {% if not pedido_tipo_visita_select %}selected{% endif %}>Selecione o tipo de visita...</option>
                             {% for opcao in solicitacao_tipo_visita_opcoes %}
                             <option value="{{ opcao }}" {% if pedido_tipo_visita_select == opcao %}selected{% endif %}>{{ opcao }}</option>
                             {% endfor %}
                         </select>
                         <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
+                        {% if legacy_quadra_visit %}<small class="text-warning d-block mt-2">Este registro antigo usava Quadra como tipo de visita. Selecione o tipo correto; Quadra agora fica no Foco da Ação.</small>{% endif %}
                     </div>
 
                     <div class="col-md-6{% if not pedido_tipo_visita_outros %} d-none{% endif %}" data-tipo-visita-outros-wrapper>
@@ -253,7 +256,7 @@
 
                 {# BOTÕES #}
                 <div class="d-flex justify-content-end gap-2 mt-5">
-                    <a href="{{ url_for('main.admin_dashboard' if is_admin else 'main.dashboard') }}" class="btn btn-outline-danger px-4" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard' if is_admin else 'main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
+                    <a href="{{ return_url }}" class="btn btn-outline-danger px-4" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(return_url) if central_ti_url_allowed is defined else true) else 'false' }}">
                         <i class="bi bi-x-lg me-1"></i> Cancelar
                     </a>
                     <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold">
@@ -270,7 +273,7 @@
 {# O seu Script de CEP permanece o mesmo, ele já é funcional para ambos #}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/solicitacao-focos.js') }}"></script>
+<script src="{{ url_for('static', filename='js/solicitacao-focos.js', v='20261117-quadra-foco') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
       initSolicitacaoFocusForm({

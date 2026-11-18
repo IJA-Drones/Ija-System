@@ -358,7 +358,7 @@
                         {# Botões de Admin Desktop #}
                         {% if (central_ti_ui_guard(['main.deletar_registro', 'main.editar_solicitacao'], (current_user.tipo_usuario in ['dev', 'diretor', 'admin'])) if central_ti_ui_guard is defined else (current_user.tipo_usuario in ['dev', 'diretor', 'admin'])) %}
                         <div class="d-none d-lg-flex gap-1 mt-4">
-                            <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
+                            <a href="{{ url_for('main.editar_solicitacao', id=p.id, next=admin_return_url) }}"
                                 class="btn btn-sm btn-success"
                                 onclick="event.stopPropagation();" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                 <i class="bi bi-pencil-square"></i> Editar
@@ -746,7 +746,7 @@
                                            class="btn btn-sm btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_os_formulario_view', os_id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <i class="bi bi-clipboard2-check"></i> Formulário
                                         </a>
-                                        <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
+                                        <a href="{{ url_for('main.editar_solicitacao', id=p.id, next=admin_return_url) }}"
                                            class="btn btn-sm btn-success" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_solicitacao', id=p.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <i class="bi bi-pencil-square"></i> Editar
                                         </a>

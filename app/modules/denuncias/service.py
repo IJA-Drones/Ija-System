@@ -78,7 +78,7 @@ def _scope_denuncias(query, user):
         return query.filter(Denuncia.uvis_usuario_id == owner) if owner is not None else query.filter(db.false())
     regiao = get_user_regiao(user)
     if is_regional_user(user) and regiao:
-        return query.filter(func.upper(func.coalesce(Denuncia.coordenadoria, "")) == regiao)
+        return query.filter(func.upper(func.trim(func.coalesce(Denuncia.coordenadoria, ""))) == regiao)
     if active_configuration(user) is not None and not is_regional_user(user) and (get_user_prefeitura_id(user) is not None or teams):
         return query
     return query.filter(db.false())
@@ -93,7 +93,7 @@ def count_denuncias_alerta(user):
         if not regiao:
             return 0
         query = query.filter(
-            func.upper(func.coalesce(Denuncia.coordenadoria, "")) == regiao,
+            func.upper(func.trim(func.coalesce(Denuncia.coordenadoria, ""))) == regiao,
             Denuncia.status == Denuncia.STATUS_ENCAMINHADA_COORDENADORIA,
         )
         return query.count()
@@ -144,7 +144,7 @@ def build_denuncias_coordenadoria_query(user, args):
     query = build_denuncias_query(args)
     if not regiao:
         return query.filter(db.false())
-    return query.filter(func.upper(func.coalesce(Denuncia.coordenadoria, "")) == regiao)
+    return query.filter(func.upper(func.trim(func.coalesce(Denuncia.coordenadoria, ""))) == regiao)
 
 
 def build_denuncias_uvis_query(user, args):
@@ -234,7 +234,7 @@ def build_uvis_options_for_denuncia(denuncia):
         Usuario.query
         .filter(Usuario.tipo_usuario == "uvis")
         .filter(Usuario.prefeitura_id == denuncia.prefeitura_id)
-        .filter(func.upper(func.coalesce(Usuario.regiao, "")) == coordenadoria)
+        .filter(func.upper(func.trim(func.coalesce(Usuario.regiao, ""))) == coordenadoria)
         .order_by(Usuario.nome_uvis.asc())
         .all()
     )
