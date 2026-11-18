@@ -17,14 +17,14 @@
         <i class="bi bi-journal-text me-2 text-primary"></i> Caixa Diário · {{ empresa_financeiro.nome }}
       </h2>
       <p class="text-muted small mb-0">
-        Abra o caixa no inicio do dia, acompanhe as movimentacoes e feche o saldo com base no dia anterior.
+        Abra ou reabra o caixa quantas vezes precisar, selecione o dia e acompanhe as movimentacoes.
       </p>
     </div>
 
     <div class="listing-actions caixa-diario-actions">
-      {% if is_editable and not report.caixa_aberto and not report.caixa_fechado %}
+      {% if is_editable and not report.caixa_aberto %}
         <a href="#abrir-caixa-form" class="btn btn-primary caixa-abrir-destaque d-flex align-items-center gap-2">
-          <i class="bi bi-unlock-fill" aria-hidden="true"></i> Abrir caixa
+          <i class="bi bi-unlock-fill" aria-hidden="true"></i> {{ 'Reabrir caixa' if report.caixa_fechado else 'Abrir caixa' }}
         </a>
       {% endif %}
       <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug='ija')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -101,7 +101,7 @@
 
   {% if report.dia_anterior_pendente %}
     <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
-      O dia anterior ainda nao foi fechado. Para manter o caixa batendo certinho, feche primeiro
+      O caixa anterior ainda esta aberto. Confira o saldo de
       <a href="{{ url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat()) }}" class="alert-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat())) if central_ti_url_allowed is defined else true) else 'false' }}">
         o caixa de {{ report.caixa_anterior.data_caixa.strftime('%d/%m/%Y') }}
       </a>.
@@ -128,9 +128,9 @@
           </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
-          {% if request.args.get('caixa_status') != 'fechado' and is_editable and not report.caixa_aberto and not report.caixa_fechado %}
+          {% if is_editable and not report.caixa_aberto %}
             <a href="#abrir-caixa-form" class="btn btn-primary caixa-abrir-destaque d-inline-flex align-items-center justify-content-center gap-2">
-              <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
+              <i class="bi bi-unlock-fill"></i> {{ 'Reabrir caixa do dia' if report.caixa_fechado else 'Abrir caixa do dia' }}
             </a>
           {% endif %}
           <a href="{{ url_for('main.agro_caixa_diario', data_caixa=data_caixa_iso) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=data_caixa_iso)) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -197,7 +197,7 @@
             {% endif %}
           </div>
 
-          {% if is_editable and not report.caixa_aberto and not report.caixa_fechado %}
+          {% if is_editable and not report.caixa_aberto %}
             <form method="post" action="{{ url_for('main.agro_caixa_abrir') }}" class="row g-3" id="abrir-caixa-form" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_abrir'), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
               <input type="hidden" name="data_caixa" value="{{ data_caixa_iso }}">
               <div class="col-md-6">
@@ -205,12 +205,14 @@
                 <input
                   type="text"
                   name="saldo_abertura"
-                  value="{{ report.saldo_sugerido_abertura|currencybr }}"
+                  value="{{ (report.saldo_abertura if report.caixa_fechado else report.saldo_sugerido_abertura)|currencybr }}"
                   class="form-control"
-                  {% if report.possui_fechamento_anterior %}readonly{% endif %}
+                  {% if report.caixa_fechado or report.possui_fechamento_anterior %}readonly{% endif %}
                 >
                 <div class="form-text">
-                  {% if report.possui_fechamento_anterior %}
+                  {% if report.caixa_fechado %}
+                    A reabertura preserva o saldo inicial e as movimentacoes deste dia.
+                  {% elif report.possui_fechamento_anterior %}
                     Este valor segue automaticamente o fechamento do dia anterior.
                   {% else %}
                     Como nao ha dia anterior fechado, voce pode informar o saldo inicial.
@@ -223,7 +225,7 @@
               </div>
               <div class="col-12">
                 <button type="submit" class="btn btn-primary caixa-abrir-destaque d-inline-flex align-items-center justify-content-center gap-2">
-                  <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
+                  <i class="bi bi-unlock-fill"></i> {{ 'Reabrir caixa do dia' if report.caixa_fechado else 'Abrir caixa do dia' }}
                 </button>
               </div>
             </form>

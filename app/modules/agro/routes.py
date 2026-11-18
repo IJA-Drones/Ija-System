@@ -356,8 +356,7 @@ def _enforce_agro_caixa_open_or_redirect(origem_label: str):
         caixa_status=caixa_status,
         origem=origem_label,
     )
-    if caixa_status == "nao_aberto":
-        target_url = f"{target_url}#abrir-caixa-form"
+    target_url = f"{target_url}#abrir-caixa-form"
     return redirect(target_url)
 
 
@@ -6548,17 +6547,17 @@ def register_routes(bp):
         report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
         caixa = report["caixa"]
 
-        if caixa is not None and caixa.status == FinanceiroAgroCaixaDiario.STATUS_FECHADO:
-            flash("Este caixa diario ja foi fechado e nao pode ser aberto novamente.", "warning")
+        if caixa is not None and caixa.status == FinanceiroAgroCaixaDiario.STATUS_ABERTO:
+            flash("Este caixa diario ja esta aberto.", "info")
             return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
 
-        if report["dia_anterior_pendente"]:
-            flash("Feche primeiro o caixa do dia anterior antes de abrir um novo dia.", "warning")
-            return redirect(url_for("main.agro_caixa_diario", data_caixa=report["caixa_anterior"].data_caixa.isoformat()))
-
+        reabertura = caixa is not None
         saldo_digitado = parse_currency_br(request.form.get("saldo_abertura"))
         saldo_sugerido = report["saldo_sugerido_abertura"]
-        if report["possui_fechamento_anterior"]:
+        if reabertura:
+            # Reutiliza o saldo inicial: os movimentos do dia ja entram no total.
+            saldo_abertura = caixa.saldo_abertura_decimal
+        elif report["possui_fechamento_anterior"]:
             saldo_abertura = saldo_sugerido
             if saldo_digitado is not None and saldo_digitado != saldo_sugerido:
                 flash("O saldo de abertura seguiu o fechamento do dia anterior para manter o caixa batendo.", "info")
@@ -6573,20 +6572,21 @@ def register_routes(bp):
             db.session.add(caixa)
 
         caixa.status = FinanceiroAgroCaixaDiario.STATUS_ABERTO
-        caixa.saldo_anterior = report["saldo_anterior"]
+        if not reabertura:
+            caixa.saldo_anterior = report["saldo_anterior"]
         caixa.saldo_abertura = saldo_abertura
         caixa.total_entradas = report["total_entradas"]
         caixa.total_saidas = report["total_saidas"]
         caixa.saldo_fechamento = saldo_abertura + report["total_entradas"] - report["total_saidas"]
         caixa.aberto_por_nome = _current_user_display_name()
         caixa.observacoes_abertura = (request.form.get("observacoes_abertura") or "").strip() or None
-        caixa.aberto_em = caixa.aberto_em or datetime.now()
+        caixa.aberto_em = datetime.now()
         caixa.fechado_em = None
         caixa.fechado_por_nome = None
         caixa.observacoes_fechamento = None
 
         db.session.commit()
-        flash("Caixa diario aberto com sucesso.", "success")
+        flash("Caixa diario reaberto com sucesso." if reabertura else "Caixa diario aberto com sucesso.", "success")
         return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
 
     @bp.route("/agro/caixa/fechar", methods=["POST"], endpoint="agro_caixa_fechar")

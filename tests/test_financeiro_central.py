@@ -2,7 +2,8 @@
 
 import unittest
 import re
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -11,7 +12,7 @@ from flask import Flask, Response, render_template_string
 from flask_login import LoginManager, UserMixin, login_user
 
 from app.extensions import db
-from app.models import FinanceiroEmpresaPerfil, ClienteAgro, OrcamentoAgro, ContratoAgro
+from app.models import Prefeitura, FinanceiroAgroCaixaDiario, FinanceiroEmpresaPerfil, ClienteAgro, OrcamentoAgro, ContratoAgro
 from app.modules.auth.routes import bp as auth_bp
 from app.modules.auth.service import get_authenticated_redirect_endpoint
 from app.modules.financeiro.service import build_financeiro_empresas
@@ -72,6 +73,51 @@ class FinanceiroCentralTests(unittest.TestCase):
         with self.client.session_transaction() as stored:
             stored["_user_id"] = "7"
             stored["_fresh"] = True
+
+    def test_caixa_can_reopen_repeatedly_on_any_date_preserving_balance(self):
+        def reraise(error):
+            raise error
+        self.app.register_error_handler(Exception, reraise)
+        self.login("financeiro_admin")
+        with self.app.app_context():
+            Prefeitura.__table__.create(db.engine)
+            FinanceiroAgroCaixaDiario.__table__.create(db.engine)
+            for day in (date(2020, 1, 2), date.today(), date(2030, 1, 2)):
+                caixa = FinanceiroAgroCaixaDiario(
+                    data_caixa=day, status="FECHADO", saldo_abertura=Decimal("100"),
+                    saldo_anterior=Decimal("90"), saldo_fechamento=Decimal("125"),
+                    fechado_em=datetime.now(), fechado_por_nome="Operador",
+                )
+                db.session.add(caixa)
+                db.session.commit()
+                report = {
+                    "caixa": caixa, "dia_anterior_pendente": True,
+                    "saldo_sugerido_abertura": Decimal("999"),
+                    "possui_fechamento_anterior": True,
+                    "saldo_anterior": Decimal("999"),
+                    "total_entradas": Decimal("40"), "total_saidas": Decimal("15"),
+                    "saldo_fechamento_calculado": Decimal("125"),
+                }
+                with patch("app.modules.agro.routes.build_agro_caixa_diario_report", return_value=report):
+                    for cycle in range(3):
+                        with self.subTest(day=day, cycle=cycle):
+                            response = self.client.post("/agro/caixa/abrir", data={
+                                "data_caixa": day.isoformat(), "saldo_abertura": "999,00",
+                            })
+                            self.assertEqual(response.status_code, 302, response.get_data(as_text=True))
+                            self.assertEqual(caixa.status, "ABERTO")
+                            self.assertEqual(caixa.saldo_abertura, Decimal("100"))
+                            self.assertEqual(caixa.saldo_fechamento, Decimal("125"))
+                            self.assertIsNone(caixa.fechado_em)
+                            self.assertIsNone(caixa.fechado_por_nome)
+                            opened_at = caixa.aberto_em
+                            self.client.post("/agro/caixa/abrir", data={"data_caixa": day.isoformat()})
+                            self.assertEqual(caixa.aberto_em, opened_at)
+                            response = self.client.post("/agro/caixa/fechar", data={"data_caixa": day.isoformat()})
+                            self.assertEqual(response.status_code, 302, response.get_data(as_text=True))
+                            self.assertEqual(caixa.status, "FECHADO")
+                            self.assertEqual(caixa.saldo_fechamento, Decimal("125"))
+                self.assertEqual(FinanceiroAgroCaixaDiario.query.filter_by(data_caixa=day).count(), 1)
 
     def test_anonymous_users_must_log_in(self):
         for path in ("/financeiro", "/financeiro/empresas/ija"):
