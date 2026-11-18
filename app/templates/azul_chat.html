@@ -52,6 +52,9 @@
         {% if azul_can_export %}
         <button type="button" data-question="Quero gerar um relatório." data-intent="start_report"><i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i><span><strong>Gerar relatório</strong><small>Revise os filtros e confirme o download.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         {% endif %}
+      {% for step in azul_guide|default([]) if step.financial|default(false) %}
+      <button type="button" data-question="{{ step.question }}"><i class="bi bi-journal-check" aria-hidden="true"></i><span>{{ step.title }}</span></button>
+      {% endfor %}
         <button type="button" data-question="Não consigo editar. Como verifico minhas permissões?"><i class="bi bi-shield-lock" aria-hidden="true"></i><span><strong>Entender permissões</strong><small>Saiba como verificar seu acesso.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         <button type="button" data-guide-open><i class="bi bi-book" aria-hidden="true"></i><span><strong>Guia prático</strong><small>Aprenda o caminho com a Azul.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         <div class="azul-access-note"><i class="bi bi-person-check" aria-hidden="true"></i><strong>Seu acesso, respeitado <span data-profile></span></strong><p>As consultas seguem as mesmas permissões e vínculos do sistema.</p></div>

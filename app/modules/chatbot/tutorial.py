@@ -69,6 +69,26 @@ INTERNAL = {
 }
 
 
+# Reuse the simulator controls with financial examples; no ledger is written.
+INTERNAL.update({
+    'financeiro.caixa': ('caixa-financeiro', 'Caixa diário', 'Caixa', 'Fechado',
+        [('Caixa', 'DEMO-CAIXA-001'), ('Abertura fictícia', 'R$ 100,00'), ('Entradas fictícias', 'R$ 40,00'), ('Saídas fictícias', 'R$ 15,00'), ('Fechamento fictício', 'R$ 125,00')],
+        'Confira a conta: 100 + 40 − 15 = 125. Reabrir preserva a abertura de R$ 100,00 e não soma as entradas novamente. Para cadastrar movimentos retroativos no sistema real, abra também o caixa de hoje.'),
+    'financeiro.contas': ('contas-financeiro', 'Contas a receber e a pagar', 'Lançamento', 'Pendente',
+        [('Lançamento', 'DEMO-FIN-002'), ('Origem', 'Saída manual de exemplo'), ('Valor fictício', 'R$ 250,00'), ('Situação', 'Pendente')],
+        'Pendente não comprova pagamento. Confira banco, datas e situação antes de salvar no sistema real. Para retroativos, informe as datas reais no formulário; o filtro do caixa não preenche essas datas.'),
+    'financeiro.bancos': ('bancos-financeiro', 'Conciliação bancária', 'Lançamento', 'Pendente',
+        [('Referência', 'DEMO-BANCO-001'), ('Banco', 'Banco de Exemplo'), ('Valor fictício', 'R$ 250,00')],
+        'Compare banco, data, valor e situação com o extrato. Uma previsão não confirma pagamento. Este exercício não se conecta ao banco nem realiza conciliação real.'),
+    'financeiro.configuracoes': ('competencias-financeiro', 'Competências financeiras', 'Competência', 'Bloqueada',
+        [('Referência', 'DEMO-COMP-001'), ('Período', 'Mês anterior de exemplo'), ('Situação', 'Bloqueada')],
+        'No sistema real, confira mês e ano em Configurações > Competências. Uma liberação manual prevalece sobre o padrão. Reabrir o caixa não libera o mês. Este exercício não altera configurações.'),
+    'financeiro.relatorios': ('relatorios-financeiro', 'Conferência de relatórios', 'Lançamento', 'Previsto',
+        [('Referência', 'DEMO-REL-001'), ('Empresa', 'Empresa de Exemplo'), ('Valor previsto fictício', 'R$ 250,00')],
+        'Confira empresa, período, origem e situação. Previsto não é realizado. Compare os mesmos filtros antes de interpretar diferenças entre o painel, o caixa e o banco.'),
+})
+
+
 def list_lesson(module, definition):
     identifier, title, noun, status, fields, guidance = definition
     return dict(id=identifier, kind='lista', module=module, title=title, noun=noun, status=status,
