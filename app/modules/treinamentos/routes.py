@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 
 from app.modules.gestao_ti.permissions import can_access_endpoint, profile_code
 from app.modules.vigilancia.access import can_coordinate_field
-from .catalog import GUIDE_GROUPS, MATERIALS, RESOURCE_DIR, SECTIONS
+from .catalog import GUIDE_GROUPS, MATERIALS, REQUEST_VIDEOS, RESOURCE_DIR, SECTIONS
 from .access import POLICIES, can_read_material
 
 TRAINING_ENDPOINTS = {"main.treinamentos", "main.agro_treinamentos", "main.financeiro_treinamentos",
@@ -72,14 +72,14 @@ def register_routes(bp):
         if not path.is_file():
             abort(404)
         return send_file(path, mimetype=mimetype, download_name=path.name,
-                         as_attachment=mimetype != "application/pdf" or request.args.get("baixar") == "1")
+                         as_attachment=mimetype not in {"application/pdf", "video/mp4"} or request.args.get("baixar") == "1")
 
 
 def _index(area=None):
     from flask import redirect
     from app.modules.agro.service import can_access_agro_panel
     from app.shared.access import can_access_financeiro_panel
-    allowed = {key for key in MATERIALS if can_read_material(current_user, key)}
+    allowed = {key for key in POLICIES if can_read_material(current_user, key)}
     areas = {POLICIES[key].area for key in allowed} - {"common"}
     if can_access_agro_panel(current_user) or profile_code(current_user) == "piloto_agro":
         areas.add("agro")
@@ -94,6 +94,7 @@ def _index(area=None):
     if area not in areas:
         abort(403)
     visible = {key for key in allowed if POLICIES[key].area in {area, "common"}}
+    request_videos = [video for video in REQUEST_VIDEOS if video["id"] in visible]
     sections = [dict(section, module_url=_module_url(section)) for section in SECTIONS
                 if section["manual"] in visible]
     groups = []
@@ -104,5 +105,6 @@ def _index(area=None):
     tabs = [dict(id=key, title=label, url=url_for(endpoint))
             for key, (label, endpoint) in AREAS.items() if key in areas]
     return render_template("treinamentos.html", sections=sections, guide_groups=groups,
-                           training_tabs=tabs, training_area=area, available_materials=visible)
+                           training_tabs=tabs, training_area=area, available_materials=visible,
+                           request_videos=request_videos)
 

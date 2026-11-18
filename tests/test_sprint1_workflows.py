@@ -292,7 +292,8 @@ def test_quadra_criadouro_starts_empty_and_preserves_saved_description(app, uid,
     prepare_os(app)
     with app.app_context():
         pedido = db.session.get(Solicitacao, 1)
-        pedido.tipo_visita = 'Quadra'
+        pedido.tipo_visita = 'Aedes'
+        pedido.tipo_imovel = 'Imovel Geral'
         pedido.foco = 'QUADRA'
         pedido.tipo_operacao = 'Tratamento e monitoramento de quadra'
         db.session.commit()
@@ -314,14 +315,51 @@ def test_quadra_criadouro_starts_empty_and_preserves_saved_description(app, uid,
         assert fields['criadouro_os_tipo_volume'] in _build_formulario_rd_row(pedido.ordem_servico)
 
 
-def test_uvis_creates_quadra_with_canonical_focus_and_operation(app):
+@pytest.mark.parametrize('visit,property_type', [('Aedes', 'Imovel Geral'), ('Culex', None)])
+def test_uvis_creates_quadra_with_canonical_focus_and_operation(app, visit, property_type):
     from app.modules.solicitacoes.service import create_nova_solicitacao
     with app.app_context():
         pedido = create_nova_solicitacao(db.session.get(Usuario, 2), dict(
             data=(date.today() + timedelta(days=400)).isoformat(), hora='10:00',
-            tipo_visita='Quadra', foco='Piscina', tipo_operacao='Monitoramento',
+            tipo_visita=visit, tipo_imovel=property_type, foco='quadra', tipo_operacao='Monitoramento',
             distrito_administrativo='Distrito de teste', cep='00000000', logradouro='Rua de teste', numero='999',
             bairro='Centro', cidade='Municipio de teste', uf='SP'))
-        assert pedido.tipo_visita == 'Quadra'
+        assert pedido.tipo_visita == visit
         assert pedido.foco == 'QUADRA'
         assert pedido.tipo_operacao == 'Tratamento e monitoramento de quadra'
+
+
+def test_legacy_quadra_visit_requires_explicit_selection_without_rewriting_on_open(app):
+    from app.modules.solicitacoes.service import build_editar_solicitacao_context, atualizar_solicitacao
+    with app.app_context():
+        pedido = db.session.get(Solicitacao, 1)
+        pedido.tipo_visita = 'Quadra'
+        pedido.foco = 'QUADRA'
+        pedido.tipo_operacao = 'Tratamento e monitoramento de quadra'
+        db.session.commit()
+        user = db.session.get(Usuario, 2)
+        context = build_editar_solicitacao_context(user, 1)
+        assert context['pedido_tipo_visita_select'] == ''
+        assert context['legacy_quadra_visit']
+        assert 'Quadra' not in context['tipo_visita_opcoes']
+        assert pedido.tipo_visita == 'Quadra'
+        atualizar_solicitacao(user, 1, edit_form(tipo_imovel='Imovel Geral') | {'tipo_visita': 'Aedes', 'foco': 'QUADRA'})
+        assert pedido.tipo_visita == 'Aedes'
+        assert pedido.foco == 'QUADRA'
+
+
+def test_quadra_focus_is_available_in_os_report_without_changing_visit(app):
+    from werkzeug.datastructures import MultiDict
+    from app.modules.relatorios.service import build_relatorios_os_context
+    prepare_os(app)
+    with app.app_context():
+        pedido = db.session.get(Solicitacao, 1)
+        pedido.tipo_visita = 'Aedes'
+        pedido.tipo_imovel = 'Imovel Geral'
+        pedido.foco = 'QUADRA'
+        pedido.ordem_servico.data_aplicacao = date.today()
+        db.session.commit()
+        context = build_relatorios_os_context(db.session.get(Usuario, 1), MultiDict({'foco': 'QUADRA', 'tipo_visita': 'Aedes'}))
+        assert context['total_os'] == 1
+        assert context['filters']['foco_values'] == ['QUADRA']
+        assert context['filters']['tipo_visita'] == 'Aedes'

@@ -27,6 +27,8 @@ def _legacy(user, name):
         is_dev_user, is_prefeitura_admin_user, is_veiculos_supervisor,
     )
     role = profile_code(user)
+    if name == "requests":
+        return getattr(user, "tipo_usuario", "") in {"uvis", "dev", "diretor", "admin", "visualizar", "prefeitura_admin", "sup_veiculos", "sup_veiculo"}
     if name == "dev":
         return is_dev_user(user)
     if name == "maps":
@@ -90,6 +92,7 @@ SINAN = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar",), "coor
 PUBLICATIONS = MaterialPolicy("prefeitura", ("prefeitura.acoes_publicas.consultar",), "publications", flag="ACOES_PUBLICAS_ENABLED")
 INTEGRATED = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar", "prefeitura.acoes_publicas.consultar"), "integrated", all_required=True)
 POLICIES = {
+    "video-quadra": MaterialPolicy("prefeitura", ("prefeitura.solicitacoes.criar",), "requests"),
     "guia-geral": MaterialPolicy("prefeitura", ("sistema.tecnico.consultar", "sistema.usuarios.consultar", "prefeitura.vigilancia.consultar"), "dev", all_required=True),
     "manual-liraa": VIGILANCE, "manual-mapa": VIGILANCE, "manual-sinan": SINAN,
     "manual-publicacoes": PUBLICATIONS,
@@ -97,7 +100,7 @@ POLICIES = {
     "csv-sp-territorio": VIGILANCE, "csv-sp-amostra": VIGILANCE, "csv-sp-visitas": VIGILANCE,
     "csv-sinan": SINAN, "csv-sp-sinan": SINAN,
     "imagem-acao": PUBLICATIONS, "texto-acao": PUBLICATIONS,
-    "kit-testes": INTEGRATED, "kit-testes-sp": INTEGRATED, "kit-instrucoes-sp": INTEGRATED,
+    "kit-instrucoes-sp": INTEGRATED,
     "atualizacoes-liraa-mapas": VIGILANCE,
     "atualizacoes-acoes-publicas": PUBLICATIONS,
     "atualizacoes-treinamentos": MaterialPolicy("common"),

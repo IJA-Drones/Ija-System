@@ -37,5 +37,10 @@ perfil dedicado de Ortomosaicos pode consultar seu guia e os materiais comuns de
 acesso, preservando o bloqueio das outras funções de negócio.
 
 O inventário e a validação desta leva estão em `inventario-guias.md` e
-`validacao-guias-operacionais.json`. O guia de solicitação de quadra permanece
-pausado, conforme `solicitacao-quadra/status-pausa.md`.
+`validacao-guias-operacionais.json`.
+
+Em Solicitações, o botão **Ver vídeos no Drive** expande a lista de vídeos
+cadastrados em `REQUEST_VIDEOS`. Cada vídeo tem uma política em `POLICIES`,
+independente dos arquivos para download de `MATERIALS`. O tutorial de quadra está
+no Google Drive; sua exibição exige permissão de criar solicitações. Os arquivos
+locais de produção do vídeo foram removidos do projeto após o salvamento no Drive.

@@ -26,11 +26,7 @@ from app.shared.solicitacao_focos import (
 QUADRA_TIPO_OPERACAO = "Tratamento e monitoramento de quadra"
 
 def is_solicitacao_quadra(pedido):
-    return (
-        same_normalized(pedido.tipo_visita, "Quadra")
-        and same_normalized(pedido.foco, "QUADRA")
-        and same_normalized(pedido.tipo_operacao, QUADRA_TIPO_OPERACAO)
-    )
+    return same_normalized(pedido.foco, "QUADRA")
 
 STATUS_OPCOES_EDICAO = [
     "PENDENTE",
@@ -399,7 +395,7 @@ def create_nova_solicitacao(user, form_data, *, commit=True):
         raise NovoCadastroValidationError(str(exc))
 
     tipo_operacao = (form_data.get("tipo_operacao") or "").strip()
-    if tipo_visita == "Quadra":
+    if same_normalized(foco, "QUADRA"):
         tipo_operacao = QUADRA_TIPO_OPERACAO
 
     nova_solicitacao = Solicitacao(
@@ -453,8 +449,11 @@ def build_editar_solicitacao_context(user, solicitacao_id):
     pedido_tipo_visita_padrao = canonical_tipo_visita(pedido.tipo_visita)
     pedido_tipo_visita_outros = ""
     pedido_tipo_visita_select = pedido.tipo_visita or ""
+    legacy_quadra_visit = same_normalized(pedido.tipo_visita, "Quadra")
+    if legacy_quadra_visit:
+        pedido_tipo_visita_select = ""
 
-    if allow_custom_visit_other and pedido.tipo_visita and not pedido_tipo_visita_padrao:
+    if allow_custom_visit_other and pedido.tipo_visita and not pedido_tipo_visita_padrao and not legacy_quadra_visit:
         pedido_tipo_visita_select = TIPO_VISITA_OUTRO_LABEL
         pedido_tipo_visita_outros = pedido.tipo_visita
 
@@ -481,6 +480,7 @@ def build_editar_solicitacao_context(user, solicitacao_id):
         "allow_custom_visit_other": allow_custom_visit_other,
         "pedido_tipo_visita_select": pedido_tipo_visita_select,
         "pedido_tipo_visita_outros": pedido_tipo_visita_outros,
+        "legacy_quadra_visit": legacy_quadra_visit,
         "is_solicitacao_quadra": is_solicitacao_quadra,
     }
 
@@ -519,7 +519,10 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
         )
     except ValueError as exc:
         if (
-            same_normalized(form_data.get("foco"), pedido.foco)
+            not same_normalized(form_data.get("tipo_visita"), "Quadra")
+            and not (same_normalized(form_data.get("tipo_visita"), TIPO_VISITA_OUTRO_LABEL)
+                     and same_normalized(form_data.get("tipo_visita_outros"), "Quadra"))
+            and same_normalized(form_data.get("foco"), pedido.foco)
             and (
                 same_normalized(form_data.get("tipo_visita"), pedido.tipo_visita)
                 or (
@@ -539,7 +542,7 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
     pedido.tipo_visita = tipo_visita
     pedido.tipo_imovel = tipo_imovel
     pedido.tipo_operacao = form_data.get("tipo_operacao") or pedido.tipo_operacao
-    if tipo_visita == "Quadra":
+    if same_normalized(foco, "QUADRA"):
         pedido.tipo_operacao = QUADRA_TIPO_OPERACAO
     if is_admin and is_solicitacao_quadra(pedido):
         pedido.quadra_confirmada_admin = form_data.get("quadra_confirmada_admin") == "1"

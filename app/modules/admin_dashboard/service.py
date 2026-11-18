@@ -47,11 +47,7 @@ BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def is_solicitacao_quadra(pedido):
-    return (
-        same_normalized(pedido.tipo_visita, "Quadra")
-        and same_normalized(pedido.foco, "QUADRA")
-        and same_normalized(pedido.tipo_operacao, "Tratamento e monitoramento de quadra")
-    )
+    return same_normalized(pedido.foco, "QUADRA")
 
 
 def _parse_filter_date(value: str):

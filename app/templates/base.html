@@ -1231,7 +1231,7 @@
       };
     </script>
 
-    {% if not is_financeiro_context %}
+    {% if not is_financeiro_context and request.endpoint not in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}
     <script
       async
       src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&v=weekly&libraries=geometry,marker&callback=initGoogleMaps&loading=async">

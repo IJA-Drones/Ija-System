@@ -76,12 +76,14 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">Tipo de Visita</label>
-                        <select name="tipo_visita" class="form-select">
+                        <select name="tipo_visita" class="form-select" required>
+                            <option value="" disabled {% if not pedido_tipo_visita_select %}selected{% endif %}>Selecione o tipo de visita...</option>
                             {% for opcao in solicitacao_tipo_visita_opcoes %}
                             <option value="{{ opcao }}" {% if pedido_tipo_visita_select == opcao %}selected{% endif %}>{{ opcao }}</option>
                             {% endfor %}
                         </select>
                         <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
+                        {% if legacy_quadra_visit %}<small class="text-warning d-block mt-2">Este registro antigo usava Quadra como tipo de visita. Selecione o tipo correto; Quadra agora fica no Foco da Ação.</small>{% endif %}
                     </div>
 
                     <div class="col-md-6{% if not pedido_tipo_visita_outros %} d-none{% endif %}" data-tipo-visita-outros-wrapper>
@@ -271,7 +273,7 @@
 {# O seu Script de CEP permanece o mesmo, ele já é funcional para ambos #}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/solicitacao-focos.js') }}"></script>
+<script src="{{ url_for('static', filename='js/solicitacao-focos.js', v='20261117-quadra-foco') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
       initSolicitacaoFocusForm({

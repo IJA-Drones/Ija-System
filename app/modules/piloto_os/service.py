@@ -132,7 +132,7 @@ def build_os_execution_context(ordem):
 
 
 def build_os_criadouro_context(solicitacao, ordem):
-    is_quadra = same_normalized(getattr(solicitacao, "tipo_visita", None), "Quadra")
+    is_quadra = same_normalized(getattr(solicitacao, "foco", None), "QUADRA")
     saved = getattr(ordem, "criadouro_os_tipo_volume", None) or ""
     return {
         "os_quadra": is_quadra,

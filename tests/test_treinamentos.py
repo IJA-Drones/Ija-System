@@ -1,13 +1,11 @@
 """Autenticação, isolamento e distribuição dos materiais em SQLite descartável."""
 
-import zipfile
-
 import pytest
 
 from app.extensions import db
 from app.models import Usuario, Prefeitura, CentralTiPerfilConfiguracao, CentralTiSelecao
 from app.modules.gestao_ti.permissions import validate_route_policy
-from app.modules.treinamentos.catalog import MATERIALS, RESOURCE_DIR
+from app.modules.treinamentos.catalog import MATERIALS, REQUEST_VIDEOS, RESOURCE_DIR
 from app.modules.treinamentos.access import POLICIES
 from app.modules.vigilancia.sinan_import import parse_cases
 from tests import test_central_ti as base
@@ -42,7 +40,7 @@ def training():
 
 def test_training_and_files_require_login(training):
     for path in ("/treinamentos", "/agro/treinamentos", "/financeiro/treinamentos",
-                 "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/kit-testes"):
+                 "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/csv-territorio"):
         response = training.client.get(path)
         assert response.status_code == 302
         assert "/login" in response.location
@@ -87,12 +85,12 @@ def test_resources_are_fixed_private_and_correctly_served(training):
         assert response.data == (RESOURCE_DIR / relative).read_bytes()
         assert response.headers["Cache-Control"] == "private, no-store"
         assert response.headers["X-Content-Type-Options"] == "nosniff"
-        expected = "inline" if mimetype == "application/pdf" else "attachment"
+        expected = "inline" if mimetype in {"application/pdf", "video/mp4"} else "attachment"
         assert response.headers["Content-Disposition"].startswith(expected)
         response.close()
     response = training.client.get("/treinamentos/arquivos/guia-geral?baixar=1")
     assert response.headers["Content-Disposition"].startswith("attachment")
-    for path in ("inexistente", "..%2F..%2F.env", "guia-geral/../../.env"):
+    for path in ("inexistente", "kit-testes", "kit-testes-sp", "..%2F..%2F.env", "guia-geral/../../.env"):
         assert training.client.get("/treinamentos/arquivos/" + path).status_code == 404
 
 
@@ -106,7 +104,7 @@ def configure(training, role, codes):
 
 def test_every_material_has_an_explicit_valid_access_policy():
     from app.modules.gestao_ti.catalog import PERMISSION_CODES, AREA_CODES
-    assert set(POLICIES) == set(MATERIALS)
+    assert set(POLICIES) == set(MATERIALS) | {video["id"] for video in REQUEST_VIDEOS}
     for policy in POLICIES.values():
         assert policy.area in {"prefeitura", "agro", "financeiro", "common"}
         assert all(code in PERMISSION_CODES or code.removeprefix("area:") in AREA_CODES
@@ -143,6 +141,25 @@ def test_pilot_can_read_operational_guides(training):
         assert response.status_code == 200
         response.close()
     assert '/treinamentos/arquivos/guia-equipes-acesso-uvis' not in page.text
+
+
+def test_uvis_drive_video_follows_creation_permission_without_local_downloads(training):
+    training.login('uvis')
+    page=training.client.get('/treinamentos').text
+    assert 'Solicitações</h2>' in page
+    assert '<details class="training-drive-videos">' in page
+    assert 'Ver vídeos no Drive' in page
+    assert '1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb/preview' not in page
+    assert 'https://drive.google.com/file/d/1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb/view?usp=drive_link' in page
+    for removed in ('Demonstração · Pesqueira', 'Demonstração · UVIS Sé', 'Kit Pesqueira', 'Kit UVIS Sé'):
+        assert removed not in page
+    for retired in ('video-quadra', 'legendas-quadra'):
+        assert training.client.get('/treinamentos/arquivos/'+retired,headers={'Range':'bytes=0-1023'}).status_code==404
+    configure(training,'uvis',['area:prefeitura','prefeitura.solicitacoes.consultar'])
+    assert 'video-quadra' not in training.client.get('/treinamentos').text
+    assert '1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb' not in training.client.get('/treinamentos').text
+    assert training.client.get('/treinamentos/arquivos/video-quadra').status_code==404
+    assert training.client.get('/treinamentos/arquivos/legendas-quadra').status_code==404
 
 
 def test_finance_and_agro_are_separate_tabs_and_contexts(training):
@@ -201,20 +218,13 @@ def test_page_and_downloads_do_not_write_database(training):
     event.listen(db.engine, "before_cursor_execute", reject_write)
     try:
         assert training.client.get("/treinamentos").status_code == 200
-        assert training.client.get("/treinamentos/arquivos/kit-testes").status_code == 200
+        assert training.client.get("/treinamentos/arquivos/manual-liraa").status_code == 200
     finally:
         event.remove(db.engine, "before_cursor_execute", reject_write)
     validate_route_policy(training.app)
 
 
-def test_kit_includes_current_linked_files_and_valid_sinan():
-    with zipfile.ZipFile(RESOURCE_DIR / MATERIALS["kit-testes"][0]) as archive:
-        names = archive.namelist()
-        assert len([n for n in names if n.endswith(".csv")]) == 4
-        assert any(n.endswith("LEIA_PRIMEIRO.txt") for n in names)
-        for material_id in ("csv-territorio", "csv-amostra", "csv-visitas", "csv-sinan", "imagem-acao", "texto-acao"):
-            source = RESOURCE_DIR / MATERIALS[material_id][0]
-            assert archive.read("Pesqueira-DEMO/" + source.name) == source.read_bytes()
+def test_linked_sinan_example_is_valid():
     content = (RESOURCE_DIR / MATERIALS["csv-sinan"][0]).read_bytes()
     assert len(parse_cases(content, dict(disease="dengue", ibge="2610905", year=2026), True)) == 6
 

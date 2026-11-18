@@ -12,7 +12,6 @@
     var visit = normalize(value);
     if (visit === "aedes") return "aedes";
     if (visit === "culex") return "culex";
-    if (visit === "quadra") return "quadra";
     return "outro";
   }
 
@@ -65,10 +64,6 @@
 
     if (visitKey === "culex") {
       return (catalog && catalog.culex) || [];
-    }
-
-    if (visitKey === "quadra") {
-      return ["QUADRA"];
     }
 
     return (catalog && catalog.outro) || [];
@@ -153,7 +148,6 @@
 
     function syncFields() {
       var visitValue = tipoVisitaSelect.value;
-      var isQuadra = normalize(visitValue) === "quadra";
       var showTipoImovel = resolveVisitKey(visitValue) === "aedes";
 
       if (tipoImovelWrapper) {
@@ -181,8 +175,8 @@
         return normalize(option) === normalizedCurrentFocus;
       });
 
-      // Keep historical values on load, but never carry a different visit's focus into Quadra.
-      if (firstSync && !isQuadra && normalizedCurrentFocus && !focusStillValid) {
+      // Preserve historical values only when reopening the saved request.
+      if (firstSync && normalizedCurrentFocus && !focusStillValid) {
         options = [currentFocus].concat(options);
         focusStillValid = true;
       }
@@ -190,24 +184,10 @@
       rebuildSelect(
         focoSelect,
         options,
-        isQuadra ? "QUADRA" : (focusStillValid ? currentFocus : ""),
+        focusStillValid ? currentFocus : "",
         (config && config.focoPlaceholder) || "Selecione o foco da acao..."
       );
-      focoSelect.disabled = isQuadra;
-      var lockedFocus = root.querySelector('[data-quadra-foco-hidden]');
-      if (isQuadra) {
-        if (!lockedFocus) {
-          lockedFocus = document.createElement("input");
-          lockedFocus.type = "hidden";
-          lockedFocus.name = "foco";
-          lockedFocus.setAttribute("data-quadra-foco-hidden", "true");
-          var form = root.tagName === "FORM" ? root : root.querySelector("form");
-          form?.appendChild(lockedFocus);
-        }
-        lockedFocus.value = "QUADRA";
-      } else if (lockedFocus) {
-        lockedFocus.remove();
-      }
+      var isQuadra = normalize(focoSelect.value) === "quadra";
 
       if (isQuadra && !wasQuadra) {
         operationInputs.forEach(function (input) {

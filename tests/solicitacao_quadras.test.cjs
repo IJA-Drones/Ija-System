@@ -39,38 +39,46 @@ function browser({editing = false, visit = 'Aedes', focus = 'Piscina'} = {}) {
     querySelector: () => form, getElementById: () => null, createElement: tag => element(tag.toUpperCase()),
   }});
   window.initSolicitacaoFocusForm({root: 'form', catalog: {
-    aedes: {'Imovel Geral': ['Piscina']}, culex: ['Corrego'], outro: ['Piscina'],
+    aedes: {'Imovel Geral': ['Piscina', 'QUADRA']}, culex: ['Corrego', 'QUADRA'], outro: ['Piscina', 'QUADRA'],
   }});
-  return {tipo, foco, ops, form, select(value) { tipo.value = value; tipo.change(); }};
+  return {tipo, foco, ops, form, select(value) { tipo.value = value; tipo.change(); },
+    chooseFocus(value) { foco.value = value; foco.change(); }};
 }
 
 for (const editing of [false, true]) {
   test(`Quadra visibly selects canonical focus and operation (${editing ? 'edit' : 'create'})`, () => {
     const b = browser({editing});
-    b.select('Quadra');
+    b.chooseFocus('QUADRA');
     assert.equal(b.foco.value, 'QUADRA');
-    assert.equal(b.foco.disabled, true);
-    assert.equal(b.form.children.filter(item => item.name === 'foco').length, 1);
-    assert.equal(b.form.children[0].value, 'QUADRA');
+    assert.equal(b.foco.disabled, false);
+    assert.equal(b.tipo.value, 'Aedes');
+    assert.equal(b.form.children.length, 0);
     assert.ok(b.ops.every(item => item.disabled));
     assert.equal(editing ? b.ops[0].value : b.ops.find(item => item.checked).value, QUADRA);
     b.select('Culex');
-    assert.equal(b.foco.value, '');
+    assert.equal(b.foco.value, 'QUADRA');
+    assert.equal(b.tipo.value, 'Culex');
+    b.chooseFocus('Corrego');
+    assert.equal(b.foco.value, 'Corrego');
     assert.equal(b.foco.disabled, false);
     assert.equal(b.form.children.length, 0);
     assert.ok(b.ops.every(item => !item.disabled));
     assert.equal(editing ? b.ops[0].value : b.ops.find(item => item.checked).value,
       editing ? 'Monitoramento' : 'Tratamento');
-    b.select('Quadra');
-    assert.equal(b.form.children.length, 1);
+    b.chooseFocus('QUADRA');
+    assert.equal(b.form.children.length, 0);
     assert.equal(b.foco.value, 'QUADRA');
   });
 }
 
-test('initial Quadra does not retain a different focus in the visible selector', () => {
-  const b = browser({visit: 'Quadra', focus: 'Piscina'});
+test('a saved Quadra focus remains editable without replacing the visit type', () => {
+  const b = browser({visit: 'Aedes', focus: 'QUADRA'});
   assert.equal(b.foco.value, 'QUADRA');
-  assert.equal(b.foco.children.some(option => option.value === 'Piscina'), false);
+  assert.equal(b.tipo.value, 'Aedes');
+  assert.equal(b.foco.disabled, false);
+  b.chooseFocus('Piscina');
+  assert.equal(b.foco.value, 'Piscina');
+  assert.ok(b.ops.every(item => !item.disabled));
 });
 
 test('an existing historical focus survives loading, but not a change of visit', () => {

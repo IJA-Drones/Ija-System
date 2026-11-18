@@ -3,7 +3,7 @@ from __future__ import annotations
 import unicodedata
 
 
-TIPO_VISITA_OPCOES = ["Aedes", "Culex", "Quadra", "Outro"]
+TIPO_VISITA_OPCOES = ["Aedes", "Culex", "Outro"]
 TIPO_IMOVEL_OPCOES = ["Imovel Geral", "PE Cadastrado"]
 TIPO_VISITA_OUTRO_LABEL = "Outro"
 
@@ -99,6 +99,7 @@ FILTER_FOCO_OPCOES = _unique(
     [
         *FORM_FOCOS_OUTRO,
         *LEGACY_FOCOS,
+        "QUADRA",
     ]
 )
 
@@ -109,7 +110,6 @@ def canonical_tipo_visita(value: str | None) -> str | None:
         "culex": "Culex",
         "outro": "Outro",
         "outros": "Outro",
-        "quadra": "Quadra",
     }
     return lookup.get(_normalize(value))
 
@@ -133,18 +133,18 @@ def _match_option(value: str | None, options: list[str]) -> str | None:
     return None
 
 
-def get_foco_opcoes(tipo_visita: str | None, tipo_imovel: str | None = None) -> list[str]:
+def get_foco_opcoes(tipo_visita: str | None, tipo_imovel: str | None = None, *, include_quadra=True) -> list[str]:
     visit = canonical_tipo_visita(tipo_visita)
     if visit == "Aedes":
         imovel = canonical_tipo_imovel(tipo_imovel)
         if not imovel:
             return []
-        return list(Aedes_FOCOS_POR_IMOVEL[imovel])
-    if visit == "Culex":
-        return list(CULEX_FOCOS)
-    if visit == "Quadra":
-        return ["QUADRA"]
-    return list(FORM_FOCOS_OUTRO)
+        options = list(Aedes_FOCOS_POR_IMOVEL[imovel])
+    elif visit == "Culex":
+        options = list(CULEX_FOCOS)
+    else:
+        options = list(FORM_FOCOS_OUTRO)
+    return options + (["QUADRA"] if include_quadra else [])
 
 
 def get_tipo_visita_opcoes(allow_other: bool = True) -> list[str]:
@@ -161,6 +161,8 @@ def validate_foco_selection(
     allow_custom_tipo_visita: bool = False,
     tipo_visita_outro: str | None = None,
 ):
+    if same_normalized(tipo_visita, "Quadra"):
+        raise ValueError("Selecione Quadra no foco da ação e informe o tipo de visita correto.")
     visit = canonical_tipo_visita(tipo_visita)
     if not visit:
         raise ValueError("Selecione um tipo de visita valido.")
@@ -176,6 +178,8 @@ def validate_foco_selection(
             raise ValueError("Informe qual e o tipo de visita ao selecionar Outro.")
 
         tipo_visita_final = tipo_visita_customizado
+        if same_normalized(tipo_visita_final, "Quadra"):
+            raise ValueError("Selecione Quadra no foco da ação e informe o tipo de visita correto.")
 
     if visit == "Aedes":
         imovel = canonical_tipo_imovel(tipo_imovel)
@@ -183,9 +187,6 @@ def validate_foco_selection(
             raise ValueError("Selecione o tipo de imovel para atendimentos Aedes.")
     else:
         imovel = None
-
-    if visit == "Quadra":
-        return tipo_visita_final, None, "QUADRA"
 
     foco_opcoes = get_foco_opcoes(visit, imovel)
     foco_canonico = _match_option(foco, foco_opcoes)
@@ -195,13 +196,13 @@ def validate_foco_selection(
     return tipo_visita_final, imovel, foco_canonico
 
 
-def build_focus_catalog():
+def build_focus_catalog(*, include_quadra=True):
     return {
         "tipo_visita_opcoes": list(TIPO_VISITA_OPCOES),
         "tipo_imovel_opcoes": list(TIPO_IMOVEL_OPCOES),
-        "aedes": {key: list(values) for key, values in Aedes_FOCOS_POR_IMOVEL.items()},
-        "culex": list(CULEX_FOCOS),
-        "outro": list(FORM_FOCOS_OUTRO),
+        "aedes": {key: get_foco_opcoes("Aedes", key, include_quadra=include_quadra) for key in Aedes_FOCOS_POR_IMOVEL},
+        "culex": get_foco_opcoes("Culex", include_quadra=include_quadra),
+        "outro": get_foco_opcoes("Outro", include_quadra=include_quadra),
         "tipo_visita_outro_label": TIPO_VISITA_OUTRO_LABEL,
-        "filtro_foco_opcoes": list(FILTER_FOCO_OPCOES),
+        "filtro_foco_opcoes": [option for option in FILTER_FOCO_OPCOES if include_quadra or not same_normalized(option, "QUADRA")],
     }

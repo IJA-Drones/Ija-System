@@ -193,7 +193,12 @@ def test_public_catalog_excludes_internal_quadra_without_changing_shared_catalog
     catalog = build_public_focus_catalog()
     assert catalog['tipo_visita_opcoes'] == ['Aedes', 'Culex', 'Outro']
     assert catalog['outro']
-    assert 'Quadra' in build_focus_catalog()['tipo_visita_opcoes']
+    internal = build_focus_catalog()
+    assert 'Quadra' not in internal['tipo_visita_opcoes']
+    assert 'QUADRA' in internal['aedes']['Imovel Geral']
+    assert 'QUADRA' in internal['culex']
+    for options in [*catalog['aedes'].values(), catalog['culex'], catalog['outro'], catalog['filtro_foco_opcoes']]:
+        assert 'QUADRA' not in options
 
 
 def test_institutional_context_and_response_budget(app):
