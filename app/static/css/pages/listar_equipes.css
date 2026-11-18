@@ -94,7 +94,9 @@
       width: 100%;
     }
 
-    .equipes-table-wrap .table-responsive { overflow-x: visible !important; }
+    .equipes-table-wrap .table-responsive { overflow-x: auto !important; }
+    .equipes-table-wrap table.table { min-width: 0; }
+    .equipes-table-wrap .operational-login { min-width: 0; }
     .equipes-table-wrap table.table thead { display: none; }
 
     .equipes-table-wrap table.table,
@@ -196,7 +198,14 @@
       font-size: .78rem;
     }
     .equipes-table-wrap table.table tbody tr td {
+      display: block;
       padding: 12px 12px !important;
+      overflow-wrap: anywhere;
+    }
+    .equipes-table-wrap table.table tbody tr td::before {
+      display: block;
+      max-width: none;
+      margin-bottom: 8px;
     }
   }
 

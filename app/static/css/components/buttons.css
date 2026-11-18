@@ -245,3 +245,15 @@
 
 .btn-action-icon.danger { color: #dc3545; }
 .btn-action-icon.danger:hover { background-color: #f8d7da; }
+
+/* Form footers keep every action reachable on narrow screens. */
+.form-actions { flex-wrap: wrap; }
+@media (max-width: 575.98px) {
+  .form-actions > .btn {
+    flex: 1 1 12rem;
+    min-width: 0;
+    max-width: 100%;
+    padding-inline: 1rem !important;
+    white-space: normal;
+  }
+}

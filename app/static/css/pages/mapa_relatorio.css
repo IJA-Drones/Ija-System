@@ -226,3 +226,9 @@
   flex-basis: 100%;
   color: #b42318;
 }
+
+@media (max-width: 575.98px) {
+  .mapa-relatorio-page #mapTabs { display: flex; width: 100%; border-radius: 16px; flex-wrap: wrap; white-space: normal; }
+  .mapa-relatorio-page #mapTabs .nav-item { flex: 1 1 100%; min-width: 0; }
+  .mapa-relatorio-page #mapTabs .nav-link { width: 100%; white-space: normal; }
+}

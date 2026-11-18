@@ -392,6 +392,40 @@ body.sidebar-collapsed .app-content {
   .navbar-mode-pill {
     display: none !important;
   }
+
+  .navbar > .navbar-shell {
+    flex-wrap: nowrap;
+    gap: .5rem;
+    min-width: 0;
+    padding-inline: 0;
+  }
+
+  .navbar #sidebarToggle {
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    padding: .4rem !important;
+    margin-right: 0 !important;
+  }
+
+  .navbar .navbar-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .navbar .navbar-brand img {
+    max-width: min(140px, 100%);
+    object-fit: contain;
+  }
+
+  .navbar .navbar-user-menu { margin-right: 0 !important; }
+  .navbar .navbar-user-menu > button {
+    width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: .4rem !important;
+  }
+  .navbar .navbar-user-menu > button .bi-chevron-down { display: none; }
 }
 
 /* Ajustes Gerais para Telas Menores (< 992px) */
@@ -1172,6 +1206,18 @@ body.sidebar-collapsed .app-sidebar .nav-link-toggle .chevron {
 
 .btn-action-icon.danger { color: #dc3545; }
 .btn-action-icon.danger:hover { background-color: #f8d7da; }
+
+/* Form footers keep every action reachable on narrow screens. */
+.form-actions { flex-wrap: wrap; }
+@media (max-width: 575.98px) {
+  .form-actions > .btn {
+    flex: 1 1 12rem;
+    min-width: 0;
+    max-width: 100%;
+    padding-inline: 1rem !important;
+    white-space: normal;
+  }
+}
 
 /* bundle-source-end: app/static/css/components/buttons.css */
 

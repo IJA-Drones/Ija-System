@@ -588,3 +588,10 @@ body:has(.dev-shell) {
   .dev-shell .dev-hero .dev-title { font-size: clamp(1.8rem, 8vw, 2.5rem); }
   .dev-shell .dev-hero-actions .btn { flex: 1 1 auto; }
 }
+
+.dev-shell :is(.dev-card, .dev-card .card-body, #devAlertsList, #devAlertsList .alert) { min-width: 0; }
+.dev-shell #devAlertsList .alert { overflow-wrap: anywhere; }
+@media (max-width: 575.98px) {
+  .dev-shell .dev-session-summary { min-width: 0; flex-wrap: wrap; }
+  .dev-shell .dev-session-summary > div { min-width: 0; overflow-wrap: anywhere; }
+}
