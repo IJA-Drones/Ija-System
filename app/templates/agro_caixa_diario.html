@@ -6,18 +6,19 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/listing.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_caixa_diario.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_caixa_diario.css', v='20261118-2') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 listing-page">
+<div class="container-fluid py-4 listing-page caixa-diario-page">
   <div class="listing-header caixa-diario-header mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-journal-text me-2 text-primary"></i> Caixa Diário · {{ empresa_financeiro.nome }}
       </h2>
+      <div class="caixa-data text-muted small mt-2"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i> Caixa de {{ report.data_caixa.strftime('%d/%m/%Y') }}</div>
       <p class="text-muted small mb-0">
-        Abra ou reabra o caixa quantas vezes precisar, selecione o dia e acompanhe as movimentacoes.
+        Selecione a data e acompanhe as movimentações. Você pode reabrir o caixa sempre que precisar.
       </p>
     </div>
 
@@ -31,19 +32,19 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_financeiro_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
-        <i class="bi bi-cash-coin"></i> Recebiveis
+        <i class="bi bi-cash-coin"></i> Recebíveis
       </a>
       <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-primary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_receber_listar', origem='entrada')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-down-circle"></i> Entradas
       </a>
       <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_contas_pagar_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
-        <i class="bi bi-arrow-up-circle"></i> Saidas
+        <i class="bi bi-arrow-up-circle"></i> Saídas
       </a>
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
+  <div class="caixa-resumo mb-4">
+    <div class="caixa-resumo-item">
       <div class="card info status-secondary shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Saldo anterior</span>
@@ -58,22 +59,22 @@
         </div>
       </div>
     </div>
-    <div class="col-md-3">
+    <div class="caixa-resumo-item">
       <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Saldo de abertura</span>
           <h4 class="text-dark mt-2 mb-0">{{ report.saldo_abertura|currencybr }}</h4>
           <div class="small text-muted mt-2">
             {% if report.caixa %}
-              Aberto por {{ report.caixa.aberto_por_nome or 'Nao informado' }}
+              Aberto por {{ report.caixa.aberto_por_nome or 'Não informado' }}
             {% else %}
-              Sugestao baseada no dia anterior
+              Sugestão baseada no dia anterior
             {% endif %}
           </div>
         </div>
       </div>
     </div>
-    <div class="col-md-2">
+    <div class="caixa-resumo-item">
       <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Entradas do dia</span>
@@ -81,15 +82,15 @@
         </div>
       </div>
     </div>
-    <div class="col-md-2">
+    <div class="caixa-resumo-item">
       <div class="card info status-danger shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">Saidas do dia</span>
+          <span class="text-muted small d-block">Saídas do dia</span>
           <h4 class="text-dark mt-2 mb-0">{{ report.total_saidas|currencybr }}</h4>
         </div>
       </div>
     </div>
-    <div class="col-md-2">
+    <div class="caixa-resumo-item">
       <div class="card info {% if report.saldo_fechamento_calculado < 0 %}status-danger{% else %}status-info{% endif %} shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Fechamento calculado</span>
@@ -101,9 +102,9 @@
 
   {% if report.dia_anterior_pendente %}
     <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
-      O caixa anterior ainda esta aberto. Confira o saldo de
+      O caixa anterior ainda está aberto. Confira o saldo do
       <a href="{{ url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat()) }}" class="alert-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat())) if central_ti_url_allowed is defined else true) else 'false' }}">
-        o caixa de {{ report.caixa_anterior.data_caixa.strftime('%d/%m/%Y') }}
+        caixa de {{ report.caixa_anterior.data_caixa.strftime('%d/%m/%Y') }}
       </a>.
     </div>
   {% endif %}
@@ -114,16 +115,16 @@
         <div>
           <div class="fw-semibold mb-1">
             {% if request.args.get('caixa_status') == 'fechado' %}
-              O caixa de hoje ja foi fechado.
+              O caixa de hoje já foi fechado.
             {% else %}
-              O caixa de hoje ainda nao foi aberto.
+              O caixa de hoje ainda não foi aberto.
             {% endif %}
           </div>
           <div class="small">
             {% if request.args.get('caixa_status') == 'fechado' %}
-              {{ request.args.get('origem') or 'Esta movimentacao financeira' }} nao pode continuar sem um caixa aberto no dia.
+              {{ request.args.get('origem') or 'Esta movimentação financeira' }} não pode continuar sem um caixa aberto no dia.
             {% else %}
-              {{ request.args.get('origem') or 'Esta movimentacao financeira' }} precisa de um caixa aberto para continuar com seguranca.
+              {{ request.args.get('origem') or 'Esta movimentação financeira' }} precisa de um caixa aberto para continuar com segurança.
             {% endif %}
           </div>
         </div>
@@ -193,7 +194,7 @@
             {% elif report.caixa_aberto %}
               <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Caixa aberto</span>
             {% else %}
-              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Caixa nao aberto</span>
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Caixa não aberto</span>
             {% endif %}
           </div>
 
@@ -211,17 +212,17 @@
                 >
                 <div class="form-text">
                   {% if report.caixa_fechado %}
-                    A reabertura preserva o saldo inicial e as movimentacoes deste dia.
+                    A reabertura preserva o saldo inicial e as movimentações deste dia.
                   {% elif report.possui_fechamento_anterior %}
                     Este valor segue automaticamente o fechamento do dia anterior.
                   {% else %}
-                    Como nao ha dia anterior fechado, voce pode informar o saldo inicial.
+                    Como não há dia anterior fechado, você pode informar o saldo inicial.
                   {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
-                <label class="form-label small text-muted">Observacoes de abertura</label>
-                <input type="text" name="observacoes_abertura" class="form-control" placeholder="Ex.: caixa aberto com conferencia do banco">
+                <label class="form-label small text-muted">Observações de abertura</label>
+                <input type="text" name="observacoes_abertura" class="form-control" placeholder="Ex.: saldo conferido no banco">
               </div>
               <div class="col-12">
                 <button type="submit" class="btn btn-primary caixa-abrir-destaque d-inline-flex align-items-center justify-content-center gap-2">
@@ -235,10 +236,10 @@
               <div class="col-md-6">
                 <label class="form-label small text-muted">Saldo de fechamento</label>
                 <input type="text" class="form-control" value="{{ report.saldo_fechamento_calculado|currencybr }}" readonly>
-                <div class="form-text">Calculado automaticamente: abertura + entradas - saidas.</div>
+                <div class="form-text">Calculado automaticamente: abertura + entradas - saídas.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label small text-muted">Observacoes de fechamento</label>
+                <label class="form-label small text-muted">Observações de fechamento</label>
                 <input type="text" name="observacoes_fechamento" class="form-control" placeholder="Ex.: caixa conferido e encerrado">
               </div>
               <div class="col-12">
@@ -249,7 +250,7 @@
             </form>
           {% elif report.caixa_fechado %}
             <div class="small text-muted">
-              Caixa encerrado por <strong>{{ report.caixa.fechado_por_nome or 'Nao informado' }}</strong>
+              Caixa encerrado por <strong>{{ report.caixa.fechado_por_nome or 'Não informado' }}</strong>
               em {{ report.caixa.fechado_em.strftime('%d/%m/%Y %H:%M') if report.caixa.fechado_em else '-' }}.
             </div>
             {% if report.caixa.observacoes_fechamento %}
@@ -259,7 +260,7 @@
             {% endif %}
           {% else %}
             <div class="small text-muted">
-              O dia ainda nao teve abertura de caixa registrada.
+              O dia ainda não teve abertura de caixa registrada.
             </div>
           {% endif %}
         </div>
@@ -269,24 +270,28 @@
     <div class="col-lg-6">
       <div class="card shadow-sm rounded-4 border-0 h-100">
         <div class="card-header bg-transparent border-0 pt-4 px-4">
-          <h5 class="m-0 text-dark">Historico recente</h5>
+          <h5 class="m-0 text-dark">Histórico recente</h5>
         </div>
         <div class="card-body px-4 pb-4">
           <div class="list-group list-group-flush">
             {% for caixa in report.historico %}
-              <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+              <div class="list-group-item px-0 caixa-historico-item">
                 <div>
-                  <div class="fw-semibold">{{ caixa.data_caixa.strftime('%d/%m/%Y') }}</div>
-                  <div class="small text-muted">
-                    {{ caixa.status }} | abertura {{ caixa.saldo_abertura|currencybr }} | fechamento {{ caixa.saldo_fechamento|currencybr }}
+                  <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                    <span class="fw-semibold">{{ caixa.data_caixa.strftime('%d/%m/%Y') }}</span>
+                    <span class="badge {{ 'bg-success-subtle text-success' if caixa.status == 'FECHADO' else 'bg-warning-subtle text-warning' }}">{{ 'Fechado' if caixa.status == 'FECHADO' else 'Aberto' }}</span>
                   </div>
+                  <dl class="caixa-historico-saldos small mb-0">
+                    <div><dt class="text-muted">Abertura</dt><dd>{{ caixa.saldo_abertura|currencybr }}</dd></div>
+                    <div><dt class="text-muted">Fechamento</dt><dd>{{ caixa.saldo_fechamento|currencybr }}</dd></div>
+                  </dl>
                 </div>
                 <a href="{{ url_for('main.agro_caixa_diario', data_caixa=caixa.data_caixa.isoformat()) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_caixa_diario', data_caixa=caixa.data_caixa.isoformat())) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-eye"></i> Ver dia
                 </a>
               </div>
             {% else %}
-              <div class="small text-muted">Nenhum caixa diario registrado ainda.</div>
+              <div class="small text-muted">Nenhum caixa diário registrado ainda.</div>
             {% endfor %}
           </div>
         </div>
@@ -299,7 +304,7 @@
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
           <h5 class="m-0 text-dark">Livro-caixa do dia</h5>
-          <p class="text-muted small mb-0">Tudo que foi lancado para este dia entra aqui em ordem cronologica.</p>
+          <p class="text-muted small mb-0">Movimentações da data selecionada, em ordem cronológica.</p>
         </div>
         <div class="small text-muted">Movimentos: {{ report.movimentos|length }}</div>
       </div>
@@ -310,13 +315,13 @@
           <thead class="table-light">
             <tr>
               <th>Origem</th>
-              <th>NF / Doc</th>
-              <th>Descricao</th>
+              <th>NF / Documento</th>
+              <th>Descrição</th>
               <th>Categoria</th>
               <th>Subcategoria</th>
               <th>Status</th>
               <th class="text-end">Entrada</th>
-              <th class="text-end">Saida</th>
+              <th class="text-end">Saída</th>
               <th class="text-end">Saldo</th>
             </tr>
           </thead>
@@ -333,7 +338,7 @@
                   {% elif item.origem == 'ENTRADA_MANUAL' %}
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Entrada manual</span>
                   {% else %}
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Saida manual</span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Saída manual</span>
                   {% endif %}
                 </td>
                 <td class="align-top">{{ item.documento_referencia or '-' }}</td>
@@ -352,7 +357,7 @@
               </tr>
             {% else %}
               <tr>
-                <td colspan="9" class="text-center py-5 text-muted">Nenhuma movimentacao encontrada para este dia.</td>
+                <td colspan="9" class="text-center py-5 text-muted">Nenhuma movimentação encontrada para este dia.</td>
               </tr>
             {% endfor %}
           </tbody>
