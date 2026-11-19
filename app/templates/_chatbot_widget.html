@@ -1,20 +1,20 @@
-{% from '_azul_drone.html' import drone %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261110-1') }}">
+{% from '_azul_drone.html' import drone with context %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261119-fly1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261111-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261119-fly1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-voice-call.css', v='20261110-3') }}">
-<div class="azul-help" data-azul-help data-usage-scope="{{ azul_usage_scope|default('') }}" data-transcribe-url="{{ azul_transcribe_url|default('') }}" data-tutorial-url="{{ azul_tutorial_url|default('', true) }}" data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
-  <button type="button" class="azul-launcher" data-toggle aria-expanded="false" aria-controls="{{ chatbot_id_prefix }}Panel" title="Conversar com a Azul · arraste para mover">{{ drone('azul-drone-launcher') }}<span class="azul-launcher-label">Azul <i class="bi bi-chat-dots" aria-hidden="true"></i></span></button>
-  <section id="{{ chatbot_id_prefix }}Panel" class="azul-panel" hidden aria-label="Azul, inteligência do sistema">
+<div class="azul-help" data-azul-help data-agent-id="{{ azul_agent_id|default('azul') }}" data-agent-name="{{ azul_agent_name|default('Azul') }}" data-agent-welcome="{{ azul_agent_welcome|default('') }}" data-usage-scope="{{ azul_usage_scope|default('') }}" data-transcribe-url="{{ azul_transcribe_url|default('') }}" data-tutorial-url="{{ azul_tutorial_url|default('', true) }}" data-chat-key="{{ azul_chat_key|default('') }}" data-export="{{ '1' if azul_can_export|default(false) else '0' }}" data-url="{{ chatbot_api_url }}" data-page="{{ '/agro/' if azul_is_agro|default(false) and request.endpoint == 'main.azul_chat' else request.path }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
+  <button type="button" class="azul-launcher" data-toggle aria-expanded="false" aria-controls="{{ chatbot_id_prefix }}Panel" title="Conversar com {{ azul_agent_name|default('Azul') }} · arraste para mover">{{ drone('azul-drone-launcher') }}<span class="azul-launcher-label">{{ azul_agent_name|default('Azul') }} <i class="bi bi-chat-dots" aria-hidden="true"></i></span></button>
+  <section id="{{ chatbot_id_prefix }}Panel" class="azul-panel" hidden aria-label="{{ azul_agent_name|default('Azul') }}, inteligência do sistema">
     <header class="azul-header">
       {{ drone() }}
-      <div class="azul-heading"><strong>Azul <span>IA</span></strong><small>Inteligência do sistema</small></div>
+      <div class="azul-heading"><strong>{{ azul_agent_name|default('Azul') }} <span>IA</span></strong><small>{{ azul_agent_title|default('Inteligência do sistema') }}</small></div>
       {% if azul_page_url|default(none) %}
-      <a class="azul-expand" href="{{ azul_page_url }}" title="Abrir página da Azul" aria-label="Abrir página da Azul"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
+      <a class="azul-expand" href="{{ azul_page_url }}" title="Abrir página de {{ azul_agent_name|default('Azul') }}" aria-label="Abrir página de {{ azul_agent_name|default('Azul') }}"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>
       {% endif %}
       {% if azul_settings_url|default(none) %}
-      <a class="azul-expand" href="{{ azul_settings_url }}" title="Configurações da AZUL" aria-label="Configurações da AZUL"><i class="bi bi-gear" aria-hidden="true"></i></a>
+      <a class="azul-expand" href="{{ azul_settings_url }}" title="Configurações de {{ azul_agent_name|default('Azul') }}" aria-label="Configurações de {{ azul_agent_name|default('Azul') }}"><i class="bi bi-gear" aria-hidden="true"></i></a>
       {% endif %}
       <button type="button" data-guide-open title="Guia prático" aria-label="Abrir guia prático"><i class="bi bi-book" aria-hidden="true"></i></button>
       <button type="button" data-clear title="Limpar conversa" aria-label="Limpar conversa"><i class="bi bi-trash3" aria-hidden="true"></i></button>
@@ -52,10 +52,10 @@
   </section>
   {% include '_azul_runtime.html' %}
 </div>
-<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261119-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261119-fly1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-drag.js', v='20261106-2') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261119-fly1') }}" defer></script>

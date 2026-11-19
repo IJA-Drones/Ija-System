@@ -14,8 +14,8 @@ class Element {
   setAttribute(name,value) {this[name]=value;}
   focus() {}
 }
-function setup(fetcher, storage, chatKey, page = false) {
-  const root=new Element(); root.dataset={url:'/api/azul/ajuda',page:'/admin',csrf:'token',chatKey};
+function setup(fetcher, storage, chatKey, page = false, identity = {}) {
+  const root=new Element(); root.dataset={url:'/api/azul/ajuda',page:'/admin',csrf:'token',chatKey,...identity};
   const parts=Object.fromEntries(['.azul-panel','[data-toggle]','[data-messages]','form','input','[data-status]','[data-profile]','[data-clear]','[data-close]'].map(key=>[key,new Element()]));
   if (page) {
     root.dataset.view='page';
@@ -315,4 +315,24 @@ test('access revoked during download clears the old preview and conversation',as
   assert.equal(env.parts['[data-messages]'].children.length,1);
   assert.match(env.parts['[data-messages]'].children[0].children[1].text,/acesso ou sessão mudou/);
   assert.equal(env.send.disabled,true);
+});
+
+
+test('Azul and IJA Fly keep separate transcripts within one verified login', async () => {
+  const storage=memoryStorage();
+  const fetcher=async()=>({ok:true,json:async()=>({answer:'Resposta permitida'})});
+  const azul=setup(fetcher,storage,'same-user');
+  azul.parts.input.value='Pergunta municipal';
+  await azul.parts.form.events.submit({preventDefault(){}});
+  const identity={agentId:'ija-fly',agentName:'IJA Fly',agentWelcome:'Olá! Sou o IJA Fly.'};
+  const fly=setup(fetcher,storage,'same-user',false,identity);
+  assert.equal(fly.parts['[data-messages]'].children.length,1);
+  fly.parts.input.value='Pergunta Agro';
+  await fly.parts.form.events.submit({preventDefault(){}});
+  assert.ok(storage.getItem('azul-chat:same-user').includes('Pergunta municipal'));
+  assert.ok(!storage.getItem('azul-chat:same-user:ija-fly').includes('Pergunta municipal'));
+  assert.ok(storage.getItem('azul-chat:same-user:ija-fly').includes('Pergunta Agro'));
+  setup(fetcher,storage,'new-user');
+  assert.equal(storage.getItem('azul-chat:same-user'),null);
+  assert.equal(storage.getItem('azul-chat:same-user:ija-fly'),null);
 });

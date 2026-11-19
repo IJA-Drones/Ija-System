@@ -13,6 +13,8 @@
     return recent;
   }
   document.querySelectorAll('[data-azul-help]').forEach(root => {
+    const agentName = root.dataset.agentName || 'Azul';
+    const agentText = text => root.dataset.agentId === 'ija-fly' ? text.replace(/da (?:AZUL|Azul)/g, 'do IJA Fly').replace(/(?:a |A )?(?:AZUL|Azul)/g, 'IJA Fly') : text;
     if (root.dataset.initialized) return;
     root.dataset.initialized = '1';
     const isPage = root.dataset.view === 'page';
@@ -25,16 +27,17 @@
     const stop = root.querySelector('[data-stop]');
     const counter = root.querySelector('[data-count]');
     const status = root.querySelector('[data-status]');
-    const idleStatus = isPage ? 'A Azul responde com base nas permissões do seu perfil.' : root.dataset.export === '1' ? 'Orientações e relatórios. Downloads exigem confirmação.' : 'Orientações e atalhos. Nenhuma alteração pelo chat.';
+    const idleStatus = isPage ? agentText('A Azul responde com base nas permissões do seu perfil.') : root.dataset.export === '1' ? 'Orientações e relatórios. Downloads exigem confirmação.' : 'Orientações e atalhos. Nenhuma alteração pelo chat.';
     let history = [], pending = null, generation = 0;
     let transcript = [], restoring = false, accessChanged = false;
-    const storageKey = root.dataset.chatKey ? 'azul-chat:' + root.dataset.chatKey : null;
+    const storageBase = root.dataset.chatKey ? 'azul-chat:' + root.dataset.chatKey : null;
+    const storageKey = storageBase ? storageBase + (root.dataset.agentId === 'ija-fly' ? ':ija-fly' : '') : null;
     // Keep only this login/access context in this tab's private chat storage.
     if (storageKey) {
       try {
         for (let index = sessionStorage.length - 1; index >= 0; index--) {
           const key = sessionStorage.key(index);
-          if (key?.startsWith('azul-chat:') && key !== storageKey) sessionStorage.removeItem(key);
+          if (key?.startsWith('azul-chat:') && key !== storageBase && key !== storageBase + ':ija-fly') sessionStorage.removeItem(key);
         }
       } catch (_) { /* Storage may be disabled. */ }
     }
@@ -95,7 +98,7 @@
       bubble.className = `azul-message azul-${role}`;
       if (role === 'assistant') {
         const label = document.createElement('small');
-        label.textContent = mode === 'faq' ? 'AZUL · GUIA LOCAL' : 'AZUL';
+        label.textContent = mode === 'faq' ? agentText('AZUL · GUIA LOCAL') : agentText('AZUL');
         bubble.append(label);
       }
       const content = document.createElement('div');
@@ -127,7 +130,7 @@
     }
     function welcome() {
       if (isPage) { updateView(); return; }
-      append('Olá! Sou a AZUL.\nPosso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Os recursos do sistema seguem o seu acesso.\n\nPor onde começamos?', 'assistant');
+      append(root.dataset.agentWelcome || agentText('Olá! Sou a AZUL.\nPosso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Os recursos do sistema seguem o seu acesso.\n\nPor onde começamos?'), 'assistant');
     }
     function open(value) {
       if (isPage) return;
@@ -146,7 +149,7 @@
       history = [];
       transcript = [];
       input.value = '';
-      try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
+      try { if (storageBase) { sessionStorage.removeItem(storageBase); sessionStorage.removeItem(storageBase + ':ija-fly'); } } catch (_) {}
       send.disabled = false;
       messages.replaceChildren();
       status.textContent = idleStatus;
@@ -241,7 +244,7 @@
       input.value = '';
       input.disabled = true;
       send.disabled = true;
-      try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
+      try { if (storageBase) { sessionStorage.removeItem(storageBase); sessionStorage.removeItem(storageBase + ':ija-fly'); } } catch (_) {}
       messages.replaceChildren();
       root.querySelector('[data-profile]').textContent = '';
       root.querySelectorAll('[data-question], [data-clear], [data-guide-open]').forEach(button => { button.disabled = true; });
@@ -270,7 +273,7 @@
       root.azulCompanion?.thinking(true);
       save();
       const version = generation;
-      status.textContent = 'A Azul está preparando sua resposta…';
+      status.textContent = agentText('A Azul está preparando sua resposta…');
       const timer = setTimeout(() => controller.abort(), 40000);
       try {
         const response = await fetch(root.dataset.url, {
