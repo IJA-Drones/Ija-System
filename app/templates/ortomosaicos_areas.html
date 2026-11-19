@@ -1,0 +1,27 @@
+<section id="ortho-area-panel" class="ortho-water-panel" aria-label="Calcular área e recortes" hidden>
+  <div class="ortho-water-head"><div><span class="ortho-eyebrow">MEDIÇÕES EM CAMPO</span><h2>Área e recortes</h2></div><button id="ortho-area-close" type="button" aria-label="Fechar cálculo de área">×</button></div>
+  <nav class="ortho-area-tabs" aria-label="Ferramentas de área"><button id="ortho-area-new-tab" type="button" class="ortho-water-secondary">Nova área</button><button id="ortho-area-saved-tab" type="button" class="ortho-water-secondary">Camadas salvas</button></nav>
+  <div id="ortho-area-editor">
+  <p class="ortho-muted">Desenhe o contorno. A medida é horizontal, estimada a partir das coordenadas do mapa.</p>
+  <form id="ortho-area-form" class="form-no-loading">
+    <fieldset id="ortho-area-fields">
+      <label for="ortho-area-name">Nome da área</label>
+      <input id="ortho-area-name" maxlength="120" required placeholder="Ex.: Quadra central">
+      <button id="ortho-area-draw" type="button" class="ortho-water-secondary">Desenhar área</button>
+      <p id="ortho-area-result" aria-live="polite">Nenhum contorno desenhado.</p>
+      <button id="ortho-area-save" type="submit" disabled>Salvar área e recorte</button>
+      <button id="ortho-area-clear" type="button" class="ortho-water-secondary">Limpar desenho</button>
+    </fieldset>
+  </form>
+  </div>
+  <p id="ortho-area-status" role="status"></p>
+  <div id="ortho-area-saved" hidden>
+  <button id="ortho-area-back-original" type="button" class="ortho-water-secondary">Voltar ao ortomosaico inteiro</button>
+  <button id="ortho-area-refresh" type="button" class="ortho-water-secondary">Atualizar lista</button>
+  <label class="ortho-area-isolate"><input id="ortho-area-isolate" type="checkbox"> Mostrar somente os recortes</label>
+  <p class="ortho-muted">Cada recorte usa a imagem original e fica salvo neste levantamento. O GeoTIFF original é preservado.</p>
+  <h3>Camadas salvas</h3>
+  <div id="ortho-area-list"></div>
+  </div>
+</section>
+<div id="ortho-area-drawing" class="ortho-water-drawing" hidden><span>Clique nos vértices e dê duplo clique para terminar.</span><button id="ortho-area-undo" type="button">Desfazer ponto</button><button id="ortho-area-finish" type="button">Concluir</button><button id="ortho-area-cancel" type="button">Cancelar</button></div>

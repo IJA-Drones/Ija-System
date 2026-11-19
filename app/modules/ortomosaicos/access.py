@@ -12,6 +12,7 @@ ORTHOMOSAIC_ENDPOINTS = {
     "main.ortomosaico_status", "main.ortomosaico_retry", "main.ortomosaico_arquivo",
     "main.ortomosaico_original", "main.ortomosaico_curvas", "main.ortomosaico_jpeg",
     "main.ortomosaico_exportar", "main.ortomosaico_agua_calcular",
+    "main.ortomosaico_areas", "main.ortomosaico_area_item", "main.ortomosaico_area_calcular",
     "main.ortomosaico_agua", "main.ortomosaico_agua_item",
 }
 

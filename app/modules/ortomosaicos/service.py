@@ -379,6 +379,7 @@ def dispatch(oid):
 
 def serialize(row):
     return dict(id=row.id, nome=row.nome, prefeitura=row.prefeitura.nome, prefeitura_id=row.prefeitura_id,
+        areas_url=url_for('main.ortomosaico_areas', oid=row.id),
         agua_url=url_for('main.ortomosaico_agua', oid=row.id),
         tipo=row.tipo, intervalo_m=row.intervalo_m, resolucao_m=row.resolucao_m,
         curvas_url=url_for('main.ortomosaico_curvas', oid=row.id) if row.status == 'pronto' and row.curvas_path else None,

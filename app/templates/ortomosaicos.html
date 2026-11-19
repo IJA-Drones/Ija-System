@@ -2,7 +2,7 @@
 {% block title %}Ortomosaicos e curvas | IJA System{% endblock %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/openlayers/ol.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css', v='20261116-perfil') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ortomosaicos.css', v='20261119-areas-workflow2') }}">
 {% endblock %}
 {% block content %}
 <section id="ortho-app" class="ortho" data-list-url="{{ url_for('main.ortomosaicos_listar') }}" data-upload-url="{{ url_for('main.ortomosaico_upload') }}" data-max-mb="{{ limite_mb }}" data-request-url="{{ url_for('main.novo') if current_user.tipo_usuario != 'ortomosaico' else '' }}">
@@ -16,6 +16,7 @@
       <label for="ortho-filter">Prefeitura</label>
       <select id="ortho-filter">{% if current_user.tipo_usuario != "ortomosaico" %}<option value="">Todas as prefeituras</option>{% endif %}{% for p in prefeituras|visible_municipalities %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
       <div id="ortho-list" class="ortho-list"><p class="ortho-muted">Carregando levantamentos…</p></div>
+      <section id="ortho-area-library" class="ortho-area-library" aria-label="Recortes deste levantamento" hidden><h3>Meus recortes</h3><p class="ortho-muted">Do levantamento selecionado</p><div id="ortho-area-library-list"></div><button id="ortho-area-library-open" type="button" class="ortho-water-secondary">Gerenciar recortes</button></section>
       <p class="ortho-access"><i class="bi bi-shield-lock" aria-hidden="true"></i> {{ "Acesso limitado à sua prefeitura" if current_user.tipo_usuario == "ortomosaico" else "Acesso administrativo" }}</p>
     </aside>
     <div id="ortho-stage" class="ortho-stage">
@@ -27,9 +28,15 @@
         <button id="ortho-fullscreen" type="button" title="Tela cheia" aria-label="Tela cheia"><i class="bi bi-arrows-fullscreen" aria-hidden="true"></i></button>
         <button id="ortho-layers-toggle" type="button" title="Mostrar ou ocultar camadas" aria-label="Mostrar ou ocultar camadas" aria-expanded="true" aria-controls="ortho-layers-panel"><i class="bi bi-layers" aria-hidden="true"></i></button>
       </div>
+      <div class="ortho-measure-tools">
       <button id="ortho-water-toggle" class="ortho-water-toggle" type="button" disabled aria-expanded="false" aria-controls="ortho-water-panel"><i class="bi bi-droplet" aria-hidden="true"></i> Estimar água</button>
+      <button id="ortho-area-toggle" class="ortho-water-toggle" type="button" disabled aria-expanded="false" aria-controls="ortho-area-panel">Calcular área</button>
+      <button id="ortho-area-saved-toggle" class="ortho-water-toggle" type="button" disabled aria-controls="ortho-area-panel">Meus recortes (0)</button>
+      <button id="ortho-area-original" class="ortho-water-toggle" type="button" hidden>Ver ortomosaico inteiro</button>
       <button id="ortho-request-toggle" {% if current_user.tipo_usuario == "ortomosaico" %}hidden disabled{% endif %} class="ortho-water-toggle ortho-request-toggle" type="button" aria-pressed="false"><i class="bi bi-pin-map" aria-hidden="true"></i> Criar solicitação aqui</button>
+      </div>
       {% include 'ortomosaicos_agua.html' %}
+      {% include 'ortomosaicos_areas.html' %}
       <section id="ortho-layers-panel" class="ortho-layers" aria-label="Camadas do mapa">
         <h2><i class="bi bi-layers" aria-hidden="true"></i> Camadas</h2>
         <label for="ortho-basemap">Mapa de fundo</label>
@@ -37,6 +44,7 @@
         <label><span id="ortho-layer-label">Ortomosaico RGB</span><input id="ortho-visible" type="checkbox" checked></label>
         <label for="ortho-opacity">Opacidade <output id="ortho-opacity-label">100%</output></label>
         <input id="ortho-opacity" type="range" min="0" max="100" value="100">
+        <button id="ortho-area-manage" type="button" class="ortho-water-secondary" hidden>Gerenciar recortes salvos</button>
         <div id="ortho-dem-controls" hidden>
           <p id="ortho-elevation" class="ortho-muted" role="status">Clique em uma curva para consultar sua cota.</p>
           <a id="ortho-jpeg" class="ortho-primary" download>Baixar JPEG</a>
@@ -100,7 +108,8 @@
 <script id="ortho-basemap-config" type="application/json">{{ {'key': ortho_google_key | default('')} | tojson }}</script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-basemap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-raster.js', v='20261016-perf') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261116-perfil') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-agua.js', v='20261119-areas-workflow2') }}"></script>
 <script src="{{ url_for('static', filename='js/ortomosaicos-upload.js', v='20261117') }}"></script>
-<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261116-perfil') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos-areas.js', v='20261119-areas-workflow2') }}"></script>
+<script src="{{ url_for('static', filename='js/ortomosaicos.js', v='20261119-areas-workflow2') }}"></script>
 {% endblock %}

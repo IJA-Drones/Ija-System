@@ -1,6 +1,6 @@
 /* Explicit water measurements, scoped to the authorized survey. */
 'use strict';
-window.createOrthoWater = ({map, api, onRequest}) => {
+window.createOrthoWater = ({map, api, onRequest, onOpen}) => {
   const el = name => document.getElementById(`ortho-water-${name}`);
   const source = new ol.source.Vector();
   const draft = new ol.source.Vector();
@@ -23,6 +23,7 @@ window.createOrthoWater = ({map, api, onRequest}) => {
   function open(show) {
     el('panel').hidden=!show;el('toggle').setAttribute('aria-expanded',String(show));
     if(show) {
+      onOpen?.();
       document.getElementById('ortho-layers-panel').hidden=true;
       document.getElementById('ortho-layers-toggle').setAttribute('aria-expanded','false');
     } else if(draw) {stopDrawing();changed(false);}
