@@ -11,6 +11,7 @@
 {% set prefeitura_context_endpoint = ti_area_homes.get('prefeitura', 'main.admin_dashboard') if central_ti_profile_active|default(false) else 'main.admin_dashboard' %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
+{% set logo_agro_url = url_for('static', filename='img/logo_ija_drones.png') if is_agro_context else none %}
 <!doctype html>
 <html
   lang="pt-br"
@@ -81,7 +82,9 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.bundle.css', v=style_bundle_version) }}"
     />
-    {% if not is_financeiro_context %}
+    {% if is_agro_context %}
+    <link rel="preload" as="image" href="{{ logo_agro_url }}" />
+    {% elif not is_financeiro_context %}
     <link rel="preload" as="image" href="{{ logo_light_url }}" />
     <link rel="preload" as="image" href="{{ logo_dark_url }}" />
     {% endif %}
@@ -162,6 +165,22 @@
           {% if is_financeiro_context %}
           <i class="bi bi-bank finance-navbar-icon" aria-hidden="true"></i>
           <span class="finance-navbar-title">Central Financeiro</span>
+          {% elif is_agro_context %}
+          {# Composição horizontal da marca original, no mesmo espaço da logo anterior. #}
+          <svg
+            class="navbar-logo agro-navbar-logo"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 175 50"
+            width="175" height="50"
+            role="img" aria-label="IJA Drones" focusable="false"
+          >
+            <svg x="0" y="0" width="50" height="50" viewBox="200 40 805 765" overflow="hidden" aria-hidden="true">
+              <image href="{{ logo_agro_url }}" width="1206" height="1305" />
+            </svg>
+            <svg x="60" y="4" width="115" height="42" viewBox="155 840 890 300" overflow="hidden" aria-hidden="true">
+              <image href="{{ logo_agro_url }}" width="1206" height="1305" />
+            </svg>
+          </svg>
           {% else %}
           <img
             src="{{ logo_light_url }}"

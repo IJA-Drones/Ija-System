@@ -2805,8 +2805,20 @@ body.agro-mode .navbar-mode-pill {
   display: inline-flex;
 }
 
-body.agro-mode .navbar-logo {
-  filter: hue-rotate(-95deg) saturate(1.35) contrast(1.03);
+body.agro-mode .agro-navbar-logo {
+  display: block;
+  width: 175px;
+  height: auto;
+  max-width: 100%;
+  max-height: 50px;
+  /* Preserva o azul e o verde da IJA com contraste suave no tema claro. */
+  filter: saturate(0.78) brightness(0.8);
+}
+
+@media (max-width: 991.98px) {
+  body.agro-mode .agro-navbar-logo {
+    max-width: 140px;
+  }
 }
 
 .agro-content-width-860 { max-width: 860px; }
@@ -8443,12 +8455,9 @@ body.dark-mode.agro-mode .navbar-brand {
   box-shadow: none;
 }
 
-body.dark-mode.agro-mode .navbar-brand .navbar-logo {
+body.dark-mode.agro-mode .agro-navbar-logo {
   opacity: 0.96;
-  filter:
-    brightness(0)
-    invert(1)
-    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22)) !important;
+  filter: saturate(0.72) brightness(1.12);
 }
 
 body.dark-mode.agro-mode .app-sidebar {
