@@ -17,7 +17,7 @@
     }
     root.addEventListener('click', event => {
       const opener = event.target.closest('[data-guide-open]');
-      if (!opener || !root.contains(opener) || opener.disabled || quickGuide || typeof HTMLDialogElement !== 'function') return;
+      if (!opener || opener === root || !root.contains(opener) || opener.disabled || quickGuide || typeof HTMLDialogElement !== 'function') return;
       let url;
       try { url = new URL(root.dataset.tutorialUrl,location.origin); } catch (_) { return; }
       if (url.origin !== location.origin || url.pathname !== '/azul/tutorial') return;
