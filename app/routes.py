@@ -3,6 +3,7 @@ from app.modules.acoes_publicas import register_routes as register_acoes_publica
 from flask import Blueprint
 from app.modules.gestao_ti.permissions import register_permission_security
 from app.shared.access import register_prefeitura_write_security
+from app.shared.interface_visibility import register_interface_visibility
 from app.core.errors import register_error_handlers
 from app.core.routes import register_core_routes
 from app.core.templating import register_template_helpers
@@ -55,6 +56,7 @@ from app.modules.treinamentos import register_routes as register_treinamentos_ro
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
 bp = Blueprint("main", __name__)
+register_interface_visibility(bp)
 register_permission_security(bp)
 register_prefeitura_write_security(bp)
 register_core_routes(bp)

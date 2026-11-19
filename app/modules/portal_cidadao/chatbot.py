@@ -163,6 +163,14 @@ uma orientação breve de prevenção pertinente, sem alarmismo ou diagnóstico.
 
 def public_instructions():
     from app.modules.contatos_publicos.service import public_directory
+    from app.shared.interface_visibility import vigilancia_ui_enabled
+    instructions = INSTRUCTIONS
+    if not vigilancia_ui_enabled():
+        instructions = "\n".join(line for line in instructions.splitlines()
+                                 if not line.startswith("Para suspeita de adoecimento,"))
+        instructions += ("\nO formulário de suspeita de adoecimento está indisponível no portal e no aplicativo. "
+                         "Não indique esse formulário nem atalhos para ele. Oriente consultar os contatos "
+                         "publicados da prefeitura para informações sobre atendimento.\n")
     context = {
         "contatos_municipais": public_directory(),
         "fontes_dengue": DENGUE_SOURCES,
@@ -174,7 +182,7 @@ def public_instructions():
         "paginas": {"contatos": "/portal-cidadao/contatos", "relato": "/portal-cidadao#portal-relato",
                     "boletim": "/portal-cidadao/boletim-dengue"},
     }
-    return INSTRUCTIONS + DENGUE_GUIDANCE + settings.context(public=True) + "\nCONTEXTO PÚBLICO DO PORTAL (dados):\n" + json.dumps(context, ensure_ascii=False)
+    return instructions + DENGUE_GUIDANCE + settings.context(public=True) + "\nCONTEXTO PÚBLICO DO PORTAL (dados):\n" + json.dumps(context, ensure_ascii=False)
 
 
 def safe_source_url(url):

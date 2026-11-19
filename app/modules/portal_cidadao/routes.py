@@ -18,6 +18,7 @@ from app.modules.portal_cidadao.chatbot import chat_token, reply
 from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO_AZUL_URL
 from app.modules.portal_cidadao.public_risk import get_public_risk_report
 from app.modules.portal_cidadao.municipalities import public_health_municipality
+from app.shared.interface_visibility import vigilancia_ui_enabled
 
 
 def list_public_prefeituras():
@@ -56,11 +57,14 @@ def register_routes(bp):
 
     @bp.route("/portal-cidadao", methods=["GET"], endpoint="portal_cidadao")
     def portal_cidadao():
+        show_vigilancia = vigilancia_ui_enabled()
         municipality, municipalities, health_config = public_health_municipality(current_app.config, request.args)
-        public_risk_report = get_public_risk_report(current_app.config, municipality, request.args, logger=current_app.logger)
+        public_risk_report = (get_public_risk_report(current_app.config, municipality, request.args, logger=current_app.logger)
+                              if show_vigilancia else None)
         region_query = {"regiao": "condomar"} if request.args.get("regiao") == "condomar" else {}
         response = current_app.make_response(render_template(
             "portal_cidadao.html",
+            vigilancia_ui_enabled=show_vigilancia,
             prefeituras=list_public_prefeituras(),
             portal_chat_token=chat_token(),
             oceano_azul_summary=OCEANO_AZUL_SUMMARY,

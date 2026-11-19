@@ -16,7 +16,7 @@ from tests.test_azul_help import User
 def env(tmp_path):
     app = Flask(__name__, instance_path=str(tmp_path), template_folder='../app/templates',
                 static_folder='../app/static')
-    app.config.update(TESTING=True, SECRET_KEY='training-tests', OPENAI_API_KEY='test-not-a-key')
+    app.config.update(TESTING=True, VIGILANCIA_UI_ENABLED=True, SECRET_KEY='training-tests', OPENAI_API_KEY='test-not-a-key')
     login = LoginManager(app)
     login.user_loader(lambda uid: User())
     bp = Blueprint('main', __name__)

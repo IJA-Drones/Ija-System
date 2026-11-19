@@ -8,13 +8,17 @@ from app.modules.vigilancia.sinan import MUNICIPALITIES
 
 
 def public_health_municipality(config, args):
+    excluded = set(config.get("PORTAL_EXCLUDED_MUNICIPALITIES", ()))
     options = [
         {**item, "name": item["name"].removesuffix(" — capital")}
         for item in MUNICIPALITIES
+        if item["ibge"] not in excluded
     ]
     by_code = {item["ibge"]: item for item in options}
     default_code = str(config.get("INFODENGUE_GEOCODE") or "3550308").strip()
     default_city = str(config.get("INFODENGUE_CITY") or "").strip()
+    if default_code in excluded:
+        default_code, default_city = "3550308", "São Paulo"
     # Preserva municípios que já eram configurados fora do catálogo regional.
     if default_code not in by_code and re.fullmatch(r"[0-9]{7}", default_code) and default_city:
         municipality = {
@@ -29,6 +33,8 @@ def public_health_municipality(config, args):
     if len(args.getlist("municipio")) > 1:
         raise BadRequest("Selecione um único município para consultar o boletim.")
     requested = args.get("municipio", "").strip()
+    if requested in excluded:
+        requested = ""
     if requested and requested not in by_code:
         raise BadRequest("Selecione um município disponível no filtro do boletim.")
     if args.get("regiao") == "condomar":

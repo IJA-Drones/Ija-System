@@ -327,7 +327,10 @@
   get("ti-area-enabled").addEventListener("change", (event) => {
     draft().areas[event.target.checked ? "add" : "delete"](selectedArea);
     if (!event.target.checked) {
-      catalog.find((area) => area.id === selectedArea).modules.forEach((module) => module.actions.forEach((action) => draft().permissions.delete(`${module.id}.${action}`)));
+      // Desabilitar uma área também limpa seleções de módulos ocultos da interface.
+      Array.from(draft().permissions).forEach((code) => {
+        if (code.startsWith(`${selectedArea}.`)) draft().permissions.delete(code);
+      });
     }
     renderModules();
     markChanged();

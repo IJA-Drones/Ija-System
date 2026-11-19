@@ -47,6 +47,7 @@ def offer(text):
 
 
 def _context():
+    from app.shared.interface_visibility import vigilancia_ui_enabled
     if request.endpoint not in PAGES or request.method != 'GET':
         return {'public_azul': False}
     mobile = request.endpoint == 'main.app_movel'
@@ -59,21 +60,29 @@ def _context():
         steps.append({'title': title, 'body': body, 'links': links or [],
                       'question': question, 'speech': offer(title + '. ' + body)})
 
-    add('Conheça os caminhos do cidadão',
-        'Use o relato de foco para comunicar um problema no ambiente. Para informar '
-        'suspeita de adoecimento, use o formulário específico. A Azul ajuda a encontrar '
-        'esses caminhos; seus dados pessoais devem ficar nos formulários.',
-        [{'label': 'Relatar foco', 'url': report_url}, {'label': 'Suspeita de adoecimento', 'url': health_url}])
+    if vigilancia_ui_enabled():
+        add('Conheça os caminhos do cidadão',
+            'Use o relato de foco para comunicar um problema no ambiente. Para informar '
+            'suspeita de adoecimento, use o formulário específico. A Azul ajuda a encontrar '
+            'esses caminhos; seus dados pessoais devem ficar nos formulários.',
+            [{'label': 'Relatar foco', 'url': report_url}, {'label': 'Suspeita de adoecimento', 'url': health_url}])
+    else:
+        add('Conheça os caminhos do cidadão',
+            'Use o relato de foco para comunicar um problema no ambiente. A Azul ajuda '
+            'a encontrar os relatos, o boletim público e os contatos da prefeitura. '
+            'Preencha seus dados pessoais somente no formulário.',
+            [{'label': 'Relatar foco', 'url': report_url}])
     add('Registre um foco com revisão',
         'Escolha a ocorrência e a prefeitura responsável. Confira o endereço, preencha '
         'a identificação e acrescente detalhes ou anexos. Revise tudo e confirme o '
         'consentimento antes de enviar. Guarde o protocolo após a confirmação do sistema.',
         [{'label': 'Registrar relato', 'url': report_url}], 'Como registrar um foco?')
-    add('Use o formulário de saúde',
-        'Uma suspeita de adoecimento é um relato confidencial para triagem da vigilância. '
-        'Ela não representa diagnóstico ou confirmação de caso. Preencha os campos do '
-        'formulário específico; não envie informações pessoais ou de saúde pelo chat.',
-        [{'label': 'Abrir formulário de saúde', 'url': health_url}])
+    if vigilancia_ui_enabled():
+        add('Use o formulário de saúde',
+            'Uma suspeita de adoecimento é um relato confidencial para triagem da vigilância. '
+            'Ela não representa diagnóstico ou confirmação de caso. Preencha os campos do '
+            'formulário específico; não envie informações pessoais ou de saúde pelo chat.',
+            [{'label': 'Abrir formulário de saúde', 'url': health_url}])
     add('Confira o boletim e as fontes',
         'No boletim, escolha o município, a doença e o ano. Confira o período e a fonte '
         'apresentados antes de interpretar os números. Dados de demonstração aparecem '

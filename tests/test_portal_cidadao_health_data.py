@@ -227,7 +227,7 @@ class PortalHealthPageTests(unittest.TestCase):
     def setUp(self):
         root = Path(__file__).resolve().parents[1] / "app"
         self.app = Flask(__name__, template_folder=str(root / "templates"), static_folder=str(root / "static"))
-        self.app.config.update(TESTING=True, SECRET_KEY="portal-test")
+        self.app.config.update(TESTING=True, VIGILANCIA_UI_ENABLED=True, SECRET_KEY="portal-test")
         manager = LoginManager(self.app)
         manager.user_loader(lambda _: None)
         bp = Blueprint("main", __name__)
@@ -278,7 +278,7 @@ class PortalHealthPageTests(unittest.TestCase):
         self.assertIn('href="#mapa-risco"', html)
         self.assertIn("Mapa de risco e vigilância", html)
         self.assertIn("Os limites municipais são reais. Os registros de vigilância exibidos neste mapa são fictícios.", html)
-        self.assertIn("CONDOMAR · 15 municípios de Pernambuco", html)
+        self.assertIn("CONDOMAR · Municípios disponíveis de Pernambuco", html)
         self.assertIn("Relatar suspeita de adoecimento", html)
         self.assertIn('id="portal-risco-data"', html)
 

@@ -80,8 +80,14 @@ class Config:
     CORREIOS_CEP_BASE_URL = os.environ.get("CORREIOS_CEP_BASE_URL", "https://api.correios.com.br/cep")
     INFODENGUE_GEOCODE = os.environ.get("INFODENGUE_GEOCODE", "3550308")
     INFODENGUE_CITY = os.environ.get("INFODENGUE_CITY", "São Paulo")
+    # Município usado na POC encerrada; mantém a geografia de backend, sem exposição pública.
+    PORTAL_EXCLUDED_MUNICIPALITIES = ("2610905",)
+    if INFODENGUE_GEOCODE in PORTAL_EXCLUDED_MUNICIPALITIES:
+        INFODENGUE_GEOCODE, INFODENGUE_CITY = "3550308", "São Paulo"
     INFODENGUE_DISEASE = os.environ.get("INFODENGUE_DISEASE", "dengue")
     INFODENGUE_LOOKBACK_WEEKS = os.environ.get("INFODENGUE_LOOKBACK_WEEKS", "8")
+    # Retirada apenas da interface, em todos os perfis. Estrutura e dados preservados.
+    VIGILANCIA_UI_ENABLED = False
     VIGILANCIA_PREVIEW_ENABLED = os.getenv("VIGILANCIA_PREVIEW_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     VIGILANCIA_IMPORT_ENABLED = os.getenv("VIGILANCIA_IMPORT_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     SINAN_ENABLED = os.getenv("SINAN_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}

@@ -1,3 +1,4 @@
+{% set vigilancia_ui_enabled = config.get('VIGILANCIA_UI_ENABLED', false) %}
 {% set is_financeiro_context = is_financeiro_endpoint(request.endpoint) if is_financeiro_endpoint is defined else false %}
 {% set is_agro_context = not is_financeiro_context and request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
 {% set empresa_financeiro = empresa if empresa is defined else financeiro_empresa_atual|default(none) %}
@@ -30,7 +31,7 @@
     <meta name="theme-color" content="#101927" />
     <meta name="apple-mobile-web-app-title" content="Oceano Azul" />
     {% else %}
-    <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022b') }}" />
+    <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json' if vigilancia_ui_enabled else 'manifest-cidadao.json', v='20261118-publico') }}" />
     <meta name="theme-color" content="#061827" />
     <meta name="apple-mobile-web-app-title" content="IJA Vigilância" />
     <meta name="application-name" content="IJA Vigilância" />
@@ -38,7 +39,7 @@
       // Aberto pelo ícone instalado (tela cheia) sem estar logado: vai para o aplicativo.
       (function () {
         var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
-        if (standalone && location.pathname.indexOf("/m/") !== 0) { location.replace("/m/?pwa=1"); }
+        if (standalone && ["/", "/login", "/portal-cidadao"].indexOf(location.pathname) !== -1) { location.replace("/m/?pwa=1"); }
       })();
     </script>
     {% endif %}
@@ -117,7 +118,7 @@
       {% if current_user.tipo_usuario == 'ortomosaico' %}
         {% set navbar_home_endpoint = 'main.ortomosaicos' %}
       {% elif current_user.tipo_usuario == 'agente_endemias' %}
-        {% set navbar_home_endpoint = 'main.vigilancia_agente' %}
+        {% set navbar_home_endpoint = 'main.vigilancia_agente' if vigilancia_ui_enabled else 'main.treinamentos' %}
       {% elif is_agro_context %}
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
       {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
@@ -282,8 +283,8 @@
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
         {% if current_user.tipo_usuario == 'agente_endemias' %}
-          {% set sidebar_dashboard_endpoint = 'main.vigilancia_agente' %}
-          {% set sidebar_dashboard_active = request.endpoint == 'main.vigilancia_agente' %}
+          {% set sidebar_dashboard_endpoint = 'main.vigilancia_agente' if vigilancia_ui_enabled else 'main.treinamentos' %}
+          {% set sidebar_dashboard_active = request.endpoint == sidebar_dashboard_endpoint %}
         {% elif is_agro_context %}
           {% set sidebar_dashboard_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
           {% set sidebar_dashboard_active = request.endpoint == sidebar_dashboard_endpoint %}
@@ -340,7 +341,7 @@
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
               href="{{ url_for(sidebar_dashboard_endpoint) }}"
              data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(sidebar_dashboard_endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
-              <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-tools' if current_user.tipo_usuario == 'manutencao' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill')) }} me-2"></i><span>{{ 'Meus levantamentos' if current_user.tipo_usuario == 'agente_endemias' else ('Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Manutenção' if current_user.tipo_usuario == 'manutencao' else ('Empresas' if is_financeiro_context else 'Dashboard'))) }}</span>
+              <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-tools' if current_user.tipo_usuario == 'manutencao' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill')) }} me-2"></i><span>{{ ('Meus levantamentos' if vigilancia_ui_enabled else 'Início') if current_user.tipo_usuario == 'agente_endemias' else ('Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Manutenção' if current_user.tipo_usuario == 'manutencao' else ('Empresas' if is_financeiro_context else 'Dashboard'))) }}</span>
             </a>
           </li>
           {% if azul_page_url|default(none) %}
@@ -363,7 +364,7 @@
             {% include '_financeiro_menu.html' %}
             {% endif %}
           {% else %}
-          {% if can_access_relatos_saude is defined and can_access_relatos_saude(current_user) %}
+          {% if vigilancia_ui_enabled and can_access_relatos_saude is defined and can_access_relatos_saude(current_user) %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.relatos_saude_listar','main.relatos_saude_detalhe'] %}active{% endif %}" href="{{ url_for('main.relatos_saude_listar') }}">
               <i class="bi bi-heart-pulse me-2"></i><span>Suspeitas de adoecimento</span>
@@ -810,9 +811,10 @@
           </li>
           {% endif %}
 
-          {% if acoes_publicas_ready|default(false) and acoes_publicas_can_view|default(false) %}
+          {% if vigilancia_ui_enabled and acoes_publicas_ready|default(false) and acoes_publicas_can_view|default(false) %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.acoes_') %}active{% endif %}" href="{{ url_for('main.acoes_listar') }}"><i class="bi bi-megaphone me-2" aria-hidden="true"></i><span>Ações realizadas</span></a></li>
           {% endif %}
+          {% if vigilancia_ui_enabled %}
           {% if current_user.tipo_usuario == 'agente_endemias' %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.vigilancia_agente' %}active{% endif %}" href="{{ url_for('main.vigilancia_agente') }}"><i class="bi bi-person-badge me-2" aria-hidden="true"></i><span>Meus levantamentos</span></a></li>
           {% elif (central_ti_ui_guard(['main.vigilancia'], vigilancia_coordena_campo|default(false)) if central_ti_ui_guard is defined else vigilancia_coordena_campo|default(false)) %}
@@ -839,6 +841,8 @@
               <i class="bi bi-house-exclamation me-2" aria-hidden="true"></i><span>Imóveis pendentes</span>
             </a>
           </li>
+          {% endif %}
+
           {% endif %}
 
           {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin', 'sup_veiculos'] or central_ti_profile_active|default(false) %}
@@ -1879,10 +1883,10 @@
   });
 
   if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register("/sw.js", { scope: "/" });
+      navigator.serviceWorker.register("/service-worker.js", { scope: "/" });
   }
     </script>
-    {% if current_user.is_authenticated and current_user.tipo_usuario == 'agente_endemias' %}
+    {% if vigilancia_ui_enabled and current_user.is_authenticated and current_user.tipo_usuario == 'agente_endemias' %}
     <script src="{{ url_for('static', filename='js/agente-rastro.js', v='20261022') }}" defer></script>
     {% endif %}
     {% if ija_security %}

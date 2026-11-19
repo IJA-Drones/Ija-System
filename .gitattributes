@@ -1,0 +1,2 @@
+# PDFs são documentos binários; os espaços da tabela xref fazem parte do formato.
+*.pdf binary

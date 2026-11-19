@@ -23,7 +23,7 @@ from app.shared.csrf_security import CSRF_SESSION_KEY, register_csrf_security
 def client(tmp_path):
     root=Path(__file__).resolve().parents[1]
     app=Flask(__name__,static_folder=str(root/'app/static'))
-    app.config.update(TESTING=True,SECRET_KEY="test-only-local-key",VIGILANCIA_IMPORT_ENABLED=True,
+    app.config.update(TESTING=True,VIGILANCIA_UI_ENABLED=True,SECRET_KEY="test-only-local-key",VIGILANCIA_IMPORT_ENABLED=True,
                       SQLALCHEMY_DATABASE_URI='sqlite:///' + str(tmp_path/'campo.sqlite'),
                       CENTRAL_TI_ENABLED=False,SESSION_PROTECTION=None)
     db.init_app(app)

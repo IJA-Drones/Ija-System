@@ -30,7 +30,7 @@ REQUEST_VIDEOS = (
 )
 
 
-def demo_csv_examples(municipality_name):
+def _archived_demo_csv_examples(municipality_name):
     """Match the registered municipality name, never assume an internal database ID."""
     import unicodedata
     name = ''.join(c for c in unicodedata.normalize('NFKD', municipality_name or '') if not unicodedata.combining(c)).lower()
@@ -38,6 +38,11 @@ def demo_csv_examples(municipality_name):
         return dict(label='UVIS Sé · São Paulo', **{kind: f'csv-sp-{kind}' for kind in ('territorio', 'amostra', 'visitas')})
     if 'pesqueira' in name:
         return dict(label='Pesqueira · DEMO', **{kind: f'csv-{kind}' for kind in ('territorio', 'amostra', 'visitas')})
+    return {}
+
+
+def demo_csv_examples(municipality_name):
+    """Os kits da POC não são mais publicados; importadores e formatos são preservados."""
     return {}
 
 SECTIONS = (
@@ -155,4 +160,16 @@ GUIDE_GROUPS = (
 for group in GUIDE_GROUPS:
     for material_id, _title, _pages, filename in group["documents"]:
         MATERIALS[material_id] = (f"manuais/biblioteca/{filename}", "application/pdf")
+
+# Mantém o catálogo original como referência de código, sem servir materiais retirados.
+from .retired import RETIRED_MATERIAL_IDS
+
+ARCHIVED_MATERIALS = {key: entry for key, entry in MATERIALS.items() if key in RETIRED_MATERIAL_IDS}
+MATERIALS = {key: entry for key, entry in MATERIALS.items() if key not in RETIRED_MATERIAL_IDS}
+SECTIONS = tuple(section for section in SECTIONS if section["manual"] not in RETIRED_MATERIAL_IDS)
+GUIDE_GROUPS = tuple(
+    dict(group, documents=tuple(doc for doc in group["documents"] if doc[0] not in RETIRED_MATERIAL_IDS))
+    for group in GUIDE_GROUPS
+    if any(doc[0] not in RETIRED_MATERIAL_IDS for doc in group["documents"])
+)
 

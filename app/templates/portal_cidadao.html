@@ -12,11 +12,11 @@
       <span>Participação cidadão</span>
     </a>
     <div class="portal-cidadao-nav-links">
-      <a href="{{ url_for('main.portal_relato_saude') }}">Suspeita de adoecimento</a>
+      {% if vigilancia_ui_enabled %}<a href="{{ url_for('main.portal_relato_saude') }}">Suspeita de adoecimento</a>{% endif %}
       <a href="{{ url_for('main.portal_contatos') }}">Contatos das prefeituras</a>
-      {% if acoes_publicas_ready|default(false) %}<a href="{{ url_for('main.portal_acoes') }}">Ações realizadas</a>{% endif %}
+      {% if vigilancia_ui_enabled and acoes_publicas_ready|default(false) %}<a href="{{ url_for('main.portal_acoes') }}">Ações realizadas</a>{% endif %}
       <a href="#boletim-saude">Boletim de saúde</a>
-      <a href="#mapa-risco">Mapa de risco</a>
+      {% if public_risk_report %}<a href="#mapa-risco">Mapa de risco</a>{% endif %}
       <a href="#como-funciona">Atendimento</a>
       <a class="portal-cidadao-nav-report" href="#portal-relato">
         <i class="bi bi-plus-circle" aria-hidden="true"></i> Enviar relato
@@ -32,13 +32,20 @@
       </div>
       <h1>Cuidar da comunidade começa com seu relato.</h1>
       <p>
+        {% if vigilancia_ui_enabled %}
         Informe focos, criadouros e situações que precisam da atenção da vigilância.
         Seu relato ajuda a Prefeitura a organizar a resposta e as ações de controle.
+        {% else %}
+        Informe situações que precisam da atenção da Prefeitura.
+        Seu relato ajuda a equipe responsável a organizar o atendimento.
+        {% endif %}
       </p>
       <div class="portal-cidadao-hero-actions">
+        {% if vigilancia_ui_enabled %}
         <a class="btn btn-outline-primary" href="{{ url_for('main.portal_relato_saude') }}">
           <i class="bi bi-heart-pulse" aria-hidden="true"></i> Relatar suspeita de adoecimento
         </a>
+        {% endif %}
         <button type="button" class="btn btn-outline-primary" data-share="app" data-cidade="{{ portal_city }}"><i class="bi bi-share" aria-hidden="true"></i> Convidar vizinhos</button>
         <a class="btn btn-outline-primary" href="/app">
           <i class="bi bi-phone" aria-hidden="true"></i> Baixar o aplicativo
@@ -104,18 +111,18 @@
         <span>Região</span>
         <select class="form-select" name="regiao" id="portal-boletim-regiao">
           <option value="todos" {% if selected_region == 'todos' %}selected{% endif %}>Todos os municípios disponíveis</option>
-          <option value="condomar" {% if selected_region == 'condomar' %}selected{% endif %}>CONDOMAR · 15 municípios de Pernambuco</option>
+          <option value="condomar" {% if selected_region == 'condomar' %}selected{% endif %}>CONDOMAR · Municípios disponíveis de Pernambuco</option>
         </select>
       </label>
       <label for="portal-boletim-municipio">
-        <span>Município do boletim e do mapa</span>
+        <span>{{ 'Município do boletim e do mapa' if public_risk_report else 'Município do boletim' }}</span>
         <select class="form-select" name="municipio" id="portal-boletim-municipio">
           {% include '_portal_health_municipality_options.html' %}
         </select>
       </label>
       {% if public_risk_report.demo %}<input type="hidden" name="demo" value="true">{% endif %}
       <button class="btn btn-success" type="submit">Consultar município</button>
-      <p>Escolha CONDOMAR para listar as 15 cidades do consórcio. O município selecionado atualiza o InfoDengue e o mapa de vigilância abaixo.</p>
+      <p>Escolha CONDOMAR para listar os municípios disponíveis do consórcio. O município selecionado atualiza {{ 'o InfoDengue e o mapa de vigilância abaixo' if public_risk_report else 'os dados públicos do InfoDengue' }}.</p>
     </form>
 
     <article class="portal-cidadao-dengue-card" aria-labelledby="portal-dengue-title">
@@ -383,7 +390,7 @@
 
           <div class="portal-cidadao-consent">
             <input id="portalConsentimento" name="consentimento" value="1" type="checkbox" required>
-            <label for="portalConsentimento">Concordo que as informações sejam utilizadas para triagem e organização das ações de vigilância.</label>
+            <label for="portalConsentimento">Concordo que as informações sejam utilizadas para triagem e organização {{ 'das ações de vigilância' if vigilancia_ui_enabled else 'do atendimento pela Prefeitura' }}.</label>
           </div>
 
           <div class="portal-cidadao-feedback" id="portalCidadaoFeedback" hidden></div>
@@ -430,8 +437,8 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/compartilhar.js', v='20261022') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-offline.js', v='20261022') }}"></script>
-<script src="{{ url_for('static', filename='js/portal-push.js', v='20261022') }}"></script>
+<script src="{{ url_for('static', filename='js/portal-push.js', v='20261118-publico') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-chat-report.js') }}"></script>
-{% if public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261113-4') }}" defer></script>{% endif %}
+{% if vigilancia_ui_enabled and public_risk_report %}<script src="{{ url_for('static', filename='js/portal-mapa-vigilancia.js', v='20261113-4') }}" defer></script>{% endif %}
 {% endblock %}

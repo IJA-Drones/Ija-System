@@ -84,8 +84,11 @@ def list_lesson(module, definition):
 
 
 def catalog(audience, user):
+    from app.shared.interface_visibility import vigilancia_ui_enabled
+    public_lessons = deepcopy([lesson for lesson in PUBLIC
+                              if vigilancia_ui_enabled() or lesson['id'] != 'saude'])
     if audience == 'publico':
-        return deepcopy(PUBLIC)
+        return public_lessons
     if audience != 'sistema':
         abort(400)
     if not user.is_authenticated:
@@ -100,7 +103,7 @@ def catalog(audience, user):
             [('Lançamento', 'DEMO-FIN-001'), ('Empresa', 'Empresa de Exemplo'), ('Valor fictício', 'R$ 250,00')],
             'Confira a empresa selecionada e o período antes de interpretar o lançamento. Este exercício não realiza pagamentos.')))
     # A useful introduction remains available even when no supported internal track is authorized.
-    return lessons + deepcopy(PUBLIC)
+    return lessons + public_lessons
 
 
 def page():
