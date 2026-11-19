@@ -95,11 +95,35 @@ def build(user, page):
     if agro.allowed_sources(user):
         add('Consulte o Agro',
             'Peça uma busca de clientes, orçamentos, contratos, OS ou mapeamentos disponíveis no seu acesso. '
-            'Informe o texto da busca e, quando suportado, o status. O piloto consulta somente sua equipe.',
+            'Informe busca, status e período. A data usada depende da fonte. Peça também resumo de uma OS ou conferência de uma OS/RD pelo ID. O piloto consulta somente sua equipe.',
             question='Quais consultas do Agro posso fazer?')
         add('Pendências do Agro',
             'Confira mapeamentos pendentes, contratos aprovados sem OS e ordens ativas. O resumo inclui todas as datas.',
             question='Resumo de pendências do Agro', intent='agro_attention')
+    if agro.allowed_sources(user):
+        sources = agro.allowed_sources(user)
+        add('Entenda as prioridades do Agro',
+            'O resumo explica o motivo de cada pendência e mostra até cinco IDs. Considera todas as datas; não é agenda do dia nem prova de atraso. No administrativo, IDs de mapeamentos são de orçamentos; no piloto, de RDs.',
+            question='Quais as prioridades do Agro?')
+        if 'os' in sources:
+            add('Resumo e conferência de OS',
+                'Peça “Resuma a OS” ou “Confira a OS”, informando o ID real. O resumo mostra equipe, situação e execução registrada. A conferência usa os dados salvos e as regras do formulário; relatório e mapa são opcionais. Nada é alterado pelo chat.')
+        if 'mapeamentos' in sources:
+            add('Conferência de RD',
+                'Peça “Confira a RD” com o ID da RD, não do orçamento. A Azul verifica os dados salvos pelas regras de conclusão. Alterações ainda não salvas não aparecem na conferência. Revise e conclua pela tela.')
+        add('Busca por período',
+            'OS usa data de aplicação; RD do piloto usa data do relatório; demais fontes usam criação. O intervalo inclui início e fim e exclui registros sem data. O atalho abre a lista sem aplicar o período: confira as datas.')
+        for item in agro_help.FORM_TOPICS:
+            if any(t['module'] == item['module'] for t in agro_help.available(context)):
+                add(item['title'], item['answer'], question=item['question'])
+        try:
+            from app.modules.treinamentos.access import can_read_material
+            if can_read_material(user, 'guia-azul-agro'):
+                add('Manual da Azul no Agro',
+                    'Leia as cinco funções, exemplos de perguntas e limites de cada consulta. Os exemplos usam IDs fictícios; substitua pelos registros do seu acesso.',
+                    choices=[{'label': 'Abrir guia em PDF', 'url': url_for('main.treinamentos_arquivo', material_id='guia-azul-agro')}])
+        except BuildError:
+            pass
     if operations.allowed(user):
         add('Veja o que precisa de atenção',
             'Use “Minha atenção hoje” para consultar o resumo disponível para seu '

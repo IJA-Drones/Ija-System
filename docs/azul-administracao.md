@@ -129,3 +129,13 @@ financeira ou envio de mensagens neste pacote. Não exige migração de banco.
 Validação específica: `tests/test_azul_agro.py` cobre escopo por unidade/equipe,
 vínculo ausente/inativo, permissões parciais da Central TI, filtros inválidos,
 resumo local, ajuda contextual e despacho das ferramentas.
+
+### Agro — segundo pacote
+
+- Pendências explicam o motivo da atenção e mostram até cinco IDs por categoria. Não inferem atraso, prazo ou ordem de urgência sem dados que sustentem isso.
+- `detalhar_agro` resume OS e RD e pode conferir seus dados **já salvos**. A autorização é refeita usando as consultas das telas; IDs inexistentes e fora do acesso têm a mesma resposta. Para mapeamentos, o ID solicitado é o da RD.
+- A conferência reutiliza os validadores dos formulários (RD em modo de conclusão). Relatório PDF e mapa da OS são opcionais, portanto sua ausência é informativa. A conferência não altera status, não salva e não atesta segurança operacional.
+- `buscar_agro_periodo` aceita intervalo inclusivo ISO: OS por data de aplicação; RD do piloto por data do relatório; demais fontes por criação. Datas ausentes são excluídas quando há período. O atalho leva à lista com busca/status, mas a resposta avisa que a tela não aplica o período.
+- Ajuda local: “Como preencher a RD?”, “Como preencher a OS?” e “Passo a passo desta tela”. Em formulários reconhecidos, “Como usar esta tela?” também apresenta as etapas.
+- Exemplos de consultas com IA: “Resuma a OS 6”, “Confira a RD 3”, “Busque minhas OS em execução entre 01/11/2026 e 19/11/2026”. Use IDs reais e mantenha somente filtros suportados.
+- O piloto continua limitado à equipe ativa vinculada; administrativo mantém escopo municipal e permissões da Central TI. Resultados de registros são formatados no servidor e não enviados a uma segunda chamada do modelo.

@@ -93,6 +93,7 @@ SINAN = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar",), "coor
 PUBLICATIONS = MaterialPolicy("prefeitura", ("prefeitura.acoes_publicas.consultar",), "publications", flag="ACOES_PUBLICAS_ENABLED")
 INTEGRATED = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar", "prefeitura.acoes_publicas.consultar"), "integrated", all_required=True)
 POLICIES = {
+    "guia-azul-agro": MaterialPolicy("agro", legacy="azul_agro"),
     "video-quadra": MaterialPolicy("prefeitura", ("prefeitura.solicitacoes.criar",), "requests"),
     "guia-geral": MaterialPolicy("prefeitura", ("sistema.tecnico.consultar", "sistema.usuarios.consultar"), "dev", all_required=True),
     "manual-liraa": VIGILANCE, "manual-mapa": VIGILANCE, "manual-sinan": SINAN,
@@ -167,6 +168,9 @@ def can_read_material(user, material_id):
     if policy.legacy == "central_ti":
         from app.modules.gestao_ti.service import can_manage_central_ti
         return can_manage_central_ti(user)
+    if policy.legacy == "azul_agro":
+        from app.modules.chatbot.agro import allowed_sources
+        return bool(allowed_sources(user))
     if policy.area == "agro":
         from app.modules.agro.service import can_access_agro_panel
         if not can_access_agro_panel(user):

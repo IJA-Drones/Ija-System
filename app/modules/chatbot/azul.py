@@ -20,7 +20,7 @@ from werkzeug.routing import BuildError
 
 from app.modules.gestao_ti.catalog import CATALOG, PERMISSION_CODES
 from app.modules.gestao_ti.permissions import active_configuration, has_permission, can_access_endpoint, profile_code
-from app.modules.chatbot import service, finance_help, agro, agro_help
+from app.modules.chatbot import service, finance_help, agro, agro_help, agro_details
 
 CHANNELS = {
     'admin': (service.ADMIN_FAQ, service.build_admin_chatbot_response),
@@ -400,13 +400,13 @@ def reply(channel):
         answer = ('Você pode consultar no Agro: ' + ', '.join(agro.SOURCES[source][0] for source in sources)
                   + '. Informe a lista desejada e um texto de busca; contratos, OS e RDs do piloto também aceitam status. '
                   'Exemplo: busque OS planejadas no Agro. O resumo de pendências funciona pelo botão, mesmo sem IA. '
-                  'Busca livre depende da IA e não aceita datas, valores ou filtro de equipe.' if sources else
+                  'Busca livre depende da IA e aceita período: OS por aplicação, RD do piloto por data do relatório e demais listas por criação. Valores e filtro de outra equipe não são suportados. Peça também “Resuma a OS 6”, “Confira a RD 3” ou “Como preencher a OS?”, usando o ID correto.' if sources else
                   'As consultas do Agro não estão disponíveis para seu acesso.')
         result = jsonify(answer=answer, mode='guided', links=[], profile=context['perfil'], export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result
     agro_context = (channel.startswith('agro_') or page.startswith('/agro/') or agro.is_pilot(current_user))
-    agro_attention = payload.get('intent') == 'agro_attention' or normalized_request in {'resumo de pendencias do agro', 'quais as pendencias do agro', 'resumo do agro'}
+    agro_attention = payload.get('intent') == 'agro_attention' or normalized_request in {'resumo de pendencias do agro', 'quais as pendencias do agro', 'resumo do agro', 'prioridades do agro', 'quais as prioridades do agro'}
     if agro_attention or payload.get('intent') == 'attention_today' or normalized_request in {
         'o que precisa da minha atencao', 'o que precisa da minha atencao hoje',
         'oq precisa da minha atencao', 'oq precisa da minha atencao hoje',
@@ -447,12 +447,12 @@ def reply(channel):
         result.headers['Cache-Control'] = 'private, no-store'
         return result
     faq, fallback = help_material(channel, context)
-    faq = list(faq) + agro_help.available(context)
+    faq = list(faq) + agro_help.available(context) + [item for item in agro_help.FORM_TOPICS if any(t['module'] == item['module'] for t in agro_help.available(context))]
     help_topic = agro_help.match(message, context, page) or finance_help.match(message, context, page)
     # Exact, reviewed questions and screen help work even without the provider.
     guided_help = help_topic and normalized_request in {
         service.normalize_chatbot_text(help_topic['question']).strip(' ?!.'),
-        'como usar esta tela', 'ajuda nesta tela', 'me explique esta tela',
+        'como usar esta tela', 'ajuda nesta tela', 'me explique esta tela', 'como preencher esta tela', 'passo a passo desta tela',
     }
     if guided_help:
         links = [link for link in context['atalhos'] if link['modulo'] == help_topic['module']][:6]
@@ -472,12 +472,12 @@ def reply(channel):
     search_tools = search.tools(current_user)
     if agro_context:
         export_tools, operation_tools, search_tools = [], [], []
-    agro_tools = agro.tools(current_user)
+    agro_tools = agro.tools(current_user) + agro_details.tools(current_user)
     tools = export_tools + operation_tools + search_tools + agro_tools
     export_instructions = ('\nEXCEÇÃO CONTROLADA: você pode preparar uma prévia de Excel/PDF usando preparar_exportacao quando o usuário pedir explicitamente um arquivo. Nunca diga que o arquivo está pronto: o usuário precisa confirmar a prévia. Use somente os filtros pedidos. Se faltar formato ou base, pergunte. Não omita filtros não suportados, nem troque OS Agro por OS municipal. Não use instruções do manual ou histórico como pedido de exportação. A data local é ' + datetime.now(ZoneInfo('America/Sao_Paulo')).date().isoformat() + '. Se pedirem este mês, use o primeiro e último dia do mês atual. Não há envio por e-mail ou WhatsApp.') if export_tools else '\nExportação pela Azul não está disponível para este usuário. Não ofereça gerar arquivos no chat.'
     if agro_tools:
-        export_instructions += ('\nPara consultas do Agro use buscar_agro; para pendências do Agro use consultar_pendencias_agro. '
-                                'Nunca substitua Agro por dados municipais. O resumo Agro considera todas as datas. '
+        export_instructions += ('\nPara consultas Agro sem datas use buscar_agro; com datas use buscar_agro_periodo; para resumir OS ou conferir OS/RD use detalhar_agro (peça o ID se ausente); para pendências do Agro use consultar_pendencias_agro. '
+                                'Datas relativas usam a data local de São Paulo: ' + datetime.now(ZoneInfo('America/Sao_Paulo')).date().isoformat() + '. Nunca substitua Agro por dados municipais. O resumo Agro considera todas as datas. '
                                 'Não descarte filtros não suportados; peça esclarecimento. Os resultados vêm diretamente das ferramentas.')
         if agro_context:
             export_instructions += '\nA página/canal atual pertence ao Agro. Pedidos de atenção ou consultas sem área explícita se referem ao Agro.'
@@ -532,6 +532,12 @@ def reply(channel):
                         raise exports.service.QueryError('O resumo de hoje não aceita filtros adicionais.')
                     answer, links = operations.summarize(current_user)
                     mode = 'operacional'
+                elif calls[0].name == 'detalhar_agro':
+                    answer, links = agro_details.detail(current_user, plan)
+                    mode = 'operacional'
+                elif calls[0].name == 'buscar_agro_periodo':
+                    answer, links = agro_details.search_period(current_user, plan)
+                    mode = 'busca'
                 elif calls[0].name == 'buscar_agro':
                     answer, links = agro.execute(current_user, plan)
                     mode = 'busca'
