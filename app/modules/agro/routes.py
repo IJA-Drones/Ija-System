@@ -3880,27 +3880,8 @@ def register_routes(bp):
 
         rds_mapeamento = []
         if equipe is not None:
-            query = (
-                RdMapeamentoAgro.query
-                .filter(RdMapeamentoAgro.equipe_agro_id == equipe.id)
-            )
-            if q:
-                like = f"%{q}%"
-                query = query.filter(
-                    or_(
-                        id_search_clause(RdMapeamentoAgro.id, q),
-                        id_search_clause(RdMapeamentoAgro.equipe_agro_id, q),
-                        RdMapeamentoAgro.cliente_nome.ilike(like),
-                        RdMapeamentoAgro.propriedade_nome.ilike(like),
-                        RdMapeamentoAgro.municipio.ilike(like),
-                        RdMapeamentoAgro.tipo_servico.ilike(like),
-                        RdMapeamentoAgro.numero_os.ilike(like),
-                    )
-                )
-            if status in AGRO_RD_MAPEAMENTO_STATUS_OPTIONS:
-                query = query.filter(RdMapeamentoAgro.status == status)
-
-            rds_mapeamento = query.order_by(RdMapeamentoAgro.atualizado_em.desc(), RdMapeamentoAgro.id.desc()).all()
+            from app.modules.agro.service import build_piloto_mapeamentos_query
+            rds_mapeamento = build_piloto_mapeamentos_query(piloto, q, status).all()
 
         return render_template(
             "piloto_agro_mapeamentos_listar.html",

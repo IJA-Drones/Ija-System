@@ -2,7 +2,7 @@
 from flask import url_for
 from werkzeug.routing import BuildError
 
-from app.modules.chatbot import exports, operations, search, voice, finance_help
+from app.modules.chatbot import exports, operations, search, voice, finance_help, agro, agro_help
 from app.modules.chatbot.azul import help_context
 from app.modules.gestao_ti.permissions import can_access_endpoint
 
@@ -63,7 +63,7 @@ def build(user, page):
     add(*RECORDED_STEPS['start'],
         '[data-intent="access_overview"]', links[:6],
         'O que posso acessar no sistema?', 'access_overview')
-    financial = finance_help.current_topic(context, page)
+    financial = agro_help.current_topic(context, page) or finance_help.current_topic(context, page)
     if financial:
         add(financial['title'], financial['answer'], 'screen-list', question=financial['question'])
     elif current and current['modulo'] in WORKFLOWS:
@@ -78,9 +78,9 @@ def build(user, page):
     else:
         add(*RECORDED_STEPS['screen'],
             '[data-question="Como usar esta tela?"]', question='Como usar esta tela?')
-    for item in finance_help.suggestions(context, page):
+    for item in agro_help.suggestions(context, page) + finance_help.suggestions(context, page):
         # Suggestions reuse the reviewed answers instead of maintaining another manual.
-        if financial and item['id'] == financial['id']:
+        if financial and item['id'] == financial['id'] and item['module'] == financial['module']:
             steps[-1]['financial'] = True
             continue
         add(item['title'], item['answer'], question=item['question'])
@@ -92,6 +92,14 @@ def build(user, page):
             'A Azul apresenta a quantidade encontrada e um atalho para a lista filtrada. '
             'Esta busca cobre solicitações municipais.',
             '[data-search-guide]', question='Quero buscar solicitações municipais. Quais filtros posso informar?')
+    if agro.allowed_sources(user):
+        add('Consulte o Agro',
+            'Peça uma busca de clientes, orçamentos, contratos, OS ou mapeamentos disponíveis no seu acesso. '
+            'Informe o texto da busca e, quando suportado, o status. O piloto consulta somente sua equipe.',
+            question='Quais consultas do Agro posso fazer?')
+        add('Pendências do Agro',
+            'Confira mapeamentos pendentes, contratos aprovados sem OS e ordens ativas. O resumo inclui todas as datas.',
+            question='Resumo de pendências do Agro', intent='agro_attention')
     if operations.allowed(user):
         add('Veja o que precisa de atenção',
             'Use “Minha atenção hoje” para consultar o resumo disponível para seu '

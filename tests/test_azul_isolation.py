@@ -322,7 +322,7 @@ def test_unit_help_adds_agro_guide_only_after_a_real_grant_and_keeps_fallback(is
         assert c.post('/api/azul/ajuda', json={'message': 'Como cadastrar um cliente?'}).status_code == 200
         after, manual_after = provider_help_material(create)
         assert '/agro/clientes/novo' in {link['url'] for link in after['atalhos']}
-        assert manual_after == azul.service.UVIS_FAQ + azul.service.AGRO_ADMIN_FAQ
+        assert manual_after == azul.service.UVIS_FAQ + azul.service.AGRO_ADMIN_FAQ + azul.agro_help.available(after)
         assert after['escopo'] == before['escopo']
 
     isolated.config['OPENAI_API_KEY'] = ''

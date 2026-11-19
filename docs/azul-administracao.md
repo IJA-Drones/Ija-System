@@ -91,3 +91,41 @@ O ajuste recalcula o fechamento do dia, mantendo o status aberto/fechado e os
 lançamentos. Não propaga alterações aos saldos iniciais de dias seguintes. A tarifa
 ou despesa deve ser registrada como saída na data correta; corrigir o saldo não
 substitui esse registro. A Azul explica o procedimento, mas não executa o ajuste.
+
+## Primeiro pacote Agro (19/11/2026)
+
+A Azul oferece **Consultar Agro**, **Pendências do Agro** e perguntas de ajuda nas
+listas de clientes, orçamentos, contratos, mapeamentos e OS. A orientação também
+reconhece os formulários conhecidos e autorizados dessas áreas, sem consultar o
+registro indicado na URL. O guia descreve o procedimento; não confirma acesso ou
+situação de um registro específico.
+
+- `buscar_agro` consulta as fontes autorizadas, com texto de busca e status quando
+  suportado, retornando contagem, até cinco IDs e o atalho da lista. Datas, valores,
+  equipe e filtros adicionais não são suportados. A interpretação de pedidos
+  livres depende do provedor de IA.
+- `consultar_pendencias_agro` e o botão **Pendências do Agro** mostram a situação
+  atual de todas as datas, com data de consulta em São Paulo: mapeamentos pendentes,
+  contratos aprovados sem OS, OS planejadas e OS em execução. Não representam uma
+  agenda exclusiva de hoje. Os links abrem as listas para conferência, sem afirmar
+  que reproduzem o filtro de cada contagem.
+- Administrativo: consultas reutilizam os mesmos builders e escopo de unidade
+  das listas. Mapeamentos seguem a lista administrativa: orçamentos marcados para
+  mapeamento e sem contrato; pendências incluem RD não criada ou não preenchida.
+- Pilotos: exigem vínculo ativo com piloto e equipe. Consultam OS e RDs da equipe;
+  contratos são os aprovados sem OS mostrados na lista operacional. Consulta de
+  contratos exige também a permissão própria de contratos na Central TI. Não há
+  consulta de clientes ou orçamentos pelo chat do piloto.
+- Cada execução confere novamente as permissões de módulo. Módulos negados não
+  entram no resumo. Nas páginas/canais Agro, o modelo recebe apenas ferramentas
+  Agro para não substituir consultas por registros municipais.
+
+Ajuda revisada e o botão de resumo funcionam sem geração paga. As consultas mantêm
+as quotas existentes e as respostas não são armazenadas no servidor pelo pacote.
+Resultados das ferramentas são devolvidos diretamente ao usuário, sem uma segunda
+chamada ao modelo. Não há alteração de registros, exportação Agro, consulta
+financeira ou envio de mensagens neste pacote. Não exige migração de banco.
+
+Validação específica: `tests/test_azul_agro.py` cobre escopo por unidade/equipe,
+vínculo ausente/inativo, permissões parciais da Central TI, filtros inválidos,
+resumo local, ajuda contextual e despacho das ferramentas.

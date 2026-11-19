@@ -52,6 +52,10 @@
         {% if azul_can_export %}
         <button type="button" data-question="Quero gerar um relatório." data-intent="start_report"><i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i><span><strong>Gerar relatório</strong><small>Revise os filtros e confirme o download.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         {% endif %}
+      {% if azul_can_agro|default(false) %}
+      <button type="button" data-question="Resumo de pendências do Agro" data-intent="agro_attention"><i class="bi bi-calendar-check" aria-hidden="true"></i><span>Pendências do Agro</span></button>
+      <button type="button" data-question="Quais consultas do Agro posso fazer?"><i class="bi bi-search" aria-hidden="true"></i><span>Consultar Agro</span></button>
+      {% endif %}
       {% for step in azul_guide|default([]) if step.financial|default(false) %}
       <button type="button" data-question="{{ step.question }}"><i class="bi bi-journal-check" aria-hidden="true"></i><span>{{ step.title }}</span></button>
       {% endfor %}

@@ -60,6 +60,7 @@ def register_routes(bp):
                    and can_access_endpoint(current_user, 'main.azul_help', 'POST', legacy=True))
         from app.modules.chatbot.exports import allowed_sources
         from app.modules.chatbot.operations import allowed as operations_allowed
+        from app.modules.chatbot.agro import allowed_sources as agro_sources
         from app.modules.chatbot.search import allowed as search_allowed
         from app.modules.chatbot.guide import build as build_guide
         from app.modules.chatbot.speech_input import available as microphone_available
@@ -78,6 +79,7 @@ def register_routes(bp):
                 'azul_page_url': url_for('main.azul_chat') if allowed and can_access_endpoint(
                     current_user, 'main.azul_chat', 'GET', legacy=True) else None,
                 'azul_can_export': bool(allowed_sources(current_user)) if allowed else False,
+                'azul_can_agro': bool(agro_sources(current_user)) if allowed else False,
                 'azul_can_view_operations': operations_allowed(current_user) if allowed else False,
                 'azul_can_search': search_allowed(current_user) if allowed else False,
                 'azul_guide': build_guide(current_user, request.path) if allowed else [],

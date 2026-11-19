@@ -1962,3 +1962,23 @@ def agro_bool_label(value: bool) -> str:
 
 def now_brazil_label() -> str:
     return datetime.now().strftime("%d/%m/%Y %H:%M")
+
+
+def build_piloto_mapeamentos_query(piloto, q: str = "", status: str = ""):
+    """Shared by the pilot list and Azul; missing team yields no records."""
+    equipe_id = getattr(piloto, "equipe_agro_id", None)
+    query = RdMapeamentoAgro.query.filter(RdMapeamentoAgro.equipe_agro_id == equipe_id) if equipe_id else RdMapeamentoAgro.query.filter(false())
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(
+            id_search_clause(RdMapeamentoAgro.id, q),
+            id_search_clause(RdMapeamentoAgro.equipe_agro_id, q),
+            RdMapeamentoAgro.cliente_nome.ilike(like),
+            RdMapeamentoAgro.propriedade_nome.ilike(like),
+            RdMapeamentoAgro.municipio.ilike(like),
+            RdMapeamentoAgro.tipo_servico.ilike(like),
+            RdMapeamentoAgro.numero_os.ilike(like),
+        ))
+    if status in RdMapeamentoAgro.STATUS_OPTIONS:
+        query = query.filter(RdMapeamentoAgro.status == status)
+    return query.order_by(RdMapeamentoAgro.atualizado_em.desc(), RdMapeamentoAgro.id.desc())
