@@ -228,3 +228,26 @@ def test_linked_sinan_example_is_valid():
     content = (RESOURCE_DIR / ARCHIVED_MATERIALS["csv-sinan"][0]).read_bytes()
     assert len(parse_cases(content, dict(disease="dengue", ibge="2610905", year=2026), True)) == 6
 
+
+
+def test_azul_agro_manual_pilot_access_and_revocation(training):
+    from app.models import EquipeAgro, PilotoAgro
+    team = EquipeAgro(nome='Equipe DEMO', prefeitura_id=14)
+    db.session.add(team)
+    db.session.flush()
+    pilot = PilotoAgro(nome='Piloto DEMO', prefeitura_id=14, equipe_agro_id=team.id, ativo=True)
+    db.session.add(pilot)
+    db.session.flush()
+    user = Usuario(login='piloto_guia_demo', nome_uvis='Piloto DEMO', senha_hash='unused',
+                   tipo_usuario='piloto_agro', prefeitura_id=14, piloto_agro_id=pilot.id)
+    db.session.add(user)
+    db.session.commit()
+    training.users['piloto_agro'] = user
+    training.login('piloto_agro')
+    page = training.client.get('/agro/treinamentos')
+    assert page.status_code == 200
+    assert 'Azul no Agro: segundo pacote' in page.text
+    assert training.client.get('/treinamentos/arquivos/guia-azul-agro').status_code == 200
+    pilot.ativo = False
+    db.session.commit()
+    assert training.client.get('/treinamentos/arquivos/guia-azul-agro').status_code == 403

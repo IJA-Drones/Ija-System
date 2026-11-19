@@ -96,7 +96,7 @@ def timeout():
         db.session.execute(text("SET LOCAL statement_timeout = '15s'"))
 
 
-def execute(user, plan):
+def execute(user, plan, *, period=None):
     if (not isinstance(plan, dict) or set(plan) != {'fonte', 'q', 'status'}
             or any(not isinstance(v, str) or len(v) > 120 for v in plan.values())):
         raise QueryError('Informe apenas a fonte Agro, texto de busca e status; outros filtros não são suportados.')
@@ -110,11 +110,17 @@ def execute(user, plan):
         raise QueryError('Status não suportado para essa consulta Agro. Opções: ' + (', '.join(statuses) or 'sem filtro de status') + '.')
     query = query_for(user, source, q, status).enable_eagerloads(False)
     model = RdMapeamentoAgro if is_pilot(user) and source == 'mapeamentos' else SOURCES[source][2]
+    period_label = ''
+    if period is not None and any(period):
+        from app.modules.chatbot.agro_details import apply_period
+        query, period_label = apply_period(query, user, source, model, period)
     timeout()
     count = query.count()
     ids = query.with_entities(model.id).limit(5).all()
     label = SOURCES[source][0]
     answer = f'{label} no Agro: {count} registro(s) no seu acesso.'
+    if period_label:
+        answer += '\n' + period_label
     if q:
         answer += f'\nBusca textual: {q}.'
     if status:
@@ -132,6 +138,8 @@ def execute(user, plan):
     params = {k: v for k, v in {'q': q, 'status': status}.items() if v}
     if is_pilot(user) and source == 'contratos':
         params['status'] = 'AGUARDANDO_OS'
+    if period_label:
+        answer += '\nA lista de destino não aplica o período; confira as datas dos registros.'
     answer += '\nAbra a lista para conferir os registros. Nenhum dado foi alterado.'
     return answer, [{'label': f'Abrir {label.lower()} ({count})', 'url': url_for('main.' + endpoint(user, source), **params)}]
 
@@ -162,7 +170,17 @@ def summarize(user):
         for status, label in [(OrdemServicoAgro.STATUS_PLANEJADA, 'OS planejadas'), (OrdemServicoAgro.STATUS_EM_EXECUCAO, 'OS em execução')]:
             categories.append((label, 'os', query_for(user, 'os', status=status)))
     for label, source, query in categories:
-        lines.append(f'• {label}: {query.enable_eagerloads(False).count()}.')
+        count = query.enable_eagerloads(False).count()
+        lines.append(f'• {label}: {count}.')
+        if count:
+            reason = ('Revise a RD para completar o mapeamento.' if source == 'mapeamentos' else
+                      'Contrato aprovado ainda aguarda preparação da OS.' if source == 'contratos' else
+                      'Operação iniciada: confira o preenchimento e a continuidade.' if 'execução' in label else
+                      'Operação planejada: confira data, equipe e preparação.')
+            lines.append('  Motivo da atenção: ' + reason)
+            model = RdMapeamentoAgro if source == 'mapeamentos' and is_pilot(user) else SOURCES[source][2]
+            ids = query.enable_eagerloads(False).with_entities(model.id).limit(5).all()
+            lines.append('  IDs para conferir' + (' (orçamentos)' if source == 'mapeamentos' and not is_pilot(user) else '') + ': ' + ', '.join('#' + str(row.id) for row in ids) + '.')
         link = {'label': 'Conferir ' + SOURCES[source][0].lower(), 'url': url_for('main.' + endpoint(user, source))}
         if link not in links:
             links.append(link)

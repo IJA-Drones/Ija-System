@@ -49,7 +49,7 @@ SYSTEM = re.compile(
     r'solicitaco\w*|solicitacao|ordens? de servico|uvis|covisa|coordenadoria|'
     r'relat\w*|formulario\w*|bolet\w*|prefeituras?|municip\w*|contatos?|'
     r'orcament\w*|contrat\w*|clientes?|agro|pilotos?|equipes?|veiculos?|'
-    r'drones?|mapas?|mapeamento|ortomosaico\w*|treinament\w*|tutorial|guia|'
+    r'rds?|drones?|mapas?|mapeamento|ortomosaico\w*|treinament\w*|tutorial|guia|'
     r'financeiro|lancamento\w*|empresa|talentos|curriculo\w*|filtros?|'
     r'caixa|reabertura|reabrir|fechamento|saldos?|retroativ\w*|competencias?|conciliacao|'
     r'bancos?|entradas?|saidas?|recebiveis|recebivel|recebimentos?|pagamentos?|despesas?|'
@@ -99,7 +99,7 @@ def evaluate(message, history=(), *, public=False):
     if HEALTH.search(text):
         workflow = re.search(r'\b(?:import\w*|export\w*|cadastr\w*|filtr\w*|tela|modulo|formulario|relatorio|relato)\b',text)
         return Decision('allowed', 'system' if workflow else 'health')
-    if (PUBLIC_SYSTEM if public else SYSTEM).search(text) or (not public and re.search(r'\bOS\b', message)):
+    if (PUBLIC_SYSTEM if public else SYSTEM).search(text) or (not public and (re.search(r'\bOS\b', message) or re.search(r'\b(?:minhas? os|(?:resuma|resumir|confira|conferir|preencher|busque|buscar) (?:a |as |uma )?os)\b', text))):
         return Decision('allowed', 'system')
     # Only short continuations of an allowed topic can inherit conversation context.
     position = next((i for i in range(len(history)-1, -1, -1) if history[i].get('role') == 'user'), None)

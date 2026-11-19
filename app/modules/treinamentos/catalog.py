@@ -95,6 +95,7 @@ GUIDE_GROUPS = (
          )),
     dict(id="agro", title="Agro", icon="bi-tree",
          documents=(
+             ("guia-azul-agro", "Azul no Agro: segundo pacote", 6, "guia-azul-agro-segundo-pacote.pdf"),
              ("guia-agro-comercial-operacao", "Agro: comercial e operação", 3, "guia-agro-comercial-operacao.pdf"),
              ("guia-banco-talentos-agro", "Banco de talentos Agro", 3, "guia-banco-talentos-agro.pdf"),
          )),

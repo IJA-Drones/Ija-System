@@ -58,8 +58,15 @@ def current_topic(context, page):
 
 def match(message, context, page=''):
     normalized = normalize_chatbot_text(message).strip(' ?!.')
+    if normalized in {'como preencher esta tela', 'passo a passo desta tela', 'como preencher a rd', 'como preencher a os'}:
+        current = current_topic(context, page)
+        module = ('agro.mapeamentos' if normalized.endswith('rd') else 'agro.os' if normalized.endswith('os') else current['module'] if current else '')
+        return next((item for item in FORM_TOPICS if item['module'] == module and any(t['module'] == module for t in available(context))), None)
     if normalized in {'como usar esta tela', 'ajuda nesta tela', 'me explique esta tela'}:
-        return current_topic(context, page)
+        current = current_topic(context, page)
+        if context.get('modulo_formulario_agro') and current:
+            return next((item for item in FORM_TOPICS if item['module'] == current['module']), current)
+        return current
     return next((item for item in available(context)
                  if normalize_chatbot_text(item['question']).strip(' ?!.') == normalized), None)
 
@@ -67,6 +74,8 @@ def match(message, context, page=''):
 def suggestions(context, page):
     current = current_topic(context, page)
     items = available(context)
+    if current and context.get('modulo_formulario_agro'):
+        current = next((item for item in FORM_TOPICS if item['module'] == current['module']), current)
     return (([current] if current else []) + [item for item in items if item != current])[:3]
 
 
@@ -98,3 +107,20 @@ def form_module(user, page):
     if can_access_endpoint(user, endpoint, 'GET', args=args, legacy=legacy):
         return 'agro.' + module
     return None
+
+
+FORM_TOPICS = [
+    topic('os', 'Preencher OS', 'Como preencher a OS?',
+          '1. Confira identificador, cliente e propriedade; são obrigatórios.\n'
+          '2. Informe a data de aplicação e confira a equipe do contrato aprovado.\n'
+          '3. Se selecionar drones, confira a função (pulverização ou mapeamento) e o vínculo com a equipe.\n'
+          '4. Preencha os dados reais de cultura, serviço, área, aplicação e condições registradas. Não estime valores ausentes.\n'
+          '5. Relatório e mapa são anexos opcionais; confira se correspondem à operação.\n'
+          '6. Revise a situação e os dados antes de salvar ou concluir pela tela. Para conferir o que já foi salvo, peça “Confira a OS 6”, substituindo pelo ID correto.'),
+    topic('mapeamentos', 'Preencher RD', 'Como preencher a RD?',
+          '1. Confira equipe, cliente, propriedade e município.\n'
+          '2. Para concluir, informe também UF, data da RD e responsável.\n'
+          '3. Registre equipamento, cultura, área, altura de voo, sobreposições e GSD conforme os dados reais. Altura é em metros, área em hectares e sobreposições em porcentagem.\n'
+          '4. Responda Sim ou Não para rede de energia baixa, rede alta/média, poste, poste com tirante, acesso à área e árvores secas. Todos precisam de resposta para concluir.\n'
+          '5. Revise observações e responsável antes de concluir pela tela. Para conferir o registro salvo, peça “Confira a RD 3”, usando o ID da RD, não o do orçamento.'),
+]
