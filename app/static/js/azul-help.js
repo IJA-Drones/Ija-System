@@ -73,7 +73,7 @@
       if (preview.list_url !== '/agro/parceiros' || preview.export_url !== '/agro/parceiros/exportar-pesquisa') return;
       const card = document.createElement('section'); card.className = 'azul-export';
       const title = document.createElement('strong'); title.textContent = 'Salvar parceiros ou exportar para Excel';
-      const notice = document.createElement('p'); notice.textContent = 'Selecione as unidades. Ao salvar, entram como A abordar. Cadastros existentes mantêm seu acompanhamento.';
+      const notice = document.createElement('p'); notice.textContent = 'Selecione as unidades. Ao salvar, entram como A abordar. Nome/cidade, telefone e WhatsApp são conferidos para evitar duplicados e preservar o acompanhamento.';
       card.append(title, notice);
       const choices = preview.rows.map((row, index) => {
         const label = document.createElement('label'); label.style.display = 'block';

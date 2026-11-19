@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from flask import abort, current_app, flash, g, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlalchemy import or_, update
+from sqlalchemy import or_, update, text
 from sqlalchemy.exc import IntegrityError
 from werkzeug.routing import BuildError
 
@@ -46,6 +46,37 @@ def scoped():
 def identity_key(scope, name, city):
     parts = [str(scope), re.sub(r'\W+', '', normalize(name)), re.sub(r'\W+', '', normalize(city))]
     return hashlib.sha256('|'.join(parts).encode()).hexdigest()
+
+
+def contact_numbers(row):
+    """Compare public phone/WhatsApp numbers regardless of punctuation or +55."""
+    import phonenumbers
+    numbers = set()
+    for field in ('telefone', 'whatsapp'):
+        value = row.get(field, '') if isinstance(row, dict) else getattr(row, field, '')
+        for match in phonenumbers.PhoneNumberMatcher(value or '', 'BR', leniency=phonenumbers.Leniency.POSSIBLE):
+            numbers.add(phonenumbers.format_number(match.number, phonenumbers.PhoneNumberFormat.E164))
+    return numbers
+
+
+def lock_partner_scope(tenant):
+    # Serialize imports and edits in the same tenant, including first inserts.
+    # Transaction-scoped PostgreSQL locks release on commit/rollback.
+    if db.session.get_bind().dialect.name == 'postgresql':
+        key = int.from_bytes(hashlib.sha256(f'agro-partners:{tenant}'.encode()).digest()[:8], 'big', signed=True)
+        db.session.execute(text('SELECT pg_advisory_xact_lock(:key)'), {'key':key})
+
+
+def duplicate_partner(tenant, row, exclude_id=None):
+    key = identity_key(tenant, row['nome'], row['cidade'])
+    numbers = contact_numbers(row)
+    query = ParceiroAgro.query.filter_by(prefeitura_id=tenant)
+    if exclude_id is not None:
+        query = query.filter(ParceiroAgro.id != exclude_id)
+    for partner in query.order_by(ParceiroAgro.id):
+        if partner.chave_unica == key or numbers.intersection(contact_numbers(partner)):
+            return partner
+    return None
 
 
 def serializer():
@@ -109,10 +140,11 @@ def audit(partner, action, old=None, note=''):
 
 def save_rows(rows):
     tenant = get_user_prefeitura_id(current_user)
+    lock_partner_scope(tenant)
     created, existing = [], []
     for row in rows:
         key = identity_key(tenant, row['nome'], row['cidade'])
-        partner = ParceiroAgro.query.filter_by(chave_unica=key).first()
+        partner = duplicate_partner(tenant, row)
         if partner:
             existing.append(partner.id)
             continue
@@ -216,7 +248,7 @@ def register_routes(bp):
         require('agro_parceiros_importar','POST')
         created, existing = save_rows(selected_rows())
         return jsonify(created=len(created), existing=len(existing), url=url_for('main.agro_parceiros_listar'),
-                       message=f'{len(created)} parceiro(s) salvo(s). {len(existing)} já estavam cadastrados; acompanhamento preservado.')
+                       message=f'{len(created)} parceiro(s) salvo(s). {len(existing)} duplicado(s) ignorado(s) por nome/cidade, telefone ou WhatsApp; acompanhamento preservado.')
 
     @bp.post('/agro/parceiros/exportar-pesquisa', endpoint='agro_parceiros_exportar_pesquisa')
     @login_required
@@ -242,7 +274,7 @@ def register_routes(bp):
             values = form_values()
             values.update(fontes=[], culturas='', abordagem='')
             created, existing = save_rows([values])
-            flash('Parceiro cadastrado.' if created else 'Esta unidade já está cadastrada.','success')
+            flash('Parceiro cadastrado.' if created else 'Este parceiro ou contato já está cadastrado. Abrimos o cadastro existente.','success')
             return redirect(url_for('main.agro_parceiro_detalhe',partner_id=(created or existing)[0]))
         return render_template('agro_parceiro.html',partner=None,statuses=STATUSES,editable=True)
 
@@ -260,6 +292,12 @@ def register_routes(bp):
         require('agro_parceiro_editar','POST')
         partner = scoped().filter_by(id=partner_id).first_or_404()
         values = form_values()
+        lock_partner_scope(partner.prefeitura_id)
+        duplicate = duplicate_partner(partner.prefeitura_id, values, exclude_id=partner.id)
+        if duplicate:
+            db.session.rollback()
+            flash('Alteração não salva: já existe um parceiro com esse nome/cidade, telefone ou WhatsApp.','warning')
+            return redirect(url_for('main.agro_parceiro_detalhe',partner_id=partner.id))
         status = request.form.get('status')
         if status not in STATUSES:
             abort(400)

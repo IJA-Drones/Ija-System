@@ -151,3 +151,62 @@ def test_public_research_can_offer_saving_without_reading_private_records():
     assert prospecting.matches('Busque lojas agropecuárias para exportar em Excel')
     assert not prospecting.matches('Liste cooperativas cadastradas no sistema para exportar em Excel')
     assert not prospecting.matches('Salvar cooperativas no sistema')
+
+
+def test_phone_normalization_and_unknown_contacts():
+    assert partners.contact_numbers({'telefone':'(35) 3427-4888', 'whatsapp':'não confirmado'}) == partners.contact_numbers({'whatsapp':'+55 35 3427 4888'})
+    assert len(partners.contact_numbers({'telefone':'(35) 3427-4888 / (35) 3334-1144'})) == 2
+    assert partners.contact_numbers({'telefone':'não confirmado', 'whatsapp':''}) == set()
+
+
+def test_same_contact_with_different_name_city_or_field_is_not_saved(training):
+    training.login('dev')
+    values=dict(nome='Cooperativa Alfa',cidade='Itajubá/MG',telefone='(35) 3427-4888',whatsapp='',oportunidade='Parceria')
+    assert training.client.post('/agro/parceiros/novo',data=values).status_code==302
+    original=ParceiroAgro.query.one()
+    for changed in [dict(nome='Alfa filial',cidade='Pouso Alegre/MG',telefone='+55 35 3427 4888'),
+                    dict(nome='Outro nome',telefone='',whatsapp='553534274888')]:
+        response=training.client.post('/agro/parceiros/novo',data={**values,**changed})
+        assert response.location.endswith(f'/agro/parceiros/{original.id}')
+    assert ParceiroAgro.query.count()==1
+    assert ParceiroAgroHistorico.query.count()==1
+
+
+def test_import_selection_deduplicates_contacts_within_the_same_batch(training):
+    training.login('dev')
+    with training.client:
+        training.client.get('/agro/parceiros')
+        base=dict(nome='Empresa A',cidade='Itajubá/MG',telefone='(35) 3427-4888',whatsapp='',
+                  oportunidade='',culturas='',abordagem='',fontes=[])
+        created,existing=partners.save_rows([base,{**base,'nome':'Empresa B','telefone':'','whatsapp':'+55 35 3427-4888'}])
+        assert len(created)==len(existing)==1
+        assert created==existing
+
+
+def test_edit_cannot_reuse_another_partners_contact(training):
+    training.login('dev')
+    for name,phone in [('Empresa A','(35) 3427-4888'),('Empresa B','(35) 3334-1144')]:
+        training.client.post('/agro/parceiros/novo',data=dict(nome=name,cidade='Itajubá/MG',telefone=phone))
+    row=ParceiroAgro.query.filter_by(nome='Empresa B').one()
+    values=edit_values(row);values['whatsapp']='+55 35 3427 4888'
+    response=training.client.post(f'/agro/parceiros/{row.id}/atualizar',data=values)
+    assert response.status_code==302
+    with training.client.session_transaction() as session:
+        assert any('Alteração não salva' in message for _,message in session['_flashes'])
+    db.session.expire_all()
+    assert db.session.get(ParceiroAgro,row.id).whatsapp==''
+    assert ParceiroAgroHistorico.query.count()==2
+
+
+def test_unknown_numbers_do_not_collide_and_contacts_stay_tenant_scoped(training):
+    training.login('dev')
+    for name in ['Empresa A', 'Empresa B']:
+        training.client.post('/agro/parceiros/novo',data=dict(nome=name,cidade='Itajubá/MG',telefone='não confirmado'))
+    assert ParceiroAgro.query.count()==2
+    training.client.post('/agro/parceiros/novo',data=dict(nome='Empresa C',cidade='Itajubá/MG',telefone='(35) 3427-4888'))
+    db.session.add(Prefeitura(id=15,nome='Outra unidade',slug='outra-parceiros'))
+    user=training.users['operario'];user.trabalha_agro=True;user.prefeitura_id=15
+    db.session.commit();training.login('operario')
+    response=training.client.post('/agro/parceiros/novo',data=dict(nome='Empresa C',cidade='Itajubá/MG',telefone='+55 35 3427 4888'))
+    assert response.status_code==302
+    assert ParceiroAgro.query.filter_by(prefeitura_id=15).count()==1

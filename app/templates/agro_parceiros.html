@@ -2,35 +2,36 @@
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static',filename='css/pages/agro.css') }}">
 <link rel="stylesheet" href="{{ url_for('static',filename='css/components/listing.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/pages/agro_parceiros.css') }}">
 {% endblock %}
 {% block content %}
-<div class="container-fluid py-4 listing-page">
-  <div class="d-flex justify-content-between gap-3 flex-wrap mb-4">
-    <div><h2>Parceiros e oportunidades</h2><p class="text-muted">Acompanhe a prospecção, registre os contatos e organize os próximos passos. {{ pagination.total }} parceiro(s) nesta seleção.</p></div>
-    <div class="d-flex gap-2 align-items-start flex-wrap">
-      <a class="btn btn-outline-success" href="{{ url_for('main.agro_parceiros_exportar',**filters) }}">Exportar seleção para Excel</a>
-      <a class="btn btn-outline-primary" href="{{ url_for('main.azul_chat',area='agro') }}">Pesquisar com IJA Fly</a>
+<div class="container-fluid listing-page partners-page">
+  <div class="partners-header">
+    <div><span class="partners-eyebrow">COMERCIAL · IJA FLY</span><h2>Parceiros e oportunidades</h2><p class="text-muted">Da primeira conversa à parceria. Organize os contatos e seus próximos passos.</p></div>
+    <div class="listing-actions">
+      <a class="btn btn-outline-success" href="{{ url_for('main.agro_parceiros_exportar',**filters) }}"><i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Exportar Excel</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('main.azul_chat',area='agro') }}"><i class="bi bi-stars" aria-hidden="true"></i> Pesquisar com IJA Fly</a>
       {% if can_create %}<a class="btn btn-success" href="{{ url_for('main.agro_parceiro_novo') }}">Novo parceiro</a>{% endif %}
     </div>
   </div>
-  <form class="card card-body mb-4" method="get">
+  <form class="card card-body partners-filters" method="get">
     <div class="row g-3 align-items-end">
-      <div class="col-md-5"><label for="q" class="form-label">Nome, cidade, telefone ou oportunidade</label><input id="q" name="q" class="form-control" value="{{ filters.q }}" maxlength="200"></div>
+      <div class="col-md-5"><label for="q" class="form-label">Buscar parceiro</label><input id="q" name="q" class="form-control" value="{{ filters.q }}" maxlength="200" placeholder="Nome, cidade, telefone ou oportunidade"></div>
       <div class="col-md-3"><label for="status" class="form-label">Situação</label><select name="status" id="status" class="form-select"><option value="">Todas</option>{% for code,label in statuses.items() %}<option value="{{ code }}" {{ 'selected' if filters.status==code else '' }}>{{ label }}</option>{% endfor %}</select></div>
       <div class="col-md-2"><label><input type="checkbox" name="retornos" value="1" {{ 'checked' if filters.retornos else '' }}> Retornos até hoje</label></div>
-      <div class="col-md-2"><button class="btn btn-primary">Filtrar</button> <a href="{{ url_for('main.agro_parceiros_listar') }}">Limpar</a></div>
+      <div class="col-md-2 partners-filter-actions"><button class="btn btn-primary">Filtrar</button> <a href="{{ url_for('main.agro_parceiros_listar') }}">Limpar</a></div>
     </div>
   </form>
-  <div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
-    <thead><tr><th>Parceiro / cidade</th><th>Contato</th><th>Oportunidade</th><th>Situação / responsável</th><th>Último contato</th><th>Próximo contato</th><th></th></tr></thead>
+  <div class="partners-results"><strong>{{ pagination.total }} parceiro{{ 's' if pagination.total != 1 else '' }} encontrado{{ 's' if pagination.total != 1 else '' }}</strong><span><i class="bi bi-shield-check" aria-hidden="true"></i> Contatos repetidos são bloqueados ao salvar</span></div>
+  <div class="card partners-table-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0 partners-table">
+    <thead><tr><th>Parceiro / cidade</th><th>Contato comercial</th><th>Oportunidade</th><th>Situação / responsável</th><th>Acompanhamento</th><th><span class="visually-hidden">Ações</span></th></tr></thead>
     <tbody>{% for p in pagination.items %}<tr>
       <td><strong>{{ p.nome }}</strong><br><span class="text-muted">{{ p.cidade }}</span></td>
-      <td>{{ p.telefone or 'Não informado' }}{% if p.whatsapp and p.whatsapp != 'não confirmado' %}<br>WhatsApp: {{ p.whatsapp }}{% endif %}</td>
-      <td>{{ p.oportunidade|truncate(180) }}</td><td><span class="badge bg-{{ 'secondary' if p.status=='A_ABORDAR' else 'success' if p.status=='PARCERIA' else 'primary' }}">{{ statuses[p.status] }}</span><br>{{ p.responsavel or 'Sem responsável definido' }}</td>
-      <td>{{ p.ultimo_contato.strftime('%d/%m/%Y %H:%M') if p.ultimo_contato else 'Ainda não registrado' }}</td>
-      <td class="{{ 'text-danger' if p.proximo_contato and p.proximo_contato <= today and p.status not in ['PARCERIA','SEM_INTERESSE'] else '' }}">{{ p.proximo_contato.strftime('%d/%m/%Y') if p.proximo_contato else 'Sem agendamento' }}</td>
+      <td class="partners-contact"><span>{{ p.telefone or 'Não informado' }}</span>{% if p.whatsapp and p.whatsapp != 'não confirmado' %}<small><i class="bi bi-whatsapp" aria-hidden="true"></i> {{ p.whatsapp }}</small>{% endif %}</td>
+      <td class="partners-opportunity">{{ p.oportunidade|truncate(150) }}</td><td><span class="partners-status status-{{ p.status|lower }}">{{ statuses[p.status] }}</span><small class="partners-owner">{{ p.responsavel or 'Sem responsável' }}</small></td>
+      <td class="partners-followup"><span class="{{ 'text-danger' if p.proximo_contato and p.proximo_contato <= today and p.status not in ['PARCERIA','SEM_INTERESSE'] else '' }}">{{ 'Retorno: ' + p.proximo_contato.strftime('%d/%m/%Y') if p.proximo_contato else 'Retorno não agendado' }}</span><small>{{ 'Último: ' + p.ultimo_contato.strftime('%d/%m/%Y') if p.ultimo_contato else 'Sem contato registrado' }}</small></td>
       <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.agro_parceiro_detalhe',partner_id=p.id) }}">Acompanhar</a></td>
-    </tr>{% else %}<tr><td colspan="7" class="p-5 text-center">Nenhum parceiro nesta seleção. Pesquise com o IJA Fly e salve os candidatos que deseja acompanhar.</td></tr>{% endfor %}</tbody>
+    </tr>{% else %}<tr><td colspan="6" class="p-5 text-center">Nenhum parceiro nesta seleção. Pesquise com o IJA Fly e salve os candidatos que deseja acompanhar.</td></tr>{% endfor %}</tbody>
   </table></div></div>
   <nav class="d-flex gap-3 my-3" aria-label="Páginas de parceiros">{% if pagination.has_prev %}<a href="{{ url_for('main.agro_parceiros_listar',page=pagination.prev_num,**filters) }}">Anterior</a>{% endif %}<span>Página {{ pagination.page }} de {{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a href="{{ url_for('main.agro_parceiros_listar',page=pagination.next_num,**filters) }}">Próxima</a>{% endif %}</nav>
 </div>
