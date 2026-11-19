@@ -55,6 +55,9 @@ def matches(message, history=()):
     if topics.DENIED.search(text):
         return False
     if TARGET.search(text):
+        # Saving/exporting a future research result is not a request to read
+        # private records. The actual write still requires the selection button.
+        text = re.sub(r'\bpara\s+(?:salvar|cadastrar|exportar)\b[^.!?]*[.!?]*$', '', text)
         # Let normal internal record workflows retain their existing tools.
         return not re.search(r'\b(?:cadastrar|editar|excluir|salvar|cadastrados|cadastradas|no sistema)\b', text)
     if FOLLOWUP.fullmatch(text) or re.fullmatch(r'(?:mais\b[\w ,?!.:-]{0,150}|(?:aprofunde|amplie|continue|priorize|filtre|busque mais|quero mais|mostre mais|e em|e para|so em|somente em)\b[\w ,?!.:-]{0,150})', text):

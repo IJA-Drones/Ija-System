@@ -144,3 +144,10 @@ def test_research_excel_does_not_create_records(training):
 
 def test_partner_routes_have_permission_policies(training):
     validate_route_policy(training.app)
+
+
+def test_public_research_can_offer_saving_without_reading_private_records():
+    assert prospecting.matches('Pesquise cooperativas em 200 km de Itajubá. Traga telefone, cidade e oportunidades para salvar no sistema.')
+    assert prospecting.matches('Busque lojas agropecuárias para exportar em Excel')
+    assert not prospecting.matches('Liste cooperativas cadastradas no sistema para exportar em Excel')
+    assert not prospecting.matches('Salvar cooperativas no sistema')
