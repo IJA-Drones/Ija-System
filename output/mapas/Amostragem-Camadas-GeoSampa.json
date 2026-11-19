@@ -1,0 +1,151 @@
+[
+  {
+    "camada": "quadra_fiscal",
+    "total": 64238,
+    "geometria": "Polygon",
+    "campos": [
+      "cd_identificador",
+      "cd_identificador_original_quadra_fiscal",
+      "qt_area_quadra_fiscal",
+      "cd_quadra_fiscal",
+      "cd_subquadra_fiscal",
+      "cd_situacao_quadra",
+      "cd_setor_fiscal",
+      "dt_carga",
+      "cd_situacao_setor",
+      "cd_tipo_quadra",
+      "tx_tipo_quadra"
+    ]
+  },
+  {
+    "camada": "equipamento_saude_abrangencia_ubs",
+    "total": 487,
+    "geometria": "Polygon",
+    "campos": [
+      "cd_identificador",
+      "cd_numero_cadastro_nacional",
+      "nm_unidade_basica_saude",
+      "qt_area",
+      "nm_subprefeitura",
+      "dt_carga",
+      "nm_supervisao_tecnica_saude",
+      "nm_identificacao_supervisao",
+      "nm_coordenadoria_regional_saude",
+      "cd_identificador_supervisao_tecnica_saude"
+    ]
+  },
+  {
+    "camada": "setor_censitario_2022",
+    "total": 27301,
+    "geometria": "Polygon",
+    "campos": [
+      "cd_identificador",
+      "qt_area_setor_censitario",
+      "cd_original_setor_censitario",
+      "an_censo_demografico"
+    ]
+  },
+  {
+    "camada": "drenagem",
+    "total": 28366,
+    "geometria": "LineString",
+    "campos": [
+      "cd_identificador",
+      "cd_tipo_acidente",
+      "tx_tipo_acidente",
+      "cd_numero_ordem",
+      "nm_acidente",
+      "qt_comprimento_hidrografia",
+      "cd_tipo_curso_hidrografia",
+      "nm_tipo_curso_hidrografia",
+      "nm_via_proximo",
+      "nm_descritivo",
+      "nm_tipo_trecho",
+      "dt_atualizacao",
+      "cd_usuario_atualizacao"
+    ]
+  },
+  {
+    "camada": "reservatorio_amortecimento",
+    "total": 72,
+    "geometria": "Polygon",
+    "campos": [
+      "cd_identificador_reservatorio_amortecimento",
+      "nm_reservatorio",
+      "qt_volume_maximo_capacidade",
+      "nm_curso_dagua",
+      "dc_legenda",
+      "qt_area",
+      "tx_tipo_esvaziamento",
+      "tx_tipo_reservatorio",
+      "tx_monitoramento_tempo_real",
+      "nm_subprefeitura",
+      "nm_endereco",
+      "tx_gestao",
+      "cd_reservatorio",
+      "nm_bacia_hidrografica_local",
+      "nm_bacia_hidrografica_principal",
+      "dt_atualizacao",
+      "tx_reservatorio_legenda",
+      "qt_volume_metro",
+      "nm_corrego",
+      "tx_caracteristica",
+      "an_construcao"
+    ]
+  },
+  {
+    "camada": "equipamento_cemiterio",
+    "total": 46,
+    "geometria": "Polygon",
+    "campos": [
+      "cd_identificador",
+      "cd_identificador_tema_equipamento",
+      "nm_tema_equipamento",
+      "cd_identificador_rede_equipamento",
+      "nm_rede_equipamento",
+      "tx_rede_equipamento",
+      "cd_identificador_tipo_equipamento",
+      "nm_tipo_equipamento",
+      "tx_tipo_equipamento",
+      "cd_identificador_classe_equipamento",
+      "nm_classe_equipamento",
+      "tx_classe_equipamento",
+      "cd_identificador_esfera_administrativa_equipamento",
+      "nm_esfera_administrativa_equipamento",
+      "tx_esfera_administrativa_equipamento",
+      "cd_equipamento",
+      "nm_equipamento",
+      "tx_endereco_equipamento",
+      "nm_bairro_equipamento",
+      "cd_cep_equipamento",
+      "tx_horario_funcionamento",
+      "tx_numero_telefone",
+      "cd_equipamento_base_origem"
+    ]
+  },
+  {
+    "camada": "ecoponto",
+    "total": 128,
+    "geometria": "Point",
+    "campos": [
+      "cd_identificador_ecoponto",
+      "cd_identificador_original",
+      "nm_subprefeitura",
+      "sg_subprefeitura",
+      "nm_distrito",
+      "nm_ecoponto",
+      "nm_endereco",
+      "dt_inauguracao",
+      "cd_lote_indivisivel",
+      "nm_empresa",
+      "tx_atendimento",
+      "tx_recebimento_comum",
+      "tx_recebimento_diferenciado",
+      "tx_decreto",
+      "tx_link_decreto",
+      "tx_lei",
+      "tx_link_lei",
+      "tx_tipo_recebimento"
+    ]
+  }
+]

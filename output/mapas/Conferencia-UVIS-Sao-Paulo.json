@@ -1,0 +1,303 @@
+{
+  "fonte": "https://www.google.com/maps/d/viewer?mid=1ZdzK_HpjS1xBTZbtGzHSq6y1OTzjW1XD",
+  "conferido_em": "2026-11-19",
+  "atualizacao_declarada_fonte": "2026-07-27",
+  "uvis": 28,
+  "distritos": 96,
+  "faltantes": [],
+  "observacao": "Comparacao de nomes com a relacao da Prefeitura, normalizando acentos e variantes de nomenclatura; nao constitui validacao topologica nem incorporacao ao sistema.",
+  "unidades": [
+    {
+      "uvis": "BUTANTA",
+      "cnes": "2752395",
+      "crs": "OESTE",
+      "distritos": [
+        "VILA SONIA",
+        "BUTANTA",
+        "RAPOSO TAVARES",
+        "MORUMBI",
+        "RIO PEQUENO"
+      ]
+    },
+    {
+      "uvis": "CAMPO LIMPO",
+      "cnes": "2752417",
+      "crs": "SUL",
+      "distritos": [
+        "CAMPO LIMPO",
+        "CAPAO REDONDO",
+        "VILA ANDRADE"
+      ]
+    },
+    {
+      "uvis": "CAPELA DO SOCORRO",
+      "cnes": "2815559",
+      "crs": "SUL",
+      "distritos": [
+        "SOCORRO",
+        "CIDADE DUTRA",
+        "GRAJAU"
+      ]
+    },
+    {
+      "uvis": "CASA VERDE/CACHOEIRINHA",
+      "cnes": "2752409",
+      "crs": "NORTE",
+      "distritos": [
+        "CACHOEIRINHA",
+        "CASA VERDE",
+        "LIMAO"
+      ]
+    },
+    {
+      "uvis": "CIDADE TIRADENTES",
+      "cnes": "3355020",
+      "crs": "LESTE",
+      "distritos": [
+        "CIDADE TIRADENTES"
+      ]
+    },
+    {
+      "uvis": "ERMELINO MATARAZZO",
+      "cnes": "2752433",
+      "crs": "LESTE",
+      "distritos": [
+        "ERMELINO MATARAZZO",
+        "PONTE RASA"
+      ]
+    },
+    {
+      "uvis": "FREGUESIA/BRASILANDIA",
+      "cnes": "2752441",
+      "crs": "NORTE",
+      "distritos": [
+        "FREGUESIA DO O",
+        "BRASILANDIA"
+      ]
+    },
+    {
+      "uvis": "GUAIANASES",
+      "cnes": "3019926",
+      "crs": "LESTE",
+      "distritos": [
+        "LAJEADO",
+        "GUAIANASES"
+      ]
+    },
+    {
+      "uvis": "IPIRANGA",
+      "cnes": "2752468",
+      "crs": "SUDESTE",
+      "distritos": [
+        "CURSINO",
+        "IPIRANGA",
+        "SACOMA"
+      ]
+    },
+    {
+      "uvis": "ITAIM PAULISTA",
+      "cnes": "2752476",
+      "crs": "LESTE",
+      "distritos": [
+        "VILA CURUCA",
+        "ITAIM PAULISTA"
+      ]
+    },
+    {
+      "uvis": "ITAQUERA",
+      "cnes": "2815478",
+      "crs": "LESTE",
+      "distritos": [
+        "ITAQUERA",
+        "JOSE BONIFACIO",
+        "PARQUE DO CARMO",
+        "CIDADE LIDER"
+      ]
+    },
+    {
+      "uvis": "JACANA/TREMEMBE",
+      "cnes": "4050339",
+      "crs": "NORTE",
+      "distritos": [
+        "TREMEMBE",
+        "JACANA"
+      ]
+    },
+    {
+      "uvis": "LAPA/PINHEIROS",
+      "cnes": "2086778",
+      "crs": "OESTE",
+      "distritos": [
+        "JAGUARA",
+        "PINHEIROS",
+        "LAPA",
+        "ITAIM BIBI",
+        "JAGUARE",
+        "BARRA FUNDA",
+        "PERDIZES",
+        "VILA LEOPOLDINA",
+        "ALTO DE PINHEIROS",
+        "JARDIM PAULISTA"
+      ]
+    },
+    {
+      "uvis": "MBOI MIRIM",
+      "cnes": "2027496",
+      "crs": "SUL",
+      "distritos": [
+        "JARDIM SAO LUIS",
+        "JARDIM ANGELA"
+      ]
+    },
+    {
+      "uvis": "MOOCA/ARICANDUVA",
+      "cnes": "2789337",
+      "crs": "SUDESTE",
+      "distritos": [
+        "ARICANDUVA",
+        "BRAS",
+        "CARRAO",
+        "TATUAPE",
+        "VILA FORMOSA",
+        "BELEM",
+        "MOOCA",
+        "AGUA RASA",
+        "PARI"
+      ]
+    },
+    {
+      "uvis": "PARELHEIROS",
+      "cnes": "2815494",
+      "crs": "SUL",
+      "distritos": [
+        "PARELHEIROS",
+        "MARSILAC"
+      ]
+    },
+    {
+      "uvis": "PENHA",
+      "cnes": "2815508",
+      "crs": "SUDESTE",
+      "distritos": [
+        "CANGAIBA",
+        "PENHA",
+        "VILA MATILDE",
+        "ARTUR ALVIM"
+      ]
+    },
+    {
+      "uvis": "PERUS",
+      "cnes": "2752484",
+      "crs": "NORTE",
+      "distritos": [
+        "ANHANGUERA",
+        "PERUS"
+      ]
+    },
+    {
+      "uvis": "PIRITUBA",
+      "cnes": "2815524",
+      "crs": "NORTE",
+      "distritos": [
+        "PIRITUBA",
+        "JARAGUA",
+        "SAO DOMINGOS"
+      ]
+    },
+    {
+      "uvis": "SANTA CECILIA",
+      "cnes": "2752492",
+      "crs": "NORTE",
+      "distritos": [
+        "BOM RETIRO",
+        "SANTA CECILIA",
+        "CONSOLACAO"
+      ]
+    },
+    {
+      "uvis": "SANTANA/TUCURUVI",
+      "cnes": "2815540",
+      "crs": "NORTE",
+      "distritos": [
+        "SANTANA",
+        "MANDAQUI",
+        "TUCURUVI"
+      ]
+    },
+    {
+      "uvis": "SANTO AMARO/CIDADE ADEMAR",
+      "cnes": "2086786",
+      "crs": "SUL",
+      "distritos": [
+        "CAMPO GRANDE",
+        "CIDADE ADEMAR",
+        "PEDREIRA",
+        "CAMPO BELO",
+        "SANTO AMARO"
+      ]
+    },
+    {
+      "uvis": "SAO MATEUS",
+      "cnes": "3094197",
+      "crs": "LESTE",
+      "distritos": [
+        "IGUATEMI",
+        "SAO RAFAEL",
+        "SAO MATEUS"
+      ]
+    },
+    {
+      "uvis": "SAO MIGUEL",
+      "cnes": "2027429",
+      "crs": "LESTE",
+      "distritos": [
+        "SAO MIGUEL",
+        "JARDIM HELENA",
+        "VILA JACUI"
+      ]
+    },
+    {
+      "uvis": "SE",
+      "cnes": "0314307",
+      "crs": "NORTE",
+      "distritos": [
+        "LIBERDADE",
+        "CAMBUCI",
+        "REPUBLICA",
+        "BELA VISTA",
+        "SE"
+      ]
+    },
+    {
+      "uvis": "VILA MARIA/VILA GUILHERME",
+      "cnes": "2815567",
+      "crs": "NORTE",
+      "distritos": [
+        "VILA GUILHERME",
+        "VILA MARIA",
+        "VILA MEDEIROS"
+      ]
+    },
+    {
+      "uvis": "VILA MARIANA/JABAQUARA",
+      "cnes": "2815575",
+      "crs": "SUDESTE",
+      "distritos": [
+        "MOEMA",
+        "SAUDE",
+        "VILA MARIANA",
+        "JABAQUARA"
+      ]
+    },
+    {
+      "uvis": "VILA PRUDENTE/SAPOPEMBA",
+      "cnes": "2766027",
+      "crs": "SUDESTE",
+      "distritos": [
+        "SAO LUCAS",
+        "SAPOPEMBA",
+        "VILA PRUDENTE"
+      ]
+    }
+  ]
+}
