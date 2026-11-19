@@ -99,7 +99,7 @@ body.dark-mode .azul-help {--azul-ink:#e1ecfa;--azul-bg:#172333;--azul-card:#1e2
 
 /* IJA Fly shares the chat engine, with a distinct Agro identity. */
 .azul-help[data-agent-id="ija-fly"] { --azul-ink:#173e35; --azul-bg:#f3f8f5; --azul-border:#d3e7dc; --azul-muted:#526e62; }
-[data-agent-id="ija-fly"] .azul-launcher, [data-agent-id="ija-fly"] .azul-header { background:linear-gradient(120deg,#174d3c,#278363); }
+[data-agent-id="ija-fly"] .azul-header { background:linear-gradient(120deg,#174d3c,#278363); }
 [data-agent-id="ija-fly"] .azd-shell-name { font-size:7px; letter-spacing:.2px; }
 [data-agent-id="ija-fly"] .azul-page-brand h1 { color:#246b50; }
 .dark-mode .azul-help[data-agent-id="ija-fly"] { --azul-ink:#e4f5eb; --azul-bg:#14251f; --azul-card:#1a3027; --azul-border:#325546; --azul-muted:#adc9bb; }
