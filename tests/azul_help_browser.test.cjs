@@ -351,3 +351,18 @@ test('prospecting displays business sources while health keeps its domain restri
     assert.equal(sources.children[0].rel,'noopener noreferrer');
   }
 });
+
+test('long prospecting results and their safe sources survive navigation',async()=>{
+  const storage=memoryStorage();
+  const answer='Parceiros verificados. '.repeat(400);
+  const first=setup(async()=>({ok:true,json:async()=>({answer,mode:'prospeccao',parts:[
+    {url:'https://cooperrita.com.br/lojas',title:'[1] CooperRita'},
+    {url:'javascript:alert(1)',title:'Unsafe'}]})}),storage,'fly-sources',true,{agentId:'ija-fly'});
+  await first.chip.events.click(); await settle();
+  const restored=setup(()=>{throw Error('No request expected');},storage,'fly-sources',true,{agentId:'ija-fly'});
+  const bubble=restored.parts['[data-messages]'].children.at(-1);
+  assert.equal(bubble.children[1].text,answer);
+  const sources=bubble.children.find(child=>child.className==='azul-links');
+  assert.equal(sources.children.length,1);
+  assert.equal(sources.children[0].href,'https://cooperrita.com.br/lojas');
+});

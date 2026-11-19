@@ -29,8 +29,11 @@
           {{ drone('azul-drone-large') }}
           <span class="azul-eyebrow">{{ azul_agent_title|default('Inteligência do sistema')|upper }}</span>
           <h2>Por onde vamos começar?</h2>
-          <p>{{ 'Consulte OS, RDs, mapeamentos e pendências da sua operação. Tudo dentro do seu acesso.' if azul_is_agro|default(false) else 'Encontre informações, entenda os processos e avance no seu trabalho. Tudo dentro do seu acesso.' }}</p>
+          <p>{{ 'Pesquise parceiros comerciais na região de Itajubá e consulte OS, RDs, mapeamentos e pendências da sua operação.' if azul_is_agro|default(false) else 'Encontre informações, entenda os processos e avance no seu trabalho. Tudo dentro do seu acesso.' }}</p>
           <div class="azul-starters" aria-label="Começar uma conversa">
+            {% if azul_is_agro|default(false) and azul_can_agro|default(false) %}
+            <button type="button" data-question="Pesquise cooperativas e lojas agropecuárias em um raio de 200 km de Itajubá, para serviços em café, milho, soja e pastagem. Traga telefones comerciais, fontes e possíveis oportunidades."><i class="bi bi-search" aria-hidden="true"></i><strong>Encontrar parceiros</strong><span>Contatos, fontes e sugestões de abordagem comercial.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+            {% endif %}
             <button type="button" data-question="O que posso acessar no sistema?" data-intent="access_overview"><i class="bi bi-compass" aria-hidden="true"></i><strong>Explore seu acesso</strong><span>Descubra os recursos disponíveis para você.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
             <button type="button" data-guide-open><i class="bi bi-journal-text" aria-hidden="true"></i><strong>Guia prático</strong><span>Pratique com {{ azul_agent_name|default('Azul') }} e dados fictícios.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
           </div>

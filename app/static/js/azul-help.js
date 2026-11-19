@@ -68,19 +68,34 @@
       }
       if (links.children.length) bubble.append(links);
     }
+    function renderSources(bubble, mode, parts) {
+        if (['saude', 'prospeccao'].includes(mode) && Array.isArray(parts)) {
+          const sources = document.createElement('div'); sources.className = 'azul-links';
+          const seen = new Set();
+          for (const part of parts.slice(0,80)) {
+            let url; try { url = new URL(part.url); } catch (_) { continue; }
+            if (url.protocol !== 'https:' || url.username || url.password || seen.has(url.href)) continue;
+            if (mode === 'saude' && !['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
+            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte consultada';
+            link.target = '_blank'; link.rel = 'noopener noreferrer'; sources.append(link); seen.add(url.href);
+          }
+          if (sources.children.length) bubble.append(sources);
+        }
+    }
     function restore() {
       if (!storageKey) return false;
       try {
         const raw = sessionStorage.getItem(storageKey);
-        if (!raw || raw.length > 400000) return false;
+        if (!raw || raw.length > 1000000) return false;
         const data = JSON.parse(raw);
         if (!Array.isArray(data.transcript) || !data.transcript.length || Date.now()-data.savedAt > 86400000) return false;
-        const valid = item => item && ['user','assistant'].includes(item.role) && typeof item.content === 'string' && item.content.length <= 6000;
+        const valid = item => item && ['user','assistant'].includes(item.role) && typeof item.content === 'string' && item.content.length <= 24000;
         if (!data.transcript.every(valid) || !Array.isArray(data.history) || !data.history.every(valid)) return false;
         restoring = true;
         for (const item of data.transcript.slice(-40)) {
           const bubble = append(item.content, item.role, item.mode);
           renderLinks(bubble, item.links);
+          renderSources(bubble, item.mode, item.parts);
         }
         transcript = data.transcript.slice(-40);
         history = boundedHistory(data.history);
@@ -273,8 +288,9 @@
       root.azulCompanion?.thinking(true);
       save();
       const version = generation;
-      status.textContent = agentText('A Azul está preparando sua resposta…');
-      const timer = setTimeout(() => controller.abort(), root.dataset.agentId === 'ija-fly' ? 75000 : 40000);
+      const researching = root.dataset.agentId === 'ija-fly' && /cooperativ|agropecu|parceir|prospec|aprofunde|priorize|mais resultados/i.test(text);
+      status.textContent = researching ? 'IJA Fly está pesquisando e conferindo parceiros. Uma busca ampla pode levar cerca de 90 segundos…' : agentText('A Azul está preparando sua resposta…');
+      const timer = setTimeout(() => controller.abort(), root.dataset.agentId === 'ija-fly' ? 130000 : 40000);
       try {
         const response = await fetch(root.dataset.url, {
           method: 'POST', signal: controller.signal,
@@ -299,18 +315,8 @@
           entry.links = Array.isArray(data.links) ? data.links.slice(0,12) : [];
           renderLinks(bubble, entry.links);
         }
-        if (['saude', 'prospeccao'].includes(data.mode) && Array.isArray(data.parts)) {
-          const sources = document.createElement('div'); sources.className = 'azul-links';
-          const seen = new Set();
-          for (const part of data.parts.slice(0,80)) {
-            let url; try { url = new URL(part.url); } catch (_) { continue; }
-            if (url.protocol !== 'https:' || url.username || url.password || seen.has(url.href)) continue;
-            if (data.mode === 'saude' && !['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
-            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte consultada';
-            link.target = '_blank'; link.rel = 'noopener noreferrer'; sources.append(link); seen.add(url.href);
-          }
-          if (sources.children.length) bubble.append(sources);
-        }
+        entry.parts = Array.isArray(data.parts) ? data.parts.filter(part => part && typeof part.url === 'string').slice(0,80) : [];
+        renderSources(bubble, data.mode, entry.parts);
         const speechButton = root.azulCompanion?.attachSpeech(bubble, data.speech);
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
         history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);

@@ -64,7 +64,7 @@ def decision_answer(decision, fly):
     if not fly:
         return decision.answer
     return {
-        topics.IDENTITY: 'Sou o IJA Fly, a inteligência artificial do Agro da IJA Drones. Posso ajudar com OS, RDs, mapeamentos, equipes e pendências, respeitando seu acesso.',
+        topics.IDENTITY: 'Sou o IJA Fly, a inteligência artificial do Agro da IJA Drones. Posso ajudar com OS, RDs, mapeamentos, equipes e pendências, respeitando seu acesso. Também pesquiso cooperativas, agropecuárias e potenciais parceiros na região de Itajubá com fontes públicas.',
         topics.GREETING: 'Olá! Sou o IJA Fly. Como posso ajudar com o Agro?',
         topics.THANKS: 'Por nada! Conte com o IJA Fly para ajudar na operação do Agro.',
         topics.CLARIFY: 'Em qual tela ou assunto do Agro posso ajudar? Por exemplo: OS, RD, mapeamentos ou pendências.',

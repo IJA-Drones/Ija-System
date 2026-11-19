@@ -16,32 +16,49 @@ Não há migração de banco, novo usuário de serviço, nova chave de IA nem du
 
 ## Prospecção regional por busca web
 
-No chat Agro, use **Buscar parceiros na região** ou peça “Busque cooperativas e
-lojas agropecuárias perto de Itajubá”. A pesquisa sob demanda usa a busca web do
-provedor de IA (não uma integração direta com Google Maps), com padrão de 200 km
-em linha reta e foco em café, milho, soja e pastagem. Os serviços considerados são
+No chat Agro, use **Buscar parceiros na região**. A consulta padrão pesquisa
+cooperativas e lojas agropecuárias para café, milho, soja e pastagem, considerando
 pulverização, monitoramento, mapeamento, geoprocessamento e distribuição de sólidos.
+Itajubá/MG é o centro de referência, com raio solicitado de 200 km em linha reta.
+Quando a chave Google Maps de servidor está disponível, o sistema geocodifica
+as referências municipais e calcula a distância em linha reta até Itajubá. São
+estimativas entre municípios, não distâncias rodoviárias nem coordenadas da loja;
+o endereço da unidade ainda precisa de confirmação. Referências além de 200 km
+são sinalizadas para expansão. Falhas de geocodificação não descartam candidatos
+com fontes. A lista não comprova cobertura geométrica completa ou demanda contratada.
 
-A resposta solicita até três candidatos, contatos comerciais publicados, culturas
-comprovadas, fontes clicáveis e sugestões de abordagem. Potencial parceria não é
-demanda confirmada. Sem evidência geográfica, a unidade deve aparecer como candidata
-com distância a confirmar; esta versão não implementa geocodificação nem filtragem
-geométrica automática. Não há garantia de cobertura completa da região.
+Três frentes web independentes executam em paralelo: municípios próximos,
+cafeicultura e parceiros de grãos/pastagem. Cada frente busca até quatro candidatos
+e verifica contatos em fontes públicas. Uma etapa final consolida até 12 unidades,
+elimina duplicações por nome/cidade e organiza a abordagem comercial. Não há
+quantidade mínima garantida: depende de fontes verificáveis. Números sem respaldo
+nos relatórios citados e fontes fora da pesquisa são descartados da consolidação.
+
+O painel DEV tem modelo e limite de saída exclusivos da prospecção:
+`prospecting_search_model` (pesquisa: `gpt-6.1-terra`), `prospecting_model`
+(consolidação: `gpt-6.1-sol`) e `max_output_prospecting` (6.000 tokens
+por etapa). As demais conversas mantêm seus modelos. A pesquisa usa raciocínio
+baixo e até três chamadas web por frente. São até três chamadas de pesquisa e
+uma de consolidação por pedido; todas usam reserva e medição de custo existentes.
+As reservas são feitas na requisição original antes de iniciar os trabalhadores,
+que não recebem contexto Flask, banco, sessão ou ferramentas privadas.
 
 Requer acesso a fontes Agro, chave de IA, geração habilitada e `web_search_enabled`
-(na configuração inicial, `PORTAL_CHATBOT_WEB_SEARCH_ENABLED`). Usa o modelo interno,
-a contabilização de custos e os limites existentes, com até duas chamadas web por
-consulta. Resultados sem busca concluída ou sem citações são recusados. As páginas
-comerciais são exibidas como fontes HTTPS; a restrição de domínios de saúde continua
-valendo para consultas de saúde.
+(na configuração inicial, `PORTAL_CHATBOT_WEB_SEARCH_ENABLED`). A busca é do
+provedor de IA, enquanto Google Maps é usado somente para estimar distâncias municipais. Os limites financeiros
+e diários continuam valendo. As fontes de saúde continuam restritas aos domínios
+já autorizados; a prospecção aceita fontes comerciais HTTPS verificadas na pesquisa.
 
-A consulta pública não recebe resultados privados de OS/RD nem ferramentas de
-cadastro. Não envia mensagens, não salva leads e não executa monitoramento periódico.
-Histórico de continuação inclui somente pedidos do usuário sobre prospecção.
+Uma frente sem resposta não descarta resultados das outras. Se a consolidação
+falhar ou não puder iniciar por limite, o chat devolve as pesquisas com fontes e
+avisa que a lista está parcial e pode conter duplicatas. Sem nenhuma pesquisa com
+fonte válida, informa o erro. Os tempos de espera são 50 segundos por pesquisa em
+paralelo, 40 segundos na consolidação e 130 segundos no chat IJA Fly, incluindo a consulta geográfica com timeout de quatro
+segundos por município (até seis em paralelo).
 
-A prospecção usa raciocínio baixo e uma primeira rodada de até 450 palavras para
-não consumir todo o limite de saída antes de entregar resultados. O limite de
-tokens configurado continua sendo respeitado. O provedor tem até 60 segundos e
-o chat IJA Fly espera até 75 segundos; erros aparecem como “Não concluído”,
-não como orientação do guia local. Respostas incompletas continuam recusadas,
-com diagnóstico de status/motivo nos logs, sem gravar perguntas ou contatos.
+Continuações como “mais parceiros de café”, “aprofunde os primeiros” e “priorize os
+mais próximos de Itajubá” reutilizam pedidos públicos anteriores. Somente os nomes
+e municípios da última lista são guardados na sessão assinada, por até uma hora,
+vinculados ao login/escopo. Respostas privadas de OS/RD nunca são encaminhadas à
+pesquisa. As fontes da resposta permanecem no histórico visual da aba ao recarregar.
+Não há cadastro automático de leads, envio de mensagens ou monitoramento periódico.
