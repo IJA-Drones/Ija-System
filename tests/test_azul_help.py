@@ -55,7 +55,7 @@ def test_authenticated_ai_uses_server_context_and_only_preview_tool(env, context
         assert response.json['links'] == context['atalhos']
         args = create.call_args.kwargs
         assert args['store'] is False
-        assert [tool['name'] for tool in args['tools']] == ['preparar_exportacao', 'consultar_atencao_hoje', 'buscar_solicitacoes']
+        assert [tool['name'] for tool in args['tools']] == ['preparar_exportacao', 'consultar_atencao_hoje', 'buscar_solicitacoes', 'buscar_agro', 'consultar_pendencias_agro']
         assert all(tool['type'] == 'function' for tool in args['tools'])
         assert '"perfil": "dev"' in args['instructions']
         assert 'permissions' not in args['instructions']
