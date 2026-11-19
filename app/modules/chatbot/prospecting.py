@@ -20,7 +20,9 @@ O padrão é Itajubá/MG e raio de 200 km em linha reta, não distância rodovi�
 Pesquise cooperativas e lojas agropecuárias, priorizando sites oficiais das empresas,
 unidades locais e contatos comerciais públicos. Use a busca web nesta consulta.
 Não alegue usar Google/Google Maps: a ferramenta disponível é busca web.
-Apresente até 5 resultados por consulta em português, texto puro, com citações das fontes.
+Faça uma primeira rodada objetiva com até 3 parceiros e até 450 palavras, em português,
+texto puro, com citações das fontes. Finalize com os dados disponíveis nas fontes;
+não tente esgotar a região. Ofereça outra rodada se o usuário quiser ampliar a busca.
 Para cada resultado: nome/unidade, município/UF, telefone comercial publicado (WhatsApp
 somente se a fonte o identificar), culturas comprovadas, fonte e sugestão de abordagem.
 Se telefone, cultura ou distância não forem comprovados, escreva 'não confirmado'.
@@ -83,14 +85,22 @@ def safe_source_url(url):
 
 def answer(message, history):
     from app.modules.portal_cidadao.chatbot import ChatbotError, response_parts
-    with OpenAI(api_key=current_app.config['OPENAI_API_KEY'], timeout=30, max_retries=0) as client:
+    with OpenAI(api_key=current_app.config['OPENAI_API_KEY'], timeout=60, max_retries=0) as client:
         response = metering.respond(
             client, model=settings.get('internal_model'),
             instructions=INSTRUCTIONS + '\nData da consulta: ' + datetime.now(ZoneInfo('America/Sao_Paulo')).date().isoformat(),
             input=public_history(history) + [{'role': 'user', 'content': message}],
+            reasoning={'effort': 'low'},
             tools=[{'type': 'web_search'}], tool_choice='required', max_tool_calls=2,
             store=False, max_output_tokens=settings.get('max_output_internal'),
         )
+    if getattr(response, 'status', '') != 'completed':
+        reason = metering.field(getattr(response, 'incomplete_details', None), 'reason', 'unknown')
+        current_app.logger.warning('IJA Fly: pesquisa incompleta (status=%s, reason=%s)',
+                                   getattr(response, 'status', 'unknown'), reason)
+        if reason == 'max_output_tokens':
+            raise ChatbotError('A pesquisa atingiu o limite de processamento antes de terminar. '
+                               'Peça uma primeira rodada em uma cidade ou para uma cultura específica.')
     if (getattr(response, 'status', '') != 'completed' or not response.output_text.strip()
             or not any(getattr(item, 'type', '') == 'web_search_call' and getattr(item, 'status', '') == 'completed'
                        for item in getattr(response, 'output', []))):

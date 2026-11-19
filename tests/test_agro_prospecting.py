@@ -46,6 +46,8 @@ def test_provider_requires_search_and_preserves_business_citations(env):
         assert call.call_args.kwargs['tool_choice'] == 'required'
         assert call.call_args.kwargs['tools'] == [{'type': 'web_search'}]
         assert call.call_args.kwargs['store'] is False
+        assert call.call_args.kwargs['reasoning'] == {'effort': 'low'}
+        assert call.call_args.kwargs['max_output_tokens'] == 1800
 
 
 @pytest.mark.parametrize('search,citation', [(False, True), (True, False)])
@@ -77,3 +79,14 @@ def test_disabled_search_never_calls_provider(env):
         result = client.post('/api/azul/ajuda', json={'message':'Busque cooperativas', 'page':'/agro/admin'})
         assert result.status_code == 503
         answer.assert_not_called()
+
+
+def test_exhausted_reasoning_budget_is_explicit_and_does_not_return_partial_results(env):
+    from app.modules.portal_cidadao.chatbot import ChatbotError
+    app, _, _ = env
+    incomplete = response()
+    incomplete.status = 'incomplete'
+    incomplete.incomplete_details = NS(reason='max_output_tokens')
+    with app.app_context(), patch.object(prospecting, 'OpenAI'), patch.object(prospecting.metering, 'respond', return_value=incomplete):
+        with pytest.raises(ChatbotError, match='limite de processamento'):
+            prospecting.answer('Pesquise cooperativas e lojas agropecuárias em um raio de 200 km de Itajubá, para serviços em café, milho, soja e pastagem. Traga telefones comerciais, fontes e possíveis oportunidades.', [])

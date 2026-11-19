@@ -98,7 +98,7 @@
       bubble.className = `azul-message azul-${role}`;
       if (role === 'assistant') {
         const label = document.createElement('small');
-        label.textContent = mode === 'faq' ? agentText('AZUL · GUIA LOCAL') : agentText('AZUL');
+        label.textContent = mode === 'faq' ? agentText('AZUL · GUIA LOCAL') : mode === 'error' ? agentText('AZUL · NÃO CONCLUÍDO') : agentText('AZUL');
         bubble.append(label);
       }
       const content = document.createElement('div');
@@ -274,7 +274,7 @@
       save();
       const version = generation;
       status.textContent = agentText('A Azul está preparando sua resposta…');
-      const timer = setTimeout(() => controller.abort(), 40000);
+      const timer = setTimeout(() => controller.abort(), root.dataset.agentId === 'ija-fly' ? 75000 : 40000);
       try {
         const response = await fetch(root.dataset.url, {
           method: 'POST', signal: controller.signal,
@@ -317,7 +317,7 @@
         messages.scrollTop = messages.scrollHeight;
         root.dispatchEvent(new CustomEvent('azul:reply',{detail:{speechButton,mode:data.mode}}));
       } catch (error) {
-        if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'faq');
+        if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'error');
         if (version === generation) root.dispatchEvent(new CustomEvent('azul:reply-error'));
       } finally {
         clearTimeout(timer);
