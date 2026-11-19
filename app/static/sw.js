@@ -1,5 +1,5 @@
 // static/sw.js — servido em /sw.js (escopo raiz). Push em qualquer página + cache do shell do aplicativo (/m/).
-const CACHE = "ija-app-movel-v16-municipios";
+const CACHE = "ija-app-movel-v17-azul-agro";
 const SHELL = ["/static/js/azul-runtime.js", "/static/audio/azul-inicio-chamada.wav", "/static/audio/azul-escopo-chamada.wav", "/static/css/components/azul-voice-call.css", "/static/css/components/azul-composer.css", "/static/js/azul-composer.js", "/static/js/azul-voice-chat.js", "/static/js/azul-mic-processor.js", "/m/", "/static/css/app-movel.css", "/static/js/app-movel.js", "/static/js/compartilhar.js", "/static/img/logo_oceano_azul_light.png",
   "/static/css/components/azul-help.css", "/static/css/components/azul-drone.css", "/static/css/pages/portal_chatbot.css",
   "/static/js/azul-companion.js", "/static/js/azul-drag.js", "/static/js/portal-chat-mobile.js", "/static/js/portal-chatbot.js",
@@ -26,9 +26,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (SHELL.includes(url.pathname)) {
-    // Arquivos do shell: cache primeiro; a constante CACHE invalida tudo ao mudar de versão.
-    event.respondWith(caches.match(url.pathname).then((hit) => hit || fetch(event.request).then((response) => {
-      if (response.ok) { const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put(url.pathname, copy)); }
+    // Preserve a versão da URL: um arquivo ?v=novo não pode receber o cache antigo sem query.
+    event.respondWith(caches.match(event.request).then((hit) => hit || fetch(event.request).then((response) => {
+      if (response.ok) { const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put(event.request, copy)); }
       return response;
     })));
     return;
