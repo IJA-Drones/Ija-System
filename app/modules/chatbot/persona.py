@@ -24,7 +24,7 @@ def context(user, page=None, channel=''):
     return dict(azul_is_agro=fly, azul_agent_id='ija-fly' if fly else 'azul',
                 azul_agent_name='IJA Fly' if fly else 'Azul',
                 azul_agent_title='Inteligência do Agro' if fly else 'Inteligência do sistema',
-                azul_agent_welcome=('Olá! Sou o IJA Fly.\nPosso ajudar com OS, RDs, mapeamentos, equipes e pendências do Agro, respeitando seu acesso.\n\nComo posso ajudar na sua operação?' if fly else
+                azul_agent_welcome=('Olá! Sou o IJA Fly.\nPosso ajudar com OS, RDs, mapeamentos, equipes e pendências do Agro, respeitando seu acesso.\n\nTambém posso pesquisar cooperativas, lojas agropecuárias e possíveis parceiros na região de Itajubá, com fontes públicas. Como posso ajudar?' if fly else
                     'Olá! Sou a AZUL.\nPosso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Os recursos do sistema seguem o seu acesso.\n\nPor onde começamos?'))
 
 

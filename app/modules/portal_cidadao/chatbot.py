@@ -198,7 +198,7 @@ def safe_source_url(url):
         return False
 
 
-def response_parts(response):
+def response_parts(response, *, source_validator=safe_source_url):
     """Keep citations inline without rendering provider HTML or Markdown."""
     parts = []
     for item in getattr(response, "output", []):
@@ -217,7 +217,7 @@ def response_parts(response):
             )
             for citation in annotations:
                 start, end = citation.start_index, citation.end_index
-                if not (cursor <= start <= end <= len(text)) or not safe_source_url(citation.url):
+                if not (cursor <= start <= end <= len(text)) or not source_validator(citation.url):
                     continue
                 parts.append({"text": text[cursor:start]})
                 parts.append({"text": text[start:end] or "[Fonte]", "url": citation.url,

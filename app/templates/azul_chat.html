@@ -54,6 +54,9 @@
         {% endif %}
       {% if azul_can_agro|default(false) %}
       <button type="button" data-question="Resumo de pendências do Agro" data-intent="agro_attention"><i class="bi bi-calendar-check" aria-hidden="true"></i><span>Pendências do Agro</span></button>
+      {% if azul_is_agro|default(false) %}
+      <button type="button" data-question="Pesquise cooperativas e lojas agropecuárias em um raio de 200 km de Itajubá, para serviços em café, milho, soja e pastagem. Traga telefones comerciais, fontes e possíveis oportunidades."><i class="bi bi-search" aria-hidden="true"></i><span>Buscar parceiros na região</span></button>
+      {% endif %}
       <button type="button" data-question="Quais consultas do Agro posso fazer?"><i class="bi bi-search" aria-hidden="true"></i><span>Consultar Agro</span></button>
       {% endif %}
       {% for step in azul_guide|default([]) if step.financial|default(false) %}

@@ -343,6 +343,27 @@ def reply(channel):
         return result, 409
     fly = persona.is_agro(current_user, page, channel)
     decision = topics.evaluate(message, history)
+    from app.modules.chatbot import prospecting
+    if fly and decision.kind != 'blocked' and prospecting.matches(message, history):
+        from app.modules.portal_cidadao.chatbot import ChatbotError
+        text, parts, status = '', [], 200
+        try:
+            if not agro.allowed_sources(current_user):
+                text, status = 'A prospecção está disponível somente para contas com acesso ao Agro.', 403
+            elif not settings.get('enabled') or not settings.get('web_search_enabled') or not current_app.config.get('OPENAI_API_KEY'):
+                text, status = 'A pesquisa pública do IJA Fly está desativada. É necessário habilitar a IA e a busca web nas configurações.', 503
+            elif not consume_help_quota(current_user.id):
+                text, status = 'Limite de consultas atingido. Tente mais tarde.', 429
+            else:
+                text, parts = prospecting.answer(message, history)
+        except ChatbotError as exc:
+            text, status = exc.message, exc.status
+        except (OpenAIError, sqlite3.Error):
+            text, status = 'Não foi possível consultar as fontes públicas agora. Tente novamente.', 503
+        result = jsonify(answer=text, parts=parts, mode='prospeccao', links=[],
+                         profile=profile_code(current_user), export_preview=None, chat_key=current_key)
+        result.headers['Cache-Control'] = 'private, no-store'
+        return result, status
     if decision.kind != 'allowed':
         result = jsonify(answer=persona.decision_answer(decision, fly), mode=decision.kind, links=[],
                          profile=profile_code(current_user), export_preview=None, chat_key=current_key)

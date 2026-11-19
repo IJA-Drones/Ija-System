@@ -336,3 +336,18 @@ test('Azul and IJA Fly keep separate transcripts within one verified login', asy
   assert.equal(storage.getItem('azul-chat:same-user'),null);
   assert.equal(storage.getItem('azul-chat:same-user:ija-fly'),null);
 });
+
+test('prospecting displays business sources while health keeps its domain restriction', async()=>{
+  for (const mode of ['prospeccao', 'saude']) {
+    const env=setup(async()=>({ok:true,json:async()=>({answer:'Confira as fontes.',mode,parts:[
+      {url:'https://www.cooperrita.com.br/lojas',title:'CooperRita'},
+      {url:'javascript:alert(1)',title:'Unsafe'},
+      {url:'https://www.gov.br/saude',title:'Saúde'}]})}));
+    await env.chip.events.click(); await settle();
+    const bubble=env.parts['[data-messages]'].children.at(-1);
+    const sources=bubble.children.find(child=>child.className==='azul-links');
+    assert.equal(sources.children.length,mode==='prospeccao'?2:1);
+    assert.equal(sources.children.at(-1).href,'https://www.gov.br/saude');
+    assert.equal(sources.children[0].rel,'noopener noreferrer');
+  }
+});

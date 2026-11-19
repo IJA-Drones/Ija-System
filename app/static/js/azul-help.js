@@ -299,14 +299,14 @@
           entry.links = Array.isArray(data.links) ? data.links.slice(0,12) : [];
           renderLinks(bubble, entry.links);
         }
-        if (data.mode === 'saude' && Array.isArray(data.parts)) {
+        if (['saude', 'prospeccao'].includes(data.mode) && Array.isArray(data.parts)) {
           const sources = document.createElement('div'); sources.className = 'azul-links';
           const seen = new Set();
           for (const part of data.parts.slice(0,80)) {
             let url; try { url = new URL(part.url); } catch (_) { continue; }
             if (url.protocol !== 'https:' || url.username || url.password || seen.has(url.href)) continue;
-            if (!['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
-            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte oficial';
+            if (data.mode === 'saude' && !['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
+            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte consultada';
             link.target = '_blank'; link.rel = 'noopener noreferrer'; sources.append(link); seen.add(url.href);
           }
           if (sources.children.length) bubble.append(sources);
