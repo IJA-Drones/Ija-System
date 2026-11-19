@@ -3,10 +3,12 @@ from datetime import datetime
 from math import isfinite
 from zoneinfo import ZoneInfo
 from flask import abort
-from sqlalchemy.orm import selectinload
-from app.models import Solicitacao
+from sqlalchemy.orm import load_only, raiseload, selectinload
+from app.models import OrdemServico, OrdemServicoEquipeUvis, Solicitacao
 from app.shared.access import central_ti_team_ids
 from .service import build_heatmap_query
+from .territorial import validate_filters, locate, matches
+from shapely.geometry import Point, shape
 
 MAX_RECORDS = 10000
 MAX_HISTORY = 300
@@ -16,7 +18,25 @@ def scoped(user, **filters):
     query=build_heatmap_query(user,com_coordenadas=False,**filters)
     teams=central_ti_team_ids(user)
     if teams is not None:query=query.filter(Solicitacao.equipe_id.in_(teams))
-    return query.options(selectinload(Solicitacao.ordem_servico),selectinload(Solicitacao.ordem_servico_equipe_uvis))
+    # These read-only views need status/coordinates, not signatures, telemetry or
+    # the equipment/user graphs joined by the full OS form models.
+    return query.options(
+        load_only(Solicitacao.id, Solicitacao.foco, Solicitacao.status,
+            Solicitacao.data_agendamento, Solicitacao.bairro, Solicitacao.logradouro,
+            Solicitacao.numero, Solicitacao.origem_retorno_id,
+            Solicitacao.latitude, Solicitacao.longitude, raiseload=True),
+        raiseload('*'),
+        selectinload(Solicitacao.ordem_servico).load_only(
+            OrdemServico.id, OrdemServico.solicitacao_id, OrdemServico.identificador_os,
+            OrdemServico.respondido_em, OrdemServico.situacao_aplicacao,
+            OrdemServico.larva_visualizada, OrdemServico.criadouro_os_tipo_volume,
+            raiseload=True).raiseload('*'),
+        selectinload(Solicitacao.ordem_servico_equipe_uvis).load_only(
+            OrdemServicoEquipeUvis.id, OrdemServicoEquipeUvis.solicitacao_id,
+            OrdemServicoEquipeUvis.identificador_os, OrdemServicoEquipeUvis.respondido_em,
+            OrdemServicoEquipeUvis.status, OrdemServicoEquipeUvis.situacao_aplicacao,
+            OrdemServicoEquipeUvis.larva_visualizada, raiseload=True).raiseload('*'),
+    )
 
 
 def state(row, today):
@@ -45,7 +65,18 @@ def serialize(row,today):
         retorno=bool(row.origem_retorno_id),ordens=orders)
 
 
-def points(user, **filters):
+def larva_state(row):
+    answers = {str(os.larva_visualizada or '').strip().upper().replace('Ã', 'A')
+               for os in (row.ordem_servico, row.ordem_servico_equipe_uvis) if os}
+    return 'SIM' if 'SIM' in answers else 'NAO' if 'NAO' in answers else 'NAO_INFORMADO'
+
+
+def points(user, *, crs='', cnes='', quadra='', **filters):
+    crs,cnes=validate_filters(crs,cnes)
+    polygon=None
+    if quadra:
+        from .quadras import get_quadra
+        polygon=shape(get_quadra(quadra)['geometry'])
     today=datetime.now(ZoneInfo('America/Sao_Paulo')).date()
     rows=scoped(user,**filters).order_by(Solicitacao.id).limit(MAX_RECORDS+1).all()
     if len(rows)>MAX_RECORDS:raise ValueError('Mais de 10.000 solicitações. Restrinja mês, ano ou unidade; nenhum resultado foi cortado.')
@@ -58,6 +89,10 @@ def points(user, **filters):
             valid=isfinite(lat) and isfinite(lng) and -90<=lat<=90 and -180<=lng<=180
         except (ValueError,TypeError):valid=False
         item.update(lat=lat if valid else None,lng=lng if valid else None)
+        candidates=locate(lat,lng) if valid else []
+        if (crs or cnes) and not matches(candidates,crs,cnes): continue
+        if polygon is not None and (not valid or not polygon.covers(Point(lng,lat))): continue
+        item.update(larva_visualizada=larva_state(row), territorios=candidates)
         result.append(item)
     return dict(registros=result,gerado_em=datetime.now(ZoneInfo('America/Sao_Paulo')).isoformat(),
         criterio='Situação atual das solicitações do período agendado. OS respondida não comprova eliminação do foco. Cores operacionais, sem classificação de risco.')

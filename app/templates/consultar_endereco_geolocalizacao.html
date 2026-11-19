@@ -1,17 +1,27 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/uvis-territory.css', v='20261119-9') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/geolocalizacao-uvis.css', v='20261119-9') }}" />
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4 geolocation-page" style="max-width: 1200px">
   <div class="d-flex align-items-center mb-4">
     <h2 class="text-dark m-0">
-      <i class="bi bi-person-badge-fill me-2 text-primary"></i> Consultar Endereço e Geolocalização
+      <i class="bi bi-geo-alt-fill me-2 text-primary"></i> Geolocalização
     </h2>
   </div>
 
+  <ul class="nav nav-pills gap-2 p-2 mb-4 card border-0 shadow-sm rounded-4 flex-row" role="tablist" aria-label="Consultas de geolocalização">
+    <li class="nav-item" role="presentation"><button class="nav-link active" id="geoAddressTab" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#geoAddressPanel" aria-controls="geoAddressPanel" aria-selected="true"><i class="bi bi-search me-2" aria-hidden="true"></i>Buscar endereço</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" id="geoAreaTab" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#geoAreaPanel" aria-controls="geoAreaPanel" aria-selected="false"><i class="bi bi-map me-2" aria-hidden="true"></i>Consultar áreas das UVIS</button></li>
+  </ul>
+  <div class="tab-content">
+  <section class="tab-pane fade show active" id="geoAddressPanel" role="tabpanel" aria-labelledby="geoAddressTab" tabindex="0">
   <div class="row g-3 mb-4">
     <!-- Formulário para Endereço e Geolocalização -->
     <div class="col-md-4">
@@ -140,20 +150,19 @@
     </div>
   </div>
 
-  <!-- Mapa de Rota -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-12">
-      <label class="form-label fw-bold small text-muted">
-        <i class="bi bi-map me-1 text-primary"></i> Mapa de Rota
-      </label>
-      <div id="map" style="height: 400px; width: 100%;"></div>
-    </div>
-  </div>
-
+  <div id="map" class="geolocation-address-map" role="region" aria-label="Mapa de endereço e rota"></div>
   <div id="geo-error" class="alert alert-danger" style="display: none;"></div>
+  </section>
+  <section class="tab-pane fade" id="geoAreaPanel" role="tabpanel" aria-labelledby="geoAreaTab" tabindex="0">
+    {% include '_uvis_map.html' %}
+  </section>
+  </div>
 </div>
 {% endblock %}
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/municipal-satellite.js', v='20261119-uvis-mask') }}" defer></script>
+<script src="{{ url_for('static', filename='js/uvis-territory.js', v='20261119-cores') }}" defer></script>
+<script src="{{ url_for('static', filename='js/uvis-map.js', v='20261119-9') }}" defer></script>
 <script>
   let map, directionsService, directionsRenderer, userLocation;
   function onlyDigits(value) {
@@ -170,6 +179,8 @@
     // Inicializando o mapa
     map = new google.maps.Map(document.getElementById("map"), {
       zoom: 13,
+      isFractionalZoomEnabled: true,
+      tilt: 0,
       center: { lat: -23.55052, lng: -46.633308 }, // Default para São Paulo
     });
 
@@ -177,26 +188,19 @@
     directionsRenderer = new google.maps.DirectionsRenderer();
     directionsRenderer.setMap(map);
 
-    // Obter a localização do usuário
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          userLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-          map.setCenter(userLocation);  // Move o mapa para a localização do usuário
-          new google.maps.Marker({
-            position: userLocation,
-            map: map,
-            title: "Você está aqui",
-          });
-        },
-        function(error) {
-          alert("Erro ao obter a localização do usuário.");
-        }
-      );
-    } else {
-      alert("Geolocalização não é suportada pelo seu navegador.");
-    }
+    initializeTerritoryMap();
   }
+
+  function initializeTerritoryMap() {
+    if(window.__uvisTerritoryMap || !window.google?.maps?.Map || !document.getElementById('geoAreaPanel').classList.contains('active'))return;
+    const territoryMap=new google.maps.Map(document.getElementById('uvisTerritoryMap'),{
+      center:{lat:-23.55052,lng:-46.633308},zoom:10,isFractionalZoomEnabled:true,tilt:0,mapTypeId:'hybrid'
+    });
+    window.__uvisTerritoryMap=territoryMap;
+    document.dispatchEvent(new CustomEvent('geolocation:map-ready',{detail:{map:territoryMap}}));
+  }
+  document.getElementById('geoAreaTab').addEventListener('shown.bs.tab',initializeTerritoryMap);
+  document.getElementById('geoAddressTab').addEventListener('shown.bs.tab',()=>{if(map)google.maps.event.trigger(map,'resize');});
 
   function consultarCep() {
     const cep = onlyDigits(document.getElementById('cep').value);
@@ -323,6 +327,19 @@
       return;
     }
 
+    if (!map || !directionsService) {
+      document.getElementById('geo-error').textContent = 'O mapa de ruas ainda não está disponível.';
+      document.getElementById('geo-error').style.display = 'block';
+      return;
+    }
+    if (!userLocation) {
+      if (!navigator.geolocation) { alert('Geolocalização não é suportada pelo seu navegador.'); return; }
+      navigator.geolocation.getCurrentPosition(position => {
+        userLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+        traçarRota();
+      }, () => alert('Não foi possível obter sua localização para traçar a rota.'));
+      return;
+    }
     const destination = new google.maps.LatLng(latitude, longitude);
     const request = {
       origin: userLocation,
@@ -340,8 +357,12 @@
   }
 
   // Inicializa o mapa quando a página carrega
-  window.onload = function () {
-    initMap();
+  function initializeAddressMap() {
+    if (!map && window.google?.maps?.Map && !window.__GOOGLE_MAPS_AUTH_FAILED__) initMap();
+  }
+  document.addEventListener('googlemaps:ready', initializeAddressMap);
+  window.addEventListener('load', function () {
+    initializeAddressMap();
 
     const cepInput = document.getElementById('cep');
     if (cepInput) {
@@ -354,7 +375,6 @@
     if (btnBuscarCepEndereco) {
       btnBuscarCepEndereco.addEventListener('click', buscarCepPorEndereco);
     }
-  };
+  });
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry,directions"></script>
 {% endblock %}

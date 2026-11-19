@@ -1,11 +1,10 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from flask import current_app, jsonify, render_template, request, url_for
+from flask import current_app, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from app.clients.google_maps_client import geocode_endereco_google
-from app.shared.access import normalize_role
 from app.modules.mapas.service import (
     build_heatmap_points,
     build_uvis_disponiveis,
@@ -85,18 +84,39 @@ def register_routes(bp):
     @login_required
     def mapa_operacional_dados():
         from .operacional import points
+        from .quadras import QuadraUnavailable
         try:
+            if any(len(request.args.getlist(key))>1 for key in ('crs','cnes','quadra')):
+                raise ValueError('Informe somente um valor por filtro territorial.')
             result=points(current_user,
                 uvis_id=_optional_integer_filter('uvis_id',minimum=1),
                 mes=_optional_integer_filter('mes',minimum=1,maximum=12),
                 ano=_optional_integer_filter('ano',minimum=1,maximum=9999),
                 larva_visualizada=request.args.get('larva_visualizada'),
-                visao=request.args.get('visao','aprovados'))
+                visao=request.args.get('visao','aprovados'), crs=request.args.get('crs',''),
+                cnes=request.args.get('cnes',''), quadra=request.args.get('quadra',''))
             response=jsonify(result)
             response.headers['Cache-Control']='private, no-store'
             return response
         except ValueError as exc:
             return jsonify(message=str(exc)),400
+        except QuadraUnavailable as exc:
+            return jsonify(message=str(exc)),503
+
+    @bp.get('/api/mapas/quadras', endpoint='mapa_quadras')
+    @login_required
+    def mapa_quadras():
+        from .quadras import list_quadras, QuadraUnavailable
+        try:
+            if len(request.args.getlist('bbox')) != 1 or set(request.args) != {'bbox'}:
+                raise ValueError('Informe somente um recorte do mapa.')
+            response=jsonify(list_quadras(request.args['bbox']))
+        except ValueError as exc:
+            response=jsonify(message=str(exc));response.status_code=400
+        except QuadraUnavailable as exc:
+            response=jsonify(message=str(exc));response.status_code=503
+        response.headers['Cache-Control']='private, max-age=60' if response.status_code==200 else 'private, no-store'
+        return response
 
     @bp.get('/api/mapa-operacional/<int:sid>/historico', endpoint='mapa_operacional_historico')
     @login_required
@@ -123,9 +143,6 @@ def register_routes(bp):
             "mapa_relatorio.html",
             uvis_disponiveis=build_uvis_disponiveis(current_user),
             google_maps_key=google_maps_key,
-            # Same fixed guard as the orthomosaic module: only diretor and dev see private surveys.
-            ortomosaicos_url=url_for("main.ortomosaicos_listar")
-            if normalize_role(current_user.tipo_usuario) in {"dev", "diretor"} else None,
             mes_atual=hoje_brasil.month,
             ano_atual=hoje_brasil.year,
         )

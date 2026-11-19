@@ -188,6 +188,7 @@
 
 .mapa-relatorio-page .mapa-heat-canvas {
   position: absolute;
+  z-index: 2;
   pointer-events: none;
 }
 

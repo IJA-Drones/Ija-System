@@ -684,6 +684,7 @@
   "main.heatmap_data": {
     "GET": "prefeitura.mapas.consultar"
   },
+  "main.mapa_quadras": {"GET": "prefeitura.mapas.consultar"},
   "main.mapa_relatorio": {
     "GET": "prefeitura.mapas.consultar"
   },

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Treinamentos | Oceano Azul{% endblock %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261117-drive-lista') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261119-central-videos') }}">{% endblock %}
 {% block content %}
 <div class="training-page">
   <header class="training-header">
@@ -12,15 +12,17 @@
   </nav>
   <p class="training-scope">Materiais disponíveis para suas permissões nesta área.</p>
 
-  {% if request_videos %}
-  <section class="training-card mb-4" aria-labelledby="solicitacoes-training-title">
-    <div class="training-card-heading"><span class="training-icon"><i class="bi bi-send" aria-hidden="true"></i></span><div><h2 id="solicitacoes-training-title">Solicitações</h2><p>Orientações para preencher e enviar solicitações.</p></div></div>
-    <details class="training-drive-videos">
-      <summary class="btn btn-outline-primary"><i class="bi bi-play-circle" aria-hidden="true"></i>Ver vídeos no Drive<i class="bi bi-chevron-down training-drive-chevron" aria-hidden="true"></i></summary>
-      <ul class="training-files mt-3" aria-label="Vídeos de solicitações">
-        {% for video in request_videos %}<li><div><a href="{{ video.url }}" target="_blank" rel="noopener noreferrer">{{ video.title }}<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i><span class="visually-hidden"> (abre em nova aba)</span></a><p>{{ video.description }}</p></div></li>{% endfor %}
-      </ul>
-    </details>
+  <section class="training-guide mb-4" aria-labelledby="training-practical-title">
+    <span class="training-icon"><i class="bi bi-cursor" aria-hidden="true"></i></span>
+    <div><h2 id="training-practical-title">Guia prático nas telas</h2><p>Abra o módulo que deseja aprender e escolha Guia prático no menu. O passo a passo destaca os campos e controles disponíveis para seu perfil.</p></div>
+    <button type="button" class="btn btn-primary" data-screen-guide-open>Conhecer esta tela<i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></button>
+  </section>
+
+  {% if training_videos %}
+  <section class="training-guide mb-4" aria-labelledby="training-videos-title">
+    <span class="training-icon"><i class="bi bi-play-circle" aria-hidden="true"></i></span>
+    <div><h2 id="training-videos-title">Central de vídeos</h2><p>{{ training_videos|length }} vídeo{{ 's' if training_videos|length != 1 else '' }} {{ 'disponíveis' if training_videos|length != 1 else 'disponível' }} para suas permissões. Escolha um tutorial e assista aqui.</p></div>
+    <a class="btn btn-primary" href="{{ url_for('main.treinamentos_videos', video=training_videos[0].id) }}">Abrir central de vídeos<i class="bi bi-play-circle ms-2" aria-hidden="true"></i></a>
   </section>
   {% endif %}
 
@@ -31,11 +33,6 @@
     <a class="btn btn-primary" href="{{ url_for('main.treinamentos_arquivo', material_id='guia-geral') }}" target="_blank" rel="noopener">Abrir manual <span class="training-format">PDF</span><span class="visually-hidden"> do sistema (abre em nova aba)</span></a>
   </section>
 
-  <section class="training-guide training-video" aria-labelledby="video-title">
-    <span class="training-icon"><i class="bi bi-play-circle" aria-hidden="true"></i></span>
-    <div><h2 id="video-title">Vídeo de apresentação do sistema</h2><p>Visão geral das telas e dos principais fluxos.</p></div>
-    <a class="btn btn-outline-primary" href="https://drive.google.com/drive/folders/1gtqsbUG4bizj4ZNbFy-O3FVs3_hlDTCq?usp=drive_link" target="_blank" rel="noopener noreferrer">Abrir no Google Drive<i class="bi bi-box-arrow-up-right ms-2" aria-hidden="true"></i><span class="visually-hidden"> (abre em nova aba)</span></a>
-  </section>
   {% endif %}
 
   <div class="training-grid">

@@ -127,4 +127,4 @@ def get_mapa_relatorio_key():
 
 
 def get_consulta_geolocalizacao_key():
-    return os.getenv("KEY_API_GOOGLE_MAPS")
+    return current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")

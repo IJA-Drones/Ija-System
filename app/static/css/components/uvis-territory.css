@@ -1,0 +1,31 @@
+.uvis-territory { min-width: 0; color: var(--color-text-main); overflow-wrap: anywhere; }
+.uvis-territory-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.2rem; }
+.uvis-territory-controls label { min-width: 0; max-width: 100%; }
+.uvis-territory-controls select { max-width: 100%; }
+.uvis-layer-options .form-check { display: flex; align-items: center; gap: .5rem; min-height: 1.75rem; margin: 0; padding: 0; font-size: .8rem; cursor: pointer; }
+.uvis-layer-options .form-check-input { float: none; margin: 0; flex-shrink: 0; cursor: pointer; }
+.uvis-layer-options .form-check-input:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
+.uvis-layer-options .form-check-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 .2rem var(--color-accent-soft); }
+.uvis-source { font-size: .75rem; }
+.map-territorial-layers { min-width: 0; }
+.map-territorial-layers details summary { cursor: pointer; }
+.uvis-map-label { position: absolute; transform: translate(-50%, -50%); pointer-events: none; width: max-content; max-width: 116px; color: #233549; font: 600 10px/1.2 Arial,sans-serif; text-align: center; text-shadow: -1px -1px 1px white, 1px -1px 1px white, -1px 1px 1px white, 1px 1px 1px white; }
+.map-territorial-layers .btn { max-width: 100%; white-space: normal; }
+.map-display-host { position: absolute; top: 12px; right: 64px; z-index: 1001; max-width: calc(100% - 88px); }
+.map-display-panel { width: 290px; max-width: 100%; background: var(--color-bg-surface); color: var(--color-text-main); }
+.map-display-panel:not([open]) { width: max-content; }
+.map-display-panel summary { padding: .65rem .8rem; color: var(--color-primary); font-size: .8rem; font-weight: 600; cursor: pointer; list-style: none; }
+.map-display-panel summary::-webkit-details-marker { display: none; }
+.map-display-panel[open] .map-display-chevron { transform: rotate(180deg); }
+.map-display-options { max-height: min(40vh, calc(65vh - 160px), 300px); overflow-y: auto; padding: 0 .85rem .85rem; }
+.map-display-options legend { float: none; width: auto; margin: .15rem 0 .5rem; color: var(--color-text-muted); font-size: .7rem; font-weight: 700; text-transform: uppercase; }
+.map-display-options .form-check { margin: .35rem 0; }
+.map-display-options p { font-size: .72rem; }
+[data-map-quadra-controls] .btn { white-space: normal; }
+.uvis-svg-label { text-anchor: middle; dominant-baseline: middle; fill: #153858; stroke: white; stroke-width: 3px; paint-order: stroke; font: 600 10px system-ui,sans-serif; pointer-events: none; }
+.uvis-territory path:focus { outline: none; stroke-width: 4; }
+@media (max-width: 575.98px) {
+  .map-display-host { top: 110px; right: 12px; max-width: calc(100% - 24px); }
+  .uvis-territory-controls { align-items: stretch; flex-direction: column; }
+  .uvis-territory .btn { max-width: 100%; white-space: normal; }
+}

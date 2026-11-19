@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/mapa_relatorio.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/mapa_relatorio.css', v='20261119-9') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/uvis-territory.css', v='20261119-9') }}">
 {% endblock %}
 
 {% block content %}
@@ -37,7 +39,7 @@
         <div class="row g-2 align-items-end">
           {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'regional', 'prefeitura_admin'] %}
           <div class="col-md-4 col-lg-2">
-            <label for="uvisFilter" class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
+            <label for="uvisFilter" class="small text-muted mb-1 fw-bold">UVIS responsável · cadastro</label>
             <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               <option value="">Todas as Unidades</option>
               {% for id, nome_uvis in uvis_disponiveis|visible_municipalities %}
@@ -108,6 +110,7 @@
     </div>
   </div>
 
+  {% include '_mapa_territorial_layers.html' %}
   <div id="mapOperationalSummary" class="row g-2 mb-3" aria-live="polite"></div>
   <div id="mapFeedback" class="alert alert-info py-2 small d-none" role="status" aria-live="polite"></div>
 
@@ -135,19 +138,19 @@
       </ul>
     </div>
 
-    <div class="card-body p-0 position-relative">
+    <div class="card-body p-0">
 
-      <div class="focos-counter-card glass-panel border-0 text-center">
-        <small class="text-muted text-uppercase fw-bold mapa-counter-label">Registros no mapa</small>
-        <h3 class="mb-0 fw-bold text-primary" id="count-total">0</h3>
+      <div class="d-flex justify-content-end px-3 py-2 border-bottom small text-muted">
+        Registros no recorte: <strong class="text-primary ms-1" id="count-total">0</strong>
       </div>
 
       <div class="tab-content">
-        <div class="tab-pane fade show active" id="tabCalor">
-          <div id="mapHeatmap" class="map-container"{% if ortomosaicos_url %} data-ortomosaicos-url="{{ ortomosaicos_url }}"{% endif %}></div>
+        <div class="tab-pane fade show active position-relative" id="tabCalor">
+          <div id="mapHeatmap" class="map-container"></div>
+          <div class="map-display-host" data-map-display-host>{% with operational_map_controls=True %}{% include '_map_display_controls.html' %}{% endwith %}</div>
 
           <div class="map-legend-overlay glass-panel border-0">
-            <h6 class="fw-bold mb-2 text-uppercase">Densidade de registros</h6>
+            <h6 class="fw-bold mb-2 text-uppercase" id="mapHeatLegendTitle">Densidade de registros</h6>
 
             <div class="gradient-bar"></div>
 
@@ -166,15 +169,18 @@
         </div>
 
         <div class="tab-pane fade" id="tabArea">
+          {% include '_mapa_quadra_controls.html' %}
+          <div class="position-relative">
           <div id="mapPolygons" class="map-container"></div>
-
           <!-- Legenda preenchida pelo JS com os tipos de foco visiveis no mapa. -->
+          <div class="map-display-host" data-map-display-host></div>
           <div class="map-category-legend glass-panel p-3 border-0">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="fw-bold text-muted small mb-0 text-uppercase">Tipos de foco</h6>
+              <h6 class="fw-bold text-muted small mb-0 text-uppercase" id="areaLegendTitle">Tipos de foco</h6>
               <span class="legend-count" id="areaLegendTotal">0</span>
             </div>
             <div id="areaLegendItems"></div>
+          </div>
           </div>
         </div>
 
@@ -203,7 +209,7 @@
   <section class="card p-3 mt-4" aria-labelledby="mapRequestsTitle">
     <h3 id="mapRequestsTitle" class="h5">Solicitações deste recorte</h3>
     <p class="small text-muted">A situação é a atual, para o período agendado selecionado. Pendências incluem solicitações em análise ou sem fechamento registrado. Retornos são atendimentos vinculados à solicitação de origem. A contagem considera solicitações, não focos únicos.</p>
-    <p class="small text-muted">Na aba Áreas, clique em um ponto para abrir o histórico. Cor: tipo de foco. Borda laranja: pendente ou atrasado. Essas cores não classificam risco.</p>
+    <p class="small text-muted">Na aba Áreas, clique em um ponto para abrir o histórico. As cores seguem a opção “Colorir registros por”. Borda laranja: pendente ou atrasado. Essas cores não classificam risco.</p>
     <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Solicitação</th><th>Agendamento</th><th>Foco / bairro</th><th>Situação atual</th><th>No mapa</th><th>Histórico</th></tr></thead><tbody id="mapRequestRows"></tbody></table></div>
     <div class="d-flex flex-wrap gap-2 align-items-center"><button type="button" id="mapPrev" class="btn btn-outline-primary btn-sm" disabled>Anterior</button><span id="mapPageLabel"></span><button type="button" id="mapNext" class="btn btn-outline-primary btn-sm" disabled>Próxima</button></div>
   </section>
@@ -215,18 +221,21 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/municipal-satellite.js', v='20261119-uvis-mask') }}" defer></script>
+<script src="{{ url_for('static', filename='js/map-larva.js', v='20261119-1') }}"></script>
+<script src="{{ url_for('static', filename='js/uvis-territory.js', v='20261119-cores') }}"></script>
+<script src="{{ url_for('static', filename='js/mapas-territorio.js', v='20261119-9') }}" defer></script>
 <script src="{{ url_for('static', filename='js/mapa-operacional.js') }}"></script>
-{% if ortomosaicos_url %}
-<script src="{{ url_for('static', filename='vendor/geotiff/geotiff.js') }}"></script>
-<script src="{{ url_for('static', filename='js/mapa-ortomosaicos.js', v='20261022') }}"></script>
-{% endif %}
 <script>
   let mapHeat, mapArea, mapLogistics, heatmap;
+  let heatLayers = [];
   let markers = [];
   let circles = [];
   let pontosAtuais = [];
   let mapasRequestSequence = 0;
   let mapasAbortController = null;
+  let mapTabSequence = 0;
+  let mapRecordsStarted = false;
   const MES_RELATORIO_ATUAL = {{ mes_atual|tojson }};
   const ANO_RELATORIO_ATUAL = {{ ano_atual|tojson }};
   const MAPA_FOCOS_CENTER = { lat: -23.5505, lng: -46.6333 };
@@ -240,6 +249,7 @@
   ];
 
   function initMap() {
+    if(mapHeat || mapArea || mapLogistics)return;
     const center = MAPA_FOCOS_CENTER;
 
     const elHeat = document.getElementById("mapHeatmap");
@@ -252,12 +262,11 @@
     }
 
     if (elHeat) {
-      mapHeat = new google.maps.Map(elHeat, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid" });
-      if (elHeat.dataset?.ortomosaicosUrl) window.initMapaOrtomosaicos(mapHeat, elHeat.dataset.ortomosaicosUrl);
+      mapHeat = new google.maps.Map(elHeat, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid", isFractionalZoomEnabled: true, tilt: 0 });
     }
 
     if (elPoly) {
-      mapArea = new google.maps.Map(elPoly, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid" });
+      mapArea = new google.maps.Map(elPoly, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid", isFractionalZoomEnabled: true, tilt: 0 });
     }
 
     if (elLogi) {
@@ -266,18 +275,38 @@
 
     document.querySelectorAll('a[data-bs-toggle="tab"]').forEach((tab) => {
       tab.addEventListener("shown.bs.tab", (e) => {
-        if (mapHeat) google.maps.event.trigger(mapHeat, "resize");
-        if (mapArea) google.maps.event.trigger(mapArea, "resize");
-        if (mapLogistics) google.maps.event.trigger(mapLogistics, "resize");
-
         const target = e.target.getAttribute("href");
-        if (target === "#tabCalor") ajustarMapaAosPontos(mapHeat, pontosAtuais);
-        if (target === "#tabArea") ajustarMapaAosPontos(mapArea, pontosAtuais);
+        const version=++mapTabSequence;
+        // Google must measure the visible pane before recreating its canvas.
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          if(version!==mapTabSequence || !document.querySelector(target)?.classList.contains('active'))return;
+          if(target==='#tabCalor'){
+            if(mapHeat)google.maps.event.trigger(mapHeat,'resize');
+            renderizarDadosCalor(pontosAtuais,document.getElementById('focoFilter').value);
+          }else if(target==='#tabArea'){
+            if(mapArea)google.maps.event.trigger(mapArea,'resize');
+            renderizarDadosOperacionais(pontosAtuais);
+          }
+          window.mapTerritory?.frame();
+        }));
       });
     });
 
-    atualizarMapas();
+    window.__operationalMaps = [mapHeat, mapArea];
+    document.dispatchEvent(new CustomEvent('operationalmaps:ready', {detail:{maps:window.__operationalMaps}}));
+    if(mapRecordsStarted)desenharMapasAtuais();
+    else atualizarMapas();
   }
+
+  function desenharMapasAtuais(){
+    renderizarDadosCalor(pontosAtuais,document.getElementById('focoFilter').value);
+    renderizarDadosOperacionais(pontosAtuais);
+    window.mapTerritory?.frame();
+  }
+
+  function bootMapRecords(){if(!mapRecordsStarted)atualizarMapas();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootMapRecords,{once:true});
+  else bootMapRecords();
 
   function bootRelatorioMapas() {
     if (document.readyState === "loading") {
@@ -298,6 +327,7 @@
     const badge = document.getElementById("filterBadge");
     const ativo = foco !== "todos"
       || Boolean(document.getElementById("uvisFilter")?.value)
+      || Object.values(window.mapTerritory?.getFilters() || {}).some(Boolean)
       || Boolean(document.getElementById("larvaFilter").value)
       || (document.getElementById("visaoFilter")?.value || "aprovados") !== "aprovados"
       || document.getElementById("mesFilter").value !== String(MES_RELATORIO_ATUAL)
@@ -314,6 +344,8 @@
   }
 
   function limparDadosMapas() {
+    heatLayers.forEach(layer => layer.setMap(null));
+    heatLayers = [];
     if (heatmap) heatmap.setMap(null);
     heatmap = null;
     markers.forEach(marker => marker.setMap(null));
@@ -327,6 +359,7 @@
   }
 
   async function atualizarMapas() {
+    mapRecordsStarted = true;
     atualizarBadgeFiltros();
     const sequence = ++mapasRequestSequence;
     mapasAbortController?.abort();
@@ -364,6 +397,7 @@
       renderizarDadosOperacionais(pontos);
       atualizarIndicadoresBI(pontos.length);
       atualizarLegendaCategorias(pontos);
+      window.mapTerritory?.frame();
       mostrarFeedbackMapa(pontos.length ? "" : "Nenhum registro encontrado para os filtros selecionados.");
     } catch (error) {
       if (sequence !== mapasRequestSequence || error.name === "AbortError") return;
@@ -371,6 +405,18 @@
       mostrarFeedbackMapa("Não foi possível carregar o mapa. " + error.message + ". Tente novamente em Filtrar.", true);
       console.error(error);
     }
+  }
+
+  function colorMode() { return document.getElementById('mapColorMode')?.value || 'foco'; }
+  function recordsVisible() { return document.getElementById('mapShowRecords')?.checked !== false; }
+  function getRecordStyle(point) {
+    return colorMode() === 'larva' && window.MapLarva ? window.MapLarva.style(point) : getFocoStyle(point.foco);
+  }
+  function recolorirMapas() {
+    renderizarDadosCalor(pontosAtuais, document.getElementById('focoFilter').value);
+    renderizarDadosOperacionais(pontosAtuais);
+    atualizarLegendaCategorias(pontosAtuais);
+    window.mapTerritory?.frame();
   }
 
   function atualizarIndicadoresBI(total) {
@@ -470,9 +516,12 @@
     const total = document.getElementById("areaLegendTotal");
     if (!list || !total) return;
 
-    const grouped = new Map();
+    const larva = colorMode() === 'larva' && window.MapLarva;
+    const heading = document.getElementById('areaLegendTitle');
+    if(heading)heading.textContent=larva?'Larva visualizada':'Tipos de foco';
+    const grouped = new Map(larva ? Object.values(window.MapLarva.states).map(style=>[style.id,{...style,count:0}]) : []);
     pontos.forEach((ponto) => {
-      const style = getFocoStyle(ponto.foco);
+      const style = getRecordStyle(ponto);
       const current = grouped.get(style.id) || { ...style, count: 0 };
       current.count += 1;
       grouped.set(style.id, current);
@@ -519,24 +568,28 @@
       this.canvas = document.createElement("canvas");
       this.canvas.className = "mapa-heat-canvas";
       this.getPanes().overlayLayer.appendChild(this.canvas);
+      this.idleListener=this.getMap().addListener('idle',()=>this.draw());
+      this.resizeObserver=new ResizeObserver(()=>this.draw());
+      this.resizeObserver.observe(this.getMap().getDiv());
     }
 
     draw() {
       if (!this.canvas || !this.getProjection()) return;
 
       const map = this.getMap();
-      const bounds = map?.getBounds();
-      if (!map || !bounds) return;
+      if (!map) return;
+      const width=map.getDiv().clientWidth,height=map.getDiv().clientHeight;
+      if(!width || !height)return;
 
       const projection = this.getProjection();
-      const ne = projection.fromLatLngToDivPixel(bounds.getNorthEast());
-      const sw = projection.fromLatLngToDivPixel(bounds.getSouthWest());
-      const width = Math.max(1, Math.ceil(ne.x - sw.x));
-      const height = Math.max(1, Math.ceil(sw.y - ne.y));
+      const center=map.getCenter();
+      if(!center)return;
+      const paneCenter=projection.fromLatLngToDivPixel(center);
+      const containerCenter=projection.fromLatLngToContainerPixel(center);
       const ratio = window.devicePixelRatio || 1;
 
-      this.canvas.style.left = `${sw.x}px`;
-      this.canvas.style.top = `${ne.y}px`;
+      this.canvas.style.left = `${paneCenter.x-containerCenter.x}px`;
+      this.canvas.style.top = `${paneCenter.y-containerCenter.y}px`;
       this.canvas.style.width = `${width}px`;
       this.canvas.style.height = `${height}px`;
       this.canvas.width = Math.ceil(width * ratio);
@@ -549,9 +602,9 @@
       if (!this.data.length) return;
 
       this.data.forEach((point) => {
-        const pixel = projection.fromLatLngToDivPixel(point);
-        const x = pixel.x - sw.x;
-        const y = pixel.y - ne.y;
+        const pixel = projection.fromLatLngToContainerPixel(point);
+        const x = pixel.x;
+        const y = pixel.y;
 
         if (x < -this.radius || y < -this.radius || x > width + this.radius || y > height + this.radius) {
           return;
@@ -587,6 +640,8 @@
     }
 
     onRemove() {
+      this.idleListener?.remove();
+      this.resizeObserver?.disconnect();
       if (this.canvas?.parentNode) {
         this.canvas.parentNode.removeChild(this.canvas);
       }
@@ -651,6 +706,8 @@
       ano: document.getElementById("anoFilter").value,
       larva_visualizada: document.getElementById("larvaFilter").value,
     });
+    const territory=window.mapTerritory?.getFilters();
+    if(territory)for(const [name,value] of Object.entries(territory))if(value)params.set(name,value);
     const view = document.getElementById("visaoFilter");
     if (view) { params.set('visao', view.value); return `/api/mapa-operacional?${params.toString()}`; }
     return `/api/heatmap-data?${params.toString()}`;
@@ -679,7 +736,12 @@
   function renderizarDadosCalor(pontos, focoFiltro) {
     if (!mapHeat) return;
     const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
+    heatLayers.forEach(layer=>layer.setMap(null));heatLayers=[];
     if (heatmap) heatmap.setMap(null);
+    const title=document.getElementById('mapHeatLegendTitle');
+    if(title)title.textContent='Densidade de registros';
+    const bar=document.querySelector('.gradient-bar');
+    if(bar)bar.hidden=false;
 
     let gradienteMapa, gradienteCSS;
     const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
@@ -730,6 +792,7 @@
       gradient: gradienteMapa
     });
 
+    heatLayers.push(heatmap);
     ajustarMapaAosPontos(mapHeat, heatData);
   }
 
@@ -738,13 +801,16 @@
     markers.forEach(m => m.setMap(null));
     circles.forEach(c => c.setMap(null));
     markers = []; circles = [];
+    if(!recordsVisible() || document.getElementById('tabArea')?.classList.contains('active')===false)return;
 
     pontos.forEach(p => {
-      const cor = getCorPorFoco(p.foco);
+      const recordStyle = getRecordStyle(p);
+      const cor = recordStyle.color;
 
       const marker = new google.maps.Marker({
         position: { lat: p.lat, lng: p.lng },
         map: mapArea,
+        title: `${getFocoLabel(p.foco)} · ${window.MapLarva?.style(p).label || "Resultado não informado"}`,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 5,

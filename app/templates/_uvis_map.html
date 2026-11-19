@@ -1,0 +1,17 @@
+<section class="uvis-map" data-uvis-map data-google-configured="{{ 'true' if google_maps_key else 'false' }}" aria-labelledby="uvis-map-heading">
+  <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3">
+    <div><h3 id="uvis-map-heading">São Paulo · limites das UVIS</h3><p>28 UVIS e 96 distritos. Consulte um território para ver seus detalhes.</p></div>
+    <button class="btn btn-outline-primary btn-sm" type="button" data-uvis-fit>Ver São Paulo inteiro</button>
+  </div>
+  {% include '_uvis_territory_controls.html' %}
+  <p data-uvis-map-status role="status" aria-live="polite">Carregando o mapa de São Paulo…</p>
+  <div class="uvis-map-grid">
+    <div class="position-relative">
+      <div class="uvis-map-map" id="uvisTerritoryMap" data-uvis-google role="region" aria-label="Google Maps com limites das UVIS e distritos de São Paulo" hidden></div>
+      <div data-uvis-fallback><svg class="uvis-map-svg" data-uvis-svg viewBox="0 0 900 620" role="group" aria-label="Contornos das 28 UVIS de São Paulo"></svg></div>
+      <div class="map-display-host" data-map-display-host>{% include '_map_display_controls.html' %}</div>
+    </div>
+    <aside class="uvis-map-details" data-uvis-details aria-live="polite"><h4>Consultar território</h4><p>Selecione uma UVIS ou clique em uma área do mapa.</p></aside>
+  </div>
+  <p class="small text-muted mt-3">Fonte: Prefeitura de São Paulo / COVISA · Territórios UVIS · versão de 27/07/2026. Limites simplificados para visualização. Consulta territorial.</p>
+</section>

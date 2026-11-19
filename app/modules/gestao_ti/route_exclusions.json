@@ -2,6 +2,7 @@
   "main.portal_azul_transcribe": "Public bounded WAV transcription; same-session header, audio duration checks and independent quotas; no free voice-model session",
   "main.azul_tutorial": "Synthetic read-only training room; public citizen exercises, server-filtered internal catalogue; sandbox and CSP prohibit business requests or form submissions",
   "main.treinamentos": "Authenticated read-only learning center; no operational data or writes",
+  "main.treinamentos_videos": "Authenticated video library; fixed Drive catalogue and per-video permission checks before rendering the player",
   "main.treinamentos_arquivo": "Authenticated downloads from a fixed catalogue of manuals and synthetic fixtures",
   "main.portal_acoes": "Public approved municipal actions, explicitly separated demonstration mode",
   "main.portal_acao": "Only the approved snapshot of an active publication",

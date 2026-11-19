@@ -80,3 +80,27 @@ def test_period_larva_filters_and_response_status(setup):
     rows=out.get_json()['registros'];assert len(rows)==1 and rows[0]['situacao']=='CONCLUIDO'
     assert c.app.test_client().get('/api/mapa-operacional?visao=xyz').status_code==400
     assert c.app.test_client().get('/api/mapa-operacional/999999/historico').status_code==404
+
+
+def test_map_reads_only_lightweight_columns_without_joined_equipment_or_lazy_queries(setup):
+    from sqlalchemy import event
+    c=setup
+    for _ in range(12):
+        row=c._new_request(drone='SIM',equipe_uvis='NAO',observacao='unused text',perimetro_executado='unused telemetry')
+        row.ordem_servico.assinatura_piloto='unused signature'
+    db.session.commit()
+    db.session.expunge_all()
+    statements=[]
+    def capture(conn,cursor,sql,parameters,context,many):
+        if sql.lstrip().upper().startswith('SELECT'):statements.append(sql)
+    event.listen(db.engine,'before_cursor_execute',capture)
+    try:
+        rows=operacional.points(c.admin,visao='todos')['registros']
+    finally:
+        event.remove(db.engine,'before_cursor_execute',capture)
+    assert len(rows)==12 and all(r['larva_visualizada']=='SIM' for r in rows)
+    assert len(statements)==3 # one requests query, one batch for each OS type
+    for sql in statements:
+        assert ' JOIN ' not in sql.upper()
+        for heavy_column in ('assinatura_piloto','perimetro_executado','points_json','senha_hash'):
+            assert heavy_column not in sql

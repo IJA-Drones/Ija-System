@@ -11,6 +11,7 @@
 {% set prefeitura_context_endpoint = ti_area_homes.get('prefeitura', 'main.admin_dashboard') if central_ti_profile_active|default(false) else 'main.admin_dashboard' %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
+{% set logo_agro_url = url_for('static', filename='img/logo_ija_drones.png') if is_agro_context else none %}
 <!doctype html>
 <html
   lang="pt-br"
@@ -81,7 +82,9 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.bundle.css', v=style_bundle_version) }}"
     />
-    {% if not is_financeiro_context %}
+    {% if is_agro_context %}
+    <link rel="preload" as="image" href="{{ logo_agro_url }}" />
+    {% elif not is_financeiro_context %}
     <link rel="preload" as="image" href="{{ logo_light_url }}" />
     <link rel="preload" as="image" href="{{ logo_dark_url }}" />
     {% endif %}
@@ -91,6 +94,10 @@
     {% if central_ti_profile_active|default(false) %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/permission-controls.css', v='20261009a') }}">
     <script src="{{ url_for('static', filename='js/permission-controls.js', v='20261009a') }}" defer></script>
+    {% endif %}
+    {% if current_user.is_authenticated %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/screen-guide.css', v='20261119-1') }}">
+    <script src="{{ url_for('static', filename='js/screen-guide.js', v='20261119-1') }}" defer></script>
     {% endif %}
     {% block extra_styles %}{% endblock %}
     {% if edit_control_enabled|default(false) %}
@@ -162,6 +169,22 @@
           {% if is_financeiro_context %}
           <i class="bi bi-bank finance-navbar-icon" aria-hidden="true"></i>
           <span class="finance-navbar-title">Central Financeiro</span>
+          {% elif is_agro_context %}
+          {# Composição horizontal da marca original, no mesmo espaço da logo anterior. #}
+          <svg
+            class="navbar-logo agro-navbar-logo"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 175 50"
+            width="175" height="50"
+            role="img" aria-label="IJA Drones" focusable="false"
+          >
+            <svg x="0" y="0" width="50" height="50" viewBox="200 40 805 765" overflow="hidden" aria-hidden="true">
+              <image href="{{ logo_agro_url }}" width="1206" height="1305" />
+            </svg>
+            <svg x="60" y="4" width="115" height="42" viewBox="155 840 890 300" overflow="hidden" aria-hidden="true">
+              <image href="{{ logo_agro_url }}" width="1206" height="1305" />
+            </svg>
+          </svg>
           {% else %}
           <img
             src="{{ logo_light_url }}"
@@ -312,6 +335,7 @@
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
           {% if current_user.tipo_usuario == 'ortomosaico' %}
+          <li class="nav-item"><button type="button" class="nav-link" data-screen-guide-open><i class="bi bi-book me-2" aria-hidden="true"></i><span>Guia prático</span></button></li>
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.treinamentos' %}active{% endif %}" href="{{ url_for('main.treinamentos') }}"{% if request.endpoint == 'main.treinamentos' %} aria-current="page"{% endif %}>
               <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
@@ -323,9 +347,10 @@
             </a>
           </li>
           {% else %}
+          <li class="nav-item"><button type="button" class="nav-link" data-screen-guide-open><i class="bi bi-book me-2" aria-hidden="true"></i><span>Guia prático</span></button></li>
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}active{% endif %}"
-               href="{{ url_for('main.financeiro_treinamentos' if is_financeiro_context else ('main.agro_treinamentos' if is_agro_context else 'main.treinamentos')) }}" {% if request.endpoint in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}aria-current="page"{% endif %}>
+            <a class="nav-link {% if request.endpoint in ['main.treinamentos', 'main.treinamentos_videos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}active{% endif %}"
+               href="{{ url_for('main.financeiro_treinamentos' if is_financeiro_context else ('main.agro_treinamentos' if is_agro_context else 'main.treinamentos')) }}" {% if request.endpoint in ['main.treinamentos', 'main.treinamentos_videos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}aria-current="page"{% endif %}>
               <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
             </a>
           </li>
@@ -1235,7 +1260,7 @@
       };
     </script>
 
-    {% if not is_financeiro_context and request.endpoint not in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}
+    {% if not is_financeiro_context and request.endpoint not in ['main.treinamentos', 'main.treinamentos_videos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}
     <script
       async
       src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&v=weekly&libraries=geometry,marker&callback=initGoogleMaps&loading=async">

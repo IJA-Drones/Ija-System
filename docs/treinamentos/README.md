@@ -1,7 +1,7 @@
 # Guias da Central de Treinamentos
 
 Cada módulo tem seu PDF individual. A identidade visual comum usa a referência
-do guia de Edição protegida, com DejaVu Sans, faixa azul-petróleo, blocos claros,+cabeçalho e rodapé padronizados.
+do guia de Edição protegida, com DejaVu Sans, faixa azul-petróleo, blocos claros, cabeçalho e rodapé padronizados.
 
 ## Atualização dos PDFs
 
@@ -18,7 +18,7 @@ O gerador depende de ReportLab, Pillow, pypdf e das fontes DejaVu Sans regular e
 bold. A variável `TRAINING_FONT_DIR` aceita a pasta das fontes. O script também
 reconhece a instalação Linux usual e o runtime de documentos do Codex.
 
-O modelo compartilhado está em `scripts/training_pdf_style.py`. Ajustes de cores,+tipografia e elementos comuns devem ser feitos ali para manter a identidade dos
+O modelo compartilhado está em `scripts/training_pdf_style.py`. Ajustes de cores, tipografia e elementos comuns devem ser feitos ali para manter a identidade dos
 guias desta série. O gerador não acessa banco de dados nem serviços externos.
 
 ## Catálogo e permissões
@@ -39,8 +39,22 @@ acesso, preservando o bloqueio das outras funções de negócio.
 O inventário e a validação desta leva estão em `inventario-guias.md` e
 `validacao-guias-operacionais.json`.
 
-Em Solicitações, o botão **Ver vídeos no Drive** expande a lista de vídeos
-cadastrados em `REQUEST_VIDEOS`. Cada vídeo tem uma política em `POLICIES`,
-independente dos arquivos para download de `MATERIALS`. O tutorial de quadra está
-no Google Drive; sua exibição exige permissão de criar solicitações. Os arquivos
-locais de produção do vídeo foram removidos do projeto após o salvamento no Drive.
+A **Central de vídeos**, em `/treinamentos/videos`, reúne apresentação da
+Prefeitura, novidades e tutorial de quadra. A página possui player do Drive, lista
+de vídeos e controles anterior/próximo centralizados logo abaixo do player.
+Nenhum vídeo, áudio ou miniatura é armazenado no projeto.
+
+Os arquivos são registrados em `TRAINING_VIDEOS`, apenas com metadados e ID do
+Drive. Cada vídeo tem uma política em `POLICIES`, independente dos arquivos para
+download de `MATERIALS`. Apresentação e novidades seguem a política da apresentação
+geral; o tutorial de quadra exige permissão de criar solicitações. A lista e o acesso
+direto ao player são filtrados no servidor. Para acrescentar vídeos, cadastre o ID
+do Drive e sua política; novos arquivos da pasta não são publicados automaticamente.
+
+## Guia prático na interface
+
+O menu **Guia prático** acompanha os controles da tela real conforme o acesso da
+conta, incluindo as centrais Agro e Financeiro. A Central de Treinamentos também
+tem **Conhecer esta tela**. Consulte `guia-pratico.md` e
+`inventario-guia-pratico.json` para integração, critérios de visibilidade e limites
+da revisão. Esse guia não gera novos arquivos de mídia nem altera registros.
