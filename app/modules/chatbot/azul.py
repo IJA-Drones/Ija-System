@@ -13,7 +13,7 @@ from app.modules.chatbot import exports, operations, search, topics, voice, sett
 from app.modules.chatbot.scope import chat_key
 from pathlib import Path
 
-from flask import current_app, jsonify, request, url_for
+from flask import current_app, jsonify, request, url_for, g
 from flask_login import current_user
 from openai import OpenAI, OpenAIError
 from werkzeug.routing import BuildError
@@ -346,6 +346,7 @@ def reply(channel):
     from app.modules.chatbot import prospecting
     if fly and decision.kind != 'blocked' and prospecting.matches(message, history):
         from app.modules.portal_cidadao.chatbot import ChatbotError
+        g.pop('fly_partner_candidates', None)
         text, parts, status = '', [], 200
         try:
             if not agro.allowed_sources(current_user):
@@ -360,7 +361,11 @@ def reply(channel):
             text, status = exc.message, exc.status
         except (OpenAIError, sqlite3.Error):
             text, status = 'Não foi possível consultar as fontes públicas agora. Tente novamente.', 503
-        result = jsonify(answer=text, parts=parts, mode='prospeccao', links=[],
+        partner_preview = None
+        if status == 200 and getattr(g, 'fly_partner_candidates', None):
+            from app.modules.agro.partners import preview as partner_preview_builder
+            partner_preview = partner_preview_builder(*g.fly_partner_candidates)
+        result = jsonify(answer=text, parts=parts, mode='prospeccao', links=[], partner_preview=partner_preview,
                          profile=profile_code(current_user), export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result, status

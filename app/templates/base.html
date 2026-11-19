@@ -602,6 +602,7 @@
 
           {% if can_access_agro_context and is_agro_context %}
           {% set agro_relacionamentos_menu_active = request.endpoint in [
+            'main.agro_parceiros_listar', 'main.agro_parceiro_detalhe', 'main.agro_parceiro_novo',
             'main.agro_clientes_menu',
             'main.agro_clientes_listar',
             'main.agro_cliente_novo',
@@ -674,6 +675,9 @@
                    data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_clientes_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-people-fill me-2"></i><span>Clientes</span>
                   </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link sub-link {{ 'active' if request.endpoint in ['main.agro_parceiros_listar','main.agro_parceiro_detalhe','main.agro_parceiro_novo'] else '' }}" href="{{ url_for('main.agro_parceiros_listar') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_parceiros_listar')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-person-lines-fill me-2"></i><span>Parceiros e oportunidades</span></a>
                 </li>
                 <li class="nav-item">
                   <a

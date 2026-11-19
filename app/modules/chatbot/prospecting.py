@@ -11,7 +11,7 @@ from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 from zoneinfo import ZoneInfo
 
-from flask import current_app, has_request_context, session
+from flask import current_app, has_request_context, session, g
 from openai import OpenAI, OpenAIError
 
 from app.modules.chatbot import metering, settings, topics, control_store
@@ -362,6 +362,8 @@ def answer(message, history):
             raise ValueError('no_verified_partners')
         partners = _geography(partners, message, history)
         _remember(partners)
+        if has_request_context():
+            g.fly_partner_candidates = (partners, sources)
         return _render(partners, sources, data.get('summary'), len(evidence) < len(results))
     except (OpenAIError, ValueError, control_store.BudgetExceeded) as exc:
         current_app.logger.warning('IJA Fly: consolidação indisponível (%s)', type(exc).__name__)

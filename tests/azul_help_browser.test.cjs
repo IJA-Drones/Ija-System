@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync('app/static/js/azul-help.js', 'utf8');
 class Element {
   dispatchEvent(event) { return this.events[event.type]?.(event); }
-  constructor() {this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
+  constructor() {this.style={};this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
   set innerHTML(value) {throw new Error('Unsafe HTML');}
   set textContent(value) {this.text=value;}
   append(...values) {this.children.push(...values);}
@@ -365,4 +365,25 @@ test('long prospecting results and their safe sources survive navigation',async(
   const sources=bubble.children.find(child=>child.className==='azul-links');
   assert.equal(sources.children.length,1);
   assert.equal(sources.children[0].href,'https://cooperrita.com.br/lojas');
+});
+
+
+test('partner selection only saves chosen rows after an explicit click',async()=>{
+  const preview={token:'signed-partners',rows:[{name:'Unidade A',city:'Itajubá'},{name:'Unidade B',city:'Pouso Alegre'}],save_url:'/agro/parceiros/importar-pesquisa',export_url:'/agro/parceiros/exportar-pesquisa',list_url:'/agro/parceiros'};
+  const env=setup(async(url)=>({ok:true,json:async()=>url==='/api/azul/ajuda'?{answer:'Parceiros',mode:'prospeccao',partner_preview:preview}:{message:'1 parceiro salvo.'}}));
+  await env.chip.events.click(); await settle();
+  assert.equal(env.requests.length,1);
+  const card=env.parts['[data-messages]'].children.at(-1).children.find(c=>c.className==='azul-export');
+  card.children[3].children[0].checked=false;
+  await card.children.find(c=>c.text==='Salvar selecionados no sistema').events.click(); await settle();
+  const sent=JSON.parse(env.requests.at(-1).body);
+  assert.deepEqual(sent,{token:'signed-partners',selected:[0]});
+  assert.equal(env.requests.at(-1).headers['X-CSRFToken'],'token');
+  assert.ok(card.children.some(c=>c.text==='1 parceiro salvo.'));
+});
+
+test('partner actions reject external destinations from restored data',async()=>{
+ const env=setup(async()=>({ok:true,json:async()=>({answer:'Parceiros',partner_preview:{token:'x',rows:[{}],list_url:'https://evil.example',export_url:'/agro/parceiros/exportar-pesquisa'}})}));
+ await env.chip.events.click(); await settle();
+ assert.ok(env.parts['[data-messages]'].children.at(-1).children.every(c=>c.className!=='azul-export'));
 });

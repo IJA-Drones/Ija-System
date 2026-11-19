@@ -68,6 +68,61 @@
       }
       if (links.children.length) bubble.append(links);
     }
+    function renderPartnerPreview(bubble, preview) {
+      if (!preview || !Array.isArray(preview.rows) || !preview.rows.length || preview.rows.length > 12 || typeof preview.token !== 'string') return;
+      if (preview.list_url !== '/agro/parceiros' || preview.export_url !== '/agro/parceiros/exportar-pesquisa') return;
+      const card = document.createElement('section'); card.className = 'azul-export';
+      const title = document.createElement('strong'); title.textContent = 'Salvar parceiros ou exportar para Excel';
+      const notice = document.createElement('p'); notice.textContent = 'Selecione as unidades. Ao salvar, entram como A abordar. Cadastros existentes mantêm seu acompanhamento.';
+      card.append(title, notice);
+      const choices = preview.rows.map((row, index) => {
+        const label = document.createElement('label'); label.style.display = 'block';
+        const check = document.createElement('input'); check.type = 'checkbox'; check.checked = true;
+        const text = document.createElement('span'); text.textContent = ` ${row.name} — ${row.city}`;
+        label.append(check, text); card.append(label); return {check,index};
+      });
+      const saveButton = document.createElement('button'); saveButton.type = 'button'; saveButton.textContent = 'Salvar selecionados no sistema';
+      const exportButton = document.createElement('button'); exportButton.type = 'button'; exportButton.textContent = 'Baixar selecionados em Excel';
+      const list = document.createElement('a'); list.href = preview.list_url; list.textContent = 'Acompanhar parceiros salvos';
+      const feedback = document.createElement('p'); feedback.setAttribute('role','status');
+      const canSave = preview.save_url === '/agro/parceiros/importar-pesquisa';
+      if (canSave) card.append(saveButton);
+      card.append(exportButton, list, feedback); bubble.append(card);
+      let busy = false;
+      async function act(exporting) {
+        if (busy) return;
+        const selected = choices.filter(c=>c.check.checked).map(c=>c.index);
+        if (!selected.length) { feedback.textContent = 'Selecione pelo menos um parceiro.'; return; }
+        busy = true; saveButton.disabled = exportButton.disabled = true;
+        const version = generation;
+        feedback.textContent = exporting ? 'Preparando Excel…' : 'Salvando parceiros…';
+        try {
+          const response = await fetch(exporting ? preview.export_url : preview.save_url, {
+            method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':root.dataset.csrf},
+            body:JSON.stringify({token:preview.token,selected})
+          });
+          if (version !== generation) return;
+          if (response.status === 401 || response.status === 403) { invalidateAccess(); return; }
+          if (!response.ok) throw new Error('Não foi possível concluir. A seleção pode ter expirado; atualize a lista ou faça uma nova pesquisa.');
+          if (exporting) {
+            if (!(response.headers.get('Content-Type')||'').startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) throw new Error('Arquivo indisponível. Atualize a página.');
+            const blob = await response.blob();
+            if (version !== generation) return;
+            const url = URL.createObjectURL(blob), link = document.createElement('a');
+            link.href=url; link.download='parceiros-ija-fly.xlsx'; card.append(link); link.click(); link.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),60000);
+            feedback.textContent='Excel gerado. Download iniciado.';
+          } else {
+            const result = await response.json();
+            if (version !== generation) return;
+            feedback.textContent = result.message || 'Parceiros salvos.';
+          }
+        } catch (error) { if (version === generation) feedback.textContent=error.message; }
+        finally { busy=false; saveButton.disabled=exportButton.disabled=false; }
+      }
+      if (canSave) saveButton.addEventListener('click',()=>act(false));
+      exportButton.addEventListener('click',()=>act(true));
+    }
     function renderSources(bubble, mode, parts) {
         if (['saude', 'prospeccao'].includes(mode) && Array.isArray(parts)) {
           const sources = document.createElement('div'); sources.className = 'azul-links';
@@ -96,6 +151,7 @@
           const bubble = append(item.content, item.role, item.mode);
           renderLinks(bubble, item.links);
           renderSources(bubble, item.mode, item.parts);
+          renderPartnerPreview(bubble, item.partner_preview);
         }
         transcript = data.transcript.slice(-40);
         history = boundedHistory(data.history);
@@ -317,6 +373,8 @@
         }
         entry.parts = Array.isArray(data.parts) ? data.parts.filter(part => part && typeof part.url === 'string').slice(0,80) : [];
         renderSources(bubble, data.mode, entry.parts);
+        entry.partner_preview = data.partner_preview || null;
+        renderPartnerPreview(bubble, entry.partner_preview);
         const speechButton = root.azulCompanion?.attachSpeech(bubble, data.speech);
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
         history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);

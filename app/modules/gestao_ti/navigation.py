@@ -22,7 +22,7 @@ SCREENS = {
  'prefeitura.voos': [('relatorios_dji_logs','Logs de voo DJI')],
  'prefeitura.vigilancia': [('vigilancia','Central de Vigilância')],
  'prefeitura.acoes_publicas': [('acoes_listar','Ações realizadas'),('acoes_nova','Preparar divulgação')],
- 'agro.clientes': [('agro_clientes_menu','Visão geral'),('agro_clientes_listar','Clientes'),('agro_fornecedores_listar','Fornecedores'),('agro_cliente_novo','Cadastrar cliente'),('agro_fornecedor_novo','Cadastrar fornecedor')],
+ 'agro.clientes': [('agro_clientes_menu','Visão geral'),('agro_clientes_listar','Clientes'),('agro_parceiros_listar','Parceiros e oportunidades'),('agro_fornecedores_listar','Fornecedores'),('agro_cliente_novo','Cadastrar cliente'),('agro_fornecedor_novo','Cadastrar fornecedor')],
  'agro.comercial': [('agro_orcamentos_listar','Orçamentos'),('agro_orcamento_novo','Novo orçamento')],
  'agro.contratos': [('agro_contratos_listar','Contratos'),('agro_contratos_template','Template de contrato')],
  'agro.mapeamentos': [('agro_orcamentos_template_mapeamento','Mapeamentos')],
