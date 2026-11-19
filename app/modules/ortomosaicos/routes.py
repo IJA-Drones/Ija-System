@@ -40,8 +40,9 @@ def register_routes(bp):
     from app.shared.municipality_visibility import register_municipality_filters
     register_municipality_filters(bp)
     register_dedicated_security(bp)
-    from . import water, uploads
+    from . import water, uploads, areas
     uploads.register_routes(bp, restricted)
+    areas.register_routes(bp, restricted, get_record)
 
     def water_record(oid):
         row = get_record(oid)

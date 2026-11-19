@@ -29,12 +29,21 @@
     map.on('pointermove',event=>{const point=ol.proj.toLonLat(event.coordinate);el('coordinates').textContent=`${point[1].toFixed(6)}°, ${point[0].toFixed(6)}° · WGS 84`;});
   } catch (_) {message('Não foi possível iniciar o mapa neste navegador.',true);}
   const rasterCache = map ? window.createOrthoRasterCache({map, onStatus: rasterStatus}) : null;
-  const water = map ? window.createOrthoWater({map,api,onRequest:app.dataset.requestUrl ? item=>{
+  const water = map ? window.createOrthoWater({map,api,onOpen:()=>{areas?.close();setPicking(false);},onRequest:app.dataset.requestUrl ? item=>{
     const geometry=item.geometria.type==='Point'?new ol.geom.Point(item.geometria.coordinates):new ol.geom.Polygon(item.geometria.coordinates).getInteriorPoint();
     const result=item.resultado, number=(n,unit)=>n==null?null:`${n.toLocaleString('pt-BR',{maximumFractionDigits:2})} ${unit}`;
     openRequest(geometry.getCoordinates(),[`Medição "${item.nome}" (${item.tipo})`,number(result.area_m2,'m²')&&`área ${number(result.area_m2,'m²')}`,
       `capacidade ${number(result.capacidade_l,'L')}`,number(result.agua_l,'L')&&`água presente ${number(result.agua_l,'L')}`].filter(Boolean).join(', '));
   } : null}) : null;
+  let previousRasterVisibility=null;
+  const areas = map ? window.createOrthoAreas({map,api,
+    onOpen:()=>{water?.close();setPicking(false);},
+    onOriginal:shouldFit=>{previousRasterVisibility=null;el('visible').checked=true;layer?.setVisible(true);if(shouldFit)fit();},
+    onIsolate:value=>{
+      if(value){if(previousRasterVisibility===null)previousRasterVisibility=el('visible').checked;el('visible').checked=false;}
+      else if(previousRasterVisibility!==null){el('visible').checked=previousRasterVisibility;previousRasterVisibility=null;}
+      layer?.setVisible(el('visible').checked);
+    }}) : null;
   // Opens the existing request form, prefilled by querystring, in a new tab so the map keeps its state.
   function openRequest(lonLat, note='') {
     if (!app.dataset.requestUrl) return;
@@ -46,7 +55,7 @@
   function setPicking(value) {
     picking=value;el('request-toggle').setAttribute('aria-pressed',String(value));
     if(map)map.getTargetElement().style.cursor=value?'crosshair':'';
-    if(value){water?.close();message('Clique no ponto do mapa onde a solicitação deve ser criada. Esc cancela.');}
+    if(value){water?.close();areas?.close();message('Clique no ponto do mapa onde a solicitação deve ser criada. Esc cancela.');}
   }
   el('request-toggle').onclick=()=>setPicking(!picking);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&picking){setPicking(false);message('');}});
@@ -94,7 +103,7 @@
       const title=document.createElement('strong');title.textContent=item.nome;
       const sub=document.createElement('small');sub.textContent=`${item.tipo==='dem'?'Curvas de nível':'RGB'} · ${item.prefeitura} · ${(item.tamanho_bytes/1048576).toFixed(1)} MB`;
       const status=document.createElement('span');status.className=`status ${item.status}`;status.textContent=labels[item.status]||item.status;
-      button.append(title,sub,status);button.addEventListener('click',()=>select(item));el('list').append(button);
+      button.append(title,sub,status);button.addEventListener('click',()=>{if(selected?.id===item.id&&item.tipo==='rgb')areas?.showOriginal();else select(item);});el('list').append(button);
     });
   }
   function details(item) {
@@ -126,8 +135,9 @@
     if(!el('reference').value)clearReference();
   }
   function select(item, discardApproved=false) {
-    if(!discardApproved&&water&&!water.canSelect(item))return;
+    if(!discardApproved&&((water&&!water.canSelect(item))||(areas&&!areas.canSelect(item))))return;
     const needsLayer = !layer || layer.get('loadError') || source?.getState()==='error' || selected?.id!==item.id || selected?.arquivo_url!==item.arquivo_url || selected?.curvas_url!==item.curvas_url;
+    if(needsLayer)areas?.select(null,null);
     if(needsLayer){vectorRequest?.abort();vectorRequest=null;styleCache.clear();}
     el('dem-controls').hidden=item.tipo!=='dem'||item.status!=='pronto';
     el('jpeg').removeAttribute('href');if(item.jpeg_url)el('jpeg').href=item.jpeg_url;
@@ -173,14 +183,14 @@
     message('Carregando ortomosaico…');
     const raster=rasterCache.acquire(item);source=raster.source;layer=raster.layer;
     layer.setZIndex(1);layer.setOpacity(Number(el('opacity').value)/100);layer.setVisible(el('visible').checked);
-    fit();rasterStatus(raster);
+    areas?.select(item,source);fit();rasterStatus(raster);
   }
   async function load(preferId, discardApproved=false) {
     const data=await api(`${app.dataset.listUrl}?prefeitura_id=${encodeURIComponent(el('filter').value)}`);items=data.items;rasterCache?.retain(items);
     const wanted=items.find(i=>i.id===preferId)||items.find(i=>i.id===selected?.id)||items[0];
     if(wanted)select(wanted,discardApproved);else{
       vectorRequest?.abort();clearReference();el('dem-controls').hidden=true;el('jpeg').removeAttribute('href');
-      selected=null;water?.select(null);exportLinks(null);releaseMainLayer();
+      selected=null;water?.select(null);areas?.select(null,null);exportLinks(null);releaseMainLayer();
       el('empty').hidden=false;el('empty').querySelector('h2').textContent='Selecione um levantamento';
       el('empty').querySelector('p').textContent='Envie um ortomosaico ou escolha outra prefeitura para visualizar os mapas.';
       el('active-title').textContent='Selecione um levantamento';el('detail-name').textContent='Detalhes do levantamento';
@@ -206,13 +216,16 @@
   updateType();
   let previousFilter=el('filter').value;
   el('filter').addEventListener('change',()=>{
-    if(water&&!water.canSelect(null)){el('filter').value=previousFilter;return;}
+    if((water&&!water.canSelect(null))||(areas&&!areas.canSelect(null))){el('filter').value=previousFilter;return;}
     previousFilter=el('filter').value;load(undefined,true).catch(e=>message(e.message,true));
   });
-  el('visible').onchange=()=>layer?.setVisible(el('visible').checked);
+  el('visible').onchange=()=>{
+    if(el('visible').checked){previousRasterVisibility=null;areas?.originalShown();}
+    layer?.setVisible(el('visible').checked);
+  };
   el('opacity').oninput=()=>{el('opacity-label').textContent=`${el('opacity').value}%`;layer?.setOpacity(Number(el('opacity').value)/100);};
-  el('fit').onclick=fit;
-  el('layers-toggle').onclick=()=>{water?.close();el('layers-panel').hidden=!el('layers-panel').hidden;el('layers-toggle').setAttribute('aria-expanded',String(!el('layers-panel').hidden));};
+  el('fit').onclick=()=>{if(selected?.tipo==='rgb')areas?.showOriginal();else fit();};
+  el('layers-toggle').onclick=()=>{water?.close();areas?.close();el('layers-panel').hidden=!el('layers-panel').hidden;el('layers-toggle').setAttribute('aria-expanded',String(!el('layers-panel').hidden));};
   el('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await el('stage').requestFullscreen();map?.updateSize();fit();}catch(_){message('Tela cheia não está disponível neste navegador.',true);}};
   el('new').onclick=()=>{el('prefeitura').value=el('filter').value;el('dialog').showModal();};
   el('close').onclick=()=>{if(!uploading)el('dialog').close();};

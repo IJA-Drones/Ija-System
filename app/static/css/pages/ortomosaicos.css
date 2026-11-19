@@ -23,3 +23,37 @@
 .ortho-request-toggle{left:185px}.ortho-request-toggle[aria-pressed=true]{background:#39d6ca;color:#08292d}.ortho-water-request{width:100%;margin-top:8px}
 .ortho-export a{color:var(--o-accent);font-size:12px;margin-left:10px}.ortho-export #ortho-export-original{display:block;margin:0 0 10px}.ortho-export p{display:flex;flex-wrap:wrap;align-items:center;font-size:11px;margin:0 0 8px}.ortho-export p span{flex:1 0 100%;color:#d1dfe7;margin-bottom:3px}.ortho-export p a:first-of-type{margin-left:0}
 @media(max-width:700px){.ortho-request-toggle{left:12px;top:125px}}
+
+/* Shared measurement toolbar and saved area layers. */
+.ortho-measure-tools{position:absolute;top:75px;left:60px;right:62px;display:flex;flex-wrap:wrap;gap:8px;z-index:5}
+.ortho-measure-tools .ortho-water-toggle{position:static;white-space:nowrap}
+.ortho-area-card{border:1px solid #5b7480;border-radius:10px;padding:12px;margin:10px 0}
+.ortho-area-card label,.ortho-area-isolate{display:flex;gap:8px;align-items:center}
+.ortho-area-card input,.ortho-area-isolate input{width:auto!important}
+.ortho-area-card p{font-size:13px;margin:8px 0}
+.ortho-area-card>div{display:flex;gap:6px;flex-wrap:wrap}
+.ortho-area-card button{font-size:12px;padding:6px 8px}
+#ortho-area-fields{display:grid;gap:10px;border:0;padding:0;min-width:0}
+#ortho-area-result{font-weight:700}
+#ortho-area-drawing{flex-wrap:wrap;z-index:8}
+@media(max-width:650px){.ortho-measure-tools{left:12px;right:55px;top:75px}.ortho-measure-tools .ortho-water-toggle{font-size:12px;padding:8px}#ortho-area-panel{top:170px}#ortho-area-drawing{top:170px}}
+
+.ortho-water-panel{z-index:6;top:125px}
+#ortho-area-save{border:0;border-radius:8px;background:var(--o-accent);color:#08292d;padding:12px;font-weight:700}
+#ortho-area-save:disabled{opacity:.45}
+.ortho-area-card button{border:1px solid #42616e;background:#19303b;color:#d8eef2;border-radius:6px}
+
+@media(max-width:650px){.ortho-measure-tools{left:60px}.ortho-water-panel{top:170px}}
+
+.ortho-area-library{border-top:1px solid var(--o-border);padding-top:14px}
+.ortho-area-library h3{font-size:14px;margin:0}
+#ortho-area-library-list{max-height:220px;overflow:auto;display:grid;gap:7px;margin:10px 0;font-size:12px}
+.ortho-area-shortcut{background:#19303b;color:#edf5f8;border:1px solid #42616e;border-radius:8px;padding:10px;text-align:left;overflow-wrap:anywhere}
+.ortho-area-shortcut[aria-pressed=true],.ortho-area-card.selected{border-color:var(--o-accent);background:#183d42}
+.ortho-area-tabs{display:flex;gap:8px;margin:14px 0}
+.ortho-area-tabs [aria-pressed=true]{border-color:var(--o-accent);color:var(--o-accent)}
+#ortho-area-saved>button{margin-bottom:8px}
+.ortho-area-card label{overflow-wrap:anywhere}
+@media(max-width:700px){.ortho-library{overflow:auto;max-height:350px}#ortho-area-library-list{max-height:130px}.ortho-measure-tools{gap:5px}#ortho-area-panel,.ortho-water-panel{top:200px}#ortho-area-drawing{top:200px}}
+
+.ortho-library .ortho-list{flex:0 1 auto}
