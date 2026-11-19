@@ -17,7 +17,7 @@
       <label for="prefeitura_id" class="form-label">Prefeitura responsável *</label>
       <select id="prefeitura_id" name="prefeitura_id" class="form-select mb-2" required>
         <option value="">Selecione a prefeitura onde você mora</option>
-        {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if form.get('prefeitura_id') == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>{% endfor %}
+        {% for prefeitura in prefeituras|visible_municipalities %}<option value="{{ prefeitura.id }}" {% if form.get('prefeitura_id') == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>{% endfor %}
       </select>
       <p class="small text-muted">Você não precisa saber qual é a UVIS. A COVISA fará esse encaminhamento.</p>
       <div class="row g-3">

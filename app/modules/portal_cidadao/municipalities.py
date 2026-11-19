@@ -5,10 +5,13 @@ import re
 from werkzeug.exceptions import BadRequest
 
 from app.modules.vigilancia.sinan import MUNICIPALITIES
+from app.shared.municipality_visibility import HIDDEN_MUNICIPALITY_IBGES
 
 
 def public_health_municipality(config, args):
-    excluded = set(config.get("PORTAL_EXCLUDED_MUNICIPALITIES", ()))
+    excluded = HIDDEN_MUNICIPALITY_IBGES | {
+        str(code).strip() for code in config.get("PORTAL_EXCLUDED_MUNICIPALITIES", ())
+    }
     options = [
         {**item, "name": item["name"].removesuffix(" — capital")}
         for item in MUNICIPALITIES

@@ -183,6 +183,8 @@ def register_routes(bp):
         ativa = (request.args.get("ativa") or "").strip()
 
         query = apply_prefeitura_scope(Prefeitura.query, current_user, Prefeitura.id).options(selectinload(Prefeitura.usuarios))
+        from app.shared.municipality_visibility import visible_prefeitura_links
+        query = visible_prefeitura_links(query, Prefeitura.id)
 
         if q:
             term = f"%{q}%"

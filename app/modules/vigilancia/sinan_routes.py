@@ -34,6 +34,8 @@ def _access_required(view):
 
 
 def register_routes(bp):
+    from app.shared.municipality_visibility import register_municipality_filters
+    register_municipality_filters(bp)
     from .sinan_workflow_routes import register_routes as register_workflow, token
     register_workflow(bp)
 

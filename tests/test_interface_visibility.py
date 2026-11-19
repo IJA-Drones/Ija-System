@@ -148,7 +148,7 @@ def test_public_bulletin_remains_available_in_both_layouts(interface, role):
     with patch("app.modules.portal_cidadao.routes.get_infodengue_report", return_value=None) as report:
         response = interface.client.get("/portal-cidadao/boletim-dengue?municipio=2610905&doenca=zika&ano=2025")
     assert response.status_code == 200 and "Boletim de arboviroses" in response.text
-    assert "Pesqueira" in response.text and "InfoDengue" in response.text
+    assert "Pesqueira" not in response.text and "InfoDengue" in response.text
     assert report.call_args.kwargs["disease"] == "zika"
     assert report.call_args.kwargs["year"] == 2025
     assert_no_module_links(response.text)

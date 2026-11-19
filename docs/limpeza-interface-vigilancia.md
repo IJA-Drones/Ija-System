@@ -73,3 +73,36 @@ Validação desta etapa: 81 testes e 11 subtestes passaram; o guia geral foi
 renderizado e conferido visualmente. A limpeza do banco já foi efetivada em
 produção. As alterações de interface e PDFs estão no checkout local e ainda
 dependem da publicação da aplicação.
+
+## Filtros e cadastros ocultos — 19/11/2026
+
+A apresentação passa a usar a política compartilhada de
+`app/shared/municipality_visibility.py`. Pesqueira fica fora dos filtros mesmo se
+o cadastro estiver ativo ou se uma configuração antiga não declarar a exclusão.
+O catálogo original de municípios e todos os registros continuam no backend.
+
+A regra atende o boletim e o painel do cidadão, contatos públicos, configuração
+do aplicativo, filtros de UVIS dos mapas, relatórios, painéis operacionais,
+consultas, ortomosaicos e seletores de prefeitura dos demais módulos. Os cadastros
+municipais ocultos também deixam de aparecer na listagem administrativa e nas
+telas HTML de edição e configuração acessadas por links antigos.
+
+Os usuários vinculados continuam cadastrados. Na edição de uma conta, o vínculo
+existente aparece com um rótulo neutro e mantém o mesmo identificador selecionado,
+inclusive quando a prefeitura está inativa. Ocultar o nome não pode trocar ou
+zerar esse vínculo. As permissões e consultas de dados operacionais não são
+alteradas pela filtragem das opções.
+
+O aplicativo filtra também opções antigas salvas no aparelho e deixa de usar a
+prefeitura oculta como seleção atual. As filas de relatos e visitas continuam
+preservadas. O cache do service worker passa para `v16-municipios`.
+
+As instâncias locais nas portas 5001 e 5005 foram reiniciadas e conferidas por
+HTTP: painel, boletim, contatos e configuração mobile responderam 200 sem
+Pesqueira, inclusive ao abrir o link antigo com `municipio=2610905`. Esta etapa
+não executa exclusão de dados nem publica a aplicação em produção.
+
+Validação final desta revisão: 233 testes Python e 109 subtestes passaram, além
+de 19 testes JavaScript. As verificações incluem o cadastro municipal ainda ativo,
+configuração ausente ou antiga, links anteriores, opções salvas offline e a
+preservação do vínculo ao editar usuários de uma prefeitura oculta ou inativa.

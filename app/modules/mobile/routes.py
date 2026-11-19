@@ -116,8 +116,9 @@ def register_routes(bp):
 
     @bp.get("/api/mobile/config", endpoint="mobile_config")
     def mobile_config():
+        from app.modules.portal_cidadao.routes import list_public_prefeituras
         catalog = build_public_focus_catalog()
-        prefeituras = [{"id": p.id, "nome": p.nome} for p in Prefeitura.query.filter_by(ativa=True).order_by(Prefeitura.nome).all()]
+        prefeituras = [{"id": p.id, "nome": p.nome} for p in list_public_prefeituras()]
         from app.modules.portal_cidadao.telegram import bot_link
         return jsonify(prefeituras=prefeituras, catalogo=catalog, telegram=bot_link(),
                        push={"fcm": bool(current_app.config.get("FCM_SERVICE_ACCOUNT_JSON"))},

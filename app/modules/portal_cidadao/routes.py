@@ -19,13 +19,15 @@ from app.modules.portal_cidadao.institutional import OCEANO_AZUL_SUMMARY, OCEANO
 from app.modules.portal_cidadao.public_risk import get_public_risk_report
 from app.modules.portal_cidadao.municipalities import public_health_municipality
 from app.shared.interface_visibility import vigilancia_ui_enabled
+from app.shared.municipality_visibility import visible_municipalities, register_municipality_filters
 
 
 def list_public_prefeituras():
-    return Prefeitura.query.filter_by(ativa=True).order_by(Prefeitura.nome).all()
+    return visible_municipalities(Prefeitura.query.filter_by(ativa=True).order_by(Prefeitura.nome).all())
 
 
 def register_routes(bp):
+    register_municipality_filters(bp)
     @bp.post('/portal-cidadao/transcrever', endpoint='portal_azul_transcribe')
     def portal_azul_transcribe():
         from app.modules.chatbot.speech_input import reply

@@ -105,7 +105,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for prefeitura in prefeituras %}
+            {% for prefeitura in prefeituras|visible_municipalities %}
             <tr>
               <td data-label="ID" class="text-muted">{{ prefeitura.id }}</td>
               <td data-label="Prefeitura">

@@ -68,10 +68,15 @@
     me: store.get('agente_me', null),
     deviceId: store.get('device_id', null) || (() => { const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); store.set('device_id', id); return id; })(),
   };
-  const prefeituras = () => (state.config && state.config.prefeituras) || [];
+  const prefeituras = () => ((state.config && state.config.prefeituras) || []).filter((p) =>
+    !/\bpesqueira\b/i.test(String(p.nome || '').replace(/_/g, ' ')) && String(p.ibge || '') !== '2610905');
   const catalogo = () => (state.config && state.config.catalogo) || {};
   const nomePrefeitura = (id) => (prefeituras().find((p) => p.id === id) || {}).nome || '';
   const setPrefeitura = (id) => { state.prefeituraId = id; store.set('prefeitura_id', id); };
+  const validatePrefeitura = () => {
+    if (state.config && state.prefeituraId != null && !prefeituras().some((p) => p.id === state.prefeituraId)) setPrefeitura(null);
+  };
+  validatePrefeitura();
   const setAgente = (token, usuario) => {
     state.token = token; state.agente = usuario;
     if (token) { store.set('agente_token', token); store.set('agente_usuario', usuario); }
@@ -353,6 +358,7 @@
   async function loadConfig() {
     try {
       state.config = await api.get('/api/mobile/config'); state.configError = null; store.set('config', state.config);
+      validatePrefeitura();
       if (state.prefeituraId == null && prefeituras().length === 1) setPrefeitura(prefeituras()[0].id);
     } catch (e) { state.configError = e.message; }
     document.dispatchEvent(new CustomEvent('config'));

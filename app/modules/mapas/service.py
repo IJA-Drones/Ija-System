@@ -6,6 +6,7 @@ from flask import current_app
 from sqlalchemy import extract, func, or_
 
 from app.extensions import db
+from app.shared.municipality_visibility import visible_prefeitura_links
 from app.models import OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
 from app.shared.access import (
     apply_prefeitura_scope,
@@ -115,6 +116,7 @@ def build_uvis_disponiveis(user):
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
+    query = visible_prefeitura_links(query, Usuario.prefeitura_id)
     query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
     query = apply_regiao_scope(query, user, Usuario.regiao)
     return query.order_by(Usuario.nome_uvis.asc()).all()

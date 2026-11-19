@@ -129,8 +129,11 @@
             {% set prefeitura_sel = form.get('prefeitura_id', usuario.prefeitura_id or '') %}
             <select name="prefeitura_id" class="form-select {% if errors.get('prefeitura_id') %}is-invalid{% endif %}">
               <option value="">Selecione...</option>
-              {% for prefeitura in prefeituras %}
-                <option value="{{ prefeitura.id }}" {% if prefeitura_sel|string == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>
+              {% if usuario.prefeitura and not municipality_visible(usuario.prefeitura) %}
+                <option value="{{ usuario.prefeitura_id }}" {% if prefeitura_sel|string == usuario.prefeitura_id|string %}selected{% endif %}>Vínculo preservado</option>
+              {% endif %}
+              {% for prefeitura in prefeituras|visible_municipalities %}
+                <option value="{{ prefeitura.id }}" {% if prefeitura_sel|string == prefeitura.id|string %}selected{% endif %}>{{ prefeitura|municipality_label }}</option>
               {% endfor %}
             </select>
             {% if errors.get('prefeitura_id') %}

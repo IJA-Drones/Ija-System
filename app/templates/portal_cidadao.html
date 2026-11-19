@@ -309,7 +309,7 @@
                 <label for="portalPrefeitura">Prefeitura responsável</label>
                 <select class="form-select" id="portalPrefeitura" name="prefeitura_id" required>
                   <option value="">Selecione a prefeitura do local</option>
-                  {% for prefeitura in prefeituras %}
+                  {% for prefeitura in prefeituras|visible_municipalities %}
                   <option value="{{ prefeitura.id }}">{{ prefeitura.nome }}</option>
                   {% endfor %}
                 </select>

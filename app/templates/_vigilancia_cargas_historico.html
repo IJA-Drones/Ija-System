@@ -4,7 +4,7 @@
     <label for="historico-prefeitura" class="form-label">Prefeitura</label>
     <select class="form-select" id="historico-prefeitura" name="prefeitura_id" required>
       <option value="">Selecione uma prefeitura</option>
-      {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
+      {% for prefeitura in prefeituras|visible_municipalities %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
     </select>
     <button class="btn btn-outline-primary btn-sm" type="submit">Consultar histórico</button>
   </form>

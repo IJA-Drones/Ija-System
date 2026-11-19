@@ -345,11 +345,13 @@ class SimplePagination:
 
 
 def build_uvis_disponiveis(user, regiao: str | None = None):
+    from app.shared.municipality_visibility import visible_prefeitura_links
     user_type = getattr(user, "tipo_usuario", None)
     if not route_access(user, user_type in RELATORIOS_COLETA_IMAGENS_TYPES):
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
+    query = visible_prefeitura_links(query, Usuario.prefeitura_id)
     query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
     if user_type == "uvis":
         query = query.filter(Usuario.id == user.id)

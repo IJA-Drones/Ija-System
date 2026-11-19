@@ -7,13 +7,13 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../app/static/js/app-movel.js'), 'utf8');
 const tick = () => new Promise(setImmediate);
 
-async function mobile(hash = '', queued = []) {
+async function mobile(hash = '', queued = [], extra = {}) {
   const listeners = new Map(), requests = [], rows = structuredClone(queued);
   const element = () => ({innerHTML: '', hidden: true, textContent: '', dataset: {},
     addEventListener() {}, querySelector: () => element(), querySelectorAll: () => []});
   const app = element(); app.dataset.vigilanciaEnabled = 'false';
-  const config = {prefeituras: [{id: 1, nome: 'Município Exemplo'}], catalogo: {}};
-  const stored = new Map(Object.entries({config, prefeitura_id: 1, agente_token: 'cached-token',
+  const config = {prefeituras: extra.prefeituras || [{id: 1, nome: 'Município Exemplo'}], catalogo: {}};
+  const stored = new Map(Object.entries({config, prefeitura_id: extra.prefeituraId ?? 1, agente_token: 'cached-token',
     agente_usuario: {id: 5, tipo: 'agente_endemias'}, device_id: 'test-device'})
     .map(([key, value]) => [key, JSON.stringify(value)]));
   const on = (name, handler) => listeners.set(name, [...(listeners.get(name) || []), handler]);
@@ -42,11 +42,22 @@ async function mobile(hash = '', queued = []) {
     window: {indexedDB, location, scrollTo() {}, addEventListener: on, removeEventListener: off},
     fetch: async (url, options = {}) => {
       requests.push({url, method: options.method || 'GET'});
+      if (extra.offline) throw new Error('offline');
       return {ok: true, json: async () => url === '/api/mobile/config' ? config : {protocolo: 'DEMO-001'}};
     }};
   vm.runInNewContext(source, context);
   await tick(); await tick();
-  return {app, requests, rows};
+  return {app, requests, rows, stored};
+}
+
+for (const offline of [false, true]) {
+  test(`mobile hides closed municipality from cached selectors (offline=${offline})`, async () => {
+    const page = await mobile('', [], {offline, prefeituraId: 14, prefeituras: [
+      {id: 14, nome: 'Prefeitura de Pesqueira'}, {id: 40, nome: 'Prefeitura de Arcoverde'}]});
+    assert.doesNotMatch(page.app.innerHTML, /Pesqueira|value="14"/);
+    assert.match(page.app.innerHTML, /Arcoverde/);
+    assert.notEqual(JSON.parse(page.stored.get('prefeitura_id')), 14);
+  });
 }
 
 for (const hash of ['', '#agente', '#agente/visita/0', '#caso-suspeito']) {

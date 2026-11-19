@@ -130,17 +130,17 @@ class PageLinks(HTMLParser):
 
 
 class PublicHealthMunicipalityTests(unittest.TestCase):
-    def test_all_condomar_municipalities_are_available_without_database_mapping(self):
-        selected, options, config = public_health_municipality({}, MultiDict({"municipio": "2610905"}))
-        self.assertEqual(len([item for item in options if item["region"] == "condomar"]), 15)
-        self.assertEqual(selected["name"], "Pesqueira")
-        self.assertEqual(config["INFODENGUE_GEOCODE"], "2610905")
-        self.assertEqual(config["INFODENGUE_CITY"], "Pesqueira")
+    def test_active_condomar_municipalities_are_available_without_database_mapping(self):
+        selected, options, config = public_health_municipality({}, MultiDict({"municipio": "2601201"}))
+        self.assertEqual(len([item for item in options if item["region"] == "condomar"]), 14)
+        self.assertEqual(selected["name"], "Arcoverde")
+        self.assertEqual(config["INFODENGUE_GEOCODE"], "2601201")
+        self.assertEqual(config["INFODENGUE_CITY"], "Arcoverde")
         self.assertNotIn("DATABASE_URL", config)
 
     def test_default_municipality_can_be_changed_by_public_filter(self):
         config = {"INFODENGUE_GEOCODE": "2610905", "INFODENGUE_CITY": "Pesqueira"}
-        self.assertEqual(public_health_municipality(config, MultiDict())[0]["ibge"], "2610905")
+        self.assertEqual(public_health_municipality(config, MultiDict())[0]["ibge"], "3550308")
         selected = public_health_municipality(config, MultiDict({"municipio": "2601201"}))[0]
         self.assertEqual(selected["name"], "Arcoverde")
         self.assertEqual(config["INFODENGUE_GEOCODE"], "2610905")
@@ -156,12 +156,12 @@ class PublicHealthMunicipalityTests(unittest.TestCase):
         )
         self.assertEqual(selected["name"], "Recife")
         self.assertEqual(selected["uf"], "PE")
-        self.assertEqual(len(options), 17)
+        self.assertEqual(len(options), 16)
 
     def test_region_filter_lists_only_condomar_and_accepts_switching_from_sao_paulo(self):
         for previous in ("3550308", "2610905"):
             selected, options, config = public_health_municipality({}, MultiDict({"regiao": "condomar", "municipio": previous}))
-            self.assertEqual(len(options), 15)
+            self.assertEqual(len(options), 14)
             self.assertTrue(all(item["region"] == "condomar" for item in options))
             self.assertEqual(selected["region"], "condomar")
             self.assertEqual(config["INFODENGUE_GEOCODE"], selected["ibge"])
@@ -301,13 +301,13 @@ class PortalHealthPageTests(unittest.TestCase):
         with patch("app.modules.portal_cidadao.routes.list_public_prefeituras", return_value=[]), patch(
             "app.modules.portal_cidadao.routes.get_infodengue_alert", side_effect=alert_for_city,
         ) as get, patch("app.modules.portal_cidadao.routes.get_public_risk_report", return_value=None):
-            response = self.app.test_client().get("/portal-cidadao?municipio=2610905")
+            response = self.app.test_client().get("/portal-cidadao?municipio=2601201")
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(get.call_args.kwargs["config"]["INFODENGUE_GEOCODE"], "2610905")
-        self.assertIn("Dengue em Pesqueira", html)
-        self.assertIn('<option value="2610905" selected>', html)
-        self.assertIn('href="/portal-cidadao/boletim-dengue?municipio=2610905"', html)
+        self.assertEqual(get.call_args.kwargs["config"]["INFODENGUE_GEOCODE"], "2601201")
+        self.assertIn("Dengue em Arcoverde", html)
+        self.assertIn('<option value="2601201" selected>', html)
+        self.assertIn('href="/portal-cidadao/boletim-dengue?municipio=2601201"', html)
         self.assertIn("SES-PE", html)
         self.assertNotIn("COVISA/SMS-SP", html)
 

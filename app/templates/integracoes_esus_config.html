@@ -7,7 +7,7 @@
   <p class="text-muted">Conector das visitas domiciliares de ACS/ACE e do cadastro de domicílios. A senha fica cifrada no banco e nunca é exibida; a conexão com o PEC é somente leitura.</p>
   {% with messages = get_flashed_messages(with_categories=true) %}{% for category, text in messages %}<div class="alert alert-{{ category }}" role="alert">{{ text }}</div>{% endfor %}{% endwith %}
   {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
-  <form method="get" class="mb-3"><label class="form-label fw-bold">Prefeitura<select class="form-select" name="prefeitura_id" onchange="this.form.submit()">{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura and prefeitura.id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></form>
+  <form method="get" class="mb-3"><label class="form-label fw-bold">Prefeitura<select class="form-select" name="prefeitura_id" onchange="this.form.submit()">{% for item in prefeituras|visible_municipalities %}<option value="{{ item.id }}" {% if prefeitura and prefeitura.id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></form>
   {% if prefeitura %}
   <section class="card p-4 mb-4">
     <h2 class="h5">Conexão</h2>

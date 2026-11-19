@@ -1,4 +1,6 @@
 {% macro render_chip_select_values(name, options, selected_values, placeholder='Selecione...', select_class='form-select form-select-sm') -%}
+  {% set options = options|visible_municipalities %}
+  {% set selected_values = selected_values|visible_municipalities %}
   <div class="chip-multi-select" data-chip-multi-select data-name="{{ name }}">
     <select class="{{ select_class }}" data-chip-select>
       <option value="">{{ placeholder }}</option>
@@ -22,6 +24,8 @@
 {%- endmacro %}
 
 {% macro render_chip_select_pairs(name, options, selected_values, placeholder='Selecione...', select_class='form-select form-select-sm') -%}
+  {% set options = options|visible_municipalities %}
+  {% set selected_values = selected_values|visible_municipalities %}
   <div class="chip-multi-select" data-chip-multi-select data-name="{{ name }}">
     <select class="{{ select_class }}" data-chip-select>
       <option value="">{{ placeholder }}</option>

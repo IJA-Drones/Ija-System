@@ -40,7 +40,7 @@
             <label for="uvisFilter" class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
             <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               <option value="">Todas as Unidades</option>
-              {% for id, nome_uvis in uvis_disponiveis %}
+              {% for id, nome_uvis in uvis_disponiveis|visible_municipalities %}
               <option value="{{ id }}">{{ nome_uvis }}</option>
               {% endfor %}
             </select>

@@ -48,6 +48,29 @@ def interface_permission_catalog(data):
 
 
 def register_interface_visibility(bp):
+    from app.shared.municipality_visibility import register_municipality_filters
+    register_municipality_filters(bp)
+
+    @bp.before_app_request
+    def hide_archived_municipality_details():
+        fields = {
+            "main.admin_prefeitura_editar": "id",
+            "main.configuracoes_documentos": "prefeitura_id",
+            "main.configuracoes_contatos": "prefeitura_id",
+            "main.configuracoes_email": "prefeitura_id",
+        }
+        field = fields.get(request.endpoint)
+        if field:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return
+            from app.extensions import db
+            from app.models import Prefeitura
+            from app.shared.municipality_visibility import municipality_visible
+            city = db.session.get(Prefeitura, request.view_args.get(field))
+            if city is not None and not municipality_visible(city):
+                abort(404)
+
     @bp.before_app_request
     def hide_retired_screens():
         if vigilancia_ui_enabled():

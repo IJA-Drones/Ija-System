@@ -258,9 +258,11 @@ def validar_limite_diario_solicitacoes_uvis(uvis_id, data_referencia=None, exclu
 
 
 def build_novo_cadastro_context(user, google_maps_key):
+    from app.shared.municipality_visibility import visible_prefeitura_links
     uvis_lista = []
     if user.tipo_usuario in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
         query = Usuario.query.filter_by(tipo_usuario="uvis")
+        query = visible_prefeitura_links(query, Usuario.prefeitura_id)
         query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
         uvis_lista = query.order_by(Usuario.nome_uvis.asc()).all()
 

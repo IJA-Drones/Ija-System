@@ -16,7 +16,7 @@
     <label for="prefeitura-selector" class="form-label fw-semibold">Prefeitura</label>
     <select id="prefeitura-selector" class="form-select" aria-describedby="prefeitura-help">
       <option value="">Selecione uma prefeitura</option>
-      {% for item in prefeituras %}
+      {% for item in prefeituras|visible_municipalities %}
       <option value="{{ url_for('main.configuracoes_documentos', prefeitura_id=item.id) }}" {% if prefeitura and prefeitura.id == item.id %}selected{% endif %}>{{ item.nome }}{% if not item.ativa %} (inativa){% endif %}</option>
       {% endfor %}
     </select>
