@@ -24,6 +24,7 @@ def dedicated_endpoint_allowed(endpoint):
     return bool(endpoint and (
         endpoint in ORTHOMOSAIC_ENDPOINTS
         or endpoint in {"static", "main.inicio", "main.acessos_dashboard", "main.serve_sw",
+                       "main.service_worker",
                        "main.login", "main.logout", "main.treinamentos", "main.treinamentos_arquivo"}
         or endpoint.startswith(("auth.", "session_security."))
     ))
