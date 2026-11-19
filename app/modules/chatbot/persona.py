@@ -1,10 +1,25 @@
 """Server-selected assistant identities; branding never grants data access."""
 import re
 from urllib.parse import urlsplit
-from flask import has_request_context, request
+from flask import current_app, has_request_context, request
+from werkzeug.exceptions import HTTPException
+from app.shared.financeiro_navigation import is_financeiro_endpoint
 
 
 def is_agro(user, page=None, channel=''):
+    # Financial screens retain legacy /agro/ URLs. Resolve their endpoint before
+    # selecting a persona, including the page sent to the shared chat API.
+    if has_request_context():
+        endpoint = request.endpoint if page is None else None
+        if page is not None:
+            parsed = urlsplit(page)
+            if not parsed.scheme and not parsed.netloc:
+                try:
+                    endpoint, _ = current_app.url_map.bind_to_environ(request.environ).match(parsed.path, method='GET')
+                except HTTPException:
+                    pass
+        if is_financeiro_endpoint(endpoint):
+            return False
     if getattr(user, 'tipo_usuario', '') == 'piloto_agro':
         return True
     if channel.startswith('agro_'):
