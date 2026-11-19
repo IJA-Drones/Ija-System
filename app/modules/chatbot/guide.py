@@ -2,7 +2,7 @@
 from flask import url_for
 from werkzeug.routing import BuildError
 
-from app.modules.chatbot import exports, operations, search, voice
+from app.modules.chatbot import exports, operations, search, voice, finance_help
 from app.modules.chatbot.azul import help_context
 from app.modules.gestao_ti.permissions import can_access_endpoint
 
@@ -63,7 +63,10 @@ def build(user, page):
     add(*RECORDED_STEPS['start'],
         '[data-intent="access_overview"]', links[:6],
         'O que posso acessar no sistema?', 'access_overview')
-    if current and current['modulo'] in WORKFLOWS:
+    financial = finance_help.current_topic(context, page)
+    if financial:
+        add(financial['title'], financial['answer'], 'screen-list', question=financial['question'])
+    elif current and current['modulo'] in WORKFLOWS:
         title, body = WORKFLOWS[current['modulo']]
         add(title, body, 'screen-list', question='Como usar esta tela?')
     elif current and current['modulo'].startswith('financeiro.'):
@@ -75,6 +78,13 @@ def build(user, page):
     else:
         add(*RECORDED_STEPS['screen'],
             '[data-question="Como usar esta tela?"]', question='Como usar esta tela?')
+    for item in finance_help.suggestions(context, page):
+        # Suggestions reuse the reviewed answers instead of maintaining another manual.
+        if financial and item['id'] == financial['id']:
+            steps[-1]['financial'] = True
+            continue
+        add(item['title'], item['answer'], question=item['question'])
+        steps[-1]['financial'] = True
     add(*RECORDED_STEPS['review'], 'screen-form')
     if search.allowed(user):
         add('Busque solicitações em uma frase',

@@ -110,7 +110,7 @@
             <input type="text" name="documento_referencia" value="{{ form.get('documento_referencia', '') }}" class="form-control" placeholder="NF, recibo, contrato...">
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Valor *</label>
+            <label id="valor-parcelamento-label" class="form-label fw-bold small text-muted">{{ ("Valor de cada parcela" if form.get("modo_parcelamento") == "repetir" else "Valor total") if modo == "novo" else "Valor" }} *</label>
             <input type="text" name="valor" value="{{ form.get('valor', '') }}" class="form-control {% if errors.get('valor') %}is-invalid{% endif %}" placeholder="R$ 0,00">
             {% if errors.get('valor') %}<div class="invalid-feedback">{{ errors.get('valor') }}</div>{% endif %}
           </div>
@@ -129,8 +129,9 @@
               <label class="form-label fw-bold small text-muted">Parcelas *</label>
               <input id="quantidade_parcelas" type="number" min="1" max="120" name="quantidade_parcelas" value="{{ form.get('quantidade_parcelas', '1') }}" class="form-control {% if errors.get('quantidade_parcelas') %}is-invalid{% endif %}">
               {% if errors.get('quantidade_parcelas') %}<div class="invalid-feedback">{{ errors.get('quantidade_parcelas') }}</div>{% endif %}
-              <small class="text-muted d-block mt-2">Se for maior que 1, o sistema divide o valor total em parcelas mensais a partir da data prevista.</small>
+              <small class="text-muted d-block mt-2">As parcelas serão mensais, a partir da data prevista.</small>
             </div>
+            {% include '_agro_modo_parcelamento.html' %}
           {% elif lancamento and lancamento.parcela_total > 1 %}
             <div class="col-md-3">
               <label class="form-label fw-bold small text-muted">Parcela</label>
@@ -205,6 +206,7 @@
 {% endblock %}
 
 {% block scripts %}
+  {% if modo == 'novo' %}<script src="{{ url_for('static', filename='js/agro-parcelamento.js', v='20261118-1') }}" defer></script>{% endif %}
   {{ super() }}
   <script id="agro-subcategoria-options" type="application/json">{{ subcategoria_options|tojson }}</script>
   <script id="agro-clientes-json" type="application/json">{{ clientes_json|tojson }}</script>

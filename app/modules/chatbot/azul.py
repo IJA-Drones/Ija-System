@@ -20,7 +20,7 @@ from werkzeug.routing import BuildError
 
 from app.modules.gestao_ti.catalog import CATALOG, PERMISSION_CODES
 from app.modules.gestao_ti.permissions import active_configuration, has_permission, can_access_endpoint, profile_code
-from app.modules.chatbot import service
+from app.modules.chatbot import service, finance_help
 
 CHANNELS = {
     'admin': (service.ADMIN_FAQ, service.build_admin_chatbot_response),
@@ -98,6 +98,13 @@ redirecione com gentileza e um exemplo útil, sem sermão nem repetir a apresent
 
 def help_material(channel, context):
     """Use the UVIS screen guide for unit accounts, including custom TI profiles."""
+    financial = finance_help.available(context)
+    if financial:
+        base_faq, base_fallback = CHANNELS[channel]
+        def financial_fallback(message):
+            item = finance_help.match(message, context)
+            return ({'answer': item['answer']}, 200) if item else base_fallback(message)
+        return list(base_faq) + financial, financial_fallback
     if context['perfil'] not in UVIS_SCOPES:
         return CHANNELS[channel]
     faq = list(service.UVIS_FAQ)
@@ -121,6 +128,8 @@ def help_context(user, page):
     from app.shared.interface_visibility import interface_module_visible
     from app.modules.agro.service import can_access_agro_panel, can_edit_agro_panel
     from app.modules.admin_dashboard.service import can_access_admin_panel
+    from app.shared.access import can_access_financeiro_panel, can_manage_financeiro_settings
+    from app.modules.agro.service import can_edit_agro_finance_panel
     from app.modules.gestao_ti.navigation import SCREENS, _screens_for
     configured = active_configuration(user) is not None
     # Only verified guards are mapped in legacy mode; do not infer capabilities
@@ -145,10 +154,18 @@ def help_context(user, page):
             if endpoint in seen:
                 continue
             seen.add(endpoint)
-            if not can_access_endpoint(user, 'main.' + endpoint, legacy=legacy.get(endpoint, False)):
+            params = {'empresa_slug': 'ija'} if endpoint.startswith('financeiro_empresa_') else {}
+            legacy_allowed = legacy.get(endpoint, False)
+            if key.startswith('financeiro.'):
+                legacy_allowed = can_access_financeiro_panel(user)
+                if key == 'financeiro.configuracoes':
+                    legacy_allowed = can_manage_financeiro_settings(user)
+                elif endpoint in {'agro_financeiro_entrada_novo', 'agro_financeiro_saida_novo', 'agro_banco_novo', 'financeiro_empresa_cliente_novo'}:
+                    legacy_allowed = legacy_allowed and can_edit_agro_finance_panel(user)
+            if not can_access_endpoint(user, 'main.' + endpoint, args=params, legacy=legacy_allowed):
                 continue
             try:
-                url = url_for('main.' + endpoint)
+                url = url_for('main.' + endpoint, **params)
             except BuildError:
                 continue
             links.append({'label': label, 'url': url, 'modulo': key})
@@ -410,8 +427,22 @@ def reply(channel):
         result.headers['Cache-Control'] = 'private, no-store'
         return result
     faq, fallback = help_material(channel, context)
+    financial_topic = finance_help.match(message, context, page)
+    # Exact, reviewed questions and screen help work even without the provider.
+    guided_finance = financial_topic and normalized_request in {
+        service.normalize_chatbot_text(financial_topic['question']).strip(' ?!.'),
+        'como usar esta tela', 'ajuda nesta tela', 'me explique esta tela',
+    }
+    if guided_finance:
+        links = [link for link in context['atalhos'] if link['modulo'] == financial_topic['module']][:6]
+        result = jsonify(answer=financial_topic['answer'], mode='guided', links=links,
+                         profile=context['perfil'], export_preview=None, chat_key=current_key)
+        result.headers['Cache-Control'] = 'private, no-store'
+        return result
     # The model cannot create navigable URLs or add unauthorized shortcuts.
     links = relevant_links(message, context['atalhos'])
+    if not links and financial_topic:
+        links = [link for link in context['atalhos'] if link['modulo'] == financial_topic['module']][:6]
     mode = 'faq'
     answer = None
     preview = None
@@ -447,9 +478,11 @@ def reply(channel):
                 response = metering.respond(client,
                     model=settings.get('internal_model'),
                     instructions=INSTRUCTIONS + export_instructions
+                    + ('\n' + finance_help.STYLE if finance_help.available(context) else '')
                     + settings.context()
                     + ('\n' + voice.DIALOGUE_STYLE if payload.get('voice') is True else '')
                     + '\nCONTEXTO DO SERVIDOR:\n' + json.dumps(context, ensure_ascii=False)
+                    + ('\nGUIA DA TELA ATUAL:\n' + json.dumps(finance_help.current_topic(context, page), ensure_ascii=False) if finance_help.current_topic(context, page) else '')
                     + '\nMANUAL GERAL (não concede permissões):\n' + json.dumps(faq, ensure_ascii=False),
                     input=[{'role': item['role'], 'content': item['content']} for item in history]
                     + [{'role': 'user', 'content': message.strip()}],
@@ -487,7 +520,9 @@ def reply(channel):
     if answer is None:
         # Never fall back to old role claims as proof of effective permissions.
         normalized = service.normalize_chatbot_text(message)
-        if any(term in normalized for term in ('permiss', 'acesso', 'perfil', 'posso', 'consigo')):
+        if financial_topic and not any(term in normalized for term in ('permiss', 'acesso', 'perfil')):
+            answer = financial_topic['answer']
+        elif any(term in normalized for term in ('permiss', 'acesso', 'perfil', 'posso', 'consigo')):
             answer = 'Consulte os atalhos verificados abaixo. Outras ações dependem das permissões e dos vínculos do seu usuário. Para revisar seu acesso, procure o administrador.'
         else:
             answer = fallback(message)[0]['answer']

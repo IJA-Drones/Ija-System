@@ -50,3 +50,44 @@ O serviço suporta PostgreSQL e SQLite, com serialização de operações de esc
 As 14 gravações existentes e o cache temporário de áudio continuam funcionando. A escolha de outra voz/modelo pode exigir geração de respostas que não correspondam à biblioteca gravada; o cache é separado por voz e modelo. Não há geração automática de novas gravações ao salvar as configurações.
 
 As duas falas fixas de abertura e de retorno ao escopo mantêm a voz original Marin. A seleção do painel se aplica às novas gerações. O painel cobre as chamadas dos canais AZUL integrados; scripts administrativos de geração de arquivos, executados fora de uma requisição, devem ser acompanhados no provedor.
+
+
+## Orientação financeira (18/11/2026)
+
+A base revisada de ajuda está em `app/modules/chatbot/finance_help.py`. Ela reúne
+caixa, retroativos, entradas, saídas, competências, bancos/conciliação, relatórios,
+categorias, comprovantes, comercial e fornecedores. O chat, as sugestões por tela
+e o guia prático usam essa mesma fonte. Perguntas exatas dos atalhos e “Como usar
+esta tela?” recebem orientação local, inclusive sem o provedor de IA. Perguntas
+livres recebem o manual e a tela autorizada como contexto; sem IA, o guia local
+cobre os assuntos reconhecidos.
+
+Os módulos autorizados determinam o material e os atalhos oferecidos. O perfil
+`financeiro_admin` recebe configurações no acesso legado; `financeiro` não recebe
+esse atalho. Configurações da Central de TI continuam prevalecendo. Links de
+empresa usam o contexto IJA, único que atualmente contém os registros financeiros.
+
+A sala de treinamento contém cinco exercícios financeiros adicionais com registros
+fictícios: caixa, contas, bancos, competências e relatórios. Eles não escrevem no
+banco nem fazem pagamentos. O guia explica que lançar retroativos exige o caixa
+de hoje aberto e que o filtro de data do caixa não muda as datas do formulário.
+
+“Aprender” aqui significa usar o contexto da conversa e receber atualizações da
+base revisada. Não há aprendizado permanente automático, armazenamento adicional
+de mensagens, consulta de extratos ou edição financeira pelo chat. Ao mudar uma
+regra nas rotas financeiras, atualize o guia e seus testes; mensagens dos usuários
+não substituem as regras do sistema.
+
+### Ajuste do saldo inicial do caixa (18/11/2026)
+
+No Caixa Diário, após selecionar um dia já aberto anteriormente, o financeiro admin
+pode usar **Ajustes do saldo inicial → Corrigir saldo inicial deste dia**. Informe o
+novo saldo em formato brasileiro e o motivo obrigatório. Perfis configurados pela
+Central TI precisam de administração das configurações financeiras e operação do
+caixa. O histórico permanente guarda data, usuário, motivo e valores anterior/novo
+na mesma transação da correção. A tela rejeita um envio com saldo original desatualizado.
+
+O ajuste recalcula o fechamento do dia, mantendo o status aberto/fechado e os
+lançamentos. Não propaga alterações aos saldos iniciais de dias seguintes. A tarifa
+ou despesa deve ser registrada como saída na data correta; corrigir o saldo não
+substitui esse registro. A Azul explica o procedimento, mas não executa o ajuste.

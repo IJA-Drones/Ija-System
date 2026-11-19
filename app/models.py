@@ -2116,6 +2116,20 @@ class FinanceiroAgroCaixaDiario(db.Model):
         return FinanceiroAgro._decimal_or_zero(self.saldo_fechamento)
 
 
+class FinanceiroAgroCaixaAjuste(db.Model):
+    """Histórico permanente de correções do saldo inicial, sem edição pela interface."""
+    __tablename__ = "financeiro_agro_caixa_ajustes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    caixa_id = db.Column(db.Integer, db.ForeignKey("financeiro_agro_caixa_diario.id"), nullable=False, index=True)
+    saldo_anterior = db.Column(db.Numeric(12, 2), nullable=False)
+    saldo_novo = db.Column(db.Numeric(12, 2), nullable=False)
+    motivo = db.Column(db.String(1000), nullable=False)
+    usuario_id = db.Column(db.Integer, nullable=False)
+    usuario_nome = db.Column(db.String(120), nullable=False)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False)
+
+
 class FinanceiroAgroCompetenciaControle(db.Model):
     __tablename__ = "financeiro_agro_competencia_controle"
 

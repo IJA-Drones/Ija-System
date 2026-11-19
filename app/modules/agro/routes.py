@@ -1,6 +1,7 @@
 from app.modules.gestao_ti.permissions import active_configuration, can_access_endpoint, has_permission, require_permission, route_access
 import os
 import math
+import re
 import calendar
 import uuid
 from datetime import date, datetime
@@ -23,6 +24,7 @@ from app.models import (
     EquipeAgro,
     FinanceiroAgro,
     FinanceiroAgroCaixaDiario,
+    FinanceiroAgroCaixaAjuste,
     FinanceiroAgroCategoria,
     FinanceiroAgroCompetenciaControle,
     FinanceiroAgroEntrada,
@@ -301,6 +303,12 @@ def _require_agro_finance_edit():
         abort(403)
 
 
+def _can_adjust_agro_caixa_balance():
+    return can_manage_agro_finance_settings(current_user) and has_permission(
+        current_user, "financeiro.caixa.operar", legacy=can_edit_agro_finance_panel(current_user)
+    )
+
+
 def _require_agro_fornecedor_edit():
     if not route_access(current_user, can_edit_agro_fornecedores(current_user)):
         abort(403)
@@ -356,8 +364,7 @@ def _enforce_agro_caixa_open_or_redirect(origem_label: str):
         caixa_status=caixa_status,
         origem=origem_label,
     )
-    if caixa_status == "nao_aberto":
-        target_url = f"{target_url}#abrir-caixa-form"
+    target_url = f"{target_url}#abrir-caixa-form"
     return redirect(target_url)
 
 
@@ -1020,9 +1027,13 @@ def _build_agro_installment_schedule(first_due_date: date, quantidade_parcelas: 
     ]
 
 
-def _split_agro_installment_values(total: Decimal, quantidade_parcelas: int) -> list[Decimal]:
+def _split_agro_installment_values(total: Decimal, quantidade_parcelas: int, modo: str = "dividir") -> list[Decimal]:
     total_value = FinanceiroAgro._decimal_or_zero(total).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     quantidade = max(int(quantidade_parcelas or 1), 1)
+    if modo == "repetir":
+        return [total_value] * quantidade
+    if modo != "dividir":
+        raise ValueError("Modo de parcelamento inválido")
     total_cents = int((total_value * 100).to_integral_value(rounding=ROUND_HALF_UP))
     base_cents, remainder = divmod(total_cents, quantidade)
     values = []
@@ -1152,6 +1163,7 @@ def _normalize_financeiro_agro_entrada_form(form_source):
         "data_recebimento": (form_source.get("data_recebimento") or "").strip(),
         "valor": (form_source.get("valor") or "").strip(),
         "quantidade_parcelas": (form_source.get("quantidade_parcelas") or "1").strip(),
+        "modo_parcelamento": (form_source.get("modo_parcelamento") or "dividir").strip(),
         "status": (form_source.get("status") or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
         "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
@@ -1175,6 +1187,7 @@ def _normalize_financeiro_agro_saida_form(form_source):
         "data_pagamento": (form_source.get("data_pagamento") or "").strip(),
         "valor": (form_source.get("valor") or "").strip(),
         "quantidade_parcelas": (form_source.get("quantidade_parcelas") or "1").strip(),
+        "modo_parcelamento": (form_source.get("modo_parcelamento") or "dividir").strip(),
         "status": (form_source.get("status") or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
         "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
@@ -2122,8 +2135,11 @@ def _validate_financeiro_agro_entrada_form(form):
     if form["data_recebimento"] and data_recebimento is None:
         errors["data_recebimento"] = "Informe uma data valida."
 
-    if valor is None or valor <= 0:
+    if valor is None or not valor.is_finite() or valor <= 0 or valor > Decimal("9999999999.99"):
         errors["valor"] = "Informe um valor monetario valido maior que zero."
+
+    if form.get("modo_parcelamento", "dividir") not in {"dividir", "repetir"}:
+        errors["modo_parcelamento"] = "Escolha como gerar as parcelas."
 
     if quantidade_parcelas is None:
         errors["quantidade_parcelas"] = "Informe uma quantidade de parcelas valida."
@@ -2153,6 +2169,7 @@ def _validate_financeiro_agro_entrada_form(form):
         "data_recebimento": data_recebimento,
         "valor": valor or Decimal("0"),
         "quantidade_parcelas": quantidade_parcelas or 1,
+        "modo_parcelamento": form.get("modo_parcelamento", "dividir"),
         "status": resolved_status,
         "competencia": competencia,
     }
@@ -2197,8 +2214,11 @@ def _validate_financeiro_agro_saida_form(form):
     if form["data_pagamento"] and data_pagamento is None:
         errors["data_pagamento"] = "Informe uma data valida."
 
-    if valor is None or valor <= 0:
+    if valor is None or not valor.is_finite() or valor <= 0 or valor > Decimal("9999999999.99"):
         errors["valor"] = "Informe um valor monetario valido maior que zero."
+
+    if form.get("modo_parcelamento", "dividir") not in {"dividir", "repetir"}:
+        errors["modo_parcelamento"] = "Escolha como gerar as parcelas."
 
     if quantidade_parcelas is None:
         errors["quantidade_parcelas"] = "Informe uma quantidade de parcelas valida."
@@ -2230,6 +2250,7 @@ def _validate_financeiro_agro_saida_form(form):
         "data_pagamento": data_pagamento,
         "valor": valor or Decimal("0"),
         "quantidade_parcelas": quantidade_parcelas or 1,
+        "modo_parcelamento": form.get("modo_parcelamento", "dividir"),
         "status": resolved_status,
         "competencia": competencia,
     }
@@ -6025,7 +6046,7 @@ def register_routes(bp):
                 form["categoria"],
                 form["subcategoria"],
             )
-            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
+            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas, payload["modo_parcelamento"])
             grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
 
             for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
@@ -6316,7 +6337,7 @@ def register_routes(bp):
                 form["categoria"],
                 form["subcategoria"],
             )
-            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
+            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas, payload["modo_parcelamento"])
             grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
 
             for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
@@ -6536,6 +6557,9 @@ def register_routes(bp):
             "agro_caixa_diario.html",
             report=report,
             data_caixa_iso=data_caixa.isoformat(),
+            can_adjust_balance=_can_adjust_agro_caixa_balance(),
+            ajustes_saldo=(FinanceiroAgroCaixaAjuste.query.filter_by(caixa_id=report["caixa"].id)
+                           .order_by(FinanceiroAgroCaixaAjuste.id.desc()).all() if report["caixa"] else []),
             is_editable=can_edit_agro_finance_panel(current_user),
         )
 
@@ -6548,17 +6572,17 @@ def register_routes(bp):
         report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
         caixa = report["caixa"]
 
-        if caixa is not None and caixa.status == FinanceiroAgroCaixaDiario.STATUS_FECHADO:
-            flash("Este caixa diario ja foi fechado e nao pode ser aberto novamente.", "warning")
+        if caixa is not None and caixa.status == FinanceiroAgroCaixaDiario.STATUS_ABERTO:
+            flash("Este caixa diario ja esta aberto.", "info")
             return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
 
-        if report["dia_anterior_pendente"]:
-            flash("Feche primeiro o caixa do dia anterior antes de abrir um novo dia.", "warning")
-            return redirect(url_for("main.agro_caixa_diario", data_caixa=report["caixa_anterior"].data_caixa.isoformat()))
-
+        reabertura = caixa is not None
         saldo_digitado = parse_currency_br(request.form.get("saldo_abertura"))
         saldo_sugerido = report["saldo_sugerido_abertura"]
-        if report["possui_fechamento_anterior"]:
+        if reabertura:
+            # Reutiliza o saldo inicial: os movimentos do dia ja entram no total.
+            saldo_abertura = caixa.saldo_abertura_decimal
+        elif report["possui_fechamento_anterior"]:
             saldo_abertura = saldo_sugerido
             if saldo_digitado is not None and saldo_digitado != saldo_sugerido:
                 flash("O saldo de abertura seguiu o fechamento do dia anterior para manter o caixa batendo.", "info")
@@ -6573,21 +6597,67 @@ def register_routes(bp):
             db.session.add(caixa)
 
         caixa.status = FinanceiroAgroCaixaDiario.STATUS_ABERTO
-        caixa.saldo_anterior = report["saldo_anterior"]
+        if not reabertura:
+            caixa.saldo_anterior = report["saldo_anterior"]
         caixa.saldo_abertura = saldo_abertura
         caixa.total_entradas = report["total_entradas"]
         caixa.total_saidas = report["total_saidas"]
         caixa.saldo_fechamento = saldo_abertura + report["total_entradas"] - report["total_saidas"]
         caixa.aberto_por_nome = _current_user_display_name()
         caixa.observacoes_abertura = (request.form.get("observacoes_abertura") or "").strip() or None
-        caixa.aberto_em = caixa.aberto_em or datetime.now()
+        caixa.aberto_em = datetime.now()
         caixa.fechado_em = None
         caixa.fechado_por_nome = None
         caixa.observacoes_fechamento = None
 
         db.session.commit()
-        flash("Caixa diario aberto com sucesso.", "success")
+        flash("Caixa diario reaberto com sucesso." if reabertura else "Caixa diario aberto com sucesso.", "success")
         return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
+
+    @bp.route("/agro/caixa/<int:caixa_id>/ajustar-saldo", methods=["POST"], endpoint="agro_caixa_ajustar_saldo")
+    @login_required
+    def agro_caixa_ajustar_saldo(caixa_id):
+        # Exige tanto administração financeira quanto operação do caixa.
+        if not _can_adjust_agro_caixa_balance():
+            abort(403)
+        caixa = (build_financeiro_agro_caixa_diario_query(current_user)
+                 .filter(FinanceiroAgroCaixaDiario.id == caixa_id)
+                 .with_for_update(of=FinanceiroAgroCaixaDiario).first_or_404())
+        destino = url_for("main.agro_caixa_diario", data_caixa=caixa.data_caixa.isoformat())
+        motivo = (request.form.get("motivo") or "").strip()
+        texto = (request.form.get("saldo_abertura") or "").strip()
+        # Formato brasileiro explícito: evita interpretar 10.50 como 1050.
+        if not re.fullmatch(r"(?:R\$\s*)?-?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?", texto):
+            flash("Informe um saldo válido, por exemplo: 1.280,00.", "warning")
+            return redirect(destino)
+        novo = parse_currency_br(texto)
+        if abs(novo) > Decimal("9999999999.99") or not motivo or len(motivo) > 1000:
+            flash("Informe um saldo dentro do limite e um motivo com até 1.000 caracteres.", "warning")
+            return redirect(destino)
+        # Impede que uma tela antiga sobrescreva um ajuste feito por outra pessoa.
+        if request.form.get("saldo_original") != str(caixa.saldo_abertura_decimal):
+            flash("O saldo foi atualizado. Confira o valor atual e tente novamente.", "warning")
+            return redirect(destino)
+        if novo == caixa.saldo_abertura_decimal:
+            flash("O saldo informado já é o saldo atual. Nenhum ajuste foi realizado.", "info")
+            return redirect(destino)
+        report = build_agro_caixa_diario_report(current_user, data_caixa=caixa.data_caixa)
+        fechamento = novo + report["total_entradas"] - report["total_saidas"]
+        if abs(fechamento) > Decimal("9999999999.99"):
+            flash("O fechamento calculado ultrapassa o limite permitido. Confira o saldo informado.", "warning")
+            return redirect(destino)
+        db.session.add(FinanceiroAgroCaixaAjuste(
+            caixa_id=caixa.id, saldo_anterior=caixa.saldo_abertura_decimal,
+            saldo_novo=novo, motivo=motivo, usuario_id=current_user.id,
+            usuario_nome=_current_user_display_name()[:120],
+        ))
+        caixa.saldo_abertura = novo
+        caixa.total_entradas = report["total_entradas"]
+        caixa.total_saidas = report["total_saidas"]
+        caixa.saldo_fechamento = fechamento
+        db.session.commit()
+        flash("Saldo inicial ajustado e histórico registrado. Os demais dias não foram alterados.", "success")
+        return redirect(destino)
 
     @bp.route("/agro/caixa/fechar", methods=["POST"], endpoint="agro_caixa_fechar")
     @login_required

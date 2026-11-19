@@ -51,6 +51,9 @@ SYSTEM = re.compile(
     r'orcament\w*|contrat\w*|clientes?|agro|pilotos?|equipes?|veiculos?|'
     r'drones?|mapas?|mapeamento|ortomosaico\w*|treinament\w*|tutorial|guia|'
     r'financeiro|lancamento\w*|empresa|talentos|curriculo\w*|filtros?|'
+    r'caixa|reabertura|reabrir|fechamento|saldos?|retroativ\w*|competencias?|conciliacao|'
+    r'bancos?|entradas?|saidas?|recebiveis|recebivel|recebimentos?|pagamentos?|despesas?|'
+    r'contas? a (?:pagar|receber)|vencimentos?|parcelas?|categorias?|subcategorias?|fornecedores?|comprovantes?|'
     r'export\w*|planilha\w*|excel|pdf|baixar|anexo\w*|fotos?|protocolo\w*|recursos?|privacidade|lgpd|filtr\w*|'
     r'deploys?|versao|regressao|commits?|linha do tempo|trechos?|codigo|logs?|auditoria|stack trace|diagnostico|corrigir|correcao|consertar|validar|investigar|testar|arquivo|periodo|agendamento|status|prazo|atencao|pendentes?|pendencia\w*|operacao\w*|erros?|falhas?|audio|microfone|ouvir|voz)\b'
 )
@@ -64,7 +67,9 @@ IDENTITY_QUERY = re.compile(r'\b(?:qual (?:e )?(?:o )?seu nome|como (?:voce|vc) 
 SOCIAL = re.compile(r'^(?:oi|ola|bom dia|boa tarde|boa noite|obrigad[oa]|valeu|tchau|ate logo)[!,. ?]*$')
 FOLLOWUP = re.compile(r'^(?:sim|nao|pode|continue|continuar|entendi|explique melhor|pode explicar melhor|'
                       r'mais detalhes|todos|todas|tudo|nenhum|nenhuma|excel|pdf|'
-                      r'so as pendentes|as pendentes|todo o periodo|todos os bairros|todos os status)[!,. ?]*$')
+                      r'so as pendentes|as pendentes|todo o periodo|todos os bairros|todos os status|'
+                      r'ja abri|ja fechei|esta aberto|esta fechado|continua bloqueado|nao aparece|'
+                      r'\d{1,2}/\d{1,2}(?:/\d{4})?)[!,. ?]*$')
 # A new question or request must not be mistaken for a bare report-filter value.
 NEW_QUESTION = re.compile(
     r'\b(?:quem|qual|quais|como|quando|onde|por que|fale|falar|conte|contar|'

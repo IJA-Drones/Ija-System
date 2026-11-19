@@ -33,6 +33,9 @@
       <button type="button" data-question="O que precisa da minha atenção hoje?" data-intent="attention_today">Minha atenção hoje <i class="bi bi-calendar-check" aria-hidden="true"></i></button>
       {% endif %}
       <button type="button" data-question="O que posso acessar no sistema?" data-intent="access_overview">Meu acesso <i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+      {% for step in azul_guide|default([]) if step.financial|default(false) %}
+      <button type="button" data-question="{{ step.question }}"><i class="bi bi-journal-check" aria-hidden="true"></i><span>{{ step.title }}</span></button>
+      {% endfor %}
       <button type="button" data-question="Como usar esta tela?">Ajuda nesta tela <i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
       <button type="button" data-guide-open>Guia prático <i class="bi bi-book" aria-hidden="true"></i></button>
       <button type="button" data-question="Não consigo editar. Como verifico minhas permissões?">Dúvidas de permissão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>

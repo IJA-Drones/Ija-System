@@ -96,7 +96,7 @@ def test_all_authorized_training_tracks_have_synthetic_records_and_bounded_narra
     with patch.object(tutorial, 'help_context', return_value={'atalhos': [{'modulo': module} for module in modules]}):
         response = client.get('/azul/tutorial?publico=sistema')
     lessons = catalog(response)
-    assert len({lesson['id'] for lesson in lessons}) == 11
+    assert len({lesson['id'] for lesson in lessons}) == len(tutorial.INTERNAL) + 1 + len(tutorial.PUBLIC)
     for lesson in lessons:
         assert 4 <= len(lesson['steps']) <= 7
         assert all(0 < len(item['title'] + '. ' + item['body']) <= voice.MAX_TEXT for item in lesson['steps'])
