@@ -5,6 +5,17 @@
   <a href="{{ url_for('main.agro_parceiros_listar') }}">← Parceiros e oportunidades</a>
   <h2 class="mt-3">{{ partner.nome if partner else 'Novo parceiro' }}</h2>
   <p class="text-muted">Potencial parceria comercial. Registre o que foi conversado e o próximo passo.</p>
+  {% if partner %}
+  <section class="card card-body mb-3" id="whatsapp">
+    <h3 class="h5"><i class="bi bi-whatsapp" aria-hidden="true"></i> Apresentação pelo WhatsApp</h3>
+    {% if whatsapp %}
+    <p class="small text-muted">A apresentação abre como rascunho no WhatsApp. Revise e edite antes de enviar. Abrir a conversa não marca o parceiro como contatado.</p>
+    <details class="mb-3"><summary>Ver mensagem de apresentação</summary><p class="mt-2 mb-0" style="white-space: pre-line">{{ whatsapp.message }}</p></details>
+    {% if not whatsapp.confirmed %}<p class="small text-muted">Usaremos o telefone comercial {{ whatsapp.number }}. A disponibilidade de WhatsApp nesse número ainda não foi confirmada.</p>{% endif %}
+    <div><a class="btn btn-success" href="{{ whatsapp.url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i> Abrir WhatsApp com apresentação</a></div>
+    {% else %}<p class="mb-0 text-muted">Informe um único número completo, com DDD, no campo WhatsApp comercial para habilitar a conversa.</p>{% endif %}
+  </section>
+  {% endif %}
   <form class="card card-body" method="post" action="{{ url_for('main.agro_parceiro_editar',partner_id=partner.id) if partner else url_for('main.agro_parceiro_novo') }}">
     {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
     {% if partner %}<input type="hidden" name="versao" value="{{ partner.versao }}">{% endif %}

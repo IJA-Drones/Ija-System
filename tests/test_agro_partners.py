@@ -210,3 +210,35 @@ def test_unknown_numbers_do_not_collide_and_contacts_stay_tenant_scoped(training
     response=training.client.post('/agro/parceiros/novo',data=dict(nome='Empresa C',cidade='Itajubá/MG',telefone='+55 35 3427 4888'))
     assert response.status_code==302
     assert ParceiroAgro.query.filter_by(prefeitura_id=15).count()==1
+
+
+def test_whatsapp_prefers_published_number_and_encodes_draft():
+    from types import SimpleNamespace
+    from urllib.parse import urlsplit, parse_qs
+    partner=SimpleNamespace(nome='Loja A & B / Café?',telefone='(35) 3427-4888',whatsapp='+55 35 99994-7135')
+    contact=partners.whatsapp_contact(partner)
+    parsed=urlsplit(contact['url'])
+    assert parsed.netloc=='wa.me' and parsed.path=='/5535999947135'
+    assert contact['confirmed']
+    assert parse_qs(parsed.query)=={'text':[contact['message']]}
+    assert 'Loja A & B / Café?' in contact['message'] and 'IJA Drones' in contact['message']
+    partner.whatsapp='não confirmado'
+    contact=partners.whatsapp_contact(partner)
+    assert not contact['confirmed'] and '/553534274888?' in contact['url']
+    partner.telefone='não confirmado'
+    assert partners.whatsapp_contact(partner) is None
+    partner.whatsapp='(35) 3427-4888 / (35) 3334-1144'
+    assert partners.whatsapp_contact(partner) is None
+
+
+def test_whatsapp_draft_links_do_not_change_followup(training):
+    training.login('dev')
+    training.client.post('/agro/parceiros/novo',data=dict(nome='Coopama',cidade='Pouso Alegre/MG',telefone='(35) 3427-4888',whatsapp='(35) 99994-7135'))
+    row=ParceiroAgro.query.one()
+    for path in ['/agro/parceiros',f'/agro/parceiros/{row.id}']:
+        response=training.client.get(path)
+        assert response.status_code==200
+        assert 'https://wa.me/5535999947135?text=' in response.text
+        assert 'target="_blank" rel="noopener noreferrer"' in response.text
+    assert row.status=='A_ABORDAR' and row.ultimo_contato is None
+    assert ParceiroAgroHistorico.query.count()==1

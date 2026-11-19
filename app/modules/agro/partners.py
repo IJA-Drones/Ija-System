@@ -4,6 +4,7 @@ import re
 from datetime import date, datetime
 from io import BytesIO
 from zoneinfo import ZoneInfo
+from urllib.parse import urlencode
 
 from flask import abort, current_app, flash, g, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
@@ -57,6 +58,28 @@ def contact_numbers(row):
         for match in phonenumbers.PhoneNumberMatcher(value or '', 'BR', leniency=phonenumbers.Leniency.POSSIBLE):
             numbers.add(phonenumbers.format_number(match.number, phonenumbers.PhoneNumberFormat.E164))
     return numbers
+
+
+def whatsapp_contact(partner):
+    """Click-to-chat draft only; never send or mark a contact as completed."""
+    numbers = contact_numbers({'whatsapp':partner.whatsapp})
+    confirmed = bool(numbers)
+    if not numbers:
+        numbers = contact_numbers({'telefone':partner.telefone})
+    # Do not silently choose a recipient when the field contains several numbers.
+    if len(numbers) != 1:
+        return None
+    number = next(iter(numbers)).lstrip('+')
+    message = (
+        f'Olá, equipe da {partner.nome}! Tudo bem?\n\n'
+        'Somos da IJA Drones, de Itajubá/MG. Trabalhamos com soluções com drones para '
+        'pulverização, monitoramento, mapeamento, geoprocessamento e distribuição de sólidos.\n\n'
+        'Gostaríamos de conversar sobre uma possível parceria para apoiar produtores de '
+        'café, milho, soja e pastagem na região, conforme as necessidades e a avaliação técnica de cada área. '
+        'Com quem podemos falar sobre parcerias e atendimento técnico?\n\nObrigado!'
+    )
+    return dict(url=f'https://wa.me/{number}?'+urlencode({'text':message}),
+                message=message, number='+'+number, confirmed=confirmed)
 
 
 def lock_partner_scope(tenant):
@@ -240,7 +263,7 @@ def register_routes(bp):
         pagination = query.order_by(ParceiroAgro.atualizado_em.desc(),ParceiroAgro.id.desc()).paginate(page=max(page or 1,1),per_page=30,error_out=False)
         return render_template('agro_parceiros.html', pagination=pagination, filters=filters,
                                statuses=STATUSES, can_create=allowed('agro_parceiro_novo'),
-                               today=now().date())
+                               today=now().date(), whatsapp_contact=whatsapp_contact)
 
     @bp.post('/agro/parceiros/importar-pesquisa', endpoint='agro_parceiros_importar')
     @login_required
@@ -284,7 +307,8 @@ def register_routes(bp):
         require('agro_parceiro_detalhe')
         partner = scoped().filter_by(id=partner_id).first_or_404()
         return render_template('agro_parceiro.html',partner=partner,statuses=STATUSES,
-                               editable=allowed('agro_parceiro_editar','POST'))
+                               editable=allowed('agro_parceiro_editar','POST'),
+                               whatsapp=whatsapp_contact(partner))
 
     @bp.post('/agro/parceiros/<int:partner_id>/atualizar',endpoint='agro_parceiro_editar')
     @login_required
