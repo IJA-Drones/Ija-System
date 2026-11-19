@@ -43,6 +43,8 @@ class CentralTiTests(unittest.TestCase):
             TESTING=True, SECRET_KEY="isolated-central-ti-tests-secret-1234567890",
             SQLALCHEMY_DATABASE_URI="sqlite:///:memory:", SQLALCHEMY_TRACK_MODIFICATIONS=False,
             CENTRAL_TI_ENABLED=True, CSRF_PROTECTION_ENABLED=False, SESSION_PROTECTION=None,
+            # Exercita também a interface arquivada; a retirada global tem suíte própria.
+            VIGILANCIA_UI_ENABLED=True,
         )
         db.init_app(self.app)
         manager = LoginManager(self.app)

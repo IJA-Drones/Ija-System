@@ -20,7 +20,7 @@
           <label for="prefeitura-id" class="form-label">Prefeitura do arquivo</label>
           <select class="form-select" id="prefeitura-id" name="prefeitura_id" required aria-describedby="prefeitura-help">
             <option value="">Selecione uma prefeitura</option>
-            {% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
+            {% for prefeitura in prefeituras|visible_municipalities %}<option value="{{ prefeitura.id }}" {% if prefeitura.id == prefeitura_id %}selected{% endif %}>{{ prefeitura.nome }}{% if not prefeitura.ativa %} (inativa){% endif %}</option>{% endfor %}
           </select>
           <p class="vigilancia-preview-help" id="prefeitura-help"><code>municipio_id</code> deve coincidir com a prefeitura selecionada.</p>
           {% elif field_mode %}

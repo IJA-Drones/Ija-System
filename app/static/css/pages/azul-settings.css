@@ -70,3 +70,11 @@ body.dark-mode .azm-tabs [role=tab][aria-selected=true] { background:#2a4060; co
 @media(max-width:1150px) { .azm-layout { grid-template-columns:180px minmax(0,1fr); gap:20px; } .azm-save { margin-left:200px; } .azm-section-head { flex-wrap:wrap; } .azm-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:700px) { .azul-management { padding:6px 0 20px; } .azm-header { align-items:flex-start; flex-wrap:wrap; gap:14px; padding-bottom:20px; } .azm-header h1 { font-size:24px; } .azm-brand { gap:10px; } .azm-brand .azul-drone { --drone-scale:.18; } .azm-layout { display:block; } .azm-tabs { position:static; flex-direction:row; overflow:auto; margin-bottom:24px; padding-bottom:6px; } .azm-tabs [role=tab] { flex-shrink:0; width:auto; padding:12px; } .azm-access { display:none; } .azm-card { padding:18px; } .azm-grid { grid-template-columns:minmax(0,1fr); gap:18px; } .azm-save { margin-left:0; padding:13px; } .azm-save p { font-size:10px; } .azm-filters { width:100%; flex-wrap:wrap; } .azm-kpis article { padding:16px 12px; } .azm-kpis strong { font-size:22px; } .azm-field input,.azm-field textarea,.azm-field select { font-size:16px; } }
 @media(prefers-reduced-motion:reduce) { .azm-switch,.azm-switch::before { transition:none; } }
+
+/* Keep the sticky actions above the floating help launcher. */
+body:has(.azul-launcher) .azm-save { bottom: calc(136px + env(safe-area-inset-bottom, 0px)); }
+body:has(.azul-launcher) .azul-management { padding-bottom: calc(156px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 700px) {
+  .azm-save { flex-wrap: wrap; }
+  .azm-save button { max-width: 100%; white-space: normal; }
+}

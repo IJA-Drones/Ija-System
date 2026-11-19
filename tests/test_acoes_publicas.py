@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 @pytest.fixture
 def app(tmp_path):
     a = Flask(__name__, template_folder=str(ROOT/'app/templates'), static_folder=str(ROOT/'app/static'))
-    a.config.update(TESTING=True, SECRET_KEY='isolated-action-tests-secret-key-32',
+    a.config.update(TESTING=True, VIGILANCIA_UI_ENABLED=True, SECRET_KEY='isolated-action-tests-secret-key-32',
         SQLALCHEMY_DATABASE_URI='sqlite:///'+str(tmp_path/'acoes.sqlite'), SESSION_PROTECTION=None,
         ACOES_PUBLICAS_ENABLED=True, ACOES_PUBLICAS_UPLOAD_DIR=str(tmp_path/'media'),
         CSRF_PROTECTION_ENABLED=True, CENTRAL_TI_ENABLED=True, CENTRAL_TI_ENFORCE_PERMISSIONS=True)

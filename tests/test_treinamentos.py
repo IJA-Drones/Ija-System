@@ -5,7 +5,7 @@ import pytest
 from app.extensions import db
 from app.models import Usuario, Prefeitura, CentralTiPerfilConfiguracao, CentralTiSelecao
 from app.modules.gestao_ti.permissions import validate_route_policy
-from app.modules.treinamentos.catalog import MATERIALS, REQUEST_VIDEOS, RESOURCE_DIR
+from app.modules.treinamentos.catalog import ARCHIVED_MATERIALS, MATERIALS, REQUEST_VIDEOS, RESOURCE_DIR
 from app.modules.treinamentos.access import POLICIES
 from app.modules.vigilancia.sinan_import import parse_cases
 from tests import test_central_ti as base
@@ -61,7 +61,7 @@ def test_learning_center_available_without_granting_other_modules(training, role
     assert "Cadastro territorial" not in response.text
     assert 'href="/vigilancia/planejamento' not in response.text
     assert 'href="/acoes-realizadas' not in response.text
-    assert training.client.get("/treinamentos/arquivos/csv-visitas").status_code == 403
+    assert training.client.get("/treinamentos/arquivos/csv-visitas").status_code == 404
     if role == "agent":
         assert training.client.get("/vigilancia/planejamento").status_code == 403
         assert training.client.get("/admin/usuarios/novo").status_code == 403
@@ -73,7 +73,7 @@ def test_agent_does_not_receive_coordination_and_import_guides(training):
     assert 'href="/vigilancia/agente?demo=true"' not in response.text
     assert 'href="/vigilancia/planejamento' not in response.text
     assert 'href="/vigilancia/sinan' not in response.text
-    assert training.client.get("/treinamentos/arquivos/manual-liraa").status_code == 403
+    assert training.client.get("/treinamentos/arquivos/manual-liraa").status_code == 404
 
 
 def test_resources_are_fixed_private_and_correctly_served(training):
@@ -88,7 +88,7 @@ def test_resources_are_fixed_private_and_correctly_served(training):
         expected = "inline" if mimetype in {"application/pdf", "video/mp4"} else "attachment"
         assert response.headers["Content-Disposition"].startswith(expected)
         response.close()
-    response = training.client.get("/treinamentos/arquivos/guia-geral?baixar=1")
+    response = training.client.get("/treinamentos/arquivos/guia-protecao-login?baixar=1")
     assert response.headers["Content-Disposition"].startswith("attachment")
     for path in ("inexistente", "kit-testes", "kit-testes-sp", "..%2F..%2F.env", "guia-geral/../../.env"):
         assert training.client.get("/treinamentos/arquivos/" + path).status_code == 404
@@ -104,7 +104,7 @@ def configure(training, role, codes):
 
 def test_every_material_has_an_explicit_valid_access_policy():
     from app.modules.gestao_ti.catalog import PERMISSION_CODES, AREA_CODES
-    assert set(POLICIES) == set(MATERIALS) | {video["id"] for video in REQUEST_VIDEOS}
+    assert set(POLICIES) == set(MATERIALS) | set(ARCHIVED_MATERIALS) | {video["id"] for video in REQUEST_VIDEOS}
     for policy in POLICIES.values():
         assert policy.area in {"prefeitura", "agro", "financeiro", "common"}
         assert all(code in PERMISSION_CODES or code.removeprefix("area:") in AREA_CODES
@@ -218,13 +218,13 @@ def test_page_and_downloads_do_not_write_database(training):
     event.listen(db.engine, "before_cursor_execute", reject_write)
     try:
         assert training.client.get("/treinamentos").status_code == 200
-        assert training.client.get("/treinamentos/arquivos/manual-liraa").status_code == 200
+        assert training.client.get("/treinamentos/arquivos/guia-protecao-login").status_code == 200
     finally:
         event.remove(db.engine, "before_cursor_execute", reject_write)
     validate_route_policy(training.app)
 
 
 def test_linked_sinan_example_is_valid():
-    content = (RESOURCE_DIR / MATERIALS["csv-sinan"][0]).read_bytes()
+    content = (RESOURCE_DIR / ARCHIVED_MATERIALS["csv-sinan"][0]).read_bytes()
     assert len(parse_cases(content, dict(disease="dengue", ibge="2610905", year=2026), True)) == 6
 

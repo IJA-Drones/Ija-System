@@ -27,7 +27,7 @@
   {% with messages = get_flashed_messages(with_categories=true) %}{% for category, text in messages %}<div class="alert alert-{{ category }}" role="alert">{{ text }}</div>{% endfor %}{% endwith %}
   {% if global_user %}
   <form method="get" class="row g-2 align-items-end mb-3">
-    <div class="col-md-4"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" onchange="this.form.submit()"><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
+    <div class="col-md-4"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" onchange="this.form.submit()"><option value="">Selecione</option>{% for item in prefeituras|visible_municipalities %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
   </form>
   {% endif %}
   {% if not cfg %}

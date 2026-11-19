@@ -13,7 +13,7 @@
 {% block title %}Configurações da AZUL | Oceano Azul{% endblock %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul-settings.css', v='20261111-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul-settings.css', v='20261118-responsive') }}">
 {% endblock %}
 {% block content %}
 <div class="azul-management azul-help" data-azul-management data-config-url="{{ url_for('main.azul_settings_api') }}" data-usage-url="{{ url_for('main.azul_usage') }}" data-config-csrf="{{ control_csrf }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">

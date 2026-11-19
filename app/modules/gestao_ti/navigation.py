@@ -1,6 +1,7 @@
 """Choose an authorized landing page without replacing the existing sidebars."""
 from flask import current_app
 from app.modules.gestao_ti.permissions import can_access_endpoint, has_permission, profile_code
+from app.shared.interface_visibility import interface_module_visible
 
 # API, file and background-job endpoints are deliberately not navigation entries.
 SCREENS = {
@@ -51,6 +52,8 @@ SCREENS = {
 
 
 def _screens_for(user, key):
+    if not interface_module_visible(key):
+        return ()
     role = profile_code(user)
     overrides = {
         'agente_endemias': {'prefeitura.vigilancia': [('vigilancia_agente', 'Meus levantamentos')]},

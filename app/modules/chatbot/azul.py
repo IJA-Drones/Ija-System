@@ -125,6 +125,7 @@ def help_material(channel, context):
 
 
 def help_context(user, page):
+    from app.shared.interface_visibility import interface_module_visible
     from app.modules.agro.service import can_access_agro_panel, can_edit_agro_panel
     from app.modules.admin_dashboard.service import can_access_admin_panel
     from app.shared.access import can_access_financeiro_panel, can_manage_financeiro_settings
@@ -168,7 +169,9 @@ def help_context(user, page):
             except BuildError:
                 continue
             links.append({'label': label, 'url': url, 'modulo': key})
-    allowed = [code for code in sorted(PERMISSION_CODES) if configured and has_permission(user, code)]
+    allowed = [code for code in sorted(PERMISSION_CODES)
+               if interface_module_visible(code.rsplit('.', 1)[0])
+               and configured and has_permission(user, code)]
     labels = {f"{area['id']}.{module[0]}": module[1]
               for area in CATALOG['catalog'] for module in area['modules']}
     capabilities = [{'modulo': labels.get(code.rsplit('.', 1)[0], code),

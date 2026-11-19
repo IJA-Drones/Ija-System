@@ -29,7 +29,7 @@
           <div class="col-md-6"><label class="form-label" for="sinan-scope">Município de notificação</label><select class="form-select" id="sinan-scope" name="scope">
             <optgroup label="São Paulo"><option value="3550308" {% if selected_ibge == '3550308' %}selected{% endif %}>São Paulo — capital / SP</option></optgroup>
             <optgroup label="CONDOMAR · 15 municípios">
-              {% for city in municipalities if city.region == 'condomar' %}<option value="{{ city.ibge }}" {% if selected_ibge == city.ibge %}selected{% endif %}>{{ city.name }} / {{ city.uf }}</option>{% endfor %}
+              {% for city in municipalities|visible_municipalities if city.region == 'condomar' %}<option value="{{ city.ibge }}" {% if selected_ibge == city.ibge %}selected{% endif %}>{{ city.name }} / {{ city.uf }}</option>{% endfor %}
             </optgroup>
           </select></div>
           <div class="col-md-3"><label class="form-label" for="sinan-year">Ano de notificação</label><select class="form-select" id="sinan-year" name="year">

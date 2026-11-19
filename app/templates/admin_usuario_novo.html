@@ -109,7 +109,7 @@
             {% set prefeitura_sel = form.get('prefeitura_id', '') %}
             <select name="prefeitura_id" class="form-select {% if errors.get('prefeitura_id') %}is-invalid{% endif %}">
               <option value="">Selecione...</option>
-              {% for prefeitura in prefeituras %}
+              {% for prefeitura in prefeituras|visible_municipalities %}
                 <option value="{{ prefeitura.id }}" {% if prefeitura_sel|string == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>
               {% endfor %}
             </select>

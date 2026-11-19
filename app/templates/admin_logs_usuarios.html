@@ -162,7 +162,7 @@
               <select id="auditPrefeitura" name="prefeitura_id" class="form-select">
                 <option value="">Todas</option>
                 <option value="sistema" {% if filters.prefeitura_id == 'sistema' %}selected{% endif %}>Sistema / sem vínculo informado</option>
-                {% for prefeitura in prefeituras %}
+                {% for prefeitura in prefeituras|visible_municipalities %}
                   <option value="{{ prefeitura.id }}" {% if filters.prefeitura_id == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>
                 {% endfor %}
               </select>

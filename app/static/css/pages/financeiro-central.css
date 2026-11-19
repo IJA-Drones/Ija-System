@@ -172,7 +172,9 @@ body.financeiro-mode .finance-navbar-brand { min-width: 0; flex-shrink: 1; }
   body.financeiro-mode .navbar-user-menu > button .bi-chevron-down { display: none; }
   .finance-hub.container-fluid { padding-left: 0.25rem; padding-right: 0.25rem; }
   .finance-hub-heading { flex-direction: column; align-items: flex-start; gap: 1rem; margin-bottom: 1.8rem; }
-  .finance-hub-actions { width: 100%; justify-content: space-between; gap: 0.6rem; }
+  .finance-hub-actions { width: 100%; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem; }
+  .finance-company-register { max-width: 100%; }
+  .finance-company-register .btn { max-width: 100%; white-space: normal; }
   .finance-count { padding: 0.55rem 0.65rem; font-size: 0.66rem; }
   .finance-company-grid { grid-template-columns: 1fr; }
   .finance-company-filters { flex-direction: column; }

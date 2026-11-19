@@ -11,6 +11,7 @@ def _dev_only():
 
 def register_core_routes(bp):
     @bp.get("/sw.js", endpoint="service_worker")
+    @bp.get("/service-worker.js", endpoint="service_worker")
     def service_worker():
         # Servido na raiz para que o escopo do service worker cubra todo o site (push em qualquer página).
         from flask import current_app, send_from_directory

@@ -2,6 +2,8 @@
 (function () {
   'use strict';
   const $app = document.getElementById('app');
+  const vigilanciaEnabled = $app.dataset.vigilanciaEnabled === 'true';
+  const visibleOutboxItem = (item) => vigilanciaEnabled || item.kind === 'foco';
   const $toast = document.getElementById('toast');
   const $dialog = document.getElementById('dialog');
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -66,10 +68,15 @@
     me: store.get('agente_me', null),
     deviceId: store.get('device_id', null) || (() => { const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); store.set('device_id', id); return id; })(),
   };
-  const prefeituras = () => (state.config && state.config.prefeituras) || [];
+  const prefeituras = () => ((state.config && state.config.prefeituras) || []).filter((p) =>
+    !/\bpesqueira\b/i.test(String(p.nome || '').replace(/_/g, ' ')) && String(p.ibge || '') !== '2610905');
   const catalogo = () => (state.config && state.config.catalogo) || {};
   const nomePrefeitura = (id) => (prefeituras().find((p) => p.id === id) || {}).nome || '';
   const setPrefeitura = (id) => { state.prefeituraId = id; store.set('prefeitura_id', id); };
+  const validatePrefeitura = () => {
+    if (state.config && state.prefeituraId != null && !prefeituras().some((p) => p.id === state.prefeituraId)) setPrefeitura(null);
+  };
+  validatePrefeitura();
   const setAgente = (token, usuario) => {
     state.token = token; state.agente = usuario;
     if (token) { store.set('agente_token', token); store.set('agente_usuario', usuario); }
@@ -132,7 +139,7 @@
   };
   const outbox = {
     items: [], flushing: false,
-    pendingCount() { return this.items.filter((i) => !i.protocolo && !i.erro).length; },
+    pendingCount() { return this.items.filter((i) => visibleOutboxItem(i) && !i.protocolo && !i.erro).length; },
     titulo(it) {
       if (it.kind === 'foco') return 'Foco: ' + (it.fields.foco || '');
       if (it.kind === 'visita') return 'Visita: imóvel ' + (it.fields.imovel_codigo || '') + ' (' + (it.fields.quarteirao || '') + ')';
@@ -179,7 +186,7 @@
       if (this.flushing) return;
       this.flushing = true;
       try {
-        for (const item of this.items.filter((i) => !i.protocolo && !i.erro)) {
+        for (const item of this.items.filter((i) => visibleOutboxItem(i) && !i.protocolo && !i.erro)) {
           try {
             item.protocolo = await this.post(item); await this.save(item);
             toast((item.kind === 'visita' ? 'Visita pendente enviada. Inspeção: ' : 'Relato pendente enviado. Protocolo: ') + item.protocolo);
@@ -330,6 +337,10 @@
   let cleanup = null;
   const go = (hash) => { if (location.hash === '#' + hash) render(); else location.hash = hash; };
   const routes = { '': home, inicio: home, 'relatar-foco': foco, 'caso-suspeito': caso, alertas, chat, agente, enviados };
+  if (!vigilanciaEnabled) {
+    delete routes['caso-suspeito'];
+    delete routes.agente;
+  }
   function render() {
     document.querySelector('[data-portal-chat]')?.dispatchEvent(new CustomEvent('azul:close'));
     const parts = location.hash.replace(/^#/, '').split('/');
@@ -347,6 +358,7 @@
   async function loadConfig() {
     try {
       state.config = await api.get('/api/mobile/config'); state.configError = null; store.set('config', state.config);
+      validatePrefeitura();
       if (state.prefeituraId == null && prefeituras().length === 1) setPrefeitura(prefeituras()[0].id);
     } catch (e) { state.configError = e.message; }
     document.dispatchEvent(new CustomEvent('config'));
@@ -373,10 +385,11 @@
           ${navigator.onLine === false ? `<div class="card offline-banner">${svg('wifiOff')} Sem internet: você pode continuar e os relatos serão enviados depois.</div>` : ''}
           ${state.configError && !state.config ? `<div class="card item" style="background:#fff4ec">${svg('wifiOff', 'icon-warn')}<div class="tx"><b style="font-size:16px">Não foi possível carregar a configuração.</b><small>${esc(state.configError)}</small></div><button class="iconbtn" type="button" id="retryConfig" aria-label="Tentar de novo">${svg('refresh', 'icon-primary')}</button></div>` : ''}
           ${card('relatar-foco', 'bug', 'Relatar foco', 'Água parada, terreno sujo, caixa-d\'água aberta…', true)}
-          ${card('caso-suspeito', 'sick', 'Relatar caso suspeito', 'Febre, manchas, dor no corpo: avise a vigilância.', true)}
+          ${vigilanciaEnabled ? card('caso-suspeito', 'sick', 'Relatar caso suspeito', 'Febre, manchas, dor no corpo: avise a vigilância.', true) : ''}
           ${card('alertas', 'campaign', 'Alertas', 'Avisos recentes do seu município.', true)}
           ${card('chat', 'chat', 'Fale com a Azul', 'Tire dúvidas sobre dengue, zika e chikungunya.', false)}
-          ${card('agente', 'badge', 'Sou agente de endemias', 'Área restrita: jornada de campo.', false)}
+          ${vigilanciaEnabled ? card('agente', 'badge', 'Sou agente de endemias', 'Área restrita: jornada de campo.', false) : ''}
+          <a class="btn outline mt" href="/portal-cidadao/boletim-dengue">${svg('campaign')} Boletim de saúde · InfoDengue</a>
           <button class="btn outline mt" type="button" data-go="enviados">${svg('history')} ${pend > 0 ? `Enviados / pendentes (${pend} pendente(s))` : 'Enviados / pendentes'}</button>
           <div class="card item mt" style="align-items:center"><div class="tx"><b>Convide sua vizinhança</b><span class="muted small">Quanto mais gente relatando, mais rápido os focos são eliminados.</span></div><button class="btn outline sm" type="button" id="btnConvite" style="width:auto">${svg('send')} Compartilhar</button></div>
           <p class="footer">Oceano Azul · IJA Drones</p>
@@ -595,7 +608,7 @@
     supported: () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
     key(base64) { const pad = '='.repeat((4 - base64.length % 4) % 4); const raw = atob((base64 + pad).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, (c) => c.charCodeAt(0)); },
     position() { return new Promise((resolve) => { if (!navigator.geolocation) return resolve({}); navigator.geolocation.getCurrentPosition((p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }), () => resolve({}), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }); }); },
-    async registration() { const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' }); await navigator.serviceWorker.ready; return reg; },
+    async registration() { const reg = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' }); await navigator.serviceWorker.ready; return reg; },
     async enable() {
       if (!this.supported()) throw new Error('Este aparelho não suporta notificações neste modo. Abra pelo ícone instalado na tela inicial.');
       const { publicKey } = await api.get('/api/push/chave-publica');
@@ -939,7 +952,7 @@
   // ------------------------------------------------------------------ Enviados / pendentes
   function enviados() {
     const draw = () => {
-      const items = outbox.items;
+      const items = outbox.items.filter(visibleOutboxItem);
       $app.innerHTML = `${bar('Enviados / pendentes', { actions: `<button class="iconbtn" type="button" id="btnSync" aria-label="Reenviar pendentes">${svg('sync')}</button>` })}
         <main class="page" style="padding-top:16px">${items.length ? items.map((it) => {
           const [icon, cls, status] = it.protocolo ? [it.erroMidia ? 'error' : 'check', it.erroMidia ? 'icon-warn' : 'icon-ok', (it.kind === 'visita' ? 'Inspeção ' : 'Protocolo ') + it.protocolo + (it.erroMidia ? ' · fotos/vídeos não enviados: ' + it.erroMidia : '')]
@@ -954,7 +967,7 @@
 
   // ------------------------------------------------------------------ inicialização
   (async () => {
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js', { scope: '/' }).catch(() => {});
     await outbox.init();
     render();
     loadConfig();

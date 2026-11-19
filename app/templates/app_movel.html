@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>IJA Vigilância</title>
-  <meta name="description" content="Relate focos do mosquito, casos suspeitos e receba alertas da vigilância em saúde do seu município.">
+  <meta name="description" content="Relate focos do mosquito, consulte informações públicas e receba alertas do seu município.">
   <meta name="theme-color" content="#061827">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="IJA Vigilância">
   <meta name="application-name" content="IJA Vigilância">
   <meta name="csrf-token" content="{{ csrf }}">
-  <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json', v='20261022-m') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest-portal.json' if vigilancia_ui_enabled else 'manifest-cidadao.json', v='20261118-publico') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
   <link rel="icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
   <script>
@@ -33,11 +33,11 @@
 <body>
   {% from '_azul_drone.html' import drone %}
   <template id="mobileAzulMascot">{{ drone('azul-drone-large') }}</template>
-  <div id="app" class="app"></div>
+  <div id="app" class="app" data-vigilancia-enabled="{{ 'true' if vigilancia_ui_enabled else 'false' }}"></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <dialog id="dialog" class="dialog"></dialog>
   {% include '_portal_chatbot.html' %}
   <script src="{{ url_for('static', filename='js/compartilhar.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/app-movel.js', v='20261106-2') }}"></script>
+  <script src="{{ url_for('static', filename='js/app-movel.js', v='20261119-municipios') }}"></script>
 </body>
 </html>

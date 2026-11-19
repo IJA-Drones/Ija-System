@@ -20,7 +20,7 @@
     {% if prefeitura_id %}<a class="btn btn-outline-secondary btn-sm" id="ag-export" href="#"><i class="bi bi-download"></i> Exportar CSV</a>{% endif %}
   </header>
   <form method="get" class="row g-2 align-items-end mb-3" id="ag-filtros">
-    {% if global_user %}<div class="col-md-3"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
+    {% if global_user %}<div class="col-md-3"><label class="form-label">Prefeitura<select class="form-select" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras|visible_municipalities %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label></div>
     {% else %}<input type="hidden" name="prefeitura_id" value="{{ prefeitura_id }}">{% endif %}
     <div class="col-6 col-md-2"><label class="form-label">De<input class="form-control" type="date" name="de" value="{{ request.args.get('de', '') }}"></label></div>
     <div class="col-6 col-md-2"><label class="form-label">Até<input class="form-control" type="date" name="ate" value="{{ request.args.get('ate', dia.isoformat()) }}"></label></div>

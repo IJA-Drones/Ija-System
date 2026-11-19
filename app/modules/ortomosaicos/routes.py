@@ -37,6 +37,8 @@ def get_record(oid):
 
 
 def register_routes(bp):
+    from app.shared.municipality_visibility import register_municipality_filters
+    register_municipality_filters(bp)
     register_dedicated_security(bp)
     from . import water, uploads
     uploads.register_routes(bp, restricted)

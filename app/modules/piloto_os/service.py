@@ -595,8 +595,9 @@ def build_piloto_os_historico_context(user, args):
     filtros = get_os_history_filters(args)
     query = apply_os_history_filters(query, filtros)
 
+    from app.shared.municipality_visibility import visible_prefeitura_links
     unidades_select = (
-        apply_prefeitura_scope(Usuario.query, user, Usuario.prefeitura_id)
+        visible_prefeitura_links(apply_prefeitura_scope(Usuario.query, user, Usuario.prefeitura_id), Usuario.prefeitura_id)
         .join(Solicitacao, Solicitacao.usuario_id == Usuario.id)
         .filter(equipes_filter, Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
         .distinct()

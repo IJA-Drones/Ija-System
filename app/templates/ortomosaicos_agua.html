@@ -1,5 +1,5 @@
 <section id="ortho-water-panel" class="ortho-water-panel" aria-label="Estimativa de água" hidden>
-  <div class="ortho-water-head"><div><span class="ortho-eyebrow">VIGILÂNCIA EM CAMPO</span><h2>Volume de água</h2></div><button id="ortho-water-close" type="button" aria-label="Fechar estimativa">×</button></div>
+  <div class="ortho-water-head"><div><span class="ortho-eyebrow">{{ 'VIGILÂNCIA EM CAMPO' if vigilancia_ui_enabled else 'MEDIÇÕES EM CAMPO' }}</span><h2>Volume de água</h2></div><button id="ortho-water-close" type="button" aria-label="Fechar estimativa">×</button></div>
   <p class="ortho-muted">Marque o recipiente e informe as medidas. O DEM não determina a profundidade da água.</p>
   <form id="ortho-water-form">
     <fieldset id="ortho-water-fields">

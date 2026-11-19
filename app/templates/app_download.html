@@ -34,9 +34,9 @@
 <main class="container py-3" style="max-width:1080px">
   <section class="app-dl-hero">
     <div style="flex:1 1 420px">
-      <div class="app-dl-kicker"><i class="bi bi-phone" aria-hidden="true"></i> Aplicativo do cidadão e do agente</div>
+      <div class="app-dl-kicker"><i class="bi bi-phone" aria-hidden="true"></i> Aplicativo {{ 'do cidadão e do agente' if vigilancia_ui_enabled else 'do cidadão' }}</div>
       <h1>IJA Vigilância no seu celular</h1>
-      <p>Relate focos do mosquito com foto e localização, registre casos suspeitos, receba alertas da vigilância e, se você é agente de endemias, registre suas visitas em campo. Funciona sem internet e envia tudo quando a conexão voltar.</p>
+      <p>Relate focos do mosquito com foto e localização, receba alertas e converse com a Azul.{% if vigilancia_ui_enabled %} Registre casos suspeitos e, se você é agente de endemias, registre suas visitas em campo.{% endif %} Funciona sem internet e envia tudo quando a conexão voltar.</p>
       <div class="app-dl-chips"><span class="app-dl-chip"><i class="bi bi-android2"></i> Android</span><span class="app-dl-chip"><i class="bi bi-apple"></i> iPhone</span><span class="app-dl-chip">Mesmo aplicativo nos dois</span><span class="app-dl-chip">Versão {{ versao }}</span></div>
     </div>
     <div class="app-dl-qrbox"><img src="{{ url_for('main.app_qr') }}" alt="QR Code desta página"><small><strong>Escaneie com o celular</strong><br>abre direto o passo certo para o seu aparelho</small></div>
@@ -44,7 +44,7 @@
 
   <section class="app-dl-facts" aria-label="Um aplicativo, dois sistemas">
     <div class="app-dl-fact"><b>Um só aplicativo</b><span>Desenvolvido em Flutter: um único código é compilado para Android e para iPhone.</span></div>
-    <div class="app-dl-fact"><b>Mesmas telas e funções</b><span>Relatos, alertas, assistente Azul e área do agente são idênticos nos dois sistemas.</span></div>
+    <div class="app-dl-fact"><b>Mesmas telas e funções</b><span>Relatos, alertas e assistente Azul estão disponíveis nos dois sistemas.{% if vigilancia_ui_enabled %} A área do agente também está disponível.{% endif %}</span></div>
     <div class="app-dl-fact"><b>Mesmos dados</b><span>O que é registrado em qualquer aparelho chega ao mesmo sistema da vigilância, em tempo real.</span></div>
     <div class="app-dl-fact"><b>Atualizações juntas</b><span>Cada nova versão sai para Android e iPhone ao mesmo tempo, com a mesma numeração.</span></div>
   </section>
@@ -97,7 +97,9 @@
       <thead><tr><th>Função</th><th><i class="bi bi-android2"></i> Android</th><th><i class="bi bi-apple"></i> iPhone</th></tr></thead>
       <tbody>
         {% for f in ['Relatar foco com fotos, GPS e endereço preenchido pela localização', 'Relatar caso suspeito', 'Funciona sem internet e envia depois, com protocolo', 'Alertas da vigilância e notificação no celular', 'Assistente Azul (inteligência artificial) e Telegram', 'Compartilhar alertas e relatos em redes sociais', 'Área do agente: quarteirões, visitas com fotos e vídeos, jornada com GPS'] %}
+        {% if vigilancia_ui_enabled or f not in ['Relatar caso suspeito', 'Área do agente: quarteirões, visitas com fotos e vídeos, jornada com GPS'] %}
         <tr><td>{{ f }}</td><td class="ok">✔</td><td class="ok">✔</td></tr>
+        {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -106,17 +108,19 @@
   <h2 class="h5 mb-3">Veja nos dois aparelhos</h2>
   <div class="app-dl-shots mb-4">
     {% for titulo, arq in [('Tela inicial', 'inicio'), ('Relatar foco', 'relatar-foco'), ('Alertas', 'alertas')] %}
+    {% if vigilancia_ui_enabled or arq != 'inicio' %}
     <div class="app-dl-pair"><h3>{{ titulo }}</h3>
       <div class="phones">
         <figure><img src="{{ url_for('static', filename='img/app-prints/android-' ~ arq ~ '.jpg') }}" alt="{{ titulo }} no Android" loading="lazy"><figcaption>Android</figcaption></figure>
         <figure><img src="{{ url_for('static', filename='img/app-prints/ios-' ~ arq ~ '.jpg') }}" alt="{{ titulo }} no iPhone" loading="lazy"><figcaption>iPhone</figcaption></figure>
       </div>
     </div>
+    {% endif %}
     {% endfor %}
   </div>
 
   <div class="app-dl-note"><strong>Sobre o aviso de "fonte desconhecida" no Android.</strong> O sistema mostra esse aviso para qualquer aplicativo instalado fora da Play Store. O arquivo é distribuído diretamente pela Oceano Azul neste endereço e assinado digitalmente; confira que o download veio de <strong>{{ request.host }}</strong>.
-    <br><strong>Agentes de endemias:</strong> use o mesmo usuário e senha do sistema na opção "Sou agente de endemias" dentro do aplicativo.</div>
+    {% if vigilancia_ui_enabled %}<br><strong>Agentes de endemias:</strong> use o mesmo usuário e senha do sistema na opção "Sou agente de endemias" dentro do aplicativo.{% endif %}</div>
   <p class="text-center text-muted small mt-4"><a href="{{ url_for('main.portal_cidadao') }}">Voltar ao Portal do Cidadão</a> · <a href="/privacidade">Política de Privacidade</a> · Oceano Azul · IJA Drones</p>
   <script>
   (function () {

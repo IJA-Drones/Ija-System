@@ -24,6 +24,7 @@
   </section>
   <section class="card p-3 mb-3"><h2 class="h5">2. Filtros, condições e exceções</h2>
     <div class="cq-filter-grid">
+      {% set prefeituras = prefeituras|visible_municipalities %}
       <label>Prefeitura<select id="cq-prefeitura" class="form-select"><option value="">Todas as permitidas</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeituras|length == 1 %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label>
     {% for key,label in [('bairro','Bairro'),('categoria','Categoria / tipo de visita'),('status','Status da solicitação')] %}
       <label>{{ label }}<select id="cq-{{ key }}" class="form-select"><option value="">Todos</option>{% for value in facets[key] %}<option>{{ value }}</option>{% endfor %}</select></label>

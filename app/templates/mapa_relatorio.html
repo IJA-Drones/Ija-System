@@ -10,7 +10,7 @@
 {% block content %}
 <div class="container-fluid py-4 mapa-relatorio-page">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
     <h2 class="text-dark m-0">
       <i class="bi bi-geo-fill me-2 text-primary"></i> Inteligência Geográfica
     </h2>
@@ -40,7 +40,7 @@
             <label for="uvisFilter" class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
             <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               <option value="">Todas as Unidades</option>
-              {% for id, nome_uvis in uvis_disponiveis %}
+              {% for id, nome_uvis in uvis_disponiveis|visible_municipalities %}
               <option value="{{ id }}">{{ nome_uvis }}</option>
               {% endfor %}
             </select>
@@ -205,10 +205,10 @@
     <p class="small text-muted">A situação é a atual, para o período agendado selecionado. Pendências incluem solicitações em análise ou sem fechamento registrado. Retornos são atendimentos vinculados à solicitação de origem. A contagem considera solicitações, não focos únicos.</p>
     <p class="small text-muted">Na aba Áreas, clique em um ponto para abrir o histórico. Cor: tipo de foco. Borda laranja: pendente ou atrasado. Essas cores não classificam risco.</p>
     <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Solicitação</th><th>Agendamento</th><th>Foco / bairro</th><th>Situação atual</th><th>No mapa</th><th>Histórico</th></tr></thead><tbody id="mapRequestRows"></tbody></table></div>
-    <div class="d-flex gap-2 align-items-center"><button type="button" id="mapPrev" class="btn btn-outline-primary btn-sm" disabled>Anterior</button><span id="mapPageLabel"></span><button type="button" id="mapNext" class="btn btn-outline-primary btn-sm" disabled>Próxima</button></div>
+    <div class="d-flex flex-wrap gap-2 align-items-center"><button type="button" id="mapPrev" class="btn btn-outline-primary btn-sm" disabled>Anterior</button><span id="mapPageLabel"></span><button type="button" id="mapNext" class="btn btn-outline-primary btn-sm" disabled>Próxima</button></div>
   </section>
   <section id="mapFocusHistory" class="card p-3 mt-4 d-none" aria-labelledby="mapHistoryTitle" tabindex="-1">
-    <div class="d-flex justify-content-between"><h3 id="mapHistoryTitle" class="h5">Histórico do foco</h3><button id="mapHistoryClose" class="btn btn-outline-secondary btn-sm" type="button">Fechar</button></div>
+    <div class="d-flex flex-wrap gap-2 justify-content-between"><h3 id="mapHistoryTitle" class="h5">Histórico do foco</h3><button id="mapHistoryClose" class="btn btn-outline-secondary btn-sm" type="button">Fechar</button></div>
     <div id="mapHistoryBody" aria-live="polite"></div>
   </section>
 </div>

@@ -50,6 +50,8 @@ def test_history_filters_receive_catalogs_and_keep_selected_values(template_name
     templates = Path(__file__).resolve().parents[1] / "app" / "templates"
     app = Flask(__name__, template_folder=str(templates))
     app.config["TESTING"] = True
+    from app.shared.municipality_visibility import visible_municipalities
+    app.add_template_filter(visible_municipalities, "visible_municipalities")
     app.jinja_loader = ChoiceLoader(
         [DictLoader({"base.html": "{% block content %}{% endblock %}"}), app.jinja_loader]
     )

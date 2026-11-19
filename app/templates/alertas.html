@@ -18,7 +18,7 @@
   {% if global_user %}
   <form method="get" class="row g-2 align-items-end mb-4">
     <div class="col-md-5"><label class="form-label" for="alertas-prefeitura">Prefeitura</label>
-      <select class="form-select" id="alertas-prefeitura" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+      <select class="form-select" id="alertas-prefeitura" name="prefeitura_id" required><option value="">Selecione</option>{% for item in prefeituras|visible_municipalities %}<option value="{{ item.id }}" {% if prefeitura_id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
     <div class="col-auto"><button class="btn btn-primary">Abrir</button></div>
   </form>
   {% endif %}

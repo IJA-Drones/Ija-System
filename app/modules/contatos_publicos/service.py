@@ -106,6 +106,7 @@ def display_phone(value):
 def public_directory():
     """Allowlist only published fields. Never fall back to private report emails."""
     try:
+        from app.shared.municipality_visibility import municipality_visible
         if not schema_ready():
             return {'disponivel': False, 'prefeituras': []}
         rows = db.session.query(Prefeitura, PrefeituraContatoPublico).outerjoin(
@@ -113,6 +114,8 @@ def public_directory():
         ).filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome, Prefeitura.id).all()
         cities = []
         for city, setting in rows:
+            if not municipality_visible(city):
+                continue
             data = {'id': city.id, 'nome': city.nome, 'publicado': bool(setting and setting.publicado)}
             if data['publicado']:
                 data.update({k: getattr(setting, k) for k in FIELDS})

@@ -175,7 +175,7 @@
                 <td>
                   {{ u.regiao or '-' }}
                   {% if u.prefeitura %}
-                    <div class="small text-muted">{{ u.prefeitura.nome }}</div>
+                    <div class="small text-muted">{{ (u.prefeitura|municipality_label) }}</div>
                   {% endif %}
                 </td>
 

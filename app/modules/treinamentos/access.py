@@ -6,6 +6,7 @@ módulos de negócio. O catálogo não concede acesso a telas nem a registros.
 from dataclasses import dataclass
 
 from flask import current_app
+from .retired import RETIRED_MATERIAL_IDS
 
 from app.modules.gestao_ti.permissions import (
     active_configuration, any_permission, has_permission, profile_code,
@@ -93,7 +94,7 @@ PUBLICATIONS = MaterialPolicy("prefeitura", ("prefeitura.acoes_publicas.consulta
 INTEGRATED = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar", "prefeitura.acoes_publicas.consultar"), "integrated", all_required=True)
 POLICIES = {
     "video-quadra": MaterialPolicy("prefeitura", ("prefeitura.solicitacoes.criar",), "requests"),
-    "guia-geral": MaterialPolicy("prefeitura", ("sistema.tecnico.consultar", "sistema.usuarios.consultar", "prefeitura.vigilancia.consultar"), "dev", all_required=True),
+    "guia-geral": MaterialPolicy("prefeitura", ("sistema.tecnico.consultar", "sistema.usuarios.consultar"), "dev", all_required=True),
     "manual-liraa": VIGILANCE, "manual-mapa": VIGILANCE, "manual-sinan": SINAN,
     "manual-publicacoes": PUBLICATIONS,
     "csv-territorio": VIGILANCE, "csv-amostra": VIGILANCE, "csv-visitas": VIGILANCE,
@@ -139,8 +140,16 @@ POLICIES = {
 
 
 def can_read_material(user, material_id):
+    if material_id in RETIRED_MATERIAL_IDS:
+        return False
     policy = POLICIES.get(material_id)
     if policy is None or not getattr(user, "is_authenticated", False):
+        return False
+    from app.shared.interface_visibility import interface_module_visible, vigilancia_ui_enabled
+    if not vigilancia_ui_enabled() and (
+        any(not interface_module_visible(code.rsplit(".", 1)[0]) for code in policy.permissions)
+        or material_id == "atualizacoes-treinamentos"
+    ):
         return False
     if policy.area == "common":
         return True

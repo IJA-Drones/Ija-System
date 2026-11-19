@@ -87,7 +87,7 @@
               <label for="search_prefeitura" class="small text-muted">Prefeitura:</label>
               <select class="form-select form-select-sm" name="prefeitura_id" id="search_prefeitura">
                 <option value="">Todas</option>
-                {% for prefeitura in prefeituras %}
+                {% for prefeitura in prefeituras|visible_municipalities %}
                 <option value="{{ prefeitura.id }}" {% if prefeitura_id == prefeitura.id %}selected{% endif %}>{{ prefeitura.nome }}</option>
                 {% endfor %}
               </select>
@@ -130,7 +130,7 @@
               <tr>
                 <td data-label="ID" class="text-muted">{{ u.id }}</td>
                 <td data-label="Nome" class="fw-semibold">{{ u.nome_uvis }}</td>
-                <td data-label="Prefeitura">{{ u.prefeitura.nome if u.prefeitura else "-" }}</td>
+                <td data-label="Prefeitura">{{ (u.prefeitura|municipality_label) if u.prefeitura else "-" }}</td>
                 <td data-label="Região">{{ u.regiao or "-" }}</td>
                 <td data-label="Login"><code>{{ u.login }}</code></td>
                 <td data-label="Ações" class="listing-cell-actions">

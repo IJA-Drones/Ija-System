@@ -172,7 +172,9 @@ def get_google_maps_key():
 
 
 def build_uvis_select(user=None):
+    from app.shared.municipality_visibility import visible_prefeitura_links
     query = Usuario.query.filter_by(tipo_usuario="uvis")
+    query = visible_prefeitura_links(query, Usuario.prefeitura_id)
     if user is not None:
         query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
         query = apply_regiao_scope(query, user, Usuario.regiao)

@@ -39,11 +39,11 @@
               <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura *
             </label>
             {% if current_user.tipo_usuario == 'prefeitura_admin' %}
-            <input type="text" class="form-control" value="{{ current_user.prefeitura.nome if current_user.prefeitura else 'Nao vinculada' }}" disabled>
+            <input type="text" class="form-control" value="{{ (current_user.prefeitura|municipality_label) if current_user.prefeitura else 'Nao vinculada' }}" disabled>
             {% else %}
             <select name="prefeitura_id" class="form-select" required>
               <option value="">Selecione...</option>
-              {% for prefeitura in prefeituras %}
+              {% for prefeitura in prefeituras|visible_municipalities %}
               <option value="{{ prefeitura.id }}" {% if form.get('prefeitura_id','')|string == prefeitura.id|string %}selected{% endif %}>
                 {{ prefeitura.nome }}
               </option>

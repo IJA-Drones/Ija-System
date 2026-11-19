@@ -93,7 +93,7 @@ body:has(.tracking-page) .app-content { margin-top: 0 !important; }
 .tracking-people strong { font-size: .82rem; font-weight: 550; margin-top: 5px; }
 .tracking-people small { font-size: .65rem; line-height: 1.6; margin-top: 3px; color: var(--color-text-muted); }
 .tracking-people .btn { align-self: center; white-space: nowrap; }
-.tracking-module-tabs.nav-tabs { display: flex; align-items: stretch; gap: 2px; flex-wrap: nowrap; padding: 0 18px; margin: 0; border-bottom: 1px solid var(--tracking-border); }
+.tracking-module-tabs.nav-tabs { display: flex; align-items: stretch; gap: 2px; flex-wrap: wrap; padding: 0 18px; margin: 0; border-bottom: 1px solid var(--tracking-border); }
 .tracking-module-tabs .nav-link, .tracking-more > summary { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 13px 11px; margin: 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; font-size: .78rem; color: var(--color-text-muted); background: transparent; }
 .tracking-module-tabs .nav-link:hover { color: var(--tracking-accent); }
 .tracking-module-tabs .nav-link.active, .tracking-more:has(.active) > summary { border-bottom-color: var(--tracking-accent); background: transparent; color: var(--tracking-accent); font-weight: 600; }
@@ -271,4 +271,10 @@ body:has(.tracking-page) .app-content { margin-top: 0 !important; }
   .tracking-point-stop { padding: 14px; }
   .tracking-point-stop .tracking-point-grid { grid-template-columns: 1fr; }
   .tracking-point-links .btn { width: 100%; }
+}
+
+@media (max-width: 575px) {
+  .tracking-module-tabs > .nav-item { flex: 1 1 auto; min-width: 0; }
+  .tracking-module-tabs > .nav-item > .nav-link { width: 100%; }
+  .tracking-more > div { width: min(230px, calc(100vw - 72px)); }
 }

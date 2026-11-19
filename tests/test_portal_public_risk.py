@@ -35,7 +35,7 @@ CITY = {"ibge": "2610905", "name": "Pesqueira", "uf": "PE"}
 def public_app(tmp_path):
     root = Path(__file__).resolve().parents[1]
     app = Flask(__name__, static_folder=str(root / "app/static"))
-    app.config.update(TESTING=True, SECRET_KEY="public-map-test", SQLALCHEMY_DATABASE_URI="sqlite:///" + str(tmp_path / "public.sqlite"),
+    app.config.update(TESTING=True, VIGILANCIA_UI_ENABLED=True, SECRET_KEY="public-map-test", SQLALCHEMY_DATABASE_URI="sqlite:///" + str(tmp_path / "public.sqlite"),
         VIGILANCIA_IMPORT_ENABLED=True, SINAN_ENABLED=True, SINAN_IMPORT_ENABLED=True, SINAN_STORAGE_BACKEND="database",
         VIGILANCIA_MUNICIPIOS_IBGE={"7": "2610905", "8": "2600609"}, INFODENGUE_GEOCODE="2610905")
     db.init_app(app)

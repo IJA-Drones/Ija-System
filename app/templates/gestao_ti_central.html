@@ -51,10 +51,10 @@
   <p class="ti-feedback" id="ti-feedback" role="status" aria-live="polite" hidden></p>
 </div>
 {% if central_ti_data is defined %}
-<script type="application/json" id="ti-central-data">{{ central_ti_data | tojson }}</script>
+<script type="application/json" id="ti-central-data">{{ interface_permission_catalog(central_ti_data) | tojson }}</script>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261009a') }}" defer></script>
+<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261118-interface') }}" defer></script>
 {% endblock %}
