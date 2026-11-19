@@ -137,6 +137,14 @@ def test_full_application_is_exclusive_even_with_ti_grants(enforce):
         from app.modules.ortomosaicos.access import dedicated_endpoint_allowed
         from app.modules.gestao_ti.permissions import can_access_endpoint, validate_route_policy
         validate_route_policy(case.app)
+        # Both root URLs must serve the shared worker for the dedicated account.
+        for path in ('/service-worker.js', '/sw.js'):
+            worker = case.client.get(path)
+            assert worker.status_code == 200, (path, worker.status_code)
+            assert worker.mimetype == 'application/javascript'
+            assert worker.headers['Service-Worker-Allowed'] == '/'
+            assert worker.cache_control.no_cache or worker.cache_control.no_store
+            assert 'addEventListener' in worker.text
         # Check all registered business routes, with concrete values for converters.
         for rule in case.app.url_map.iter_rules():
             if dedicated_endpoint_allowed(rule.endpoint) or not rule.endpoint.startswith('main.'):
