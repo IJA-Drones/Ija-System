@@ -7,11 +7,11 @@ class Element {
  dispatchEvent(event){this.events[event.type]?.(event);}
  focus(){}
 }
-function setup({fetcher,permission}={}){
+function setup({fetcher,permission,identity={}}={}){
  const root=new Element(),controls=new Element(),mic=new Element(),label=new Element(),action=new Element(),status=new Element(),dictate=new Element(),input=new Element();input.value='';input.maxLength=1500;
  const call=new Element(),callTitle=new Element(),callDescription=new Element(),callAction=new Element(),callActionLabel=new Element(),callEnd=new Element();call.hidden=true;
  call.querySelector=key=>({'[data-call-title]':callTitle,'[data-call-description]':callDescription,'[data-call-action]':callAction,'[data-call-action-label]':callActionLabel,'[data-call-end]':callEnd}[key]);
- root.dataset={transcribeUrl:'/portal-cidadao/transcrever',token:'session-token',csrf:'csrf'};
+ root.dataset={transcribeUrl:'/portal-cidadao/transcrever',token:'session-token',csrf:'csrf',...identity};
  root.querySelector=key=>key==='[data-voice-controls]'?controls:key==='[data-compose-input]'?input:key==='[data-voice-call]'?call:null;
  controls.querySelector=key=>({'[data-microphone]':mic,'[data-dictate]':dictate,'[data-voice-action]':action,'[data-microphone-status]':status}[key]);
  mic.querySelector=()=>label;
@@ -162,4 +162,15 @@ test('a disabled conversation policy stops before requesting microphone permissi
  await env.mic.events.click();await settle();
  assert.equal(env.tracks.length,0);assert.equal(env.requests.length,0);assert.equal(env.call.hidden,true);
  assert.equal(env.contexts[0].closed,true);
+});
+
+
+test('IJA Fly opens voice without playing the Azul identity recording', async()=>{
+ const env=setup({identity:{agentId:'ija-fly',agentName:'IJA Fly'}});
+ await env.mic.events.click();await settle();await settle();
+ assert.equal(env.root.dataset.voiceState,'listening');
+ assert.equal(env.clips.length,0);
+ assert.ok(env.mic['aria-label'].includes('IJA Fly'));
+ env.root.azulVoice.stop();
+ assert.ok(env.tracks.every(track=>track.readyState==='ended'));
 });

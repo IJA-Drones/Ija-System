@@ -20,7 +20,7 @@ from werkzeug.routing import BuildError
 
 from app.modules.gestao_ti.catalog import CATALOG, PERMISSION_CODES
 from app.modules.gestao_ti.permissions import active_configuration, has_permission, can_access_endpoint, profile_code
-from app.modules.chatbot import service, finance_help, agro, agro_help, agro_details
+from app.modules.chatbot import service, finance_help, agro, agro_help, agro_details, persona
 
 CHANNELS = {
     'admin': (service.ADMIN_FAQ, service.build_admin_chatbot_response),
@@ -51,8 +51,7 @@ UVIS_SCOPES = {
     'uvis': 'Solicitações municipais: somente registros vinculados à conta UVIS conectada.',
     'equipe_uvis': 'Solicitações municipais: somente registros da conta UVIS à qual a equipe está vinculada.',
 }
-INSTRUCTIONS = topics.IDENTITY_RULE + """Você é a AZUL, a inteligência da Oceano Azul. Se precisar se apresentar, use AZUL ou inteligência da Oceano Azul, nunca assistente virtual.
-Ao se referir à marca do sistema, use sempre Oceano Azul, mesmo que mensagens antigas
+SHARED_INSTRUCTIONS = """Ao se referir à marca do sistema, use sempre Oceano Azul, mesmo que mensagens antigas
 do histórico mencionem IJA System. Responda inteiramente em português brasileiro,
 com linguagem simples, texto puro e até 250 palavras. Ajude somente a usar o sistema.
 Você orienta sobre o sistema e só consulta registros pelas ferramentas autorizadas fornecidas.
@@ -94,6 +93,9 @@ Responda à dúvida primeiro e ofereça um próximo passo concreto quando útil.
 e agradecimentos podem ter resposta breve e natural. Para assuntos fora do sistema,
 redirecione com gentileza e um exemplo útil, sem sermão nem repetir a apresentação.
 """
+
+
+INSTRUCTIONS = topics.IDENTITY_RULE + 'Você é a AZUL, a inteligência da Oceano Azul. Se precisar se apresentar, use AZUL ou inteligência da Oceano Azul, nunca assistente virtual.\n' + SHARED_INSTRUCTIONS
 
 
 def help_material(channel, context):
@@ -190,18 +192,18 @@ def help_context(user, page):
             'escopo': scope + ' Nenhum registro foi consultado.'}
 
 
-def access_overview(user, context):
+def access_overview(user, context, *, fly=False):
     """Describe verified navigation and chat tools without a model or data query."""
     lines = ['Posso ajudar você a entender os processos e encontrar os recursos do sistema.']
     actions = []
-    if search.allowed(user):
+    if not fly and search.allowed(user):
         actions.append('Buscar solicitações municipais por status, bairro, endereço, protocolo ou período de agendamento.')
-    if operations.allowed(user):
+    if not fly and operations.allowed(user):
         actions.append('Consultar o resumo de falhas e bugs do Painel Dev.' if context['perfil'] == 'dev'
                        else 'Consultar as solicitações municipais que precisam de atenção hoje.')
     if agro.allowed_sources(user):
         actions.append('Consultar registros do Agro e o resumo atual de pendências nos módulos autorizados.')
-    sources = exports.allowed_sources(user)
+    sources = [] if fly else exports.allowed_sources(user)
     if sources:
         labels = {'solicitacoes': 'solicitações municipais', 'ordens_servico': 'OS municipais'}
         reports = ' e '.join(labels[source] for source in sources)
@@ -339,9 +341,10 @@ def reply(channel):
                          code='access_changed')
         result.headers['Cache-Control'] = 'private, no-store'
         return result, 409
+    fly = persona.is_agro(current_user, page, channel)
     decision = topics.evaluate(message, history)
     if decision.kind != 'allowed':
-        result = jsonify(answer=decision.answer, mode=decision.kind, links=[],
+        result = jsonify(answer=persona.decision_answer(decision, fly), mode=decision.kind, links=[],
                          profile=profile_code(current_user), export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result
@@ -353,7 +356,8 @@ def reply(channel):
             if not settings.get('enabled') or not current_app.config.get('OPENAI_API_KEY') or not consume_help_quota(current_user.id):
                 return jsonify(answer='A consulta de saúde está indisponível. Tente mais tarde.'), 503
             text, parts = public_answer(topics.health_history(history) + [{'role':'user','content':message}],
-                                        extra_instructions=DIALOGUE_STYLE if payload.get('voice') is True else '')
+                                        extra_instructions=DIALOGUE_STYLE if payload.get('voice') is True else '',
+                                        **({'agent_identity': 'ija-fly'} if fly else {}))
         except control_store.BudgetExceeded:
             raise
         except Exception:
@@ -385,12 +389,14 @@ def reply(channel):
         result.headers['Cache-Control'] = 'private, no-store'
         return result, status
     context = help_context(current_user, page)
+    if fly:
+        context['atalhos'] = [link for link in context['atalhos'] if link['modulo'].startswith('agro.')]
     normalized_request = service.normalize_chatbot_text(message).strip(' ?!.')
     if payload.get('intent') == 'access_overview' or (not payload.get('intent') and normalized_request in {
         'o que posso acessar no sistema', 'meu acesso', 'meus acessos',
         'quais recursos estao disponiveis para mim',
     }):
-        answer, links = access_overview(current_user, context)
+        answer, links = access_overview(current_user, context, fly=fly)
         result = jsonify(answer=answer, mode='guided', links=links, profile=context['perfil'],
                          export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
@@ -405,7 +411,7 @@ def reply(channel):
         result = jsonify(answer=answer, mode='guided', links=[], profile=context['perfil'], export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result
-    agro_context = (channel.startswith('agro_') or page.startswith('/agro/') or agro.is_pilot(current_user))
+    agro_context = fly
     agro_attention = payload.get('intent') == 'agro_attention' or normalized_request in {'resumo de pendencias do agro', 'quais as pendencias do agro', 'resumo do agro', 'prioridades do agro', 'quais as prioridades do agro'}
     if agro_attention or payload.get('intent') == 'attention_today' or normalized_request in {
         'o que precisa da minha atencao', 'o que precisa da minha atencao hoje',
@@ -429,7 +435,7 @@ def reply(channel):
         result.headers['Cache-Control'] = 'private, no-store'
         return result
     if payload.get('intent') == 'start_report':
-        sources = exports.allowed_sources(current_user)
+        sources = [] if fly else exports.allowed_sources(current_user)
         if sources:
             labels = {'solicitacoes': 'Solicitações municipais', 'ordens_servico': 'Ordens de serviço (OS) municipais'}
             choices = '\n'.join('• ' + labels[source] for source in sources)
@@ -442,7 +448,7 @@ def reply(channel):
                       + '\nPode responder tudo junto ou por partes. Depois, mostro a prévia para você confirmar.'
                       + '\nOutros tipos de relatório ainda não estão disponíveis pela Azul.')
         else:
-            answer = 'A geração de relatórios pela Azul não está disponível para seu acesso.'
+            answer = 'A geração de relatórios pelo IJA Fly não está disponível no chat Agro.' if fly else 'A geração de relatórios pela Azul não está disponível para seu acesso.'
         result = jsonify(answer=answer, mode='guided', links=[], profile=context['perfil'], export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result
@@ -456,7 +462,7 @@ def reply(channel):
     }
     if guided_help:
         links = [link for link in context['atalhos'] if link['modulo'] == help_topic['module']][:6]
-        result = jsonify(answer=help_topic['answer'], mode='guided', links=links,
+        result = jsonify(answer=persona.local_text(help_topic['answer'], fly), mode='guided', links=links,
                          profile=context['perfil'], export_preview=None, chat_key=current_key)
         result.headers['Cache-Control'] = 'private, no-store'
         return result
@@ -507,7 +513,7 @@ def reply(channel):
             with OpenAI(api_key=key, timeout=30, max_retries=0) as client:
                 response = metering.respond(client,
                     model=settings.get('internal_model'),
-                    instructions=INSTRUCTIONS + export_instructions
+                    instructions=(persona.IDENTITY_RULE + SHARED_INSTRUCTIONS if fly else INSTRUCTIONS) + export_instructions
                     + ('\n' + finance_help.STYLE if finance_help.available(context) else '')
                     + settings.context()
                     + ('\n' + voice.DIALOGUE_STYLE if payload.get('voice') is True else '')
@@ -574,6 +580,8 @@ def reply(channel):
             answer = UVIS_SCOPES[context['perfil']] + '\n\n' + answer
         answer = 'A resposta por IA está indisponível no momento. Guia local: ' + answer
         answer += '\n\nO guia descreve o fluxo geral; ele não confirma autorização para executar ações. Nenhuma alteração foi realizada.'
+    if mode == 'faq':
+        answer = persona.local_text(answer, fly)
     result = jsonify(answer=answer, mode=mode, links=links, profile=context['perfil'], export_preview=preview, chat_key=current_key)
     result.headers['Cache-Control'] = 'private, no-store'
     return result

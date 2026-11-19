@@ -4,7 +4,7 @@ from copy import deepcopy
 from flask import abort, make_response, render_template, request
 from flask_login import current_user
 
-from app.modules.chatbot import voice
+from app.modules.chatbot import voice, persona
 from app.modules.chatbot.azul import help_context
 from app.modules.gestao_ti.permissions import can_access_endpoint, route_access
 
@@ -129,6 +129,11 @@ def catalog(audience, user):
 def page():
     audience = request.args.get('publico', 'publico')
     lessons = catalog(audience, current_user)
+    fly = audience == 'sistema' and persona.is_agro(current_user)
+    if fly:
+        modules = {link['modulo'] for link in help_context(current_user, '/agro/')['atalhos'] if link['modulo'].startswith('agro.')}
+        ids = {definition[0] for module, definition in INTERNAL.items() if module in modules}
+        lessons = [lesson for lesson in lessons if lesson['id'] in ids]
     if audience == 'sistema':
         narration = lambda text: voice.offer(text, current_user)
     else:
@@ -136,6 +141,7 @@ def page():
         narration = offer
     for lesson in lessons:
         for item in lesson['steps']:
+            item['body'] = persona.local_text(item['body'], fly)
             item['speech'] = narration(item['title'] + '. ' + item['body'])
     response = make_response(render_template('azul_tutorial.html', lessons=lessons))
     response.headers['Cache-Control'] = 'private, no-store'

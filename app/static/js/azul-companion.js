@@ -1,6 +1,8 @@
 /* Azul's mascot, practical guide and explicit, cancellable voice playback. */
 (() => {
   new Set([...document.querySelectorAll('[data-azul-help]'), ...document.querySelectorAll('[data-azul-companion]')]).forEach(root => {
+    const agentName = root.dataset.agentName || 'Azul';
+    const agentText = text => root.dataset.agentId === 'ija-fly' ? text.replace(/da (?:AZUL|Azul)/g, 'do IJA Fly').replace(/(?:a |A )?(?:AZUL|Azul)/g, 'IJA Fly') : text;
     if (root.azulCompanion) return;
     const voiceUrl = root.dataset.voiceUrl || '/api/azul/voz';
     const guide = root.querySelector('[data-guide]');
@@ -55,7 +57,7 @@
         if (voiceButton === button) { stopVoice(); return; }
         const wasConversation = root.azulVoice?.isActive();
         if (root.azulAudioPolicy && !await root.azulAudioPolicy.check('sound')) {
-          setVoiceStatus(root.azulAudioPolicy.message || 'O som da AZUL está desativado nas configurações.'); return;
+          setVoiceStatus(root.azulAudioPolicy.message || agentText('O som da AZUL está desativado nas configurações.')); return;
         }
         if (wasConversation && !root.azulVoice?.isActive()) return;
         stopVoice();
@@ -70,7 +72,7 @@
             audioRequest = controller;
             button.textContent = 'Parar preparação';
             button.setAttribute('aria-busy', 'true');
-            setVoiceStatus(recorded ? 'Carregando a voz da Azul…' : 'Preparando a voz da Azul…');
+            setVoiceStatus(recorded ? agentText('Carregando a voz da Azul…') : agentText('Preparando a voz da Azul…'));
             settleDrone();
             const response = await fetch(recorded || voiceUrl, recorded ? {
               signal:controller.signal, credentials:'same-origin'
@@ -109,7 +111,7 @@
             voicePlaying = true;
             button.textContent = 'Parar áudio';
             button.setAttribute('aria-busy', 'false');
-            setVoiceStatus('A Azul está falando · voz gerada por IA');
+            setVoiceStatus(agentText('A Azul está falando · voz gerada por IA'));
             settleDrone();
             root.dispatchEvent(new CustomEvent('azul:voice-started'));
             if (recorded) root.azulAudioPolicy?.record(recorded);

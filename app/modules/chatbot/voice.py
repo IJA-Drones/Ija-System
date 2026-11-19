@@ -29,7 +29,7 @@ VOICE_SLOTS = BoundedSemaphore(2)
 DIALOGUE_STYLE = ('CONVERSA POR VOZ: responda em português brasileiro, com até duas frases '
                   'curtas e no máximo 450 caracteres. Use linguagem de conversa, sem listas longas '
                   'ou introduções formais. Preserve informações essenciais, limites e fontes. '
-                  'Seu nome é AZUL. Não amplie o escopo nem confirme ações que não realizou.')
+                  'Mantenha a identidade definida pelo sistema. Não amplie o escopo nem confirme ações que não realizou.')
 
 
 def available():

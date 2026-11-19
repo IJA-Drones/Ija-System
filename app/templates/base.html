@@ -1,6 +1,6 @@
 {% set vigilancia_ui_enabled = config.get('VIGILANCIA_UI_ENABLED', false) %}
 {% set is_financeiro_context = is_financeiro_endpoint(request.endpoint) if is_financeiro_endpoint is defined else false %}
-{% set is_agro_context = not is_financeiro_context and request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
+{% set is_agro_context = azul_is_agro|default(false) or not is_financeiro_context and request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
 {% set empresa_financeiro = empresa if empresa is defined else financeiro_empresa_atual|default(none) %}
 {% set is_global_admin = current_user.is_authenticated and is_admin_global_user(current_user) %}
 {% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
@@ -367,7 +367,7 @@
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.azul_chat' %}active{% endif %}"
                href="{{ azul_page_url }}" {% if request.endpoint == 'main.azul_chat' %}aria-current="page"{% endif %}>
-              <i class="bi bi-stars me-2" aria-hidden="true"></i><span>Azul</span>
+              <i class="bi bi-stars me-2" aria-hidden="true"></i><span>{{ azul_agent_name|default('Azul') }}</span>
             </a>
           </li>
           {% endif %}

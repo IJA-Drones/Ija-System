@@ -230,6 +230,8 @@ def build_admin_dashboard_query(
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .join(Usuario)
         .filter(Solicitacao.status != "CANCELADO")

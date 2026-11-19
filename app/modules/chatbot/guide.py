@@ -1,5 +1,6 @@
 """Short permission-aware tours. A tour never reads or changes business records."""
 from flask import url_for
+from app.modules.chatbot import persona
 from werkzeug.routing import BuildError
 
 from app.modules.chatbot import exports, operations, search, voice, finance_help, agro, agro_help
@@ -51,11 +52,14 @@ RECORDED_STEPS = {
 
 def build(user, page):
     context = help_context(user, page)
-    links = context['atalhos']
+    fly = persona.is_agro(user, page)
+    links = [link for link in context['atalhos'] if not fly or link['modulo'].startswith('agro.')]
+    context['atalhos'] = links
     current = next((link for link in links if link['url'] == page), None)
     steps = []
 
     def add(title, body, target='[data-compose-input]', choices=None, question=None, intent=None):
+        title, body = persona.local_text(title, fly), persona.local_text(body, fly)
         steps.append({'title': title, 'body': body, 'target': target,
                       'links': choices or [], 'question': question, 'intent': intent,
                       'speech': voice.offer(title + '. ' + body, user)})
@@ -86,7 +90,7 @@ def build(user, page):
         add(item['title'], item['answer'], question=item['question'])
         steps[-1]['financial'] = True
     add(*RECORDED_STEPS['review'], 'screen-form')
-    if search.allowed(user):
+    if not fly and search.allowed(user):
         add('Busque solicitações em uma frase',
             'Por exemplo: “Busque solicitações pendentes no bairro Centro”. '
             'A Azul apresenta a quantidade encontrada e um atalho para a lista filtrada. '
@@ -124,12 +128,12 @@ def build(user, page):
                     choices=[{'label': 'Abrir guia em PDF', 'url': url_for('main.treinamentos_arquivo', material_id='guia-azul-agro')}])
         except BuildError:
             pass
-    if operations.allowed(user):
+    if not fly and operations.allowed(user):
         add('Veja o que precisa de atenção',
             'Use “Minha atenção hoje” para consultar o resumo disponível para seu '
             'perfil. Abra os atalhos da resposta para conferir os itens na tela.',
             '[data-intent="attention_today"]', question='O que precisa da minha atenção hoje?', intent='attention_today')
-    if exports.allowed_sources(user):
+    if not fly and exports.allowed_sources(user):
         add('Prepare um relatório com revisão',
             'Escolha “Gerar relatório” e informe a base municipal, o formato, o período '
             'e os filtros desejados. Confira a prévia. O arquivo só é gerado depois '
@@ -138,7 +142,7 @@ def build(user, page):
     training = []
     if can_access_endpoint(user, 'main.treinamentos', 'GET', legacy=True):
         try:
-            training = [{'label': 'Abrir treinamentos', 'url': url_for('main.treinamentos')}]
+            training = [{'label': 'Abrir treinamentos', 'url': url_for('main.agro_treinamentos' if fly else 'main.treinamentos')}]
         except BuildError:
             # Isolated deployments may omit the training module entirely.
             pass

@@ -269,7 +269,7 @@ class ChatbotError(Exception):
         self.message, self.status = message, status
 
 
-def answer(messages, *, extra_instructions=""):
+def answer(messages, *, extra_instructions="", agent_identity=None):
     """Resposta da Azul para qualquer canal (portal, WhatsApp). Levanta ChatbotError/OpenAIError."""
     decision = topics.evaluate(messages[-1]['content'], messages[:-1], public=True)
     if decision.kind != 'allowed':
@@ -277,10 +277,14 @@ def answer(messages, *, extra_instructions=""):
     if not settings.get('enabled'):
         raise ChatbotError('A geração da AZUL foi pausada. Use as orientações e os formulários do portal.',503)
     messages = topics.clean_history(messages[:-1], public=True) + [messages[-1]]
+    instructions = public_instructions()
+    if agent_identity == 'ija-fly':
+        from app.modules.chatbot import persona
+        instructions = persona.IDENTITY_RULE + instructions.removeprefix(topics.IDENTITY_RULE).replace('Você é a AZUL, a IA do Portal do Cidadão.', 'Você é o IJA Fly, a IA do Agro da IJA Drones.')
     with OpenAI(api_key=current_app.config["OPENAI_API_KEY"], timeout=50, max_retries=0) as client:
         response = metering.respond(client,
             model=settings.get('public_model'),
-            instructions=public_instructions() + extra_instructions, input=messages,
+            instructions=instructions + extra_instructions, input=messages,
             reasoning={"effort": "low"}, max_output_tokens=settings.get('max_output_public'), store=False,
             tools=([{"type": "web_search", "filters": {"allowed_domains": OFFICIAL_DOMAINS}}]
                    if settings.get('web_search_enabled') else []),

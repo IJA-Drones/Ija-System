@@ -438,7 +438,9 @@ event.listen(Session, 'after_rollback', _after_rollback)
 def edit_fields(obj, endpoint):
     if endpoint not in PROTECTED or not current_user.is_authenticated or _direct_request():
         return ''
-    return Markup(render_template('_edit_control.html', ticket=_ticket(obj, endpoint),
+    # This fragment uses only the explicit values below. Running Flask's full
+    # context processors per form repeats navigation/assistant database queries.
+    return Markup(current_app.jinja_env.get_template('_edit_control.html').render(ticket=_ticket(obj, endpoint),
         edit_key=f'{_key(obj)[0]}:{obj.id}', edit_api=url_for('edit_control.lease', action='reservar').rsplit('/',1)[0],
         edit_dev=current_user.tipo_usuario == 'dev'))
 

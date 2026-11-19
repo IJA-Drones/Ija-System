@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% from '_azul_drone.html' import drone %}
-{% block title %}Azul · Conversa | Oceano Azul{% endblock %}
+{% from '_azul_drone.html' import drone with context %}
+{% block title %}{{ azul_agent_name|default('Azul') }} · Conversa | Oceano Azul{% endblock %}
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261110-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261119-fly2') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul_chat.css', v='20261110-2') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261111-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-composer.css', v='20261119-fly1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-voice-call.css', v='20261110-3') }}">
 {% endblock %}
 {% block content %}
-<div class="azul-help azul-workspace" data-azul-help data-view="page" data-conversation="0"
+<div class="azul-help azul-workspace" data-azul-help data-agent-id="{{ azul_agent_id|default('azul') }}" data-agent-name="{{ azul_agent_name|default('Azul') }}" data-agent-welcome="{{ azul_agent_welcome|default('') }}" data-view="page" data-conversation="0"
      data-tutorial-url="{{ azul_tutorial_url|default('', true) }}"
      data-transcribe-url="{{ azul_transcribe_url|default('') }}"
      data-usage-scope="{{ azul_usage_scope|default('') }}" data-chat-key="{{ azul_chat_key }}" data-export="{{ '1' if azul_can_export else '0' }}"
-     data-url="{{ azul_help_url }}" data-page="{{ request.path }}"
+     data-url="{{ azul_help_url }}" data-page="{{ '/agro/' if azul_is_agro|default(false) and request.endpoint == 'main.azul_chat' else request.path }}"
      data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
-  <section class="azul-panel" aria-label="Conversa com a Azul">
+  <section class="azul-panel" aria-label="Conversa com {{ azul_agent_name|default('Azul') }}">
     <header class="azul-page-header">
-      <div class="azul-page-brand">{{ drone() }}<div><h1>Azul <span>IA</span></h1><p>Sua conexão com o Oceano Azul</p></div></div>
+      <div class="azul-page-brand">{{ drone() }}<div><h1>{{ azul_agent_name|default('Azul') }} <span>IA</span></h1><p>{{ 'Sua conexão com a operação Agro' if azul_is_agro|default(false) else 'Sua conexão com o Oceano Azul' }}</p></div></div>
       <div class="azul-page-actions">{% if azul_settings_url|default(none) %}<a class="azul-new-chat" href="{{ azul_settings_url }}"><i class="bi bi-gear" aria-hidden="true"></i> Configurações</a>{% endif %}<button type="button" class="azul-new-chat" data-guide-open><i class="bi bi-book" aria-hidden="true"></i> Guia prático</button><button type="button" class="azul-new-chat" data-clear title="Limpar a conversa atual e começar outra"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova conversa</button></div>
     </header>
     <div class="azul-page-body">
@@ -27,19 +27,19 @@
         {% include '_azul_voice_call.html' %}
         <div class="azul-empty" data-empty>
           {{ drone('azul-drone-large') }}
-          <span class="azul-eyebrow">INTELIGÊNCIA DO SISTEMA</span>
+          <span class="azul-eyebrow">{{ azul_agent_title|default('Inteligência do sistema')|upper }}</span>
           <h2>Por onde vamos começar?</h2>
-          <p>Encontre informações, entenda os processos e avance no seu trabalho. Tudo dentro do seu acesso.</p>
+          <p>{{ 'Consulte OS, RDs, mapeamentos e pendências da sua operação. Tudo dentro do seu acesso.' if azul_is_agro|default(false) else 'Encontre informações, entenda os processos e avance no seu trabalho. Tudo dentro do seu acesso.' }}</p>
           <div class="azul-starters" aria-label="Começar uma conversa">
             <button type="button" data-question="O que posso acessar no sistema?" data-intent="access_overview"><i class="bi bi-compass" aria-hidden="true"></i><strong>Explore seu acesso</strong><span>Descubra os recursos disponíveis para você.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
-            <button type="button" data-guide-open><i class="bi bi-journal-text" aria-hidden="true"></i><strong>Guia prático</strong><span>Pratique com a Azul e dados fictícios.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+            <button type="button" data-guide-open><i class="bi bi-journal-text" aria-hidden="true"></i><strong>Guia prático</strong><span>Pratique com {{ azul_agent_name|default('Azul') }} e dados fictícios.</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
           </div>
         </div>
         <div class="azul-messages" role="log" aria-label="Mensagens da conversa" aria-live="polite" aria-relevant="additions text" data-messages></div>
         <p class="azul-voice-status" data-voice-status role="status"></p>
-        {% with composer_id='azulPageInput', composer_status='A Azul responde com base nas permissões do seu perfil.' %}{% include '_azul_composer.html' %}{% endwith %}
+        {% with composer_id='azulPageInput', composer_status='As respostas respeitam as permissões do seu perfil.' %}{% include '_azul_composer.html' %}{% endwith %}
       </div>
-      <details class="azul-tools" aria-label="Recursos da Azul"><summary>Perguntas e atalhos</summary><div class="azul-tools-body">
+      <details class="azul-tools" aria-label="Recursos de {{ azul_agent_name|default('Azul') }}"><summary>Perguntas e atalhos</summary><div class="azul-tools-body">
         <span class="azul-eyebrow">NO SEU DIA A DIA</span>
         <h2>Como posso ajudar</h2>
         <p>Escolha um ponto de partida ou escreva sua pergunta.</p>
@@ -60,7 +60,7 @@
       <button type="button" data-question="{{ step.question }}"><i class="bi bi-journal-check" aria-hidden="true"></i><span>{{ step.title }}</span></button>
       {% endfor %}
         <button type="button" data-question="Não consigo editar. Como verifico minhas permissões?"><i class="bi bi-shield-lock" aria-hidden="true"></i><span><strong>Entender permissões</strong><small>Saiba como verificar seu acesso.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
-        <button type="button" data-guide-open><i class="bi bi-book" aria-hidden="true"></i><span><strong>Guia prático</strong><small>Aprenda o caminho com a Azul.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+        <button type="button" data-guide-open><i class="bi bi-book" aria-hidden="true"></i><span><strong>Guia prático</strong><small>Aprenda o caminho com {{ azul_agent_name|default('Azul') }}.</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
         <div class="azul-access-note"><i class="bi bi-person-check" aria-hidden="true"></i><strong>Seu acesso, respeitado <span data-profile></span></strong><p>As consultas seguem as mesmas permissões e vínculos do sistema.</p></div>
         <small class="azul-session-note">A conversa fica nesta aba durante a sessão. Você pode continuar pelo chat flutuante ao navegar.</small>
       </div></details>
@@ -71,10 +71,10 @@
 {% endblock %}
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261119-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261111-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261111-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-composer.js', v='20261119-fly1') }}" defer></script>
 {% endblock %}

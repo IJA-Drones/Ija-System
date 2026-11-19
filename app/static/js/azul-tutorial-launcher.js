@@ -3,6 +3,9 @@
   let opened = null;
   const roots = new Set([...document.querySelectorAll('[data-azul-help]'), ...document.querySelectorAll('[data-azul-companion]')]);
   for (const root of roots) {
+    const agentName = root.dataset.agentName || 'Azul';
+    const agentText = text => root.dataset.agentId === 'ija-fly' ? text.replace(/da (?:AZUL|Azul)/g, 'do IJA Fly').replace(/(?:a |A )?(?:AZUL|Azul)/g, 'IJA Fly') : text;
+
     if (!root.dataset.tutorialUrl || root.dataset.tutorialReady) continue;
     root.dataset.tutorialReady = '1';
     let quickGuide = false;
@@ -27,10 +30,11 @@
       root.dispatchEvent(new CustomEvent('azul:close'));
       const dialog = document.createElement('dialog');
       dialog.className = 'azul-training-dialog azul-help';
-      dialog.setAttribute('aria-label','Aprender na prática com a Azul — dados fictícios');
+      dialog.setAttribute('aria-label',agentText('Aprender na prática com a Azul — dados fictícios'));
       dialog.innerHTML = '<header class="azul-training-toolbar"><div><strong>Aprender na prática</strong><small>Azul · ambiente com dados fictícios</small></div><span class="azul-training-narration">Pratique no seu ritmo</span><button type="button" data-training-quick>Guia rápido em texto</button><button type="button" data-training-close aria-label="Sair do treinamento">×</button></header><p class="azul-training-loading" role="status">Abrindo a sala de prática…</p>';
+      dialog.querySelector('small').textContent = agentName + ' · ambiente com dados fictícios';
       const frame = document.createElement('iframe');
-      frame.title = 'Tutorial interativo da Azul com dados fictícios';
+      frame.title = agentText('Tutorial interativo da Azul com dados fictícios');
       frame.hidden = true;
       frame.setAttribute('sandbox','allow-scripts');
       frame.referrerPolicy = 'no-referrer'; frame.src = url.href;
