@@ -463,6 +463,14 @@
           {% if current_user.tipo_usuario == 'sup_veiculos' %}
           <li class="nav-item">
             <a
+              class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
+              href="{{ url_for('main.agenda') }}"
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agenda')) if central_ti_url_allowed is defined else true) else 'false' }}">
+              <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
               class="nav-link {% if request.endpoint == 'main.piloto_dosagem' %}active{% endif %}"
               href="{{ url_for('main.piloto_dosagem') }}"
              data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.piloto_dosagem')) if central_ti_url_allowed is defined else true) else 'false' }}">

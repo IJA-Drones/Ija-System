@@ -58,6 +58,7 @@ class OperationalScheduleFilterTests(unittest.TestCase):
             patch.object(agenda_service, "datetime", FixedDatetime),
             patch.object(agenda_service, "build_agenda_query", return_value=EmptyQuery()) as build_query,
             patch.object(agenda_service, "build_agenda_uvis_disponiveis", return_value=[]),
+            patch.object(agenda_service, "build_agenda_equipes_disponiveis", return_value=[]),
             patch.object(agenda_service, "build_agenda_anos_disponiveis", return_value=[2026]),
             patch.object(agenda_service, "get_agenda_google_maps_key", return_value=""),
         ):
@@ -79,6 +80,7 @@ class OperationalScheduleFilterTests(unittest.TestCase):
             patch.object(agenda_service, "datetime", FixedDatetime),
             patch.object(agenda_service, "build_agenda_query", return_value=EmptyQuery()) as build_query,
             patch.object(agenda_service, "build_agenda_uvis_disponiveis", return_value=[]),
+            patch.object(agenda_service, "build_agenda_equipes_disponiveis", return_value=[]),
             patch.object(agenda_service, "build_agenda_anos_disponiveis", return_value=[2026]),
             patch.object(agenda_service, "get_agenda_google_maps_key", return_value=""),
         ):
@@ -121,10 +123,11 @@ class AgendaVisibleStatusTests(unittest.TestCase):
             login="uvis_agenda",
             senha_hash="hash",
             tipo_usuario="uvis",
+            prefeitura_id=1,
         )
         db.session.add(self.uvis)
         db.session.commit()
-        self.equipe = Equipe(nome_equipe="PLOA Agenda", regiao="OESTE", ativa=True)
+        self.equipe = Equipe(nome_equipe="PLOA Agenda", regiao="OESTE", prefeitura_id=1, ativa=True)
         db.session.add(self.equipe)
         db.session.commit()
 
@@ -145,6 +148,7 @@ class AgendaVisibleStatusTests(unittest.TestCase):
             "uf": "SP",
             "status": status,
             "usuario_id": self.uvis.id,
+            "prefeitura_id": 1,
         }
         values.update(overrides)
         solicitacao = Solicitacao(
@@ -152,6 +156,48 @@ class AgendaVisibleStatusTests(unittest.TestCase):
         )
         db.session.add(solicitacao)
         return solicitacao
+
+    def test_vehicle_supervisor_sees_all_teams_in_municipality(self):
+        outra_uvis = Usuario(
+            nome_uvis="UVIS Outra Região",
+            regiao="SUL",
+            login="uvis_agenda_sul",
+            senha_hash="hash",
+            tipo_usuario="uvis",
+            prefeitura_id=1,
+        )
+        db.session.add(outra_uvis)
+        db.session.flush()
+        agenda_outra_regiao = self._nova_solicitacao(
+            "APROVADO",
+            usuario_id=outra_uvis.id,
+        )
+        agenda_equipe = self._nova_solicitacao(
+            "APROVADO",
+            equipe_id=self.equipe.id,
+        )
+        db.session.commit()
+
+        supervisor = SimpleNamespace(
+            tipo_usuario="sup_veiculos",
+            prefeitura_id=1,
+            regiao="OESTE",
+        )
+        resultados = agenda_service.build_agenda_query(
+            supervisor,
+            mes=7,
+            ano=2026,
+        ).all()
+
+        self.assertTrue(agenda_service.can_view_all_agenda(supervisor))
+        self.assertIn(agenda_outra_regiao.id, [item.id for item in resultados])
+        filtrados = agenda_service.build_agenda_query(
+            supervisor,
+            filtro_equipe_id=self.equipe.id,
+            mes=7,
+            ano=2026,
+        ).all()
+        self.assertEqual([item.id for item in filtrados], [agenda_equipe.id])
 
     def test_agenda_only_lists_approved_recommended_and_completed_statuses(self):
         aprovado = self._nova_solicitacao("APROVADO")
