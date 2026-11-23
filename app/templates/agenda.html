@@ -60,7 +60,7 @@
     </div>
   </div>
 
-  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_agenda or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
+  {% set agenda_has_filters = filtros.uvis_id or filtros.equipe_id or filtros.status or filtros.tipo_agenda or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
 
   {% if periodo_semanal_fixo %}
   <div class="alert alert-primary border-0 shadow-sm rounded-4 mb-4 agenda-period-alert">
@@ -113,6 +113,23 @@
                   {% if filtros.uvis_id|int == id|int %}selected{% endif %}
                 >
                   {{ nome }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+
+            {% if pode_filtrar_uvis %}
+            <div class="col-md-3">
+              <label class="small text-muted">Equipe/PLOA:</label>
+              <select class="form-select form-select-sm" name="equipe_id">
+                <option value="">Todas</option>
+                {% for equipe in equipes_disponiveis %}
+                <option
+                  value="{{ equipe.id }}"
+                  {% if filtros.equipe_id|int == equipe.id|int %}selected{% endif %}
+                >
+                  {{ equipe.nome_equipe }}
                 </option>
                 {% endfor %}
               </select>

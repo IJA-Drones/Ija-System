@@ -250,6 +250,7 @@ def build_agenda_query(
     *,
     filtro_status=None,
     filtro_uvis_id=None,
+    filtro_equipe_id=None,
     filtro_tipo_visita=None,
     filtro_tipo_imovel=None,
     filtro_foco=None,
@@ -280,6 +281,9 @@ def build_agenda_query(
         filtro_uvis_id = None
     elif filtro_uvis_id:
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
+
+    if can_view_all_agenda(user) and filtro_equipe_id:
+        query = query.filter(Solicitacao.equipe_id == filtro_equipe_id)
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
@@ -446,6 +450,16 @@ def build_agenda_uvis_disponiveis(user):
     )
 
 
+def build_agenda_equipes_disponiveis(user):
+    if not can_view_all_agenda(user):
+        return []
+
+    query = apply_prefeitura_scope(db.session.query(Equipe), user, Equipe.prefeitura_id)
+    if not is_veiculos_supervisor(user):
+        query = apply_regiao_scope(query, user, Equipe.regiao)
+    return query.order_by(Equipe.nome_equipe, Equipe.id).all()
+
+
 def build_agenda_anos_disponiveis(user):
     if db.engine.name == "postgresql":
         func_ano = db.func.to_char(Solicitacao.data_agendamento, "YYYY")
@@ -468,6 +482,7 @@ def build_agenda_anos_disponiveis(user):
 def build_agenda_context(user, args):
     filtro_status = (args.get("status") or "").strip() or None
     filtro_uvis_id = args.get("uvis_id", type=int)
+    filtro_equipe_id = args.get("equipe_id", type=int)
     filtro_tipo_visita = (args.get("tipo_visita") or "").strip() or None
     filtro_tipo_imovel = (args.get("tipo_imovel") or "").strip() or None
     filtro_foco = (args.get("foco") or "").strip() or None
@@ -496,6 +511,7 @@ def build_agenda_context(user, args):
         user,
         filtro_status=filtro_status,
         filtro_uvis_id=filtro_uvis_id,
+        filtro_equipe_id=filtro_equipe_id,
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,
@@ -510,6 +526,7 @@ def build_agenda_context(user, args):
         "eventos_json": json.dumps(build_agenda_eventos(solicitacoes), ensure_ascii=False),
         "filtros": {
             "uvis_id": filtro_uvis_id if can_view_all_agenda(user) else None,
+            "equipe_id": filtro_equipe_id if can_view_all_agenda(user) else None,
             "status": filtro_status,
             "tipo_visita": filtro_tipo_visita,
             "tipo_imovel": filtro_tipo_imovel,
@@ -527,6 +544,7 @@ def build_agenda_context(user, args):
             "CONCLUÍDO",
         ],
         "uvis_disponiveis": build_agenda_uvis_disponiveis(user),
+        "equipes_disponiveis": build_agenda_equipes_disponiveis(user),
         "anos_disponiveis": build_agenda_anos_disponiveis(user),
         "initial_date": initial_date,
         "pode_filtrar_uvis": can_view_all_agenda(user),
@@ -555,6 +573,7 @@ def build_agenda_rotas_payload(user, args):
         raise ValueError("Formato inv\u00e1lido para 'dia'. Use YYYY-MM-DD.") from exc
 
     filtro_uvis_id = args.get("uvis_id", type=int)
+    filtro_equipe_id = args.get("equipe_id", type=int)
 
     query = apply_agenda_user_scope(
         Solicitacao.query.options(joinedload(Solicitacao.usuario)),
@@ -562,6 +581,8 @@ def build_agenda_rotas_payload(user, args):
     )
     if can_view_all_agenda(user) and filtro_uvis_id:
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
+    if can_view_all_agenda(user) and filtro_equipe_id:
+        query = query.filter(Solicitacao.equipe_id == filtro_equipe_id)
 
     query = query.filter(Solicitacao.status.in_(AGENDA_ROUTE_STATUSES))
     query = query.filter(Solicitacao.data_agendamento == dia_date)
@@ -619,6 +640,7 @@ def build_agenda_export(user, args):
 
     filtro_status = None if export_all else (args.get("status") or None)
     filtro_uvis_id = None if export_all else args.get("uvis_id", type=int)
+    filtro_equipe_id = None if export_all else args.get("equipe_id", type=int)
     filtro_tipo_visita = None if export_all else (args.get("tipo_visita") or None)
     filtro_tipo_imovel = None if export_all else (args.get("tipo_imovel") or None)
     filtro_foco = None if export_all else (args.get("foco") or None)
@@ -634,6 +656,7 @@ def build_agenda_export(user, args):
         user,
         filtro_status=filtro_status,
         filtro_uvis_id=filtro_uvis_id,
+        filtro_equipe_id=filtro_equipe_id,
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,
