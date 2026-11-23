@@ -143,22 +143,16 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small text-muted">Foco da Ação</label>
-                        <select name="foco" class="form-select" required>
-                            <option value="" disabled {% if not pedido.foco %}selected{% endif %}>Selecione o foco da acao...</option>
-                            {% if pedido.foco %}
-                            <option value="{{ pedido.foco }}" selected>{{ pedido.foco }}</option>
-                            {% endif %}
-                        </select>
+                    <div class="col-12">
+                        {% with foco_atual=pedido.foco, foco_id='editarFoco' %}{% include '_solicitacao_foco_selector.html' %}{% endwith %}
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">Tipo de Operação</label>
                         <select name="tipo_operacao" class="form-select">
+                            <option value="" disabled hidden {% if (pedido.foco or '')|trim|upper == 'QUADRA' %}selected{% endif %}>Definido pela opção de quadra</option>
                             <option value="Monitoramento" {% if pedido.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
                             <option value="Tratamento" {% if pedido.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
-                            <option value="Tratamento e monitoramento de quadra" {% if pedido.tipo_operacao == 'Tratamento e monitoramento de quadra' %}selected{% endif %}>Tratamento e monitoramento de quadra</option>
                         </select>
                     </div>
                 </div>
@@ -273,7 +267,7 @@
 {# O seu Script de CEP permanece o mesmo, ele já é funcional para ambos #}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/solicitacao-focos.js', v='20261117-quadra-foco') }}"></script>
+<script src="{{ url_for('static', filename='js/solicitacao-focos.js', v='20261123-quadra-radio') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
       initSolicitacaoFocusForm({

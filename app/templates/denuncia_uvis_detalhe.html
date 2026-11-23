@@ -87,12 +87,8 @@
             <label class="form-label" for="denunciaDistrito">Distrito administrativo (DA) *</label>
             <input id="denunciaDistrito" type="text" name="distrito_administrativo" class="form-control" maxlength="100" required value="{{ form.distrito_administrativo or '' }}">
           </div>
-          <div class="col-md-6">
-            <label class="form-label" for="denunciaFoco">Foco da ação *</label>
-            <select id="denunciaFoco" class="form-select" name="foco" required>
-              <option value="" {% if not form.foco %}selected{% endif %} disabled>Selecione o foco da ação...</option>
-              {% if form.foco %}<option value="{{ form.foco }}" selected>{{ form.foco }}</option>{% endif %}
-            </select>
+          <div class="col-12">
+            {% with foco_atual=form.foco, foco_id='denunciaFoco', foco_label='Foco da ação *', foco_label_class='form-label' %}{% include '_solicitacao_foco_selector.html' %}{% endwith %}
           </div>
           <div class="col-12{% if form.tipo_visita != 'Aedes' %} d-none{% endif %}" data-tipo-imovel-wrapper>
             <fieldset class="denuncia-choice-group">
@@ -155,7 +151,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/solicitacao-focos.js', v='20261117-quadra-foco') }}"></script>
+<script src="{{ url_for('static', filename='js/solicitacao-focos.js', v='20261123-quadra-radio') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     initSolicitacaoFocusForm({

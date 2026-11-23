@@ -1,0 +1,10 @@
+{
+  "date": "23/11/2026",
+  "scope": "Implementação local do Guia prático e revisão da Central de Treinamentos",
+  "python": {"passed": 39, "failed": 1, "suites": ["tests/test_azul_practical.py", "tests/test_screen_guide.py"]},
+  "javascript": {"passed": 17, "failed": 0, "suites": ["tests/screen_guide.test.cjs", "tests/azul_tutorial_launcher.test.cjs", "tests/azul_companion_browser.test.cjs", "tests/service_worker_cache.test.cjs"]},
+  "inventory": {"saved_templates": 198, "current_templates": 200, "profile_identifiers": 23, "added": ["agro_parceiro.html", "agro_parceiros.html"]},
+  "screenshots": {"count": 5, "origin": "Templates atuais da aplicação, servidos localmente", "database": "SQLite descartável", "accounts": "Fictícias", "ai": "Respostas simuladas", "live_voice_playback": false, "business_writes": 0},
+  "pending": ["Atualizar o inventário para as duas novas telas do Agro", "Validar a geração dos tutoriais com o provedor real", "Validar voz real, configuração e experiência de narração", "Realizar aceite dos fluxos com os usuários responsáveis"],
+  "sources": ["docs/treinamentos/guia-pratico.md", "docs/treinamentos/README.md", "app/modules/chatbot/practical.py", "app/static/js/screen-guide.js", "tests/test_azul_practical.py", "tests/test_screen_guide.py"]
+}
