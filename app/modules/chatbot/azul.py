@@ -341,6 +341,9 @@ def reply(channel):
                          code='access_changed')
         result.headers['Cache-Control'] = 'private, no-store'
         return result, 409
+    if payload.get('intent') == 'practical_guide':
+        from app.modules.chatbot.practical import reply as practical_reply
+        return practical_reply(payload, current_user, topics.clean_history(history), current_key)
     fly = persona.is_agro(current_user, page, channel)
     decision = topics.evaluate(message, history)
     from app.modules.chatbot import prospecting

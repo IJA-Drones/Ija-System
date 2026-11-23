@@ -1,0 +1,26 @@
+<details class="card shadow-sm border-0 rounded-4 map-display-panel" data-map-display-panel>
+  <summary class="d-flex align-items-center gap-2"><i class="bi bi-layers" aria-hidden="true"></i>Camadas do mapa<i class="bi bi-chevron-down ms-auto map-display-chevron" aria-hidden="true"></i></summary>
+  <div class="map-display-options">
+    <fieldset class="uvis-layer-options">
+      <legend>Territórios</legend>
+      <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-uvis-visible checked><span class="form-check-label">Mostrar limites das UVIS</span></label>
+      <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-uvis-colors{% if not operational_map_controls|default(False) %} checked{% endif %}><span class="form-check-label">Colorir territórios das UVIS</span></label>
+      <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-uvis-labels checked><span class="form-check-label">Mostrar nomes das UVIS</span></label>
+      <p class="small text-muted mb-2">Nomes aparecem ao aproximar o mapa.</p>
+      <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-districts-visible><span class="form-check-label">Mostrar distritos</span></label>
+    </fieldset>
+    <fieldset class="uvis-layer-options mt-3">
+      <legend>Mapa de fundo</legend>
+      {% include '_satellite_context_controls.html' %}
+    </fieldset>
+    {% if operational_map_controls|default(False) %}
+    <fieldset class="uvis-layer-options mt-3" data-map-area-options hidden>
+      <legend>Registros da aba Áreas</legend>
+      <label class="small text-muted mb-1 fw-bold w-100">Colorir registros por<select id="mapColorMode" class="form-select form-select-sm" onchange="recolorirMapas()"><option value="larva">Larva visualizada</option><option value="foco">Tipo de foco</option></select></label>
+      <label class="form-check form-switch"><input class="form-check-input" type="checkbox" id="mapShowRecords" checked onchange="recolorirMapas()"><span class="form-check-label">Mostrar registros de OS</span></label>
+    </fieldset>
+    {% endif %}
+    {% if operational_map_controls|default(False) %}<button type="button" class="btn btn-outline-primary btn-sm w-100 mt-3" data-map-fit-sp>Ver São Paulo inteiro</button>{% endif %}
+    <p class="small text-muted mb-0 mt-3">As cores dos territórios identificam as UVIS, sem classificação de risco.</p>
+  </div>
+</details>

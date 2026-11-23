@@ -1,0 +1,24 @@
+{% from '_filters.html' import render_filter_card %}
+<div class="uvis-territory" data-uvis-controls data-uvis-url="{{ url_for('static', filename='data/uvis-sao-paulo/uvis.geojson', v='20261119-3') }}" data-districts-url="{{ url_for('static', filename='data/uvis-sao-paulo/distritos.geojson', v='20260727') }}">
+  {% call render_filter_card('Filtros territoriais', collapse_id='uvisTerritoryFilters', active=True, icon='bi-geo-alt') %}
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="small text-muted mb-1 fw-bold w-100">Buscar coordenadoria ou UVIS
+          <input class="form-control form-control-sm" type="search" data-uvis-search placeholder="Ex.: Norte, Sé, Santana" aria-label="Buscar coordenadoria ou UVIS">
+        </label>
+      </div>
+      <div class="col-md-4">
+        <label class="small text-muted mb-1 fw-bold w-100">Coordenadoria
+          <select class="form-select form-select-sm" data-uvis-region aria-label="Coordenadoria do território"><option value="">Todas as coordenadorias</option></select>
+        </label>
+      </div>
+      <div class="col-md-4">
+        <label class="small text-muted mb-1 fw-bold w-100">UVIS
+          <select class="form-select form-select-sm" data-uvis-select aria-label="Consultar UVIS no mapa"><option value="">Todas as UVIS</option></select>
+        </label>
+      </div>
+    </div>
+    <p class="small text-muted mt-3 mb-1" data-uvis-status role="status" aria-live="polite">Carregando limites territoriais…</p>
+    <div class="uvis-source small text-muted"><a href="https://www.google.com/maps/d/viewer?mid=1ZdzK_HpjS1xBTZbtGzHSq6y1OTzjW1XD" target="_blank" rel="noopener">Fonte: Prefeitura · 27/07/2026</a></div>
+  {% endcall %}
+</div>

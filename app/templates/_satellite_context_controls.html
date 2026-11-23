@@ -1,0 +1,6 @@
+<div class="uvis-map-context" data-satellite-context data-mask-url="{{ url_for('static', filename='data/uvis-sao-paulo/mascara.geojson', v='20260727') }}" data-region-mask-base="{{ url_for('static', filename='data/uvis-sao-paulo/') }}">
+  <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-map-background checked><span class="form-check-label">Mostrar fundo do mapa</span></label>
+  <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-satellite-surroundings><span class="form-check-label">Satélite no entorno</span></label>
+  <label class="form-check form-switch"><input class="form-check-input" type="checkbox" data-map-pois><span class="form-check-label">Mostrar locais do Google Maps</span></label>
+  <p class="small text-muted mt-2 mb-0" data-satellite-status role="status" aria-live="polite"></p>
+</div>

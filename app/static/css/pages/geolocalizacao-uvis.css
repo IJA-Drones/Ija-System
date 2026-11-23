@@ -1,0 +1,13 @@
+.uvis-map { min-width: 0; }
+.geolocation-page .nav-link { color: var(--color-primary); border-radius: var(--radius-md); font-size: .9rem; }
+.geolocation-page .nav-link.active { background-color: var(--color-primary); color: #fff; }
+.geolocation-address-map { height: min(60vh,600px); min-height: 360px; border-radius: var(--radius-md); }
+.geolocation-page .tab-pane { min-width: 0; }
+.uvis-map-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 260px); gap: 1rem; }
+.uvis-map-map, .uvis-map-svg { width: 100%; height: min(65vh, 650px); min-height: 380px; border: 1px solid var(--color-border, #94a3b8); border-radius: 12px; }
+.uvis-map-svg { background: var(--color-bg-surface, #fff); }
+.uvis-map-svg path:focus { stroke-width: 4; outline: none; }
+.uvis-map-details { min-width: 0; padding: 1rem; background: var(--color-bg-surface, #fff); border: 1px solid var(--color-border, #94a3b8); border-radius: 12px; overflow-wrap: anywhere; }
+.uvis-map-details h4 { font-size: 1rem; }
+.uvis-map-details p { font-size: .85rem; }
+@media (max-width: 767.98px) { .uvis-map-grid { grid-template-columns: minmax(0, 1fr); } }

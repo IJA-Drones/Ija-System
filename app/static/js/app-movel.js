@@ -322,7 +322,7 @@
   const val = (root, name) => { const el = root.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ''; };
   const setVal = (root, name, v) => { const el = root.querySelector(`[name="${name}"]`); if (el) el.value = v; };
   function bar(title, { back = 'inicio', actions = '', flat = false } = {}) {
-    return `<header class="bar ${flat ? 'flat' : ''}"><button class="iconbtn" type="button" data-go="${back}" aria-label="Voltar">${svg('back')}</button><h1>${esc(title)}</h1>${actions}</header>`;
+    return `<header class="bar ${flat ? 'flat' : ''}"><button class="iconbtn" type="button" data-go="${back}" aria-label="Voltar">${svg('back')}</button><h1>${esc(title)}</h1>${actions}<button class="iconbtn" type="button" data-screen-guide-open aria-label="Guia prático desta tela" title="Guia prático">?</button></header>`;
   }
   const locCard = (pos, status) => `<div class="card softer loc ${pos ? 'ok' : ''}">${svg(pos ? 'gps' : 'gpsOff')}<div><b>${pos ? pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5) : 'Sem coordenadas'}</b><span>${esc(status || '')}</span></div></div>`;
   function readFiles(input, limit, current, video) {
@@ -676,7 +676,7 @@
       <main class="content app-azul-intro azul-help">${mascot}<h2>Vamos conversar?</h2>
       <p>Peça orientações sobre saúde, prevenção e uso do aplicativo. Você também pode abrir o guia prático e ouvir as respostas.</p>
       <button type="button" class="btn portal" id="mobileAzulOpen">Conversar com a Azul</button>
-      <button type="button" class="btn outline" id="mobileAzulGuide">Guia prático</button></main>`;
+      <button type="button" class="btn outline" id="mobileAzulGuide" data-screen-guide-open>Guia prático</button></main>`;
     const open = () => companion?.dispatchEvent(new CustomEvent('azul:open'));
     $app.querySelector('#mobileAzulOpen').addEventListener('click', open);
     $app.querySelector('#mobileAzulGuide').addEventListener('click', () => companion?.querySelector('[data-guide-open]')?.click());

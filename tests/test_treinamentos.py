@@ -5,7 +5,7 @@ import pytest
 from app.extensions import db
 from app.models import Usuario, Prefeitura, CentralTiPerfilConfiguracao, CentralTiSelecao
 from app.modules.gestao_ti.permissions import validate_route_policy
-from app.modules.treinamentos.catalog import ARCHIVED_MATERIALS, MATERIALS, REQUEST_VIDEOS, RESOURCE_DIR
+from app.modules.treinamentos.catalog import ARCHIVED_MATERIALS, MATERIALS, RESOURCE_DIR, TRAINING_VIDEOS
 from app.modules.treinamentos.access import POLICIES
 from app.modules.vigilancia.sinan_import import parse_cases
 from tests import test_central_ti as base
@@ -39,7 +39,7 @@ def training():
 
 
 def test_training_and_files_require_login(training):
-    for path in ("/treinamentos", "/agro/treinamentos", "/financeiro/treinamentos",
+    for path in ("/treinamentos", "/treinamentos/videos", "/agro/treinamentos", "/financeiro/treinamentos",
                  "/treinamentos/arquivos/guia-geral", "/treinamentos/arquivos/csv-territorio"):
         response = training.client.get(path)
         assert response.status_code == 302
@@ -104,7 +104,7 @@ def configure(training, role, codes):
 
 def test_every_material_has_an_explicit_valid_access_policy():
     from app.modules.gestao_ti.catalog import PERMISSION_CODES, AREA_CODES
-    assert set(POLICIES) == set(MATERIALS) | set(ARCHIVED_MATERIALS) | {video["id"] for video in REQUEST_VIDEOS}
+    assert set(POLICIES) == set(MATERIALS) | set(ARCHIVED_MATERIALS) | {video["id"] for video in TRAINING_VIDEOS}
     for policy in POLICIES.values():
         assert policy.area in {"prefeitura", "agro", "financeiro", "common"}
         assert all(code in PERMISSION_CODES or code.removeprefix("area:") in AREA_CODES
@@ -146,11 +146,15 @@ def test_pilot_can_read_operational_guides(training):
 def test_uvis_drive_video_follows_creation_permission_without_local_downloads(training):
     training.login('uvis')
     page=training.client.get('/treinamentos').text
-    assert 'Solicitações</h2>' in page
-    assert '<details class="training-drive-videos">' in page
-    assert 'Ver vídeos no Drive' in page
-    assert '1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb/preview' not in page
-    assert 'https://drive.google.com/file/d/1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb/view?usp=drive_link' in page
+    assert 'Central de vídeos</h2>' in page
+    assert '/treinamentos/videos?video=video-quadra' in page
+    assert '1 vídeo disponível' in page
+    player=training.client.get('/treinamentos/videos?video=video-quadra')
+    assert player.status_code==200
+    assert 'https://drive.google.com/file/d/1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb/preview' in player.text
+    assert player.text.count('class="video-playlist-item"')==1
+    assert player.headers['Cache-Control']=='private, no-store'
+    assert 'video-novidades' not in player.text
     for removed in ('Demonstração · Pesqueira', 'Demonstração · UVIS Sé', 'Kit Pesqueira', 'Kit UVIS Sé'):
         assert removed not in page
     for retired in ('video-quadra', 'legendas-quadra'):
@@ -158,8 +162,33 @@ def test_uvis_drive_video_follows_creation_permission_without_local_downloads(tr
     configure(training,'uvis',['area:prefeitura','prefeitura.solicitacoes.consultar'])
     assert 'video-quadra' not in training.client.get('/treinamentos').text
     assert '1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb' not in training.client.get('/treinamentos').text
+    assert training.client.get('/treinamentos/videos').status_code==403
     assert training.client.get('/treinamentos/arquivos/video-quadra').status_code==404
     assert training.client.get('/treinamentos/arquivos/legendas-quadra').status_code==404
+
+
+def test_video_library_plays_each_registered_drive_file_and_filters_direct_links(training):
+    training.login()
+    home=training.client.get('/treinamentos')
+    assert '3 vídeos disponíveis' in home.text
+    for video in TRAINING_VIDEOS:
+        page=training.client.get('/treinamentos/videos',query_string={'video':video['id']})
+        assert page.status_code==200
+        assert page.text.count('class="video-playlist-item"')==3
+        assert page.text.count('<iframe ')==1
+        assert f'https://drive.google.com/file/d/{video["drive_id"]}/preview' in page.text
+        assert 'Abrir no Drive' not in page.text
+    assert training.client.get('/treinamentos/videos?video=inexistente').status_code==404
+    assert training.client.get('/treinamentos/videos?video=https://example.com').status_code==404
+    training.login('uvis')
+    for video_id in ('video-novidades','video-apresentacao-prefeitura'):
+        for method in ('get','head'):
+            response=getattr(training.client,method)('/treinamentos/videos',query_string={'video':video_id})
+            assert response.status_code==403
+            assert response.headers['Cache-Control']=='private, no-store'
+    for role in ('piloto','financeiro','agent'):
+        training.login(role)
+        assert training.client.get('/treinamentos/videos').status_code==403
 
 
 def test_finance_and_agro_are_separate_tabs_and_contexts(training):
@@ -218,6 +247,7 @@ def test_page_and_downloads_do_not_write_database(training):
     event.listen(db.engine, "before_cursor_execute", reject_write)
     try:
         assert training.client.get("/treinamentos").status_code == 200
+        assert training.client.get("/treinamentos/videos").status_code == 200
         assert training.client.get("/treinamentos/arquivos/guia-protecao-login").status_code == 200
     finally:
         event.remove(db.engine, "before_cursor_execute", reject_write)

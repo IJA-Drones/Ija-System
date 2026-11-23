@@ -92,10 +92,13 @@ VIGILANCE = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar",), "
 SINAN = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar",), "coordination", flag="SINAN_ENABLED")
 PUBLICATIONS = MaterialPolicy("prefeitura", ("prefeitura.acoes_publicas.consultar",), "publications", flag="ACOES_PUBLICAS_ENABLED")
 INTEGRATED = MaterialPolicy("prefeitura", ("prefeitura.vigilancia.consultar", "prefeitura.acoes_publicas.consultar"), "integrated", all_required=True)
+SYSTEM_OVERVIEW = MaterialPolicy("prefeitura", ("sistema.tecnico.consultar", "sistema.usuarios.consultar"), "dev", all_required=True)
 POLICIES = {
     "guia-azul-agro": MaterialPolicy("agro", legacy="azul_agro"),
     "video-quadra": MaterialPolicy("prefeitura", ("prefeitura.solicitacoes.criar",), "requests"),
-    "guia-geral": MaterialPolicy("prefeitura", ("sistema.tecnico.consultar", "sistema.usuarios.consultar"), "dev", all_required=True),
+    "video-apresentacao-prefeitura": SYSTEM_OVERVIEW,
+    "video-novidades": SYSTEM_OVERVIEW,
+    "guia-geral": SYSTEM_OVERVIEW,
     "manual-liraa": VIGILANCE, "manual-mapa": VIGILANCE, "manual-sinan": SINAN,
     "manual-publicacoes": PUBLICATIONS,
     "csv-territorio": VIGILANCE, "csv-amostra": VIGILANCE, "csv-visitas": VIGILANCE,

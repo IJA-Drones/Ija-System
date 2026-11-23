@@ -95,6 +95,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/permission-controls.css', v='20261009a') }}">
     <script src="{{ url_for('static', filename='js/permission-controls.js', v='20261009a') }}" defer></script>
     {% endif %}
+    {% if current_user.is_authenticated %}
+    <script type="application/json" data-screen-guide-config>{{ {'groups': azul_practical_catalog|default([]), 'url': azul_help_url|default(none), 'chat_key': azul_chat_key|default('')}|tojson }}</script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/screen-guide.css', v='20261119-ia-modulos-2') }}">
+    <script src="{{ url_for('static', filename='js/screen-guide.js', v='20261119-ia-modulos-2') }}" defer></script>
+    {% endif %}
     {% block extra_styles %}{% endblock %}
     {% if edit_control_enabled|default(false) %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/edit-control.css', v='20261017a') }}">
@@ -331,6 +336,7 @@
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
           {% if current_user.tipo_usuario == 'ortomosaico' %}
+          <li class="nav-item"><button type="button" class="nav-link" data-screen-guide-open><i class="bi bi-book me-2" aria-hidden="true"></i><span>Guia prático</span></button></li>
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.treinamentos' %}active{% endif %}" href="{{ url_for('main.treinamentos') }}"{% if request.endpoint == 'main.treinamentos' %} aria-current="page"{% endif %}>
               <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
@@ -342,9 +348,10 @@
             </a>
           </li>
           {% else %}
+          <li class="nav-item"><button type="button" class="nav-link" data-screen-guide-open><i class="bi bi-book me-2" aria-hidden="true"></i><span>Guia prático</span></button></li>
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}active{% endif %}"
-               href="{{ url_for('main.financeiro_treinamentos' if is_financeiro_context else ('main.agro_treinamentos' if is_agro_context else 'main.treinamentos')) }}" {% if request.endpoint in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}aria-current="page"{% endif %}>
+            <a class="nav-link {% if request.endpoint in ['main.treinamentos', 'main.treinamentos_videos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}active{% endif %}"
+               href="{{ url_for('main.financeiro_treinamentos' if is_financeiro_context else ('main.agro_treinamentos' if is_agro_context else 'main.treinamentos')) }}" {% if request.endpoint in ['main.treinamentos', 'main.treinamentos_videos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}aria-current="page"{% endif %}>
               <i class="bi bi-journal-bookmark-fill me-2" aria-hidden="true"></i><span>Treinamentos</span>
             </a>
           </li>
@@ -1258,7 +1265,7 @@
       };
     </script>
 
-    {% if not is_financeiro_context and request.endpoint not in ['main.treinamentos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}
+    {% if not is_financeiro_context and request.endpoint not in ['main.treinamentos', 'main.treinamentos_videos', 'main.agro_treinamentos', 'main.financeiro_treinamentos'] %}
     <script
       async
       src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&v=weekly&libraries=geometry,marker&callback=initGoogleMaps&loading=async">

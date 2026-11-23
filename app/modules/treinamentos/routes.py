@@ -3,11 +3,11 @@ from flask_login import current_user, login_required
 
 from app.modules.gestao_ti.permissions import can_access_endpoint, profile_code
 from app.modules.vigilancia.access import can_coordinate_field
-from .catalog import GUIDE_GROUPS, MATERIALS, REQUEST_VIDEOS, RESOURCE_DIR, SECTIONS
+from .catalog import GUIDE_GROUPS, MATERIALS, RESOURCE_DIR, SECTIONS, TRAINING_VIDEOS
 from .access import POLICIES, can_read_material
 
 TRAINING_ENDPOINTS = {"main.treinamentos", "main.agro_treinamentos", "main.financeiro_treinamentos",
-                      "main.treinamentos_arquivo"}
+                      "main.treinamentos_arquivo", "main.treinamentos_videos"}
 AREAS = {"prefeitura": ("Prefeitura e Sistema", "main.treinamentos"),
          "agro": ("Agro", "main.agro_treinamentos"),
          "financeiro": ("Financeiro", "main.financeiro_treinamentos")}
@@ -59,6 +59,27 @@ def register_routes(bp):
     def financeiro_index():
         return _index("financeiro")
 
+    @bp.get("/treinamentos/videos", endpoint="treinamentos_videos")
+    @login_required
+    def videos():
+        selected_id = request.args.get("video")
+        if selected_id and not any(video["id"] == selected_id for video in TRAINING_VIDEOS):
+            abort(404)
+        available = [_video_links(video) for video in TRAINING_VIDEOS
+                     if can_read_material(current_user, video["id"])]
+        if not available:
+            abort(403)
+        selected = next((video for video in available if video["id"] == selected_id), None)
+        if selected_id and selected is None:
+            abort(403)
+        selected = selected or available[0]
+        position = available.index(selected)
+        return render_template("treinamentos_videos.html", videos=available, selected=selected,
+                               position=position + 1,
+                               previous=available[position - 1] if position else None,
+                               next_video=available[position + 1] if position + 1 < len(available) else None,
+                               training_url=url_for(AREAS[POLICIES[selected["id"]].area][1]))
+
     @bp.get("/treinamentos/arquivos/<material_id>", endpoint="treinamentos_arquivo")
     @login_required
     def material(material_id):
@@ -73,6 +94,10 @@ def register_routes(bp):
             abort(404)
         return send_file(path, mimetype=mimetype, download_name=path.name,
                          as_attachment=mimetype not in {"application/pdf", "video/mp4"} or request.args.get("baixar") == "1")
+
+
+def _video_links(video):
+    return dict(video, embed_url=f'https://drive.google.com/file/d/{video["drive_id"]}/preview')
 
 
 def _index(area=None):
@@ -94,7 +119,7 @@ def _index(area=None):
     if area not in areas:
         abort(403)
     visible = {key for key in allowed if POLICIES[key].area in {area, "common"}}
-    request_videos = [video for video in REQUEST_VIDEOS if video["id"] in visible]
+    training_videos = [video for video in TRAINING_VIDEOS if video["id"] in visible]
     sections = [dict(section, module_url=_module_url(section)) for section in SECTIONS
                 if section["manual"] in visible]
     groups = []
@@ -106,5 +131,5 @@ def _index(area=None):
             for key, (label, endpoint) in AREAS.items() if key in areas]
     return render_template("treinamentos.html", sections=sections, guide_groups=groups,
                            training_tabs=tabs, training_area=area, available_materials=visible,
-                           request_videos=request_videos)
+                           training_videos=training_videos)
 

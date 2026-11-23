@@ -45,12 +45,12 @@ function element(value = '') {
   };
 }
 
-function harness({ uvis = true, operational = false } = {}) {
+function harness({ uvis = true, operational = false, hiddenAreaRecords = false, areaVisible, withoutMaps = false } = {}) {
   const elements = Object.fromEntries([
     'uvisFilter', 'mesFilter', 'anoFilter', 'larvaFilter', 'focoFilter',
     'filterBadge', 'mapFeedback', 'count-total', 'legend-count',
     'distancia-km', 'consumo-litros', 'custo-total-log',
-    'areaLegendItems', 'areaLegendTotal',
+    'areaLegendItems', 'areaLegendTotal', 'mapHeatmap', 'mapPolygons',
   ].map(id => [id, element()]));
   Object.assign(elements.mesFilter, { value: '10' });
   Object.assign(elements.anoFilter, { value: '2026', reportValidity: () => true });
@@ -58,6 +58,14 @@ function harness({ uvis = true, operational = false } = {}) {
   if (!uvis) delete elements.uvisFilter;
 
   if (operational) elements.visaoFilter = element("pendentes");
+  if(areaVisible!==undefined){
+    elements.tabArea=element();
+    if(areaVisible)elements.tabArea.classList.add('active');
+  }
+  if (hiddenAreaRecords) {
+    elements.mapShowRecords = { ...element(), checked: false };
+    elements.mapColorMode = element('larva');
+  }
   let operationalRows = [];
   const requests = [];
   const errors = [];
@@ -68,18 +76,25 @@ function harness({ uvis = true, operational = false } = {}) {
     { setCenter() {}, setZoom() {}, fitBounds() {} },
     { setCenter() {}, setZoom() {}, fitBounds() {} },
   ];
+  let mapIndex=0;
   const context = vm.createContext({
     URLSearchParams, AbortController, Map, Number, Date,
+    CustomEvent: class { constructor(type,options) { this.type=type;this.detail=options.detail; } },
     console: { warn() {}, error(error) { errors.push(error); } },
-    window: operational ? { mapOperational: { reset() { operationalRows=[]; }, render(rows) { operationalRows=rows; } } } : {},
+    window: {
+      ...(operational ? { mapOperational: { reset() { operationalRows=[]; }, render(rows) { operationalRows=rows; } } } : {}),
+      ...(hiddenAreaRecords ? { MapLarva: require('../app/static/js/map-larva.js') } : {}),
+    },
     document: {
-      readyState: 'complete',
+      readyState: 'loading',
       addEventListener() {},
+      dispatchEvent() {},
       getElementById(id) { return elements[id] || null; },
       querySelector() { return element(); },
       querySelectorAll() { return []; },
     },
     google: { maps: {
+      Map: class { constructor() { return maps[mapIndex++]; } },
       OverlayView: class {
         constructor() { overlays.push(this); }
         setMap(map) { this.map = map; }
@@ -103,12 +118,29 @@ function harness({ uvis = true, operational = false } = {}) {
     testMaps: maps,
   });
   vm.runInContext(script, context, { filename: 'mapa_relatorio.html' });
-  vm.runInContext('mapHeat = testMaps[0]; mapArea = testMaps[1];', context);
+  if(!withoutMaps)vm.runInContext('mapHeat = testMaps[0]; mapArea = testMaps[1];', context);
   return {
     elements, requests, errors,
     operationalRows() { return operationalRows; },
     update() { return vm.runInContext('atualizarMapas()', context); },
+    initialize() { vm.runInContext('initMap()',context); },
+    redraw() { vm.runInContext('recolorirMapas()',context); },
+    mapsReady() { vm.runInContext('mapHeat=testMaps[0];mapArea=testMaps[1];desenharMapasAtuais()',context); },
+    showAreas() { elements.tabArea.classList.add('active');vm.runInContext('renderizarDadosOperacionais(pontosAtuais)',context); },
     url() { return new URL(vm.runInContext('heatmapDataUrl()', context), 'https://example.test'); },
+    drawVisibleHeat() {
+      const overlay=overlays.filter(o=>o.map).at(-1),arcs=[];
+      const center={lat:-23.55,lng:-46.63};
+      const pixel=p=>({x:320+(p.lng+46.63)*1000,y:160-(p.lat+23.55)*1000});
+      overlay.getMap=()=>({getDiv:()=>({clientWidth:640,clientHeight:320}),getCenter:()=>center,
+        getBounds:()=>({getNorthEast:()=>center,getSouthWest:()=>center})});
+      overlay.getProjection=()=>({fromLatLngToContainerPixel:pixel,
+        fromLatLngToDivPixel:p=>({x:pixel(p).x+680,y:pixel(p).y+340})});
+      const ctx={setTransform(){},clearRect(){},createRadialGradient:()=>({addColorStop(){}}),beginPath(){},
+        arc(x,y){arcs.push([x,y]);},fill(){},getImageData:(x,y,w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){}};
+      overlay.canvas={style:{},getContext:()=>ctx};overlay.draw();
+      return {width:overlay.canvas.width,height:overlay.canvas.height,arcs};
+    },
     visiblePoints() {
       return {
         heat: overlays.filter(overlay => overlay.map).at(-1)?.data.length ?? 0,
@@ -296,4 +328,54 @@ test('operational focus filtering is shared by totals and both maps', async () =
   respond(subject.requests[0],{registros:[point(),point('Outros'),{lat:null,lng:null,foco:'Piscina'}]});
   await pending;
   assert.equal(subject.operationalRows().length,2);assertPoints(subject,1);
+});
+
+test('hiding records in Areas never removes the original Heat density layer', async () => {
+  const subject = harness({hiddenAreaRecords:true});
+  const pending = subject.update();
+  respond(subject.requests[0], [point('Piscina',0),point('Piscina',1)]);
+  await pending;
+  assert.equal(subject.visiblePoints().heat,2);
+  assert.equal(subject.visiblePoints().areas,0);
+  assert.equal(subject.visiblePoints().legendCounter,'2');
+  assert.deepEqual(subject.errors,[]);
+});
+
+test('heat uses the visible viewport even when bounds cached by a hidden tab collapse to a point', async()=>{
+  const subject=harness();const pending=subject.update();
+  respond(subject.requests[0],[point('Piscina',0),point('Piscina',1)]);await pending;
+  const result=subject.drawVisibleHeat();
+  assert.equal(result.width,640);assert.equal(result.height,320);
+  assert.deepEqual(result.arcs[0],[320,160]);assert.equal(result.arcs.length,2);
+});
+
+test('loading Heat defers hidden Area markers until that tab is opened without another request', async()=>{
+  const subject=harness({areaVisible:false});const pending=subject.update();
+  respond(subject.requests[0],[point('Piscina',0),point('Piscina',1)]);await pending;
+  assert.equal(subject.visiblePoints().heat,2);assert.equal(subject.visiblePoints().areas,0);
+  subject.showAreas();assert.equal(subject.visiblePoints().areas,2);assert.equal(subject.requests.length,1);
+});
+
+test('opening the page and initializing Maps never fetch records before an explicit filter action',async()=>{
+ const subject=harness({withoutMaps:true});
+ assert.equal(subject.requests.length,0);
+ subject.initialize();subject.initialize();
+ assert.equal(subject.requests.length,0);
+ const pending=subject.update();
+ assert.equal(subject.requests.length,1);
+ respond(subject.requests[0],[point('Piscina',0),point('Piscina',1)]);
+ await pending;
+ subject.mapsReady();assert.equal(subject.visiblePoints().heat,2);
+ assert.equal(subject.requests.length,1);assert.deepEqual(subject.errors,[]);
+});
+
+test('only the Filtrar button submits filters and draft values do not change the current map',async()=>{
+ assert.doesNotMatch(template,/onchange="atualizarMapas\(\)"/);
+ assert.equal((template.match(/onclick="atualizarMapas\(\)"/g)||[]).length,1);
+ const subject=harness(),pending=subject.update();
+ respond(subject.requests[0],[point(),point('Outros',1)]);await pending;
+ subject.elements.focoFilter.value='Piscina';subject.elements.larvaFilter.value='SIM';
+ subject.redraw();assertPoints(subject,2);assert.equal(subject.requests.length,1);
+ const applied=subject.update();respond(subject.requests[1],[point(),point('Outros',1)]);await applied;
+ assertPoints(subject,1);assert.equal(subject.requests.length,2);
 });

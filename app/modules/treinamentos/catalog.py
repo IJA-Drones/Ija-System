@@ -23,10 +23,19 @@ MATERIALS = {
     "kit-instrucoes-sp": ("testes-sao-paulo/LEIA_PRIMEIRO.txt", "text/plain"),
 }
 
-REQUEST_VIDEOS = (
+TRAINING_VIDEOS = (
+    dict(id="video-novidades", title="Novidades do sistema",
+         category="Novidades", icon="bi-stars",
+         description="Apresentação das novidades do sistema.",
+         drive_id="1owB2cy4Kz6gBQluWgT-DvRoIDtspS62S"),
+    dict(id="video-apresentacao-prefeitura", title="Apresentação do sistema para a Prefeitura",
+         category="Apresentação", icon="bi-display",
+         description="Demonstração do sistema para a Prefeitura.",
+         drive_id="15RBNAuntyab-u2N-oKIeQVpl0jYl9uMR"),
     dict(id="video-quadra", title="Como criar uma solicitação de quadra",
-         description="Tutorial para UVIS.",
-         url="https://drive.google.com/file/d/1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb/view?usp=drive_link"),
+         category="Solicitações", icon="bi-send",
+         description="Criação e envio de uma solicitação de quadra pela UVIS.",
+         drive_id="1TZNoxL-kYwHFet3P_JHw06ioDK-lgvsb"),
 )
 
 

@@ -2,6 +2,8 @@ import uuid
 
 from flask import current_app, g, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
+
+from app.extensions import db
 from app.shared.pdf_watermark import WatermarkError
 
 
@@ -26,6 +28,10 @@ def _error_payload(code: int):
 
 
 def _render_error(code: int, titulo=None, mensagem=None):
+    if code == 500 and db.session.registry.has():
+        # Error templates and response hooks may still read from the session.
+        db.session.rollback()
+
     request_id = getattr(g, "audit_request_id", None) or str(uuid.uuid4())[:8]
     if not titulo or not mensagem:
         default_title, default_message = _error_payload(code)

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ selected.title }} | Central de vídeos{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos.css', v='20261119-central-videos') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/treinamentos-videos.css', v='20261119-controles-abaixo') }}">
+{% endblock %}
+{% block content %}
+<div class="training-page video-center">
+  <header class="video-center-header">
+    <div><a class="video-back" href="{{ training_url }}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Treinamentos</a><h1>Central de vídeos</h1><p>Escolha um vídeo e acompanhe o passo a passo.</p></div>
+    <span class="video-library-count"><i class="bi bi-collection-play" aria-hidden="true"></i>{{ videos|length }} vídeo{{ 's' if videos|length != 1 else '' }}</span>
+  </header>
+  <div class="video-center-layout">
+    <main class="video-player-column" aria-label="Reprodutor de vídeo">
+      <div class="video-player-frame">
+        <iframe id="trainingVideoPlayer" src="{{ selected.embed_url }}" title="Vídeo: {{ selected.title }}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      </div>
+        <div class="video-player-navigation" role="group" aria-label="Controles da central de vídeos">
+          <div class="video-inline-navigation">
+            {% if previous %}<a href="{{ url_for('main.treinamentos_videos', video=previous.id) }}" aria-label="Vídeo anterior: {{ previous.title }}" title="Anterior: {{ previous.title }}"><i class="bi bi-skip-start-fill" aria-hidden="true"></i></a>{% endif %}
+            <span class="video-inline-count" aria-label="Vídeo {{ position }} de {{ videos|length }}">{{ position }} / {{ videos|length }}</span>
+            {% if next_video %}<a href="{{ url_for('main.treinamentos_videos', video=next_video.id) }}" aria-label="Próximo vídeo: {{ next_video.title }}" title="Próximo: {{ next_video.title }}"><i class="bi bi-skip-end-fill" aria-hidden="true"></i></a>{% endif %}
+          </div>
+        </div>
+      <div class="video-player-details">
+        <span class="video-category">{{ selected.category }}</span>
+        <h2>{{ selected.title }}</h2><p>{{ selected.description }}</p>
+      </div>
+    </main>
+    <aside class="video-playlist" aria-labelledby="video-playlist-title">
+      <div class="video-playlist-heading"><div><p>Biblioteca</p><h2 id="video-playlist-title">Para assistir</h2></div><i class="bi bi-list-ul" aria-hidden="true"></i></div>
+      <ol>{% for video in videos %}<li><a class="video-playlist-item" href="{{ url_for('main.treinamentos_videos', video=video.id) }}"{% if video.id == selected.id %} aria-current="true"{% endif %}>
+        <span class="video-playlist-preview"><i class="bi {{ 'bi-play-fill' if video.id == selected.id else video.icon }}" aria-hidden="true"></i></span>
+        <span class="video-playlist-copy"><small>{{ video.category }}</small><strong>{{ video.title }}</strong>{% if video.id == selected.id %}<span class="video-now-playing">Selecionado</span>{% endif %}</span>
+        <span class="video-playlist-number">{{ '%02d'|format(loop.index) }}</span>
+      </a></li>{% endfor %}</ol>
+    </aside>
+  </div>
+</div>
+{% endblock %}

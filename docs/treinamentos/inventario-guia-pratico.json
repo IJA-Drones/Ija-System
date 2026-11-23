@@ -1,0 +1,1026 @@
+{
+  "version": 1,
+  "scope": "Template integration only; available controls depend on server authorization, visibility and current form state. This is not a manual review of every screen/profile combination.",
+  "profiles": [
+    "agente_endemias",
+    "prefeitura_admin",
+    "financeiro",
+    "financeiro_admin",
+    "piloto",
+    "regional",
+    "uvis",
+    "operario",
+    "sup_veiculos",
+    "piloto_agro",
+    "equipe_oceano",
+    "equipe_uvis",
+    "covisa",
+    "admin",
+    "diretor",
+    "visualizar",
+    "dev",
+    "gestor_ti",
+    "visualizador",
+    "operador",
+    "sup_veiculo",
+    "manutencao",
+    "ortomosaico"
+  ],
+  "pages": [
+    {
+      "template": "acoes_publicas/editor.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "acoes_publicas/lista.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "acoes_publicas/nova.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "acoes_publicas/portal.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "acoes_publicas/publicacao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_agro.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_canceladas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_checklist_editar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_checklist_semanal_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_checklists_semanais.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_historico_os.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_logs_usuarios.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_prefeitura_editar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_prefeitura_nova.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_prefeituras.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_usuario_editar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_usuario_novo.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_usuarios_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_uvis_editar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_uvis_equipe_membros_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_uvis_equipes_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_uvis_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "admin_uvis_novo.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agenda.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_banco_agro_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_bancos_conciliacao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_bancos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_caixa_diario.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_cliente_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_clientes_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_clientes_menu.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_contas_pagar_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_contas_receber_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_contrato_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_contratos_comprovantes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_contratos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_contratos_template.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_equipamento_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_equipamentos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_equipe_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_equipes_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_categoria_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_categorias_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_configuracoes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_contas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_dashboard.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_entrada_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_entrada_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_saida_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_financeiro_saida_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_fornecedor_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_fornecedores_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_logs_voo.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_orcamento_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_orcamentos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_orcamentos_template_mapeamento.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_os_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_os_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_piloto_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_pilotos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_rd_mapeamento_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_relatorio_contas_geral.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_talento_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_talento_upload.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_talentos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "alertas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "app_download.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "app_movel.html",
+      "integration": "standalone-mobile"
+    },
+    {
+      "template": "azul_chat.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "azul_settings.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "backup_aguarde.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "backup_lista.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "base.html",
+      "integration": "base.html",
+      "public_guide": true
+    },
+    {
+      "template": "baterias_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "bug_acompanhamento.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "bugs_ajuda.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "bugs_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastrar_bateria.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastrar_clientes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastrar_drone.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastrar_equipes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastrar_pilotos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastrar_veiculo.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "cadastro.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "clientes_menu.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "configuracoes_contatos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "configuracoes_documentos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "configuracoes_email.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "configuracoes_smtp.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "consultar_endereco_geolocalizacao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "consultas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "dashboard.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "dashboard_canceladas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "dashboard_equipe_uvis.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "denuncia_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "denuncia_uvis_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "denuncias_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "dev_dashboard.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "dji_kml_route_map.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "drones_importar_planilha.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "drones_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "edicao_conflito.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "editar_bateria.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "editar_cliente.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "editar_drone.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "editar_equipe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "editar_piloto.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "editar_solicitacao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipamento_manutencao_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipamento_manutencao_pecas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipamentos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipamentos_manutencao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipamentos_manutencoes_historico.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipamentos_manutencoes_pecas_historico.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipe_uvis_os_formulario.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "equipe_uvis_os_historico.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "erro.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "estoque_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "estoque_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "feedback_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "feedback_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "feedback_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "financeiro_central.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "financeiro_empresa.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "financeiro_empresa_cadastrar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "gestao_ti_central.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "inicio.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "integracoes_esus.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "integracoes_esus_config.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "listar_clientes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "listar_equipes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "listar_pilotos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "login.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "login_piloto_agro.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "login_security.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "login_uvis_operacional.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "mapa_relatorio.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "notificacoes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "ortomosaicos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "painel_operacional.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_agro_dashboard.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_agro_mapeamentos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_agro_os_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_caixa_entrada.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_checklist_semanal.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_dosagem.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_os.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_os_formulario.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_os_historico.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_veiculos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "portal_cidadao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "portal_cidadao_boletim_dengue.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "portal_contatos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "privacidade.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios_coleta_imagens.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios_dji_logs.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios_menu.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios_os.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios_retornos_automaticos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatorios_retornos_automaticos_equipe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatos_saude/detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatos_saude/lista.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatos_saude/publico.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "relatos_saude/recibo.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "renew_password.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "treinamentos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "treinamentos_videos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_acesso_operacional.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_equipe_criar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_equipe_membro_adicionar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_equipe_membro_editar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_equipe_membros_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_equipes_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "uvis_os_historico.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculo_logs_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_alertas_limpeza.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_limpezas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_listar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_logs.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_logs_excluidos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_menu.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "veiculos_rastreamento.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_agente.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_agentes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_campo.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_central.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_excluir.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_migracao.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_pendentes.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_planejamento.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_resultados.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_risco.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_sinan.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "vigilancia_validacao.html",
+      "integration": "base.html",
+      "public_guide": false
+    }
+  ],
+  "exclusions": [
+    {
+      "template": "azul_tutorial.html",
+      "reason": "Legacy simulated practice room, not an operational screen."
+    }
+  ]
+}
