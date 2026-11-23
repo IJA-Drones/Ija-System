@@ -16,14 +16,25 @@ from sqlalchemy.orm import joinedload
 from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario, Veiculos
 from app.shared.access import (
+    VEICULOS_SUPERVISOR_USER_TYPES,
     apply_prefeitura_scope,
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
     apply_solicitacao_regiao_scope,
+    is_veiculos_supervisor,
 )
 
 
-AGENDA_VIEW_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "regional", "prefeitura_admin"}
+AGENDA_VIEW_TYPES = {
+    "dev",
+    "diretor",
+    "admin",
+    "operario",
+    "visualizar",
+    "regional",
+    "prefeitura_admin",
+    *VEICULOS_SUPERVISOR_USER_TYPES,
+}
 AGENDA_EXPORT_TYPES = {
     "dev",
     "diretor",
@@ -34,6 +45,7 @@ AGENDA_EXPORT_TYPES = {
     "prefeitura_admin",
     "uvis",
     "equipe_uvis",
+    *VEICULOS_SUPERVISOR_USER_TYPES,
 }
 NOTIFICATION_GLOBAL_VIEW_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "prefeitura_admin"}
 AGENDA_ROUTE_STATUSES = (
@@ -115,12 +127,12 @@ def agora_brasilia_naive():
 
 
 def can_view_all_agenda(user):
-    return getattr(user, "tipo_usuario", None) in AGENDA_VIEW_TYPES
+    return getattr(user, "tipo_usuario", None) in AGENDA_VIEW_TYPES or is_veiculos_supervisor(user)
 
 
 @capability(['prefeitura.mapas.exportar'])
 def can_export_agenda(user):
-    return getattr(user, "tipo_usuario", None) in AGENDA_EXPORT_TYPES
+    return getattr(user, "tipo_usuario", None) in AGENDA_EXPORT_TYPES or is_veiculos_supervisor(user)
 
 
 def can_view_all_notifications(user):
@@ -208,7 +220,11 @@ def apply_agenda_user_scope(query, user):
             return query.filter(false())
         return query.filter(Solicitacao.equipe_id == equipe_id)
 
-    query = apply_solicitacao_regiao_scope(query, user)
+    # Supervisors of the PMSP vehicle operation coordinate all PLOAs in their
+    # municipality. Their region field is an operational attribute, not an
+    # agenda visibility boundary.
+    if not is_veiculos_supervisor(user):
+        query = apply_solicitacao_regiao_scope(query, user)
 
     if is_piloto_agenda_user(user):
         equipes_query = _build_piloto_equipes_query(user)

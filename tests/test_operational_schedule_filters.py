@@ -121,6 +121,7 @@ class AgendaVisibleStatusTests(unittest.TestCase):
             login="uvis_agenda",
             senha_hash="hash",
             tipo_usuario="uvis",
+            prefeitura_id=1,
         )
         db.session.add(self.uvis)
         db.session.commit()
@@ -145,6 +146,7 @@ class AgendaVisibleStatusTests(unittest.TestCase):
             "uf": "SP",
             "status": status,
             "usuario_id": self.uvis.id,
+            "prefeitura_id": 1,
         }
         values.update(overrides)
         solicitacao = Solicitacao(
@@ -152,6 +154,37 @@ class AgendaVisibleStatusTests(unittest.TestCase):
         )
         db.session.add(solicitacao)
         return solicitacao
+
+    def test_vehicle_supervisor_sees_all_teams_in_municipality(self):
+        outra_uvis = Usuario(
+            nome_uvis="UVIS Outra Região",
+            regiao="SUL",
+            login="uvis_agenda_sul",
+            senha_hash="hash",
+            tipo_usuario="uvis",
+            prefeitura_id=1,
+        )
+        db.session.add(outra_uvis)
+        db.session.flush()
+        agenda_outra_regiao = self._nova_solicitacao(
+            "APROVADO",
+            usuario_id=outra_uvis.id,
+        )
+        db.session.commit()
+
+        supervisor = SimpleNamespace(
+            tipo_usuario="sup_veiculos",
+            prefeitura_id=1,
+            regiao="OESTE",
+        )
+        resultados = agenda_service.build_agenda_query(
+            supervisor,
+            mes=7,
+            ano=2026,
+        ).all()
+
+        self.assertTrue(agenda_service.can_view_all_agenda(supervisor))
+        self.assertIn(agenda_outra_regiao.id, [item.id for item in resultados])
 
     def test_agenda_only_lists_approved_recommended_and_completed_statuses(self):
         aprovado = self._nova_solicitacao("APROVADO")

@@ -133,7 +133,7 @@ def current_rules(profile_code):
             allow("prefeitura.relatorios", "consultar exportar")
         if role == "uvis":
             allow("prefeitura.relatorios", "editar")
-        if administrative or operational or role in {"uvis", "equipe_uvis", "operador"}:
+        if administrative or operational or role in {"uvis", "equipe_uvis", "operador"} or role in VEICULOS_SUPERVISOR_USER_TYPES:
             allow("prefeitura.mapas", "consultar")
             if can_export_agenda(user):
                 allow("prefeitura.mapas", "exportar")
