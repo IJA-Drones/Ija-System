@@ -8,6 +8,8 @@ import requests
 from app.extensions import db
 from app.modules.mapas import operacional, quadras
 from app.modules.mapas.territorial import validate_filters, locate
+from app.modules.mapas.service import build_uvis_territory_links
+from app.models import Prefeitura
 from tests.test_mapas_filters import HeatmapFilterTests
 
 
@@ -45,6 +47,19 @@ def test_region_aliases_and_real_uvis_relationship():
     assert locate(-23.5504,-46.6339)[0]['uvis']=='SE'
     with pytest.raises(ValueError):validate_filters('SUL','0314307')
     with pytest.raises(ValueError):validate_filters('inventado','')
+
+
+def test_account_territory_links_use_exact_names_only_for_visible_sao_paulo_accounts(setup):
+    c=setup
+    db.session.get(Prefeitura,1).nome='São Paulo'
+    c.uvis.nome_uvis=' UVIS Sé '
+    c.uvis_same_region.nome_uvis='Santana/Tucuruvi'
+    c.uvis_other_region.nome_uvis='Sé - nome sem correspondência'
+    c.uvis_other_city.nome_uvis='UVIS Sé'
+    db.session.commit()
+    available=[(u.id,u.nome_uvis) for u in [c.uvis,c.uvis_other_region,c.uvis_other_city]]
+    assert build_uvis_territory_links(available)=={c.uvis.id:'0314307'}
+    assert build_uvis_territory_links([])=={}
 
 
 def test_spatial_filter_cannot_restore_foreign_tenant_or_region_records(setup):

@@ -5,7 +5,9 @@
   const quadraSelect=document.querySelector('[data-map-quadra-select]'), quadraStatus=document.querySelector('[data-map-quadra-status]');
   const enabled=document.querySelector('[data-map-quadras]');
   const displayPanel=document.querySelector('[data-map-display-panel]');
+  const accountFilter=document.getElementById('uvisFilter');
   let maps=[], polygons=[], features=[], sequence=0, pending, scopeKey='|', lastQuadra='';
+  let lastAccount='',linkedCode='',accountPending=Promise.resolve();
   const areaActive=()=>Boolean(document.getElementById('tabArea')?.classList.contains('active'));
   const mapShown=()=>areaActive()?maps[1]:maps[0];
   const info=(title,lines)=>{
@@ -24,7 +26,6 @@
       if(key!==scopeKey){
         scopeKey=key;invalidateQuadras();
         for(const map of maps)overlay.fitGoogle(map);
-        window.atualizarMapas?.();
       }
     }
   });
@@ -42,9 +43,8 @@
     if(feature){
       const b=window.UvisTerritory.bounds([feature]);
       maps[1]?.fitBounds({west:b.west,east:b.east,south:b.south,north:b.north},40);
-      const p=feature.properties;quadraStatus.textContent=`Setor ${p.setor} · quadra ${p.quadra} · subquadra ${p.subquadra} · ${p.tipo}. Filtro aplicado aos registros com coordenadas nesta quadra.`;
+      const p=feature.properties;quadraStatus.textContent=`Setor ${p.setor} · quadra ${p.quadra} · subquadra ${p.subquadra} · ${p.tipo}. Clique em Filtrar para consultar os registros nesta quadra.`;
     }
-    if(areaActive())window.atualizarMapas?.();
   }
   async function loadQuadras(){
     if(!areaActive())return;
@@ -74,23 +74,34 @@
   enabled.addEventListener('change',()=>{render();if(enabled.checked&&!features.length)loadQuadras();});
   quadraSelect.addEventListener('change',selectQuadra);
   function attach(values){maps=values;if(maps[0])overlay.attachGoogle(maps[0],{heat:true});if(maps[1])overlay.attachGoogle(maps[1]);render();}
-  window.mapTerritory={getFilters:()=>({...overlay.getFilters(),quadra:areaActive()?quadraSelect.value:''}),frame:()=>{
+  async function syncAccountFilter(){
+    if(!accountFilter||accountFilter.value===lastAccount)return accountPending;
+    const id=accountFilter.value,code=accountFilter.selectedOptions?.[0]?.dataset.territoryCnes||'';
+    const previous=accountPending;
+    lastAccount=id;
+    accountPending=(async()=>{
+      await previous;
+      if(id!==lastAccount)return;
+      if(code){
+        const found=await overlay.selectCode(code);
+        linkedCode=found?code:'';
+      }else if(linkedCode && overlay.getFilters().cnes===linkedCode){
+        await overlay.resetFrame();linkedCode='';
+      }
+    })();
+    return accountPending;
+  }
+  window.mapTerritory={syncAccountFilter,getFilters:()=>({...overlay.getFilters(),quadra:areaActive()?quadraSelect.value:''}),frame:()=>{
     const selected=areaActive()&&features.find(f=>f.id===quadraSelect.value);
     if(selected){const b=window.UvisTerritory.bounds([selected]);maps[1]?.fitBounds({west:b.west,east:b.east,south:b.south,north:b.north},40);}
     else if(mapShown())overlay.fitGoogle(mapShown());
   }};
-  let previousArea=areaActive();
   function tabChanged(){
     const active=areaActive();
     const host=document.querySelector(active?'#tabArea [data-map-display-host]':'#tabCalor [data-map-display-host]');
     if(host&&displayPanel)host.appendChild(displayPanel);
     const areaOptions=displayPanel?.querySelector('[data-map-area-options]');
     if(areaOptions)areaOptions.hidden=!active;
-    if(active!==previousArea){
-      previousArea=active;
-      // The selected quadra is remembered for Areas but never narrows Heat.
-      if(quadraSelect.value)window.atualizarMapas?.();
-    }
   }
   document.querySelectorAll('#mapTabs [data-bs-toggle="tab"]').forEach(tab=>tab.addEventListener('shown.bs.tab',tabChanged));
   tabChanged();

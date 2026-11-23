@@ -5197,12 +5197,13 @@ def register_routes(bp):
             if contrato is None:
                 contrato = ContratoAgro(
                     prefeitura_id=getattr(current_user, "prefeitura_id", None),
-                    orcamento=orcamento,
+                    orcamento_agro_id=orcamento.id,
                 )
-                db.session.add(contrato)
 
-            if contrato.equipe_agro_id is None and getattr(orcamento, "rd_mapeamento", None) and orcamento.rd_mapeamento.equipe_agro_id:
-                contrato.equipe_agro_id = orcamento.rd_mapeamento.equipe_agro_id
+            if contrato.equipe_agro_id is None:
+                rd_mapeamento = orcamento.rd_mapeamento
+                if rd_mapeamento is not None:
+                    contrato.equipe_agro_id = rd_mapeamento.equipe_agro_id
 
             contrato.contratante_nome = form["contratante_nome"]
             contrato.contratante_documento = doc_digits
@@ -5238,6 +5239,7 @@ def register_routes(bp):
             contrato.observacoes_adicionais = form["observacoes_adicionais"] or None
             contrato.status = form["status"]
 
+            db.session.add(contrato)
             db.session.commit()
             if contrato.status == ContratoAgro.STATUS_APROVADO:
                 if is_admin_global_user(current_user):

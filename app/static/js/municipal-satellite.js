@@ -2,16 +2,29 @@
 (function(scope){
   'use strict';
   const REGIONS=new Set(['LESTE','NORTE','OESTE','SUDESTE','SUL']);
+  const BLANK='uvis-no-background';
   const HIDDEN_PLACES=[{featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]},
     {featureType:'transit',elementType:'labels',stylers:[{visibility:'off'}]}];
   function intersects(a,b){return a.east>=b.west && a.west<=b.east && a.north>=b.south && a.south<=b.north;}
   function create(root){
     const checkbox=root.querySelector('[data-satellite-surroundings]'),status=root.querySelector('[data-satellite-status]');
     const pois=root.querySelector('[data-map-pois]');
-    const layers=new Map(),originalStyles=new Map(),downloads=new Map();
+    const background=root.querySelector('[data-map-background]');
+    const layers=new Map(),originalStyles=new Map(),downloads=new Map(),previousTypes=new Map();
+    let changingBackground=false;
     let base=null,geo=null,city=null,territory='',territoryLabel='',requestedTerritory='',sequence=0;
     function describe(){
-      status.textContent=checkbox.checked ? 'Satélite no entorno ativado.' : territory ? `${territoryLabel} em destaque · demais áreas em branco.` : 'São Paulo destacado · entorno claro.';
+      status.textContent=background && !background.checked ? 'Fundo oculto · territórios e registros permanecem visíveis.' : checkbox.checked ? 'Satélite no entorno ativado.' : territory ? `${territoryLabel} em destaque · demais áreas em branco.` : 'São Paulo destacado · entorno claro.';
+    }
+    function applyBackground(){
+      changingBackground=true;
+      try{
+        for(const map of layers.keys()){
+          if(background.checked){if(map.getMapTypeId()===BLANK)map.setMapTypeId(previousTypes.get(map)||'hybrid');}
+          else{const type=map.getMapTypeId();if(type!==BLANK)previousTypes.set(map,type);map.setMapTypeId(BLANK);}
+        }
+      }finally{changingBackground=false;}
+      describe();
     }
     function refresh(map,layer){
       const b=map.getBounds();
@@ -34,6 +47,17 @@
       if(!map||layers.has(map))return;
       originalStyles.set(map,map.get('styles')||[]);places(map);
       map.setMapTypeId('hybrid');layers.set(map,null);draw(map);
+      if(background){
+        map.mapTypes.set(BLANK,{tileSize:new scope.google.maps.Size(256,256),minZoom:0,maxZoom:22,name:'Sem fundo',
+          getTile(coord,zoom,ownerDocument){const tile=ownerDocument.createElement('div');tile.style.cssText='width:256px;height:256px;background:#fff';return tile;}});
+        previousTypes.set(map,'hybrid');
+        map.addListener('maptypeid_changed',()=>{
+          if(changingBackground)return;
+          const type=map.getMapTypeId();
+          if(type!==BLANK){previousTypes.set(map,type);if(!background.checked){background.checked=true;applyBackground();}}
+        });
+        applyBackground();
+      }
       map.addListener('idle',()=>{const layer=layers.get(map);if(layer)refresh(map,layer);});
     }
     async function download(url){
@@ -62,8 +86,9 @@
       }catch(error){if(own===sequence){requestedTerritory='';status.textContent='Não foi possível destacar o território. O mapa e os filtros continuam disponíveis.';}}
     }
     checkbox.addEventListener('change',()=>{
-      for(const [map,layer] of layers){map.setMapTypeId('hybrid');if(layer)refresh(map,layer);}describe();
+      for(const [map,layer] of layers){if(!background || background.checked)map.setMapTypeId('hybrid');if(layer)refresh(map,layer);}describe();
     });
+    background?.addEventListener('change',applyBackground);
     pois?.addEventListener('change',()=>{for(const map of layers.keys())places(map);});
     download(root.dataset.maskUrl).then(data=>{
       base=data;const [west,south,east,north]=data.metadata.limite_bbox;city={west,south,east,north};

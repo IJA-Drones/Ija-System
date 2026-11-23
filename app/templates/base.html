@@ -96,8 +96,9 @@
     <script src="{{ url_for('static', filename='js/permission-controls.js', v='20261009a') }}" defer></script>
     {% endif %}
     {% if current_user.is_authenticated %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/screen-guide.css', v='20261119-1') }}">
-    <script src="{{ url_for('static', filename='js/screen-guide.js', v='20261119-1') }}" defer></script>
+    <script type="application/json" data-screen-guide-config>{{ {'groups': azul_practical_catalog|default([]), 'url': azul_help_url|default(none), 'chat_key': azul_chat_key|default('')}|tojson }}</script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/screen-guide.css', v='20261119-ia-modulos-2') }}">
+    <script src="{{ url_for('static', filename='js/screen-guide.js', v='20261119-ia-modulos-2') }}" defer></script>
     {% endif %}
     {% block extra_styles %}{% endblock %}
     {% if edit_control_enabled|default(false) %}

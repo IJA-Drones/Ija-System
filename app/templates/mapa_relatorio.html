@@ -40,10 +40,10 @@
           {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'regional', 'prefeitura_admin'] %}
           <div class="col-md-4 col-lg-2">
             <label for="uvisFilter" class="small text-muted mb-1 fw-bold">UVIS responsável · cadastro</label>
-            <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+            <select id="uvisFilter" class="form-select form-select-sm">
               <option value="">Todas as Unidades</option>
               {% for id, nome_uvis in uvis_disponiveis|visible_municipalities %}
-              <option value="{{ id }}">{{ nome_uvis }}</option>
+              <option value="{{ id }}" data-territory-cnes="{{ (uvis_territory_links|default({})).get(id, '') }}">{{ nome_uvis }}</option>
               {% endfor %}
             </select>
           </div>
@@ -51,7 +51,7 @@
 
           <div class="col-md-4 col-lg-2">
             <label for="mesFilter" class="small text-muted mb-1 fw-bold">Mês do agendamento</label>
-            <select id="mesFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+            <select id="mesFilter" class="form-select form-select-sm">
               <option value="">Todos os meses</option>
               {% for val in range(1, 13) %}
               <option value="{{ val }}" {% if val == mes_atual %}selected{% endif %}>
@@ -64,12 +64,12 @@
           <div class="col-md-4 col-lg-2">
             <label for="anoFilter" class="small text-muted mb-1 fw-bold">Ano do agendamento</label>
             <input id="anoFilter" type="number" min="1" max="9999" step="1" required
-              value="{{ ano_atual }}" class="form-control form-control-sm" onchange="atualizarMapas()">
+              value="{{ ano_atual }}" class="form-control form-control-sm">
           </div>
 
           <div class="col-md-4 col-lg-2">
             <label for="focoFilter" class="small text-muted mb-1 fw-bold">Tipo de Foco</label>
-            <select id="focoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+            <select id="focoFilter" class="form-select form-select-sm">
               <option value="todos">Todos os Focos</option>
               {% for opcao in solicitacao_filter_foco_opcoes %}
               <option value="{{ opcao }}">{{ opcao }}</option>
@@ -80,7 +80,7 @@
 
           <div class="col-md-4 col-lg-2">
             <label for="larvaFilter" class="small text-muted mb-1 fw-bold">Larva visualizada</label>
-            <select id="larvaFilter" class="form-select form-select-sm" onchange="atualizarMapas()" aria-describedby="mapScopeNote">
+            <select id="larvaFilter" class="form-select form-select-sm" aria-describedby="mapScopeNote">
               <option value="">Todos</option>
               <option value="SIM">Sim</option>
               <option value="NAO">Não</option>
@@ -90,7 +90,7 @@
 
           <div class="col-md-4 col-lg-2">
             <label for="visaoFilter" class="small text-muted mb-1 fw-bold">Visão operacional</label>
-            <select id="visaoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+            <select id="visaoFilter" class="form-select form-select-sm">
               <option value="aprovados">Aprovados e concluídos</option>
               <option value="todos">Todas as solicitações</option>
               <option value="pendentes">Pendentes e atrasados</option>
@@ -98,7 +98,7 @@
             </select>
           </div>
           <div class="col-md-4 col-lg-2 d-flex gap-2">
-            <button type="button" onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
+            <button type="button" id="mapApplyFilters" onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
               <i class="bi bi-funnel me-1"></i> Filtrar
             </button>
           </div>
@@ -112,7 +112,7 @@
 
   {% include '_mapa_territorial_layers.html' %}
   <div id="mapOperationalSummary" class="row g-2 mb-3" aria-live="polite"></div>
-  <div id="mapFeedback" class="alert alert-info py-2 small d-none" role="status" aria-live="polite"></div>
+  <div id="mapFeedback" class="alert alert-info py-2 small" role="status" aria-live="polite">Selecione os filtros e clique em Filtrar para carregar os registros.</div>
 
   <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
     <div class="card-header border-0 py-3 d-flex justify-content-center">
@@ -221,10 +221,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/municipal-satellite.js', v='20261119-uvis-mask') }}" defer></script>
+<script src="{{ url_for('static', filename='js/municipal-satellite.js', v='20261119-fundo') }}" defer></script>
 <script src="{{ url_for('static', filename='js/map-larva.js', v='20261119-1') }}"></script>
-<script src="{{ url_for('static', filename='js/uvis-territory.js', v='20261119-cores') }}"></script>
-<script src="{{ url_for('static', filename='js/mapas-territorio.js', v='20261119-9') }}" defer></script>
+<script src="{{ url_for('static', filename='js/uvis-territory.js', v='20261119-vinculo') }}"></script>
+<script src="{{ url_for('static', filename='js/mapas-territorio.js', v='20261119-10') }}" defer></script>
 <script src="{{ url_for('static', filename='js/mapa-operacional.js') }}"></script>
 <script>
   let mapHeat, mapArea, mapLogistics, heatmap;
@@ -235,7 +235,7 @@
   let mapasRequestSequence = 0;
   let mapasAbortController = null;
   let mapTabSequence = 0;
-  let mapRecordsStarted = false;
+  let focoAplicado = 'todos';
   const MES_RELATORIO_ATUAL = {{ mes_atual|tojson }};
   const ANO_RELATORIO_ATUAL = {{ ano_atual|tojson }};
   const MAPA_FOCOS_CENTER = { lat: -23.5505, lng: -46.6333 };
@@ -282,7 +282,7 @@
           if(version!==mapTabSequence || !document.querySelector(target)?.classList.contains('active'))return;
           if(target==='#tabCalor'){
             if(mapHeat)google.maps.event.trigger(mapHeat,'resize');
-            renderizarDadosCalor(pontosAtuais,document.getElementById('focoFilter').value);
+            renderizarDadosCalor(pontosAtuais,focoAplicado);
           }else if(target==='#tabArea'){
             if(mapArea)google.maps.event.trigger(mapArea,'resize');
             renderizarDadosOperacionais(pontosAtuais);
@@ -294,19 +294,14 @@
 
     window.__operationalMaps = [mapHeat, mapArea];
     document.dispatchEvent(new CustomEvent('operationalmaps:ready', {detail:{maps:window.__operationalMaps}}));
-    if(mapRecordsStarted)desenharMapasAtuais();
-    else atualizarMapas();
+    desenharMapasAtuais();
   }
 
   function desenharMapasAtuais(){
-    renderizarDadosCalor(pontosAtuais,document.getElementById('focoFilter').value);
+    renderizarDadosCalor(pontosAtuais,focoAplicado);
     renderizarDadosOperacionais(pontosAtuais);
     window.mapTerritory?.frame();
   }
-
-  function bootMapRecords(){if(!mapRecordsStarted)atualizarMapas();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootMapRecords,{once:true});
-  else bootMapRecords();
 
   function bootRelatorioMapas() {
     if (document.readyState === "loading") {
@@ -315,6 +310,8 @@
       initMap();
     }
   }
+
+  window.mapOperational?.reset();
 
   if (window.__GOOGLE_MAPS_READY__) {
     bootRelatorioMapas();
@@ -359,7 +356,6 @@
   }
 
   async function atualizarMapas() {
-    mapRecordsStarted = true;
     atualizarBadgeFiltros();
     const sequence = ++mapasRequestSequence;
     mapasAbortController?.abort();
@@ -370,12 +366,17 @@
       return;
     }
 
-    mapasAbortController = new AbortController();
+    const filterValues = mapRecordFilters();
     const focoFiltro = document.getElementById("focoFilter").value;
+    if(window.mapTerritory?.syncAccountFilter)await window.mapTerritory.syncAccountFilter();
+    if(sequence!==mapasRequestSequence)return;
+    atualizarBadgeFiltros();
+
+    mapasAbortController = new AbortController();
     mostrarFeedbackMapa("Carregando registros…");
 
     try {
-      const response = await fetch(heatmapDataUrl(), { signal: mapasAbortController.signal });
+      const response = await fetch(heatmapDataUrl(filterValues), { signal: mapasAbortController.signal });
       if (!response.ok) {
         const failure = await response.json().catch(() => ({}));
         throw new Error(failure.message || `HTTP ${response.status}`);
@@ -393,6 +394,7 @@
       window.mapOperational?.render(pontos);
       pontos = pontos.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
       pontosAtuais = pontos;
+      focoAplicado = focoFiltro;
       renderizarDadosCalor(pontos, focoFiltro);
       renderizarDadosOperacionais(pontos);
       atualizarIndicadoresBI(pontos.length);
@@ -413,7 +415,7 @@
     return colorMode() === 'larva' && window.MapLarva ? window.MapLarva.style(point) : getFocoStyle(point.foco);
   }
   function recolorirMapas() {
-    renderizarDadosCalor(pontosAtuais, document.getElementById('focoFilter').value);
+    renderizarDadosCalor(pontosAtuais, focoAplicado);
     renderizarDadosOperacionais(pontosAtuais);
     atualizarLegendaCategorias(pontosAtuais);
     window.mapTerritory?.frame();
@@ -697,19 +699,23 @@
     return CanvasHeatmapOverlay;
   }
 
-  function heatmapDataUrl() {
-    const uvisId = document.getElementById("uvisFilter")?.value || "";
-    const mes = document.getElementById("mesFilter").value;
-    const params = new URLSearchParams({
-      uvis_id: uvisId,
-      mes,
+  function mapRecordFilters() {
+    const filters = {
+      uvis_id: document.getElementById("uvisFilter")?.value || "",
+      mes: document.getElementById("mesFilter").value,
       ano: document.getElementById("anoFilter").value,
       larva_visualizada: document.getElementById("larvaFilter").value,
-    });
+    };
+    const view = document.getElementById("visaoFilter");
+    if(view)filters.visao=view.value;
+    return filters;
+  }
+
+  function heatmapDataUrl(filters = mapRecordFilters()) {
+    const params = new URLSearchParams(filters);
     const territory=window.mapTerritory?.getFilters();
     if(territory)for(const [name,value] of Object.entries(territory))if(value)params.set(name,value);
-    const view = document.getElementById("visaoFilter");
-    if (view) { params.set('visao', view.value); return `/api/mapa-operacional?${params.toString()}`; }
+    if ('visao' in filters) return `/api/mapa-operacional?${params.toString()}`;
     return `/api/heatmap-data?${params.toString()}`;
   }
 

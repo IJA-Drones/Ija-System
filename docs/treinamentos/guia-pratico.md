@@ -1,60 +1,70 @@
-# Guia prático nas telas reais
+# Aprender na prática com a Azul
 
-O botão **Guia prático** do menu acompanha a tela que já está aberta. O acesso
-da Azul com o mesmo nome abre esse guia. Na Central de Treinamentos, **Conhecer
-esta tela** permite experimentar. No aplicativo web, os formulários têm o botão
-de ajuda no cabeçalho.
+O botão **Guia prático** do menu e da Azul abre um modal com a identidade visual
+**Aprenda fazendo, com Azul**. Os cartões são organizados por módulo, com filtros
+para Prefeitura, Agro, Financeiro e Sistema, conforme o acesso da conta.
 
-O guia destaca campos, filtros, tabelas, mapas e controles. **Ver todas as etapas**
-permite escolher um ponto do formulário; **Voltar**, **Próximo**, **Concluir** e
-Escape controlam a leitura. A página permanece utilizável. Ao avançar, o guia
-confere novamente quais campos estão visíveis, incluindo os condicionais. Ao
-abrir um modal ou trocar uma aba Bootstrap, passa ao contexto aberto. Em outra
-página, abra o guia novamente.
+1. Escolha um módulo, como Solicitações, Clientes Agro ou Contas.
+2. Escolha a função, como Nova solicitação, Cadastrar cliente ou Contas a pagar.
+3. O sistema abre a tela correspondente. A Azul usa os rótulos e controles
+   disponíveis nessa tela para gerar o tutorial pela integração de IA existente.
+4. Use **Próximo**, **Voltar** ou **Ver todas as etapas**. **Ouvir etapa** solicita
+   a narração pela voz configurada da Azul.
+5. Escreva uma dúvida em **Perguntar à Azul** para continuar o tutorial. Se o
+   formulário mudar, **Atualizar etapas com a Azul** gera um plano atualizado.
+6. **Escolher outro tutorial** retorna aos cartões. Escape ou o botão de fechar
+   encerra o guia e interrompe a requisição e a reprodução no navegador.
 
-## Perfis e permissões
+A interface usa as telas reais. As ações da página continuam disponíveis para
+revisão e confirmação pelo usuário. O guia não preenche ou confirma formulários.
 
-O guia usa a página autorizada pelo servidor. Não busca registros, não oferece
-rotas de outros módulos e ignora controles ocultos, desabilitados ou bloqueados
-pela Central de TI. Campos independentes expressamente liberados dentro de um
-formulário bloqueado continuam acessíveis, seguindo `permission-controls.js`.
-Consultar o guia não concede permissão de criar, editar, excluir ou aprovar.
+## Perfis, módulos e funções
 
-Isso mantém os contextos de Prefeitura/UVIS, piloto, Agro, Financeiro, manutenção,
-gestão e Ortomosaicos. A política de PDFs e vídeos continua no catálogo e na
-autorização de treinamentos; o guia contextual não substitui essa política.
+`app/modules/chatbot/practical.py` monta o catálogo a partir da navegação
+`SCREENS`, dos guards legados revisados e das permissões atuais da Central de TI.
+A função escolhida é novamente autorizada em cada chamada de IA. Perfis de UVIS
+recebem as funções municipais permitidas; os guias de piloto, Agro e Financeiro
+seguem seus respectivos módulos. A permissão de usar a Azul também é necessária.
 
-## Cobertura e revisão
+No navegador, controles ocultos, desabilitados ou bloqueados são ignorados.
+Campos independentes expressamente liberados em formulários bloqueados seguem
+`permission-controls.js`. Campos condicionais são considerados quando visíveis.
+A geração de outro plano depende de um novo clique explícito.
 
-`inventario-guia-pratico.json` registra os templates integrados e os identificadores
-de perfil. Gere-o com `python scripts/inventory_screen_guides.py`. A integração
-comum em `base.html` atende suas páginas autenticadas; o portal público usa
-`_portal_chatbot.html` e o aplicativo usa `app_movel.html`. O simulador antigo em
-`/azul/tutorial` permanece separado para compatibilidade.
+## IA, voz e dados
 
-O inventário comprova integração, não revisão manual de todas as combinações de
-tela e perfil. As explicações gerais acompanham os rótulos reais; os campos
-conhecidos têm orientações específicas em `screen-guide.js`. Ao revisar um fluxo,
-confira a regra atual no serviço e teste os controles autorizados e os campos
-condicionais. Orientações específicas devem depender do contexto do formulário.
-Por exemplo, QUADRA só é explicado como foco quando está entre as opções de foco;
-Culex continua sendo uma opção de visita, não uma exigência.
+O tutorial usa `/api/azul/ajuda` com a intenção `practical_guide`, preservando
+login, CSRF, vínculo da sessão, configurações, limites, orçamento e medição da Azul.
+O provedor recebe apenas os rótulos e orientações dos controles, o contexto
+permitido e as dúvidas digitadas no próprio guia. Os valores preenchidos nos
+formulários, senhas, anexos e registros da tabela não entram nesse retrato da tela.
 
-O guia não lê conteúdos digitados nem confirma ações. Não há captura de telas,
-gravação, upload, chamada de IA ou áudio. Os rótulos são tratados como texto.
-Capturas temporárias da verificação visual ficam fora do repositório.
+A resposta estruturada é validada: etapas precisam usar IDs dos controles
+recebidos. A IA não fornece seletores, URLs navegáveis ou comandos executáveis.
+O tutorial não disponibiliza ferramentas de consulta ou alteração de registros.
+Falhas do provedor são apresentadas com opção de tentar novamente.
 
-## Verificação desta entrega — 19/11/2026
+A voz usa as ofertas assinadas e as configurações de áudio já existentes.
+A geração de texto ocorre ao escolher uma função, atualizar etapas ou perguntar;
+a narração ocorre ao clicar em ouvir. Apenas abrir ou pesquisar os cartões não
+consome IA. Um marcador temporário de sessão permite iniciar após a navegação;
+ele é consumido uma vez para evitar nova geração silenciosa ao recarregar a página.
 
-- Inventário: 198 templates integrados, incluindo o layout base e o aplicativo;
-  não são 198 fluxos revisados manualmente.
-- Testes de acesso: os 22 identificadores do catálogo da Central de TI e o perfil
-  dedicado `ortomosaico`, com manutenção dos bloqueios de módulos.
-- Navegador: formulário real de solicitação UVIS, campos condicionais de Aedes,
-  navegação das etapas, entrada pelo menu e páginas de treinamento de outros
-  perfis. Conferidos desktop, celular e contexto de modal.
-- Sem envio de formulários nos ensaios. Os testes de servidor usam SQLite
-  descartável; não alteram Neon ou Render.
+## Integração e verificação
 
-As verificações não substituem a revisão editorial dos textos específicos de
-cada fluxo operacional.
+`inventario-guia-pratico.json` registra os templates que carregam o componente e
+os identificadores de perfil. Execute `python scripts/inventory_screen_guides.py`
+para atualizá-lo. A lista de funções depende das entradas de navegação e das
+permissões, e não da contagem de templates. Ao acrescentar uma função, registre
+sua navegação e verifique o guard legado e a política da Central de TI.
+
+Os testes de servidor usam SQLite descartável e provedor simulado; não alteram
+Neon ou Render. Cobrem isolamento entre módulos, remoção de permissão da Azul,
+chamada à integração de IA sem ferramentas operacionais, validação dos controles
+e tratamento explícito de falhas. O navegador é conferido com respostas simuladas
+sem custo, incluindo cartões, escolha de função, navegação, dúvidas, narração
+opcional, celular, cancelamento e preservação dos valores do formulário.
+
+A sala anterior em `/azul/tutorial` permanece disponível para os exercícios
+simulados legados. As páginas públicas e o aplicativo público preservam seu guia
+contextual atual; os tutoriais por módulo com IA pertencem ao ambiente autenticado.

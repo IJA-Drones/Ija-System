@@ -120,7 +120,7 @@
     async function change() {
       const id = ++sequence;
       try {
-        if (active() && !uvis.length) {
+        if (!uvis.length) {
           status.textContent = 'Carregando limites territoriais…';
           uvis = await load(root.dataset.uvisUrl);
           if(region && region.options.length===1){
@@ -156,11 +156,20 @@
     visible.addEventListener('change', change); districtsVisible.addEventListener('change', change);
     colors?.addEventListener('change',change); labels?.addEventListener('change',change);
     select.addEventListener('change', () => { if (select.value && !active()) visible.checked = true; change(); });
-    if (active()) change();
+    change();
     return {
       allPoints() { return uvis.flatMap(positions); },
       selectedCode() { return `${crs()}|${select.value}`; },
       getFilters: filters,
+      async selectCode(code){
+        if(!uvis.length)await change();
+        const selected=uvis.find(f=>f.properties.cnes===code);
+        if(!selected)return false;
+        if(search)search.value='';if(region)region.value=selected.properties.crs;
+        autoRegion=false;options();select.value=code;
+        if(!active())visible.checked=true;
+        await change();return true;
+      },
       drawSVG(svg, pathFor, pointFor) {
         const ns = 'http://www.w3.org/2000/svg';
         for (const {feature, district} of entries()) {
@@ -180,7 +189,7 @@
           text.textContent=labelText(feature.properties.uvis);svg.append(text);
         }
       },
-      resetFrame() { select.value = ''; if(region)region.value=''; if(search)search.value=''; autoRegion=false;options();change(); },
+      resetFrame() { select.value = ''; if(region)region.value=''; if(search)search.value=''; autoRegion=false;options();return change(); },
       framePoints() {return (select.value || crs()) && active() ? selectedFeatures(uvis, select.value, crs()).flatMap(positions) : null;},
       attachGoogle(map,{heat=false}={}) { if (!map || maps.has(map)) return; if(heat)heatMaps.add(map);maps.set(map,[]); refreshGoogle(map); },
       fitGoogle: fit,

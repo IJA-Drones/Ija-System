@@ -7,7 +7,7 @@ from sqlalchemy import extract, func, or_
 
 from app.extensions import db
 from app.shared.municipality_visibility import visible_prefeitura_links
-from app.models import OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
+from app.models import OrdemServico, OrdemServicoEquipeUvis, Prefeitura, Solicitacao, Usuario
 from app.shared.access import (
     apply_prefeitura_scope,
     apply_regiao_scope,
@@ -124,6 +124,22 @@ def build_uvis_disponiveis(user):
 
 def get_mapa_relatorio_key():
     return current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")
+
+
+def build_uvis_territory_links(available):
+    """Link visible São Paulo accounts by exact normalized name, without writes."""
+    from .territorial import cnes_for_name, normalized
+    names=dict(available)
+    if not names:return {}
+    rows=db.session.query(Usuario.id,Prefeitura.nome,Prefeitura.slug).join(
+        Prefeitura,Usuario.prefeitura_id==Prefeitura.id).filter(Usuario.id.in_(names)).all()
+    city_names={'SAOPAULO','PREFEITURADESAOPAULO','PREFEITURAMUNICIPALDESAOPAULO'}
+    links={}
+    for uid,city,slug in rows:
+        if normalized(city) not in city_names and normalized(slug) not in city_names:continue
+        code=cnes_for_name(names[uid])
+        if code:links[uid]=code
+    return links
 
 
 def get_consulta_geolocalizacao_key():

@@ -8,6 +8,7 @@ from app.clients.google_maps_client import geocode_endereco_google
 from app.modules.mapas.service import (
     build_heatmap_points,
     build_uvis_disponiveis,
+    build_uvis_territory_links,
     get_consulta_geolocalizacao_key,
     get_mapa_relatorio_key,
     normalize_larva_filter,
@@ -139,9 +140,11 @@ def register_routes(bp):
                 "Google Maps API Key nao encontrada (Maps_KEY_FRONT / KEY_API_GOOGLE_MAPS)."
             )
 
+        available=build_uvis_disponiveis(current_user)
         return render_template(
             "mapa_relatorio.html",
-            uvis_disponiveis=build_uvis_disponiveis(current_user),
+            uvis_disponiveis=available,
+            uvis_territory_links=build_uvis_territory_links(available),
             google_maps_key=google_maps_key,
             mes_atual=hoje_brasil.month,
             ano_atual=hoje_brasil.year,

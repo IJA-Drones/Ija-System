@@ -15,6 +15,18 @@ def normalized(value):
 
 
 @lru_cache(maxsize=1)
+def uvis_names():
+    data=json.loads((DATA/'uvis.geojson').read_text())
+    return {normalized(f['properties']['uvis']):f['properties']['cnes'] for f in data['features']}
+
+
+def cnes_for_name(name):
+    key=normalized(name)
+    if key.startswith('UVIS'):key=key[4:]
+    return uvis_names().get(key)
+
+
+@lru_cache(maxsize=1)
 def reference():
     data = json.loads((DATA / 'distritos-referencia.geojson').read_text())
     return data, STRtree([shape(f['geometry']) for f in data['features']])

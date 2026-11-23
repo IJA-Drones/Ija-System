@@ -53,8 +53,9 @@ do Drive e sua política; novos arquivos da pasta não são publicados automatic
 
 ## Guia prático na interface
 
-O menu **Guia prático** acompanha os controles da tela real conforme o acesso da
-conta, incluindo as centrais Agro e Financeiro. A Central de Treinamentos também
-tem **Conhecer esta tela**. Consulte `guia-pratico.md` e
-`inventario-guia-pratico.json` para integração, critérios de visibilidade e limites
-da revisão. Esse guia não gera novos arquivos de mídia nem altera registros.
+**Guia prático** abre **Aprender na prática**, com a Azul e cartões por módulo.
+Cada módulo oferece as funções autorizadas. A escolha abre a tela real e solicita
+à IA um tutorial dos controles disponíveis. Há dúvidas durante o guia e narração
+opcional com a voz configurada da Azul. As áreas Agro e Financeiro permanecem
+separadas conforme o acesso da conta. Consulte `guia-pratico.md` para fluxo,
+limites, permissão, dados enviados ao provedor e verificação.

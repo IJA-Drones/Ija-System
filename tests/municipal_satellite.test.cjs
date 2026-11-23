@@ -14,7 +14,7 @@ test('surroundings toggle removes only the mask, preserving both map cameras',as
  const checkbox={checked:false,addEventListener(_,fn){this.change=fn;}};
  const pois={checked:false,addEventListener(_,fn){this.change=fn;}};
  const status={textContent:''};
- const root={dataset:{maskUrl:'/public-mask'},querySelector:s=>s.includes('surroundings')?checkbox:s.includes('pois')?pois:status};
+ const root={dataset:{maskUrl:'/public-mask'},querySelector:s=>s.includes('surroundings')?checkbox:s.includes('pois')?pois:s.includes('status')?status:null};
  const layers=[];
  class Data {
    constructor(){layers.push(this);}
@@ -52,7 +52,7 @@ test('surroundings toggle removes only the mask, preserving both map cameras',as
 test('coordinator changes replace the white mask and stale downloads cannot restore another region',async()=>{
  const control=()=>({checked:false,addEventListener(_,fn){this.change=fn;}});
  const checkbox=control(),pois=control(),status={};
- const root={dataset:{maskUrl:'/municipio',regionMaskBase:'/ref/'},querySelector:s=>s.includes('surroundings')?checkbox:s.includes('pois')?pois:status};
+ const root={dataset:{maskUrl:'/municipio',regionMaskBase:'/ref/'},querySelector:s=>s.includes('surroundings')?checkbox:s.includes('pois')?pois:s.includes('status')?status:null};
  const responses=new Map(),layers=[];
  const json=crs=>({type:'FeatureCollection',features:[{properties:{crs}}],metadata:{limite_bbox:[-46.9,-24.1,-46.3,-23.25]}});
  class Data {
@@ -78,7 +78,7 @@ test('coordinator changes replace the white mask and stale downloads cannot rest
 
 test('UVIS takes priority over its coordinator, preserves leading zeros and discards stale masks',async()=>{
  const checkbox={checked:false,addEventListener(_,fn){this.change=fn;}},status={};
- const root={dataset:{maskUrl:'/municipio',regionMaskBase:'/ref/'},querySelector:s=>s.includes('surroundings')?checkbox:s.includes('pois')?null:status};
+ const root={dataset:{maskUrl:'/municipio',regionMaskBase:'/ref/'},querySelector:s=>s.includes('surroundings')?checkbox:s.includes('status')?status:null};
  const responses=new Map(),layers=[];
  class Data {constructor(){layers.push(this);}addGeoJson(value){this.geo=value;}setStyle(value){this.style=value;}setMap(value){this.map=value;}}
  const window={google:{maps:{Data}}};
@@ -98,4 +98,32 @@ test('UVIS takes priority over its coordinator, preserves leading zeros and disc
  checkbox.checked=false;checkbox.change();assert.equal(active()[0].geo.features[0].properties.cnes,'0314307');
  await controller.setTerritory({crs:'NORTE'});assert.equal(active()[0].geo.features[0].properties.crs,'NORTE');assert.equal(active()[0].geo.features[0].properties.cnes,undefined);
  await controller.setTerritory({});assert.equal(active()[0].geo.features[0].properties.nome,'São Paulo');
+});
+
+test('background can be removed and restored on both maps without refetching data or changing cameras',async()=>{
+ const control=checked=>({checked,addEventListener(_,fn){this.change=fn;}});
+ const background=control(true),surroundings=control(false),status={},layers=[];let fetches=0;
+ const nodes={'[data-map-background]':background,'[data-satellite-surroundings]':surroundings,'[data-satellite-status]':status};
+ const root={dataset:{maskUrl:'/municipio'},querySelector:s=>nodes[s]||null};
+ class Data {constructor(){layers.push(this);}addGeoJson(){}setStyle(){}setMap(map){this.map=map;}}
+ const window={google:{maps:{Data,Size:class{constructor(width,height){Object.assign(this,{width,height});}}}}};
+ vm.runInNewContext(fs.readFileSync('app/static/js/municipal-satellite.js','utf8'),{
+  window,document:{querySelector:()=>null},Map,Set,fetch:async()=>{fetches++;return{ok:true,json:async()=>({type:'FeatureCollection',features:[],metadata:{limite_bbox:[-46.9,-24.1,-46.3,-23.25]}})};}
+ });
+ const maps=[0,1].map(()=>({
+  listeners:{},mapTypes:new Map(),get:()=>[],getBounds:()=>null,setOptions(){},
+  getMapTypeId(){return this.type;},setMapTypeId(type){if(this.type!==type){this.type=type;this.listeners.maptypeid_changed?.();}},
+  addListener(event,fn){this.listeners[event]=fn;}
+ }));
+ const controller=window.MunicipalSatellite.create(root);maps.forEach(map=>controller.attach(map));
+ await new Promise(resolve=>setImmediate(resolve));
+ maps[1].setMapTypeId('roadmap');background.checked=false;background.change();
+ maps.forEach(map=>assert.equal(map.type,'uvis-no-background'));assert.match(status.textContent,/Fundo oculto/);
+ layers.forEach((layer,i)=>assert.equal(layer.map,maps[i]));
+ const tile=maps[0].mapTypes.get('uvis-no-background').getTile({},12,{createElement:()=>({style:{}})});
+ assert.match(tile.style.cssText,/background:#fff/);
+ surroundings.checked=true;surroundings.change();maps.forEach(map=>assert.equal(map.type,'uvis-no-background'));
+ background.checked=true;background.change();assert.equal(maps[0].type,'hybrid');assert.equal(maps[1].type,'roadmap');
+ background.checked=false;background.change();maps[0].setMapTypeId('roadmap');
+ assert.equal(background.checked,true);assert.equal(maps[1].type,'roadmap');assert.equal(fetches,1);
 });

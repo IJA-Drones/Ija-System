@@ -50,7 +50,7 @@ function harness({ uvis = true, operational = false, hiddenAreaRecords = false, 
     'uvisFilter', 'mesFilter', 'anoFilter', 'larvaFilter', 'focoFilter',
     'filterBadge', 'mapFeedback', 'count-total', 'legend-count',
     'distancia-km', 'consumo-litros', 'custo-total-log',
-    'areaLegendItems', 'areaLegendTotal',
+    'areaLegendItems', 'areaLegendTotal', 'mapHeatmap', 'mapPolygons',
   ].map(id => [id, element()]));
   Object.assign(elements.mesFilter, { value: '10' });
   Object.assign(elements.anoFilter, { value: '2026', reportValidity: () => true });
@@ -76,8 +76,10 @@ function harness({ uvis = true, operational = false, hiddenAreaRecords = false, 
     { setCenter() {}, setZoom() {}, fitBounds() {} },
     { setCenter() {}, setZoom() {}, fitBounds() {} },
   ];
+  let mapIndex=0;
   const context = vm.createContext({
     URLSearchParams, AbortController, Map, Number, Date,
+    CustomEvent: class { constructor(type,options) { this.type=type;this.detail=options.detail; } },
     console: { warn() {}, error(error) { errors.push(error); } },
     window: {
       ...(operational ? { mapOperational: { reset() { operationalRows=[]; }, render(rows) { operationalRows=rows; } } } : {}),
@@ -86,11 +88,13 @@ function harness({ uvis = true, operational = false, hiddenAreaRecords = false, 
     document: {
       readyState: 'loading',
       addEventListener() {},
+      dispatchEvent() {},
       getElementById(id) { return elements[id] || null; },
       querySelector() { return element(); },
       querySelectorAll() { return []; },
     },
     google: { maps: {
+      Map: class { constructor() { return maps[mapIndex++]; } },
       OverlayView: class {
         constructor() { overlays.push(this); }
         setMap(map) { this.map = map; }
@@ -119,7 +123,8 @@ function harness({ uvis = true, operational = false, hiddenAreaRecords = false, 
     elements, requests, errors,
     operationalRows() { return operationalRows; },
     update() { return vm.runInContext('atualizarMapas()', context); },
-    bootRecords() { vm.runInContext('bootMapRecords()',context); },
+    initialize() { vm.runInContext('initMap()',context); },
+    redraw() { vm.runInContext('recolorirMapas()',context); },
     mapsReady() { vm.runInContext('mapHeat=testMaps[0];mapArea=testMaps[1];desenharMapasAtuais()',context); },
     showAreas() { elements.tabArea.classList.add('active');vm.runInContext('renderizarDadosOperacionais(pontosAtuais)',context); },
     url() { return new URL(vm.runInContext('heatmapDataUrl()', context), 'https://example.test'); },
@@ -351,13 +356,26 @@ test('loading Heat defers hidden Area markers until that tab is opened without a
   subject.showAreas();assert.equal(subject.visiblePoints().areas,2);assert.equal(subject.requests.length,1);
 });
 
-test('records begin loading before Google Maps is ready and map initialization reuses them',async()=>{
+test('opening the page and initializing Maps never fetch records before an explicit filter action',async()=>{
  const subject=harness({withoutMaps:true});
- subject.bootRecords();subject.bootRecords();
+ assert.equal(subject.requests.length,0);
+ subject.initialize();subject.initialize();
+ assert.equal(subject.requests.length,0);
+ const pending=subject.update();
  assert.equal(subject.requests.length,1);
  respond(subject.requests[0],[point('Piscina',0),point('Piscina',1)]);
- await new Promise(resolve=>setImmediate(resolve));
- assert.equal(subject.visiblePoints().heat,0);assert.equal(subject.visiblePoints().counter,'2');
+ await pending;
  subject.mapsReady();assert.equal(subject.visiblePoints().heat,2);
  assert.equal(subject.requests.length,1);assert.deepEqual(subject.errors,[]);
+});
+
+test('only the Filtrar button submits filters and draft values do not change the current map',async()=>{
+ assert.doesNotMatch(template,/onchange="atualizarMapas\(\)"/);
+ assert.equal((template.match(/onclick="atualizarMapas\(\)"/g)||[]).length,1);
+ const subject=harness(),pending=subject.update();
+ respond(subject.requests[0],[point(),point('Outros',1)]);await pending;
+ subject.elements.focoFilter.value='Piscina';subject.elements.larvaFilter.value='SIM';
+ subject.redraw();assertPoints(subject,2);assert.equal(subject.requests.length,1);
+ const applied=subject.update();respond(subject.requests[1],[point(),point('Outros',1)]);await applied;
+ assertPoints(subject,1);assert.equal(subject.requests.length,2);
 });

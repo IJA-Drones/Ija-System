@@ -38,7 +38,7 @@ def test_each_profile_can_open_help_on_its_authorized_training_screen(guide_app,
     assert 'css/components/screen-guide.css' in response.text
     assert 'data-screen-guide-open' in response.text
     if role != 'gestor_ti':
-        assert 'Guia prático nas telas' in response.text
+        assert 'Tutoriais com a Azul' in response.text
 
 
 def test_help_remains_available_when_business_permissions_are_removed(guide_app):

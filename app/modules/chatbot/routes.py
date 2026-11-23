@@ -63,6 +63,7 @@ def register_routes(bp):
         from app.modules.chatbot.agro import allowed_sources as agro_sources
         from app.modules.chatbot.search import allowed as search_allowed
         from app.modules.chatbot.guide import build as build_guide
+        from app.modules.chatbot.practical import catalog as practical_catalog
         from app.modules.chatbot.speech_input import available as microphone_available
         try:
             audio_policy = settings.policy()
@@ -83,6 +84,7 @@ def register_routes(bp):
                 'azul_can_view_operations': operations_allowed(current_user) if allowed else False,
                 'azul_can_search': search_allowed(current_user) if allowed else False,
                 'azul_guide': build_guide(current_user, request.path) if allowed else [],
+                'azul_practical_catalog': practical_catalog(current_user) if allowed else [],
                 'azul_tutorial_url': url_for('main.azul_tutorial', publico='sistema') if allowed else None,
                 'azul_transcribe_url': url_for('main.azul_transcribe') if allowed and microphone_available() else '',
                 'azul_voice_available': voice.available() if allowed else False}
