@@ -3,6 +3,7 @@ import hashlib
 from flask import abort, current_app, g, jsonify, make_response, render_template, request, url_for, session
 from flask_login import current_user, login_required, user_logged_in, user_logged_out
 from app.modules.chatbot.scope import chat_key
+from app.modules.chatbot import persona
 
 from app.modules.chatbot.azul import reply as azul_reply
 from app.modules.chatbot import voice, metering, settings, control_store
@@ -65,27 +66,29 @@ def register_routes(bp):
         from app.modules.chatbot.guide import build as build_guide
         from app.modules.chatbot.practical import catalog as practical_catalog
         from app.modules.chatbot.speech_input import available as microphone_available
+        identity = persona.context(current_user)
+        fly = identity['azul_is_agro']
         try:
             audio_policy = settings.policy()
         except control_store.StoreError:
             audio_policy = dict(sound_enabled=False,microphone_enabled=False,conversation_enabled=False,revision=-1)
-            return {'azul_help_url':None,'azul_page_url':None,'azul_audio_policy':audio_policy,
+            return {**identity, 'azul_help_url':None,'azul_page_url':None,'azul_audio_policy':audio_policy,
                     'azul_settings_url':url_for('main.azul_settings') if is_dev_user(current_user) else None}
         key = chat_key(current_user) if allowed else ''
-        return {'azul_chat_key':key,
+        return {**identity, 'azul_chat_key':key,
                 'azul_usage_scope':hashlib.sha256(key.encode()).hexdigest()[:24] if key else '',
                 'azul_audio_policy':audio_policy,
                 'azul_settings_url':url_for('main.azul_settings') if is_dev_user(current_user) else None,
                 'azul_help_url': url_for('main.azul_help') if allowed else None,
-                'azul_page_url': url_for('main.azul_chat') if allowed and can_access_endpoint(
+                'azul_page_url': url_for('main.azul_chat', **({'area': 'agro'} if fly else {})) if allowed and can_access_endpoint(
                     current_user, 'main.azul_chat', 'GET', legacy=True) else None,
-                'azul_can_export': bool(allowed_sources(current_user)) if allowed else False,
+                'azul_can_export': bool(allowed_sources(current_user)) if allowed and not fly else False,
                 'azul_can_agro': bool(agro_sources(current_user)) if allowed else False,
-                'azul_can_view_operations': operations_allowed(current_user) if allowed else False,
-                'azul_can_search': search_allowed(current_user) if allowed else False,
-                'azul_guide': build_guide(current_user, request.path) if allowed else [],
+                'azul_can_view_operations': operations_allowed(current_user) if allowed and not fly else False,
+                'azul_can_search': search_allowed(current_user) if allowed and not fly else False,
+                'azul_guide': build_guide(current_user, '/agro/' if fly else request.path) if allowed else [],
                 'azul_practical_catalog': practical_catalog(current_user) if allowed else [],
-                'azul_tutorial_url': url_for('main.azul_tutorial', publico='sistema') if allowed else None,
+                'azul_tutorial_url': url_for('main.azul_tutorial', publico='sistema', **({'area': 'agro'} if fly else {})) if allowed else None,
                 'azul_transcribe_url': url_for('main.azul_transcribe') if allowed and microphone_available() else '',
                 'azul_voice_available': voice.available() if allowed else False}
 

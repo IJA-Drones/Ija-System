@@ -1,7 +1,7 @@
 <form class="azul-compose form-no-loading" data-azul-compose>
-  <label class="azul-sr-only" for="{{ composer_id }}">Mensagem para a AZUL</label>
+  <label class="azul-sr-only" for="{{ composer_id }}">Mensagem para {{ azul_agent_name|default('Azul') }}</label>
   <div class="azul-composer-shell">
-    <textarea id="{{ composer_id }}" data-compose-input rows="2" maxlength="1500" required autocomplete="off" placeholder="Pergunte à AZUL…" aria-describedby="{{ composer_id }}Status"></textarea>
+    <textarea id="{{ composer_id }}" data-compose-input rows="2" maxlength="1500" required autocomplete="off" placeholder="Pergunte {{ 'ao IJA Fly' if azul_is_agro|default(false) else 'à AZUL' }}…" aria-describedby="{{ composer_id }}Status"></textarea>
     <div class="azul-composer-actions">
       {% include '_azul_voice_controls.html' %}
       <button type="button" class="azul-composer-button azul-composer-primary" data-stop hidden title="Interromper resposta" aria-label="Interromper resposta"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>

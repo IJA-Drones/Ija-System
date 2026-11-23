@@ -92,6 +92,32 @@ def ticket(c,oid=1,kind='solicitacao',endpoint='main.atualizar'):
     return r.get_data(as_text=True)
 
 
+def test_edit_fragments_do_not_repeat_page_context_and_keep_valid_tickets(app):
+    from flask import render_template_string
+    calls = []
+
+    @app.context_processor
+    def page_context_probe():
+        calls.append(True)
+        return {}
+
+    @app.get('/fixture/edit-fragments')
+    def fragments():
+        return render_template_string(
+            "{% for item in items %}{{ edit_fields(item, 'main.atualizar') }}{% endfor %}",
+            items=Solicitacao.query.order_by(Solicitacao.id).all())
+
+    c = client(app)
+    response = c.get('/fixture/edit-fragments')
+    assert response.status_code == 200
+    assert len(calls) == 1
+    from html import unescape
+    tickets = re.findall(r'name="_edit_ticket" value="([^"]+)"', response.text)
+    assert len(tickets) == 2
+    for signed in tickets:
+        assert c.post('/api/edicao/reservar', json={'ticket': unescape(signed)}).status_code == 200
+
+
 def reserve(c,t):
     return c.post('/api/edicao/reservar',json={'ticket':t})
 

@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync('app/static/js/azul-help.js', 'utf8');
 class Element {
   dispatchEvent(event) { return this.events[event.type]?.(event); }
-  constructor() {this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
+  constructor() {this.style={};this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
   set innerHTML(value) {throw new Error('Unsafe HTML');}
   set textContent(value) {this.text=value;}
   append(...values) {this.children.push(...values);}
@@ -14,8 +14,8 @@ class Element {
   setAttribute(name,value) {this[name]=value;}
   focus() {}
 }
-function setup(fetcher, storage, chatKey, page = false) {
-  const root=new Element(); root.dataset={url:'/api/azul/ajuda',page:'/admin',csrf:'token',chatKey};
+function setup(fetcher, storage, chatKey, page = false, identity = {}) {
+  const root=new Element(); root.dataset={url:'/api/azul/ajuda',page:'/admin',csrf:'token',chatKey,...identity};
   const parts=Object.fromEntries(['.azul-panel','[data-toggle]','[data-messages]','form','input','[data-status]','[data-profile]','[data-clear]','[data-close]'].map(key=>[key,new Element()]));
   if (page) {
     root.dataset.view='page';
@@ -315,4 +315,75 @@ test('access revoked during download clears the old preview and conversation',as
   assert.equal(env.parts['[data-messages]'].children.length,1);
   assert.match(env.parts['[data-messages]'].children[0].children[1].text,/acesso ou sessão mudou/);
   assert.equal(env.send.disabled,true);
+});
+
+
+test('Azul and IJA Fly keep separate transcripts within one verified login', async () => {
+  const storage=memoryStorage();
+  const fetcher=async()=>({ok:true,json:async()=>({answer:'Resposta permitida'})});
+  const azul=setup(fetcher,storage,'same-user');
+  azul.parts.input.value='Pergunta municipal';
+  await azul.parts.form.events.submit({preventDefault(){}});
+  const identity={agentId:'ija-fly',agentName:'IJA Fly',agentWelcome:'Olá! Sou o IJA Fly.'};
+  const fly=setup(fetcher,storage,'same-user',false,identity);
+  assert.equal(fly.parts['[data-messages]'].children.length,1);
+  fly.parts.input.value='Pergunta Agro';
+  await fly.parts.form.events.submit({preventDefault(){}});
+  assert.ok(storage.getItem('azul-chat:same-user').includes('Pergunta municipal'));
+  assert.ok(!storage.getItem('azul-chat:same-user:ija-fly').includes('Pergunta municipal'));
+  assert.ok(storage.getItem('azul-chat:same-user:ija-fly').includes('Pergunta Agro'));
+  setup(fetcher,storage,'new-user');
+  assert.equal(storage.getItem('azul-chat:same-user'),null);
+  assert.equal(storage.getItem('azul-chat:same-user:ija-fly'),null);
+});
+
+test('prospecting displays business sources while health keeps its domain restriction', async()=>{
+  for (const mode of ['prospeccao', 'saude']) {
+    const env=setup(async()=>({ok:true,json:async()=>({answer:'Confira as fontes.',mode,parts:[
+      {url:'https://www.cooperrita.com.br/lojas',title:'CooperRita'},
+      {url:'javascript:alert(1)',title:'Unsafe'},
+      {url:'https://www.gov.br/saude',title:'Saúde'}]})}));
+    await env.chip.events.click(); await settle();
+    const bubble=env.parts['[data-messages]'].children.at(-1);
+    const sources=bubble.children.find(child=>child.className==='azul-links');
+    assert.equal(sources.children.length,mode==='prospeccao'?2:1);
+    assert.equal(sources.children.at(-1).href,'https://www.gov.br/saude');
+    assert.equal(sources.children[0].rel,'noopener noreferrer');
+  }
+});
+
+test('long prospecting results and their safe sources survive navigation',async()=>{
+  const storage=memoryStorage();
+  const answer='Parceiros verificados. '.repeat(400);
+  const first=setup(async()=>({ok:true,json:async()=>({answer,mode:'prospeccao',parts:[
+    {url:'https://cooperrita.com.br/lojas',title:'[1] CooperRita'},
+    {url:'javascript:alert(1)',title:'Unsafe'}]})}),storage,'fly-sources',true,{agentId:'ija-fly'});
+  await first.chip.events.click(); await settle();
+  const restored=setup(()=>{throw Error('No request expected');},storage,'fly-sources',true,{agentId:'ija-fly'});
+  const bubble=restored.parts['[data-messages]'].children.at(-1);
+  assert.equal(bubble.children[1].text,answer);
+  const sources=bubble.children.find(child=>child.className==='azul-links');
+  assert.equal(sources.children.length,1);
+  assert.equal(sources.children[0].href,'https://cooperrita.com.br/lojas');
+});
+
+
+test('partner selection only saves chosen rows after an explicit click',async()=>{
+  const preview={token:'signed-partners',rows:[{name:'Unidade A',city:'Itajubá'},{name:'Unidade B',city:'Pouso Alegre'}],save_url:'/agro/parceiros/importar-pesquisa',export_url:'/agro/parceiros/exportar-pesquisa',list_url:'/agro/parceiros'};
+  const env=setup(async(url)=>({ok:true,json:async()=>url==='/api/azul/ajuda'?{answer:'Parceiros',mode:'prospeccao',partner_preview:preview}:{message:'1 parceiro salvo.'}}));
+  await env.chip.events.click(); await settle();
+  assert.equal(env.requests.length,1);
+  const card=env.parts['[data-messages]'].children.at(-1).children.find(c=>c.className==='azul-export');
+  card.children[3].children[0].checked=false;
+  await card.children.find(c=>c.text==='Salvar selecionados no sistema').events.click(); await settle();
+  const sent=JSON.parse(env.requests.at(-1).body);
+  assert.deepEqual(sent,{token:'signed-partners',selected:[0]});
+  assert.equal(env.requests.at(-1).headers['X-CSRFToken'],'token');
+  assert.ok(card.children.some(c=>c.text==='1 parceiro salvo.'));
+});
+
+test('partner actions reject external destinations from restored data',async()=>{
+ const env=setup(async()=>({ok:true,json:async()=>({answer:'Parceiros',partner_preview:{token:'x',rows:[{}],list_url:'https://evil.example',export_url:'/agro/parceiros/exportar-pesquisa'}})}));
+ await env.chip.events.click(); await settle();
+ assert.ok(env.parts['[data-messages]'].children.at(-1).children.every(c=>c.className!=='azul-export'));
 });

@@ -1163,6 +1163,44 @@ class Clientes(db.Model):
 # -------------------------------------------------------------
 # CLIENTES AGRO
 # -------------------------------------------------------------
+class ParceiroAgro(db.Model):
+    __tablename__ = "parceiros_agro"
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), index=True)
+    chave_unica = db.Column(db.String(64), nullable=False, unique=True)
+    nome = db.Column(db.String(180), nullable=False)
+    cidade = db.Column(db.String(180), nullable=False)
+    telefone = db.Column(db.String(100), nullable=False, default="")
+    whatsapp = db.Column(db.String(100), nullable=False, default="")
+    oportunidade = db.Column(db.Text, nullable=False, default="")
+    culturas = db.Column(db.Text, nullable=False, default="")
+    abordagem = db.Column(db.Text, nullable=False, default="")
+    fontes = db.Column(db.JSON, nullable=False, default=list)
+    status = db.Column(db.String(30), nullable=False, default="A_ABORDAR", index=True)
+    responsavel = db.Column(db.String(180), nullable=False, default="")
+    proximo_contato = db.Column(db.Date, index=True)
+    ultimo_contato = db.Column(db.DateTime)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    historico = db.relationship("ParceiroAgroHistorico", back_populates="parceiro", lazy="select",
+                                order_by="ParceiroAgroHistorico.id.desc()")
+
+
+class ParceiroAgroHistorico(db.Model):
+    __tablename__ = "parceiros_agro_historico"
+    id = db.Column(db.Integer, primary_key=True)
+    parceiro_id = db.Column(db.Integer, db.ForeignKey("parceiros_agro.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"))
+    autor = db.Column(db.String(180), nullable=False)
+    acao = db.Column(db.String(40), nullable=False)
+    status_anterior = db.Column(db.String(30))
+    status_novo = db.Column(db.String(30), nullable=False)
+    observacao = db.Column(db.Text, nullable=False, default="")
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    parceiro = db.relationship("ParceiroAgro", back_populates="historico")
+
+
 class ClienteAgro(db.Model):
     __tablename__ = "clientes_agro"
 

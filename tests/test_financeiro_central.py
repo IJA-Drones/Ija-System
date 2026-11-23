@@ -38,6 +38,32 @@ class FinanceUser(UserMixin):
 
 
 class FinanceiroCentralTests(unittest.TestCase):
+    def test_financial_legacy_urls_keep_azul_for_pages_and_chat(self):
+        from app.modules.chatbot import persona
+        rules = [r for r in self.app.url_map.iter_rules()
+                 if is_financeiro_legacy_endpoint(r.endpoint) and 'GET' in r.methods]
+        self.assertGreater(len(rules), 10)
+        for rule in rules:
+            path = re.sub(r"<[^>]+>", "1", rule.rule)
+            for role in ('dev', 'financeiro_admin', 'financeiro'):
+                user = FinanceUser(role)
+                with self.subTest(path=path, role=role):
+                    with self.app.test_request_context(path):
+                        self.assertEqual(persona.context(user)['azul_agent_id'], 'azul')
+                    with self.app.test_request_context('/api/azul/ajuda', method='POST'):
+                        self.assertFalse(persona.is_agro(user, path))
+        with self.app.test_request_context('/agro/admin'):
+            self.assertTrue(persona.is_agro(FinanceUser('dev')))
+
+    def test_financial_layout_wins_over_stale_agro_identity(self):
+        self.login('financeiro_admin')
+        with self.app.test_request_context('/agro/financeiro/configuracoes'):
+            login_user(self.user)
+            html = render_template_string(
+                "{% extends 'base.html' %}", azul_is_agro=True)
+        self.assertIn('class="financeiro-mode"', html)
+        self.assertNotIn('class="agro-mode"', html)
+
     def setUp(self):
         self.user = FinanceUser()
         self.app = Flask(__name__, template_folder=str(APP_DIR / "templates"), static_folder=str(APP_DIR / "static"))
@@ -163,7 +189,9 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.assertEqual(self.client.get("/financeiro/empresas/ija").status_code, 200)
         self.assertEqual(self.client.get("/financeiro").status_code, 200)
         with self.client.session_transaction() as stored:
-            self.assertEqual(dict(stored), original)
+            # Initializing the assistant may add its conversation identifier;
+            # financial company selection and the rest of the session stay intact.
+            self.assertEqual({k: v for k, v in stored.items() if k != 'azul_chat_id'}, original)
 
     def test_company_registration_is_available_to_managers(self):
         for role in ("financeiro_admin", "dev"):
@@ -173,7 +201,8 @@ class FinanceiroCentralTests(unittest.TestCase):
                 self.assertIn('href="/financeiro/empresas/cadastrar"', html)
                 self.assertIn("Cadastrar empresa", html)
                 self.assertNotIn('id="finance-register-status"', html)
-                self.assertNotIn("<form", html)
+                forms = re.findall(r'<form\b[^>]*>', html)
+                self.assertTrue(all('data-azul-compose' in form for form in forms))
 
     def test_company_registration_preview_is_reserved_for_finance_admin_and_dev(self):
         for role in ("financeiro", "diretor"):

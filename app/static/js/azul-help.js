@@ -13,6 +13,8 @@
     return recent;
   }
   document.querySelectorAll('[data-azul-help]').forEach(root => {
+    const agentName = root.dataset.agentName || 'Azul';
+    const agentText = text => root.dataset.agentId === 'ija-fly' ? text.replace(/da (?:AZUL|Azul)/g, 'do IJA Fly').replace(/(?:a |A )?(?:AZUL|Azul)/g, 'IJA Fly') : text;
     if (root.dataset.initialized) return;
     root.dataset.initialized = '1';
     const isPage = root.dataset.view === 'page';
@@ -25,16 +27,17 @@
     const stop = root.querySelector('[data-stop]');
     const counter = root.querySelector('[data-count]');
     const status = root.querySelector('[data-status]');
-    const idleStatus = isPage ? 'A Azul responde com base nas permissões do seu perfil.' : root.dataset.export === '1' ? 'Orientações e relatórios. Downloads exigem confirmação.' : 'Orientações e atalhos. Nenhuma alteração pelo chat.';
+    const idleStatus = isPage ? agentText('A Azul responde com base nas permissões do seu perfil.') : root.dataset.export === '1' ? 'Orientações e relatórios. Downloads exigem confirmação.' : 'Orientações e atalhos. Nenhuma alteração pelo chat.';
     let history = [], pending = null, generation = 0;
     let transcript = [], restoring = false, accessChanged = false;
-    const storageKey = root.dataset.chatKey ? 'azul-chat:' + root.dataset.chatKey : null;
+    const storageBase = root.dataset.chatKey ? 'azul-chat:' + root.dataset.chatKey : null;
+    const storageKey = storageBase ? storageBase + (root.dataset.agentId === 'ija-fly' ? ':ija-fly' : '') : null;
     // Keep only this login/access context in this tab's private chat storage.
     if (storageKey) {
       try {
         for (let index = sessionStorage.length - 1; index >= 0; index--) {
           const key = sessionStorage.key(index);
-          if (key?.startsWith('azul-chat:') && key !== storageKey) sessionStorage.removeItem(key);
+          if (key?.startsWith('azul-chat:') && key !== storageBase && key !== storageBase + ':ija-fly') sessionStorage.removeItem(key);
         }
       } catch (_) { /* Storage may be disabled. */ }
     }
@@ -65,19 +68,90 @@
       }
       if (links.children.length) bubble.append(links);
     }
+    function renderPartnerPreview(bubble, preview) {
+      if (!preview || !Array.isArray(preview.rows) || !preview.rows.length || preview.rows.length > 12 || typeof preview.token !== 'string') return;
+      if (preview.list_url !== '/agro/parceiros' || preview.export_url !== '/agro/parceiros/exportar-pesquisa') return;
+      const card = document.createElement('section'); card.className = 'azul-export';
+      const title = document.createElement('strong'); title.textContent = 'Salvar parceiros ou exportar para Excel';
+      const notice = document.createElement('p'); notice.textContent = 'Selecione as unidades. Ao salvar, entram como A abordar. Nome/cidade, telefone e WhatsApp são conferidos para evitar duplicados e preservar o acompanhamento.';
+      card.append(title, notice);
+      const choices = preview.rows.map((row, index) => {
+        const label = document.createElement('label'); label.style.display = 'block';
+        const check = document.createElement('input'); check.type = 'checkbox'; check.checked = true;
+        const text = document.createElement('span'); text.textContent = ` ${row.name} — ${row.city}`;
+        label.append(check, text); card.append(label); return {check,index};
+      });
+      const saveButton = document.createElement('button'); saveButton.type = 'button'; saveButton.textContent = 'Salvar selecionados no sistema';
+      const exportButton = document.createElement('button'); exportButton.type = 'button'; exportButton.textContent = 'Baixar selecionados em Excel';
+      const list = document.createElement('a'); list.href = preview.list_url; list.textContent = 'Acompanhar parceiros salvos';
+      const feedback = document.createElement('p'); feedback.setAttribute('role','status');
+      const canSave = preview.save_url === '/agro/parceiros/importar-pesquisa';
+      if (canSave) card.append(saveButton);
+      card.append(exportButton, list, feedback); bubble.append(card);
+      let busy = false;
+      async function act(exporting) {
+        if (busy) return;
+        const selected = choices.filter(c=>c.check.checked).map(c=>c.index);
+        if (!selected.length) { feedback.textContent = 'Selecione pelo menos um parceiro.'; return; }
+        busy = true; saveButton.disabled = exportButton.disabled = true;
+        const version = generation;
+        feedback.textContent = exporting ? 'Preparando Excel…' : 'Salvando parceiros…';
+        try {
+          const response = await fetch(exporting ? preview.export_url : preview.save_url, {
+            method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':root.dataset.csrf},
+            body:JSON.stringify({token:preview.token,selected})
+          });
+          if (version !== generation) return;
+          if (response.status === 401 || response.status === 403) { invalidateAccess(); return; }
+          if (!response.ok) throw new Error('Não foi possível concluir. A seleção pode ter expirado; atualize a lista ou faça uma nova pesquisa.');
+          if (exporting) {
+            if (!(response.headers.get('Content-Type')||'').startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) throw new Error('Arquivo indisponível. Atualize a página.');
+            const blob = await response.blob();
+            if (version !== generation) return;
+            const url = URL.createObjectURL(blob), link = document.createElement('a');
+            link.href=url; link.download='parceiros-ija-fly.xlsx'; card.append(link); link.click(); link.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),60000);
+            feedback.textContent='Excel gerado. Download iniciado.';
+          } else {
+            const result = await response.json();
+            if (version !== generation) return;
+            feedback.textContent = result.message || 'Parceiros salvos.';
+          }
+        } catch (error) { if (version === generation) feedback.textContent=error.message; }
+        finally { busy=false; saveButton.disabled=exportButton.disabled=false; }
+      }
+      if (canSave) saveButton.addEventListener('click',()=>act(false));
+      exportButton.addEventListener('click',()=>act(true));
+    }
+    function renderSources(bubble, mode, parts) {
+        if (['saude', 'prospeccao'].includes(mode) && Array.isArray(parts)) {
+          const sources = document.createElement('div'); sources.className = 'azul-links';
+          const seen = new Set();
+          for (const part of parts.slice(0,80)) {
+            let url; try { url = new URL(part.url); } catch (_) { continue; }
+            if (url.protocol !== 'https:' || url.username || url.password || seen.has(url.href)) continue;
+            if (mode === 'saude' && !['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
+            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte consultada';
+            link.target = '_blank'; link.rel = 'noopener noreferrer'; sources.append(link); seen.add(url.href);
+          }
+          if (sources.children.length) bubble.append(sources);
+        }
+    }
     function restore() {
       if (!storageKey) return false;
       try {
         const raw = sessionStorage.getItem(storageKey);
-        if (!raw || raw.length > 400000) return false;
+        if (!raw || raw.length > 1000000) return false;
         const data = JSON.parse(raw);
         if (!Array.isArray(data.transcript) || !data.transcript.length || Date.now()-data.savedAt > 86400000) return false;
-        const valid = item => item && ['user','assistant'].includes(item.role) && typeof item.content === 'string' && item.content.length <= 6000;
+        const valid = item => item && ['user','assistant'].includes(item.role) && typeof item.content === 'string' && item.content.length <= 24000;
         if (!data.transcript.every(valid) || !Array.isArray(data.history) || !data.history.every(valid)) return false;
         restoring = true;
         for (const item of data.transcript.slice(-40)) {
           const bubble = append(item.content, item.role, item.mode);
           renderLinks(bubble, item.links);
+          renderSources(bubble, item.mode, item.parts);
+          renderPartnerPreview(bubble, item.partner_preview);
         }
         transcript = data.transcript.slice(-40);
         history = boundedHistory(data.history);
@@ -95,7 +169,7 @@
       bubble.className = `azul-message azul-${role}`;
       if (role === 'assistant') {
         const label = document.createElement('small');
-        label.textContent = mode === 'faq' ? 'AZUL · GUIA LOCAL' : 'AZUL';
+        label.textContent = mode === 'faq' ? agentText('AZUL · GUIA LOCAL') : mode === 'error' ? agentText('AZUL · NÃO CONCLUÍDO') : agentText('AZUL');
         bubble.append(label);
       }
       const content = document.createElement('div');
@@ -127,7 +201,7 @@
     }
     function welcome() {
       if (isPage) { updateView(); return; }
-      append('Olá! Sou a AZUL.\nPosso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Os recursos do sistema seguem o seu acesso.\n\nPor onde começamos?', 'assistant');
+      append(root.dataset.agentWelcome || agentText('Olá! Sou a AZUL.\nPosso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Os recursos do sistema seguem o seu acesso.\n\nPor onde começamos?'), 'assistant');
     }
     function open(value) {
       if (isPage) return;
@@ -146,7 +220,7 @@
       history = [];
       transcript = [];
       input.value = '';
-      try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
+      try { if (storageBase) { sessionStorage.removeItem(storageBase); sessionStorage.removeItem(storageBase + ':ija-fly'); } } catch (_) {}
       send.disabled = false;
       messages.replaceChildren();
       status.textContent = idleStatus;
@@ -241,7 +315,7 @@
       input.value = '';
       input.disabled = true;
       send.disabled = true;
-      try { if (storageKey) sessionStorage.removeItem(storageKey); } catch (_) {}
+      try { if (storageBase) { sessionStorage.removeItem(storageBase); sessionStorage.removeItem(storageBase + ':ija-fly'); } } catch (_) {}
       messages.replaceChildren();
       root.querySelector('[data-profile]').textContent = '';
       root.querySelectorAll('[data-question], [data-clear], [data-guide-open]').forEach(button => { button.disabled = true; });
@@ -270,8 +344,9 @@
       root.azulCompanion?.thinking(true);
       save();
       const version = generation;
-      status.textContent = 'A Azul está preparando sua resposta…';
-      const timer = setTimeout(() => controller.abort(), 40000);
+      const researching = root.dataset.agentId === 'ija-fly' && /cooperativ|agropecu|parceir|prospec|aprofunde|priorize|mais resultados/i.test(text);
+      status.textContent = researching ? 'IJA Fly está pesquisando e conferindo parceiros. Uma busca ampla pode levar cerca de 90 segundos…' : agentText('A Azul está preparando sua resposta…');
+      const timer = setTimeout(() => controller.abort(), root.dataset.agentId === 'ija-fly' ? 130000 : 40000);
       try {
         const response = await fetch(root.dataset.url, {
           method: 'POST', signal: controller.signal,
@@ -296,25 +371,17 @@
           entry.links = Array.isArray(data.links) ? data.links.slice(0,12) : [];
           renderLinks(bubble, entry.links);
         }
-        if (data.mode === 'saude' && Array.isArray(data.parts)) {
-          const sources = document.createElement('div'); sources.className = 'azul-links';
-          const seen = new Set();
-          for (const part of data.parts.slice(0,80)) {
-            let url; try { url = new URL(part.url); } catch (_) { continue; }
-            if (url.protocol !== 'https:' || url.username || url.password || seen.has(url.href)) continue;
-            if (!['gov.br','prefeitura.sp.gov.br','saude.sp.gov.br','fiocruz.br','info.dengue.mat.br','paho.org'].some(domain=>url.hostname===domain||url.hostname.endsWith('.'+domain))) continue;
-            const link = document.createElement('a'); link.href = url.href; link.textContent = part.title || 'Fonte oficial';
-            link.target = '_blank'; link.rel = 'noopener noreferrer'; sources.append(link); seen.add(url.href);
-          }
-          if (sources.children.length) bubble.append(sources);
-        }
+        entry.parts = Array.isArray(data.parts) ? data.parts.filter(part => part && typeof part.url === 'string').slice(0,80) : [];
+        renderSources(bubble, data.mode, entry.parts);
+        entry.partner_preview = data.partner_preview || null;
+        renderPartnerPreview(bubble, entry.partner_preview);
         const speechButton = root.azulCompanion?.attachSpeech(bubble, data.speech);
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
         history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);
         messages.scrollTop = messages.scrollHeight;
         root.dispatchEvent(new CustomEvent('azul:reply',{detail:{speechButton,mode:data.mode}}));
       } catch (error) {
-        if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'faq');
+        if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'error');
         if (version === generation) root.dispatchEvent(new CustomEvent('azul:reply-error'));
       } finally {
         clearTimeout(timer);

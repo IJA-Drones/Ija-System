@@ -1,5 +1,5 @@
-{% from '_azul_drone.html' import drone %}
-<section class="azul-voice-call" data-voice-call hidden tabindex="-1" aria-label="Conversa por voz com a AZUL">
+{% from '_azul_drone.html' import drone with context %}
+<section class="azul-voice-call" data-voice-call hidden tabindex="-1" aria-label="Conversa por voz com {{ azul_agent_name|default('Azul') }}">
   <div class="azul-call-stage">
     <span class="azul-call-kicker">CONVERSA POR VOZ</span>
     <div class="azul-call-portrait" aria-hidden="true">{{ drone('azul-drone-call') }}</div>
@@ -17,5 +17,5 @@
       <span>Encerrar</span>
     </div>
   </div>
-  <small class="azul-call-disclosure">Você está conversando com a AZUL · voz gerada por IA</small>
+  <small class="azul-call-disclosure">Você está conversando com {{ azul_agent_name|default('Azul') }} · voz gerada por IA</small>
 </section>

@@ -1,6 +1,8 @@
 /* Microphone turns use the same guarded chat as text. No direct voice-agent session. */
 (() => {
   for (const root of new Set([...document.querySelectorAll('[data-azul-help]'), ...document.querySelectorAll('[data-azul-companion]')])) {
+    const agentName = root.dataset.agentName || 'Azul';
+    const agentText = text => root.dataset.agentId === 'ija-fly' ? text.replace(/da (?:AZUL|Azul)/g, 'do IJA Fly').replace(/(?:a |A )?(?:AZUL|Azul)/g, 'IJA Fly') : text;
     const controls = root.querySelector('[data-voice-controls]');
     if (!controls || root.azulVoice) continue;
     const mic = controls.querySelector('[data-microphone]'), action = controls.querySelector('[data-voice-action]');
@@ -23,8 +25,8 @@
       phase = value; root.dataset.voiceState = value; root.dataset.voiceMode = active ? mode : '';
       root.dataset.voiceNotice = notice ? '1' : '0';
       mic.setAttribute('aria-pressed', String(active && mode === 'conversation'));
-      mic.setAttribute('aria-label', active ? 'Encerrar conversa por voz com a AZUL' : 'Conversar por voz com a AZUL');
-      mic.setAttribute('title', active ? 'Encerrar conversa por voz' : 'Conversar por voz com a AZUL. Sua fala será transcrita por IA.');
+      mic.setAttribute('aria-label', active ? agentText('Encerrar conversa por voz com a AZUL') : agentText('Conversar por voz com a AZUL'));
+      mic.setAttribute('title', active ? 'Encerrar conversa por voz' : agentText('Conversar por voz com a AZUL. Sua fala será transcrita por IA.'));
       mic.querySelector('span').textContent = active ? 'Encerrar voz' : 'Conversar por voz';
       if (dictate) {
         dictate.setAttribute('aria-pressed',String(active && mode === 'dictation'));
@@ -41,7 +43,7 @@
       if (call) {
         const wasOpen = !call.hidden;
         call.hidden = !calling;
-        callTitle.textContent = ({starting:'Conectando…',listening:'Estou ouvindo',transcribing:'Entendendo sua fala…',waiting:'Pensando na sua pergunta…',preparing:'Preparando a voz…',speaking:'A AZUL está falando'})[value] || 'Conversa com a AZUL';
+        callTitle.textContent = ({starting:'Conectando…',listening:'Estou ouvindo',transcribing:'Entendendo sua fala…',waiting:'Pensando na sua pergunta…',preparing:'Preparando a voz…',speaking:agentText('A AZUL está falando')})[value] || agentText('Conversa com a AZUL');
         callDescription.textContent = text;
         const label = value === 'listening' ? 'Enviar fala' : 'Falar agora';
         callActionLabel.textContent = label; callAction.setAttribute('aria-label',label); callAction.setAttribute('title',label);
@@ -66,12 +68,14 @@
       root.azulCompanion?.speaking(false);
     }
     async function sayClip(kind) {
+      // Do not play the Azul-branded recording in the Agro identity.
+      if (root.dataset.agentId === 'ija-fly') { listen(); return; }
       const expected = version, controller = new AbortController(); request = controller;
       const clips = {
-        welcome:{url:'/static/audio/azul-inicio-chamada.wav',text:'Olá! Sou a AZUL. Como posso ajudar você?'},
+        welcome:{url:'/static/audio/azul-inicio-chamada.wav',text:agentText('Olá! Sou a AZUL. Como posso ajudar você?')},
         scope:{url:'/static/audio/azul-escopo-chamada.wav',text:'Posso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Sobre qual desses assuntos você quer conversar?'}
       };
-      state('preparing','A AZUL está entrando na conversa…'); root.azulCompanion?.thinking(true);
+      state('preparing',agentText('A AZUL está entrando na conversa…')); root.azulCompanion?.thinking(true);
       const timeout = setTimeout(() => controller.abort(),10000);
       try {
         const response = await fetch(clips[kind].url,{signal:controller.signal,credentials:'same-origin'});
@@ -156,7 +160,7 @@
           stop(); input.value = text; input.dispatchEvent(new Event('input',{bubbles:true})); input.focus(); return;
         }
         turns++;
-        state('waiting','A AZUL está preparando sua resposta…');
+        state('waiting',agentText('A AZUL está preparando sua resposta…'));
         root.dispatchEvent(new CustomEvent('azul:ask',{detail:{message:result.text,voice:true}}));
       } catch (error) {
         if (expected === version) stop(error.name === 'AbortError' ? 'A fala demorou. Tente novamente ou escreva sua pergunta.' : error.message);
@@ -210,10 +214,10 @@
         }
         segment.source.connect(segment.node); segment.node.connect(segment.gain); segment.gain.connect(context.destination);
         root.azulCompanion?.thinking(false); root.azulCompanion?.listening(true);
-        state('listening','A AZUL está ouvindo. Fale sobre o sistema ou saúde.');
+        state('listening',root.dataset.agentId === 'ija-fly' ? 'O IJA Fly está ouvindo. Fale sobre sua operação no Agro.' : 'A AZUL está ouvindo. Fale sobre o sistema ou saúde.');
       } catch (error) {
         if (expected !== version) return;
-        stop(error.name === 'NotAllowedError' ? 'Permita o microfone no navegador para conversar com a AZUL.' : 'Não foi possível abrir o microfone. Confira seu aparelho ou continue pelo texto.');
+        stop(error.name === 'NotAllowedError' ? agentText('Permita o microfone no navegador para conversar com a AZUL.') : 'Não foi possível abrir o microfone. Confira seu aparelho ou continue pelo texto.');
       }
     }
     async function start(selectedMode = 'conversation') {
@@ -222,14 +226,14 @@
       root.azulCompanion?.stopVoice(); root.azulCompanion?.closeGuide();
       active = true; const expected = ++version; turns = 0; greeted = false;
       root.dispatchEvent(new CustomEvent('azul:interrupt'));
-      state('starting','Permita o microfone para conversar com a AZUL.');
+      state('starting',agentText('Permita o microfone para conversar com a AZUL.'));
       try {
         context = new Context(); root.azulCompanion?.useAudioContext(context);
         await context.resume();
       } catch (_) { if (expected === version) stop('Não foi possível ativar o áudio. Tente novamente.'); return; }
       if (!active || expected !== version) return;
       if (root.azulAudioPolicy && !await root.azulAudioPolicy.check(mode==='dictation'?'microphone':'conversation')) {
-        stop(root.azulAudioPolicy.message || 'O som ou o microfone da AZUL foi desativado nas configurações.'); return;
+        stop(root.azulAudioPolicy.message || agentText('O som ou o microfone da AZUL foi desativado nas configurações.')); return;
       }
       if (!active || expected !== version) return;
       sessionTimer = setTimeout(() => stop('A conversa por voz foi encerrada. Toque no microfone para retomar.'),(root.azulAudioPolicy?.current.session_minutes || 5)*60000);
@@ -271,6 +275,6 @@
     window.addEventListener('pagehide',() => stop());
     document.addEventListener('visibilitychange',() => { if (document.hidden) stop(); });
     root.azulVoice = {stop,isActive:()=>active};
-    state('idle','Fale com a AZUL. O áudio será enviado para transcrição por IA. Evite dados pessoais.');
+    state('idle',agentText('Fale com a AZUL. O áudio será enviado para transcrição por IA. Evite dados pessoais.'));
   }
 })();

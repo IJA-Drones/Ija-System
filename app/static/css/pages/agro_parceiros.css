@@ -1,0 +1,41 @@
+/* Scoped to the commercial partner list. */
+.app-content:has(.partners-page) { margin-top: 0 !important; padding-top: 24px; }
+body.agro-mode .listing-page.partners-page { max-width: 1600px; padding: 0; }
+.partners-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+.partners-eyebrow { display: block; color: #56836a; font-size: .7rem; letter-spacing: .13em; font-weight: 700; margin-bottom: 8px; }
+.partners-header h2 { font-size: clamp(1.4rem, 2vw, 2rem); line-height: 1.2; margin-bottom: 8px; }
+.partners-header p { font-size: .88rem; margin-bottom: 0; }
+.partners-header .listing-actions { gap: 8px; }
+.partners-page .btn { font-size: .8rem; padding: 9px 16px; }
+.partners-filters { padding: 18px 20px; margin-bottom: 20px; border: 1px solid #e4ece7; box-shadow: none; }
+.partners-filters .form-label { font-size: .78rem; font-weight: 600; margin-bottom: 6px; }
+.partners-filters .form-control, .partners-filters .form-select { min-height: 42px; font-size: .84rem; }
+.partners-filters label:has(input[type=checkbox]) { display: flex; align-items: center; gap: 8px; min-height: 42px; font-size: .8rem; }
+.partners-filter-actions { display: flex; align-items: center; gap: 14px; font-size: .8rem; }
+.partners-results { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 2px 12px; font-size: .8rem; }
+.partners-results span { color: #65796d; font-size: .75rem; }
+.partners-table-card { border: 1px solid #e1eae4; overflow: hidden; box-shadow: none; }
+.partners-table { min-width: 1060px; font-size: .83rem; }
+.partners-table thead th { background: #edf4ef !important; color: #43634e !important; font-size: .68rem; letter-spacing: .04em; padding: 15px 16px !important; border-bottom: 1px solid #dce7df; }
+.partners-table tbody td { padding: 18px 16px !important; line-height: 1.5; border-color: #edf1ee; }
+.partners-table td:first-child { width: 21%; min-width: 185px; }
+.partners-table td:first-child strong { display: block; font-size: .87rem; line-height: 1.4; }
+.partners-table td:first-child br { display: none; }
+.partners-table td:first-child .text-muted { display: block; font-size: .76rem; margin-top: 5px; }
+.partners-contact span, .partners-contact small { display: block; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.partners-contact small { margin-top: 5px; color: #578165; font-size: .74rem; }
+.partners-opportunity { width: 28%; min-width: 220px; color: #526259; }
+.partners-status { display: inline-flex; white-space: nowrap; border-radius: 6px; padding: 4px 9px; font-size: .7rem; font-weight: 700; background: #edf1f6; color: #526579; }
+.partners-status.status-contatado { background: #e8f1ff; color: #315c9e; }
+.partners-status.status-retorno, .partners-status.status-negociacao { background: #fff3dc; color: #896116; }
+.partners-status.status-parceria { background: #e1f3e6; color: #237243; }
+.partners-owner, .partners-followup small { display: block; font-size: .74rem; color: #7c8981; margin-top: 6px; }
+.partners-followup { white-space: nowrap; font-size: .76rem; }
+.partners-page nav { font-size: .78rem; color: #65796d; }
+@media (max-width: 767px) {
+  .app-content:has(.partners-page) { padding: 16px 8px; }
+  .partners-header { gap: 16px; margin-bottom: 18px; }
+  .partners-header .listing-actions { justify-content: flex-start; }
+  .partners-filters { padding: 16px; }
+  .partners-results span { width: 100%; }
+}

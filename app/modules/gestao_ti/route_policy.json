@@ -1437,12 +1437,7 @@
     ]
   },
   "main.azul_help": {
-    "POST": [
-      "area:prefeitura",
-      "area:agro",
-      "area:financeiro",
-      "area:sistema"
-    ]
+    "POST": ["area:prefeitura", "area:agro", "area:financeiro", "area:sistema"]
   },
   "main.azul_export_download": {
     "POST": "prefeitura.relatorios.exportar"
@@ -1452,5 +1447,27 @@
   },
   "main.azul_transcribe": {
     "POST": ["area:prefeitura", "area:agro", "area:financeiro", "area:sistema"]
+  },
+  "main.agro_parceiros_listar": {
+    "GET": "agro.clientes.consultar"
+  },
+  "main.agro_parceiro_detalhe": {
+    "GET": "agro.clientes.consultar"
+  },
+  "main.agro_parceiros_exportar": {
+    "GET": "agro.clientes.consultar"
+  },
+  "main.agro_parceiros_exportar_pesquisa": {
+    "POST": "agro.clientes.consultar"
+  },
+  "main.agro_parceiros_importar": {
+    "POST": "agro.clientes.criar"
+  },
+  "main.agro_parceiro_novo": {
+    "GET": "agro.clientes.criar",
+    "POST": "agro.clientes.criar"
+  },
+  "main.agro_parceiro_editar": {
+    "POST": "agro.clientes.editar"
   }
 }

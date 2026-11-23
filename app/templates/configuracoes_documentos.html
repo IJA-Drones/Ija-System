@@ -49,7 +49,7 @@
   {% if not can_configurar_documentos %}<div class="alert alert-info">Acesso de consulta. As alterações são realizadas pela COVISA responsável ou pelo DEV.</div>{% endif %}
   <form id="document-settings-form" action="{{ url_for('main.configuracoes_documentos', prefeitura_id=prefeitura.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="_csrf_token" value="{{ config_csrf_token }}">
-    <input type="hidden" name="versao" value="{{ config.versao if config else 0 }}">
+    <input type="hidden" name="versao" value="{{ documento_config.versao if documento_config else 0 }}">
     <div class="row g-4">
       <div class="col-lg-6">
         <section class="card shadow-sm h-100"><div class="card-body p-4">
@@ -64,10 +64,10 @@
           <input class="form-control" id="watermark-image" type="file" name="imagem" accept="image/png,image/jpeg,image/webp" aria-describedby="watermark-image-help watermark-file-error">
           <div class="form-text" id="watermark-image-help">PNG, JPG ou WebP, até 5 MB e 4096 pixels por lado. Prefira PNG com fundo transparente.</div>
           <p class="text-danger small mt-2" id="watermark-file-error" role="alert" hidden></p>
-          {% if config and config.imagem_path %}
+          {% if documento_config and documento_config.imagem_path %}
           <div class="doc-current-image my-3">
             <img src="{{ url_for('main.configuracoes_documentos_imagem', prefeitura_id=prefeitura.id) }}" alt="Imagem atual de {{ prefeitura.nome }}">
-            <div><span class="small text-muted">Imagem atual</span><div class="small text-break">{{ config.imagem_nome }}</div></div>
+            <div><span class="small text-muted">Imagem atual</span><div class="small text-break">{{ documento_config.imagem_nome }}</div></div>
           </div>
           <div class="form-check mb-4">
             <input class="form-check-input" id="watermark-remove" name="remover_imagem" value="1" type="checkbox">
@@ -96,7 +96,7 @@
           <div class="doc-preview-paper" aria-label="Exemplo ilustrativo da marca d’água">
             <div class="doc-preview-content" aria-hidden="true"><strong>RELATÓRIO DE ATIVIDADES</strong><small>{{ prefeitura.nome }}</small><hr><div class="doc-preview-lines"></div><div class="doc-preview-table"></div><div class="doc-preview-lines"></div></div>
             <div class="doc-watermark" id="watermark-preview" style="opacity: {{ form.opacidade / 100 }}; width: {{ form.largura_percentual }}%" {% if not form.ativo %}hidden{% endif %}>
-              <img id="watermark-preview-image" {% if config and config.imagem_path %}src="{{ url_for('main.configuracoes_documentos_imagem', prefeitura_id=prefeitura.id) }}"{% else %}hidden{% endif %} alt="Marca d’água da prefeitura">
+              <img id="watermark-preview-image" {% if documento_config and documento_config.imagem_path %}src="{{ url_for('main.configuracoes_documentos_imagem', prefeitura_id=prefeitura.id) }}"{% else %}hidden{% endif %} alt="Marca d’água da prefeitura">
               <div id="watermark-preview-user" {% if not form.identificar_usuario %}hidden{% endif %}>Emitido por {{ current_user.nome_uvis }}<br>{{ prefeitura.nome }}<br>Data e hora de emissão</div>
             </div>
           </div>
