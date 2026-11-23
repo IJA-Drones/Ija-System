@@ -1,0 +1,17 @@
+{
+  "date": "23/11/2026",
+  "scope": "Atualização do mapa de calor e da consulta territorial das UVIS",
+  "reference": {"units": 28, "districts": 96, "declared_version": "27/07/2026", "local_consultation": "19/11/2026", "source": "Prefeitura de São Paulo / COVISA - Territórios UVIS"},
+  "captures": {"directory": "output/pdf/fontes/novos-mapas-20261123", "date": "23/11/2026", "provenance": "Manifesto das capturas existentes: SQLite descartável e Google Maps", "operational_records": "60 registros fictícios", "production_data": false},
+  "checks": {"python_passed": 84, "python_subtests_passed": 147, "javascript_passed": 30, "python_suites": ["tests/test_mapas_filters.py", "tests/test_mapa_operacional.py", "tests/test_mapas_territorial.py", "tests/test_uvis_territory.py"], "javascript_suites": ["tests/test_mapas_frontend.cjs", "tests/mapas_territorio.test.cjs", "tests/uvis_territory.test.cjs", "tests/municipal_satellite.test.cjs", "tests/map_larva.test.cjs"]},
+  "sources": [
+    "app/templates/mapa_relatorio.html",
+    "app/templates/_map_display_controls.html",
+    "app/static/js/uvis-territory.js",
+    "app/static/js/municipal-satellite.js",
+    "app/static/js/mapas-territorio.js",
+    "app/static/data/uvis-sao-paulo/uvis.geojson",
+    "https://www.google.com/maps/d/viewer?mid=1ZdzK_HpjS1xBTZbtGzHSq6y1OTzjW1XD",
+    "https://metadados.geosampa.prefeitura.sp.gov.br/geonetwork/srv/resources/datasets/36e2df68-8549-4795-98db-d2445c9a7241"
+  ]
+}

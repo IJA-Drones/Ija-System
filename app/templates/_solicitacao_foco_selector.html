@@ -1,0 +1,19 @@
+{% set quadra_selecionada = (foco_atual or '')|trim|upper == 'QUADRA' %}
+<div class="row g-3 align-items-end">
+  <div class="col-md-6">
+    <label class="{{ foco_label_class|default('form-label fw-bold small text-muted') }}" for="{{ foco_id }}">{% if foco_icon|default('') %}<i class="bi {{ foco_icon }} me-1 text-primary" aria-hidden="true"></i> {% endif %}{{ foco_label|default('Foco da Ação') }}</label>
+    <select id="{{ foco_id }}" class="{{ foco_select_class|default('form-select') }}" name="foco" {% if quadra_selecionada %}disabled{% else %}required{% endif %}>
+      <option value="" {% if not foco_atual or quadra_selecionada %}selected{% endif %} disabled>{% if quadra_selecionada %}Quadra selecionada{% else %}Selecione o foco da ação...{% endif %}</option>
+      {% if foco_atual and not quadra_selecionada %}
+      <option value="{{ foco_atual }}" selected>{{ foco_atual }}</option>
+      {% endif %}
+    </select>
+    <input type="hidden" name="foco" value="QUADRA" data-quadra-foco-hidden {% if not quadra_selecionada %}disabled{% endif %}>
+  </div>
+  <div class="col-md-6">
+    <label class="form-control shadow-sm d-flex align-items-center gap-2 mb-0" for="{{ foco_id }}Quadra">
+      <input class="form-check-input m-0 flex-shrink-0 fs-6" type="radio" id="{{ foco_id }}Quadra" data-quadra-focus aria-controls="{{ foco_id }}" {% if quadra_selecionada %}checked{% endif %}>
+      <span class="form-check-label fw-medium">Tratamento e monitoramento de quadra</span>
+    </label>
+  </div>
+</div>
