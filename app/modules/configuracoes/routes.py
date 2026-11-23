@@ -106,7 +106,7 @@ def register_routes(bp):
             prefeituras=prefeituras_permitidas(current_user).all() if can_view_all_settings(current_user) else [],
             all_prefeituras=can_view_all_settings(current_user),
             can_configurar_documentos=can_access_settings(current_user, write=True),
-            config=config, form=form, erro=erro, config_csrf_token=_csrf_token(),
+            documento_config=config, form=form, erro=erro, config_csrf_token=_csrf_token(),
             historico=PrefeituraDocumentoHistorico.query.filter_by(prefeitura_id=prefeitura_id)
                 .order_by(PrefeituraDocumentoHistorico.id.desc()).limit(20).all(),
         ), status

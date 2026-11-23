@@ -230,7 +230,7 @@ def build_admin_dashboard_query(
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
-            joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico).joinedload(OrdemServico.equipe),
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .join(Usuario)
@@ -395,9 +395,6 @@ def build_admin_historico_os_query(user, filtros, filtro_tipo_os: str, filtro_eq
         filtro_data_ini=filtros["data_ini"],
         filtro_data_fim=filtros["data_fim"],
         filtro_retorno_automatico=filtros["retorno_automatico"],
-    ).options(
-        db.selectinload(Solicitacao.ordem_servico).selectinload(OrdemServico.equipe),
-        db.selectinload(Solicitacao.ordem_servico_equipe_uvis),
     )
 
     filtro_status_os = filtros["status"]
