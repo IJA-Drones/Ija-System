@@ -62,6 +62,11 @@
       "name": "guia-continue",
       "text": "Continue com a Azul. Escreva sua dúvida em linguagem simples. Nas novas respostas, “Ouvir resposta” reproduz a voz gerada por inteligência artificial, quando disponível. Você pode parar o áudio a qualquer momento e reabrir este guia quando precisar.",
       "audio_sha256": "6bdf2eb26bc7de8c74e8dba6d9555035ec7c9159f0fbad000dbd91d0e5fb5160"
+    },
+    "bc52600b3a0614448f933121dae3ef7d62a35d58a8c8f42df6493b82ca42a7af": {
+      "name": "convite-dev",
+      "text": "Gostaria de ouvir suas pendências de hoje?",
+      "audio_sha256": "24732ecb12ac09f60b9c5d62c82337e5a6df56ffff953c4d4b81ec940a50e2d1"
     }
   }
 }

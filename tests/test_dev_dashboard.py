@@ -167,3 +167,15 @@ def test_incidents_group_repeats_keep_status_method_and_prioritize_server(dashbo
     assert context['metrics']['errors_24h'] == 4
     assert sum(row.total for row in context['top_error_routes']) == 5
     assert len(context['top_error_routes']) == 3
+
+
+def test_initial_incidents_match_refresh_payload_and_preserve_utc(dashboard):
+    from app.modules.dev_dashboard.service import build_dev_dashboard_context, build_dev_dashboard_payload
+
+    initial = build_dev_dashboard_context()["recent_errors_serialized"]
+    refreshed = build_dev_dashboard_payload()["recent_errors"]
+    assert initial == refreshed
+    assert len(initial) == 4
+    assert initial[0]["status_code"] == 500
+    assert all(item["created_at"].endswith("+00:00") for item in initial)
+    assert all(item["occurrences"] >= 1 for item in initial)

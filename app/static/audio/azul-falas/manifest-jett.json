@@ -1,0 +1,27 @@
+{
+  "style": "azul-ptbr-jett-v2",
+  "voice": "shimmer",
+  "model": "gpt-realtime-2.1",
+  "clips": {
+    "6c1e38c4afc383e2c7debe0396efd0226478f05b507d5ebdc8cf1578355f50d8": {
+      "name": "amostra-voz",
+      "text": "Bom dia! Sou a Azul. Gostaria de ouvir suas pendências de hoje? Vou resumir os erros das últimas vinte e quatro horas e mostrar por onde começar.",
+      "audio_sha256": "91426b89914e8c8f8ab38b3f544500c883abdea7d0326d277faa6c27174f5e88"
+    },
+    "a034e6a85268ed8ca739b900f80fddac4085c5dd647eda41739c0c75c00cb064": {
+      "name": "convite-dev",
+      "text": "Gostaria de ouvir suas pendências de hoje?",
+      "audio_sha256": "26911d15be2a76b8ea64e56f1081fbb1062c487668acb0dc2c323d40f732ed41"
+    },
+    "b4a98dd5b2dc1fab0240f58cfcd7a81854bf6163fa644632f2abbbf6caeca692": {
+      "name": "abertura-chamada",
+      "text": "Olá! Sou a AZUL. Como posso ajudar você?",
+      "audio_sha256": "b42c0c14a0b1cbbeb86be503eec1e7f14f6ad367a4edc6794c3cc66ee2c336a5"
+    },
+    "ea6222b0422d46b253413d13cb94f826027cd380f059ee526dea05965c01e77f": {
+      "name": "escopo-chamada",
+      "text": "Posso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Sobre qual desses assuntos você quer conversar?",
+      "audio_sha256": "1864f2f78e457cd839a842c0101ec46cb0b2939ba0219c4dabe89be67965ba35"
+    }
+  }
+}

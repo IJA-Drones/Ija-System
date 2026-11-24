@@ -399,6 +399,9 @@
   "main.dev_dashboard": {
     "GET": "sistema.tecnico.consultar"
   },
+  "main.dev_dashboard_briefing": {
+    "GET": "sistema.tecnico.consultar"
+  },
   "main.dev_dashboard_data": {
     "GET": "sistema.tecnico.consultar"
   },

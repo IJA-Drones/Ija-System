@@ -582,6 +582,7 @@ def _base_dev_dashboard_context():
 def build_dev_dashboard_context():
     context = _base_dev_dashboard_context()
     context["diagnostic_snapshot"] = _diagnostic_snapshot(context)
+    context["recent_errors_serialized"] = [_serialize_error_log(log) for log in context["recent_errors"]]
     return context
 
 
@@ -604,7 +605,7 @@ def build_dev_dashboard_payload():
             if context["dev_profile"]["last_event"]
             else None,
         },
-        "recent_errors": [_serialize_error_log(log) for log in context["recent_errors"]],
+        "recent_errors": context["recent_errors_serialized"],
         "top_error_routes": [_serialize_top_error(item) for item in context["top_error_routes"]],
         "failure_timeline": context["failure_timeline"],
         "diagnostic_snapshot": context["diagnostic_snapshot"],

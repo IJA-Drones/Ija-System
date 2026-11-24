@@ -9,10 +9,11 @@
 <div class="container-fluid py-4 op-page">
   <div class="op-header">
     <div>
+      <div class="op-eyebrow">CENTRAL DE OPERAÇÕES · DIRETORIA</div>
       <h2 class="op-title">
         <i class="bi bi-command me-2 text-primary"></i>Painel Operacional
       </h2>
-      <div class="text-muted small">Contexto local para planejamento e liberação operacional.</div>
+      <div class="text-muted small">Acompanhe a agenda, antecipe pendências e planeje a operação.</div>
     </div>
     <div class="op-actions">
       <a id="opRouteLink" class="btn btn-outline-primary btn-sm disabled" href="#" target="_blank" rel="noopener">
@@ -27,6 +28,40 @@
     </div>
   </div>
 
+  {% include "partials/painel_operacional_overview.html" %}
+
+      <section class="op-panel op-resources mb-3">
+        <div class="op-panel-header">
+          <h3 class="op-panel-title"><i class="bi bi-cpu-fill text-primary"></i>Recursos da operação</h3><span class="small text-muted">Situação cadastral</span>
+        </div>
+        <div class="op-panel-body">
+          <div class="op-grid op-resource-grid">
+            <div class="op-metric">
+              <div class="op-metric-label">Drones ativos</div>
+              <div id="opDronesAtivos" class="op-metric-value">{{ overview.assets.drones_ativos }}</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Drones em manutenção</div>
+              <div id="opDronesManutencao" class="op-metric-value">{{ overview.assets.drones_manutencao }}</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Baterias em alerta</div>
+              <div id="opBateriasAlerta" class="op-metric-value">{{ overview.assets.baterias_alerta }}</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Veículos em revisão</div>
+              <div id="opVeiculosRevisao" class="op-metric-value">{{ overview.assets.veiculos_revisao }}</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Equipes ativas</div>
+              <div id="opEquipesAtivas" class="op-metric-value">{{ overview.assets.equipes_ativas }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+  <div class="op-section-heading"><div><h3>Planejamento em campo</h3><p>Consulte um local para conferir o clima, o acesso e o histórico próximo.</p></div></div>
   <form id="opSearchForm" class="op-search mb-3" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
     <label for="opAddress" class="form-label fw-bold small text-muted">
       <i class="bi bi-geo-alt-fill me-1 text-primary"></i>Endereço operacional
@@ -45,25 +80,28 @@
         <i class="bi bi-search me-1"></i>Consultar
       </button>
     </div>
-    <div id="opError" class="alert alert-danger mt-3 mb-0 d-none"></div>
+    <div id="opError" role="alert" class="alert alert-danger mt-3 mb-0 d-none"></div>
   </form>
 
   <div class="op-layout">
     <div class="d-grid gap-3">
       <section class="op-panel">
         <div class="op-panel-header">
-          <h3 class="op-panel-title"><i class="bi bi-activity text-primary"></i>Decisão de voo</h3>
+          <h3 class="op-panel-title"><i class="bi bi-activity text-primary"></i>Condições para o voo</h3>
           <span id="opGeneratedAt" class="badge text-bg-light">Aguardando consulta</span>
         </div>
         <div class="op-panel-body">
           <div id="opEmpty" class="op-placeholder">
             <div>
-              <i class="bi bi-map fs-1 d-block mb-2 text-primary"></i>
-              <strong>Informe um endereço para carregar o contexto local.</strong>
+              <i class="bi bi-geo-alt op-empty-icon text-primary"></i>
+              <strong>Como estão as condições no local?</strong>
+              <p class="small mb-3 mt-2">Consulte um endereço acima ou selecione um item da agenda.</p>
+              <div class="op-preview-tags"><span><i class="bi bi-wind"></i> Vento e rajadas</span><span><i class="bi bi-cloud-rain"></i> Chuva</span><span><i class="bi bi-list-check"></i> Checklist</span></div>
             </div>
           </div>
 
           <div id="opResults" class="d-none">
+            <p class="small text-muted">Leitura meteorológica de apoio. Confirme as condições em campo e as autorizações antes do voo.</p>
             <div id="opRisk" class="op-risk ok mb-3">
               <div class="op-risk-label">
                 <i id="opRiskIcon" class="bi bi-check-circle-fill"></i>
@@ -112,42 +150,12 @@
 
       <section class="op-panel">
         <div class="op-panel-header">
-          <h3 class="op-panel-title"><i class="bi bi-cpu-fill text-primary"></i>Recursos da operação</h3>
-        </div>
-        <div class="op-panel-body">
-          <div class="op-grid">
-            <div class="op-metric">
-              <div class="op-metric-label">Drones ativos</div>
-              <div id="opDronesAtivos" class="op-metric-value">-</div>
-            </div>
-            <div class="op-metric">
-              <div class="op-metric-label">Drones em manutenção</div>
-              <div id="opDronesManutencao" class="op-metric-value">-</div>
-            </div>
-            <div class="op-metric">
-              <div class="op-metric-label">Baterias em alerta</div>
-              <div id="opBateriasAlerta" class="op-metric-value">-</div>
-            </div>
-            <div class="op-metric">
-              <div class="op-metric-label">Veículos em revisão</div>
-              <div id="opVeiculosRevisao" class="op-metric-value">-</div>
-            </div>
-            <div class="op-metric">
-              <div class="op-metric-label">Equipes ativas</div>
-              <div id="opEquipesAtivas" class="op-metric-value">-</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="op-panel">
-        <div class="op-panel-header">
           <h3 class="op-panel-title"><i class="bi bi-clock-history text-primary"></i>Histórico próximo</h3>
           <span id="opNearbyCount" class="badge text-bg-light">0</span>
         </div>
         <div class="op-panel-body">
           <div id="opNearby" class="op-list">
-            <div class="text-muted small">Nenhum ponto carregado.</div>
+            <div class="op-inline-empty"><i class="bi bi-pin-map"></i><span>Após consultar um endereço, veja as solicitações próximas em um raio de 1,5 km.</span></div>
           </div>
         </div>
       </section>
@@ -159,7 +167,8 @@
         <span id="opMapStatus" class="badge text-bg-light">Aguardando endereço</span>
       </div>
       <div class="op-panel-body">
-        <div id="opMap" class="op-map"></div>
+        <div id="opMap" class="op-map"><div class="op-map-empty"><i class="bi bi-map"></i><strong>Visão do local operacional</strong><span id="opMapMessage">Carregando mapa…</span></div></div>
+        <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>O mapa será centralizado no endereço consultado.</p>
       </div>
     </section>
   </div>
@@ -173,7 +182,7 @@
 
   let opMap = null;
   let opMarker = null;
-  let opGeocoder = null;
+  let opLocation = null;
 
   const el = (id) => document.getElementById(id);
   const setText = (id, value) => {
@@ -219,7 +228,6 @@
   function initOperationalMap() {
     const canvas = el("opMap");
     if (!canvas || !window.google || !window.google.maps) return;
-    opGeocoder = new google.maps.Geocoder();
     opMap = new google.maps.Map(canvas, {
       center: { lat: -23.55052, lng: -46.633308 },
       zoom: 12,
@@ -229,11 +237,13 @@
       mapTypeControl: true,
     });
     setText("opMapStatus", "Mapa carregado");
+    if (opLocation) updateMap(opLocation);
   }
 
   function loadGoogleMaps() {
     if (!GOOGLE_MAPS_KEY) {
-      setText("opMapStatus", "Maps sem chave");
+      setText("opMapStatus", "Mapa indisponível");
+      setText("opMapMessage", "Consulte um endereço para abrir o local pelo botão Maps.");
       return;
     }
     if (window.google && window.google.maps) {
@@ -245,11 +255,15 @@
     script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&callback=__initOperationalMap`;
     script.async = true;
     script.defer = true;
-    script.onerror = () => setText("opMapStatus", "Falha no Maps");
+    script.onerror = () => {
+      setText("opMapStatus", "Falha no Maps");
+      setText("opMapMessage", "Não foi possível carregar o mapa. Use o botão Maps após a consulta.");
+    };
     document.head.appendChild(script);
   }
 
   function updateMap(location) {
+    opLocation = location;
     if (!opMap || !window.google || !window.google.maps || !location) {
       setText("opMapStatus", "Coordenadas carregadas");
       return;
@@ -266,6 +280,7 @@
   }
 
   function formatNumber(value, decimals = 0) {
+    if (value == null || value === "") return "-";
     const number = Number(value);
     if (!Number.isFinite(number)) return "-";
     return number.toLocaleString("pt-BR", { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
@@ -402,6 +417,13 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     el("opSearchForm")?.addEventListener("submit", submitOperationalSearch);
+    document.querySelectorAll("[data-op-address]").forEach((button) => {
+      button.addEventListener("click", () => {
+        el("opAddress").value = button.dataset.opAddress;
+        el("opSearchForm").requestSubmit();
+        el("opSearchForm").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
     loadGoogleMaps();
   });
 </script>

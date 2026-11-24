@@ -1,48 +1,37 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dev_dashboard.css', v='20261118-responsive') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dev_dashboard.css', v='20261124-briefing') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid dev-shell py-4">
   <div class="dev-hero-stage mb-4">
-  <section class="dev-hero p-4 p-lg-5">
-    <span class="dev-glass-backdrop" aria-hidden="true"></span>
+  <section class="dev-hero p-4">
     <div class="dev-hero-content">
       <div>
-        <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Developer console · Oceano Azul</span>
-        <h1 class="dev-title">Saúde do sistema</h1>
-        <p class="dev-welcome">{{ dev_profile.greeting }}, {{ dev_profile.name }}. Sua visão técnica da operação.</p>
+        <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Oceano Azul · Console DEV</span>
+        <h1 class="dev-title">Visão geral do sistema</h1>
+        <p class="dev-welcome">{{ dev_profile.greeting }}, {{ dev_profile.name }}. Sua visão do desenvolvimento.</p>
         <p class="dev-subtitle">
-          Central técnica do sistema: presença em tempo real, saúde da aplicação, erros recentes, infraestrutura e contexto operacional.
+          Monitore o desenvolvimento, identifique falhas e investigue com a Azul.
         </p>
         <div class="dev-hero-actions">
           <button class="btn btn-light btn-sm dev-refresh-control" type="button" id="devRefreshNow" aria-label="Atualizar painel" title="Atualizar painel">
-            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span class="visually-hidden">Atualizar</span>
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span>Atualizar</span>
           </button>
           <button class="btn btn-outline-light btn-sm" type="button" id="devLiveToggle" aria-pressed="false">
             <i class="bi bi-broadcast me-1"></i> Ao vivo
           </button>
+          <button class="btn btn-outline-light btn-sm" type="button" id="devAnalyzeHealth">
+            <i class="bi bi-stars" aria-hidden="true"></i> Analisar saúde com a Azul
+          </button>
+          {% if dev_briefing_enabled|default(false) %}
+          <button class="btn btn-outline-light btn-sm" type="button" id="devBriefingOpen"><i class="bi bi-volume-up" aria-hidden="true"></i> Resumo do dia</button>
+          {% endif %}
           <button class="btn btn-outline-light btn-sm" type="button" id="devCopySnapshot">
             <i class="bi bi-copy me-1"></i> Copiar diagnóstico
           </button>
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios')) if central_ti_url_allowed is defined else true) else 'false' }}">
-            <i class="bi bi-clipboard-data me-1"></i> Auditoria
-          </a>
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.financeiro_central') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">
-            <i class="bi bi-bank me-1"></i> Central Financeiro
-          </a>
-          {% if is_dev_user(current_user) %}
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.login_security') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.login_security')) if central_ti_url_allowed is defined else true) else 'false' }}">
-            <i class="bi bi-shield-lock me-1"></i> Proteção de login
-          </a>
-          {% endif %}
-          {% if can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">
-            <i class="bi bi-shield-check me-1"></i> Central de TI
-          </a>
-          {% endif %}
         </div>
       </div>
 
@@ -68,12 +57,53 @@
   </section>
   </div>
 
-  <section class="dev-grid mb-4">
+  {% if dev_briefing_enabled|default(false) %}
+  <section class="dev-briefing mb-4" id="devBriefing" aria-label="Resumo de desenvolvimento com a Azul"
+      data-url="{{ url_for('main.dev_dashboard_briefing') }}" data-invite="{{ '1' if dev_briefing_invite else '0' }}"
+      data-clip="{{ dev_briefing_clip or '' }}" {% if not dev_briefing_invite %}hidden{% endif %}>
+    <div class="dev-briefing-icon"><i class="bi bi-soundwave" aria-hidden="true"></i></div>
+    <div class="dev-briefing-main">
+      <span class="dev-label">Azul · Seu início de trabalho</span>
+      <h2 class="h5 fw-bold">Gostaria de ouvir suas pendências de hoje?</h2>
+      <p class="small text-muted">Um resumo das falhas e dos novos bugs técnicos ainda abertos nas últimas 24 horas. Você escolhe quando ouvir.</p>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-primary btn-sm" type="button" id="devBriefingListen"><i class="bi bi-play-fill" aria-hidden="true"></i> Ouvir pendências</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="devBriefingRead">Ler resumo</button>
+        <button class="btn btn-link btn-sm" type="button" id="devBriefingDismiss">Agora não</button>
+      </div>
+      <p class="small text-muted mt-2 mb-0" id="devBriefingStatus" role="status">Voz gerada por IA. Nenhum microfone será aberto.</p>
+      <div id="devBriefingResult" class="dev-briefing-result" hidden></div>
+      <div id="devBriefingSpeech" class="mt-2"></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <nav class="dev-shortcuts" aria-label="Ferramentas administrativas">
+    <span>Acessos rápidos</span>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_logs_usuarios')) if central_ti_url_allowed is defined else true) else 'false' }}">
+            <i class="bi bi-clipboard-data me-1"></i> Auditoria
+          </a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.financeiro_central') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_central')) if central_ti_url_allowed is defined else true) else 'false' }}">
+            <i class="bi bi-bank me-1"></i> Central Financeiro
+          </a>
+          {% if is_dev_user(current_user) %}
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.login_security') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.login_security')) if central_ti_url_allowed is defined else true) else 'false' }}">
+            <i class="bi bi-shield-lock me-1"></i> Proteção de login
+          </a>
+          {% endif %}
+          {% if can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">
+            <i class="bi bi-shield-check me-1"></i> Central de TI
+          </a>
+          {% endif %}
+  </nav>
+
+  <section class="dev-grid mb-4" aria-label="Indicadores do sistema">
     <div class="card dev-metric">
       <div class="card-body">
         <div class="dev-label"><i class="bi bi-broadcast"></i> Online agora</div>
         <div class="dev-value text-success" id="metricOnlineUsers">{{ metrics.online_users }}</div>
-        <div class="small text-muted">de {{ presence.tracked_count }} presença(s) monitorada(s)</div>
+        <div class="small text-muted">de <span id="presenceTrackedCount">{{ presence.tracked_count }}</span> presença(s) monitorada(s)</div>
       </div>
     </div>
     <div class="card dev-metric">
@@ -114,7 +144,7 @@
         <p class="small text-muted mb-0">Eventos esperados, preservados na auditoria e excluídos dos indicadores de falha.</p>
       </div>
     </div>
-    <div class="dev-runtime-summary"><span class="dev-label">Runtime</span><strong>Python {{ runtime.python }}</strong><span>{{ runtime.database }} · {{ metrics.route_count }} rotas</span></div>
+    <div class="dev-runtime-summary"><span class="dev-label">Runtime</span><strong>Python {{ runtime.python }}</strong><span>{{ runtime.database }} · <span id="runtimeRouteCount">{{ metrics.route_count }}</span> rotas</span></div>
   </section>
 
   {% if alerts %}
@@ -138,6 +168,20 @@
     </div>
   </section>
   {% endif %}
+
+  <section class="dev-triage mb-4" aria-label="Triagem do sistema">
+    <div class="dev-triage-heading">
+      <span class="dev-label">Próximo passo</span>
+      <h2 class="h5 fw-bold" id="devTriageTitle">Conferindo os indicadores</h2>
+      <p class="small text-muted mb-0" id="devTriageDetail"></p>
+    </div>
+    <button type="button" class="dev-triage-action" data-dev-tab="erros" data-dev-family="5">
+      <i class="bi bi-bug" aria-hidden="true"></i><span><strong id="devTriageServer">{{ metrics.server_errors_7d }}</strong> falhas 5xx <small>Investigar · últimos 7 dias</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="dev-triage-action" data-dev-tab="infra">
+      <i class="bi bi-heart-pulse" aria-hidden="true"></i><span><strong id="devTriageChecks">{{ metrics.healthy_checks }}/{{ metrics.total_checks }}</strong> verificações OK <small>Conferir infraestrutura</small></span><i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+    </button>
+  </section>
 
   <ul class="nav nav-pills dev-tabs mb-4" id="devDashboardTabs" role="tablist">
     <li class="nav-item" role="presentation">
@@ -185,45 +229,17 @@
                 ></div>
               {% endfor %}
             </div>
+            <div class="dev-timeline-summary small text-muted mt-3" id="devTimelineSummary"></div>
           </div>
         </div>
 
-        <aside class="card dev-card">
+        <aside class="card dev-card dev-assistant-card">
           <div class="card-body p-4">
-            <h2 class="h5 fw-bold mb-3"><i class="bi bi-cloud-sun-fill text-warning me-2"></i>Contexto local</h2>
-            <div class="d-flex align-items-end gap-3 mb-4">
-              <div class="dev-weather-value" id="devTemperature">--</div>
-              <div class="pb-2">
-                <div class="fw-semibold" id="devWeatherCondition">Aguardando clima</div>
-                <div class="small text-muted" id="devWeatherUpdated">--</div>
-              </div>
-            </div>
-            <div class="dev-mini-grid mb-3">
-              <div class="dev-tile">
-                <div class="small text-muted">Umidade</div>
-                <strong id="devHumidity">--</strong>
-              </div>
-              <div class="dev-tile">
-                <div class="small text-muted">Vento</div>
-                <strong id="devWind">--</strong>
-              </div>
-              <div class="dev-tile">
-                <div class="small text-muted">Referência</div>
-                <strong id="devLocationLabel">{{ local_context.default_location.label }}</strong>
-              </div>
-            </div>
-            <button class="btn btn-outline-primary btn-sm" type="button" id="devUseLocation">
-              <i class="bi bi-crosshair me-1"></i> Minha localização
-            </button>
-            <div class="dev-map-shell mt-3">
-              <div id="devMap"></div>
-              <div class="dev-map-placeholder" id="devMapPlaceholder">
-                <div>
-                  <i class="bi bi-map fs-2 d-block mb-2"></i>
-                  <span id="devMapStatus">{{ 'Carregando Google Maps...' if maps_enabled else 'Google Maps sem chave configurada.' }}</span>
-                </div>
-              </div>
-            </div>
+            <span class="dev-label"><i class="bi bi-stars"></i> Assistente de diagnóstico</span>
+            <h2 class="h4 fw-bold mt-2">Da ocorrência à investigação.</h2>
+            <p class="text-muted">Peça uma visão geral à Azul para identificar os erros mais recorrentes, as verificações que precisam de atenção e por onde começar. Abra um registro para aprofundar a investigação.</p>
+            <ol class="dev-investigation-steps"><li>Localize a rota e a resposta HTTP.</li><li>Confira o horário e o usuário afetado.</li><li>Analise o registro com a Azul.</li></ol>
+            <button class="btn btn-primary" type="button" data-dev-tab="erros"><i class="bi bi-arrow-right me-2"></i>Investigar ocorrências</button>
           </div>
         </aside>
       </div>
@@ -243,8 +259,8 @@
               {% endif %}
             </div>
             <div class="dev-filter">
-              <input class="form-control form-control-sm" type="search" id="devPresenceFilter" placeholder="Filtrar usuário, perfil, rota ou IP">
-              <select class="form-select form-select-sm" id="devPresenceStatusFilter">
+              <input class="form-control form-control-sm" type="search" id="devPresenceFilter" aria-label="Filtrar presenças" placeholder="Filtrar usuário, perfil, rota ou IP">
+              <select class="form-select form-select-sm" id="devPresenceStatusFilter" aria-label="Filtrar por status de presença">
                 <option value="">Todos</option>
                 <option value="online">Online</option>
                 <option value="away">Ausente</option>
@@ -299,14 +315,26 @@
               <h2 class="h5 fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Ocorrências para investigar</h2>
               <div class="dev-filter">
                 <input class="form-control form-control-sm" type="search" id="devRecentFilter" aria-label="Filtrar ocorrências" placeholder="Filtrar erro, rota ou último usuário">
-                <select class="form-select form-select-sm" id="devRecentStatusFilter">
+                <select class="form-select form-select-sm" id="devRecentStatusFilter" aria-label="Filtrar por família HTTP">
                   <option value="">Todos</option>
                   <option value="4">4xx</option>
                   <option value="5">5xx</option>
                 </select>
               </div>
             </div>
-            <p class="small text-muted">Últimos 7 dias · até 30 grupos por rota, método e status. Falhas 5xx aparecem primeiro. Sessões expiradas e conflitos de reserva de edição ficam na auditoria.</p>
+            <p class="small text-muted">Últimos 7 dias · até 30 grupos por rota, método e status. Na ordem de prioridade, falhas 5xx aparecem primeiro. Sessões expiradas e conflitos de reserva de edição ficam na auditoria.</p>
+            <div class="dev-results-toolbar">
+              <span class="small text-muted" id="devRecentCount" role="status"></span>
+              <div class="d-flex flex-wrap gap-2">
+                <select class="form-select form-select-sm w-auto" id="devErrorSort" aria-label="Ordenar ocorrências">
+                  <option value="priority">Prioridade (5xx primeiro)</option>
+                  <option value="recent">Mais recentes</option>
+                  <option value="frequent">Mais recorrentes</option>
+                </select>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="devClearFilters">Limpar filtros</button>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="devExportErrors"><i class="bi bi-download me-1"></i>Exportar JSON</button>
+              </div>
+            </div>
             <div class="table-responsive">
               <table class="table align-middle mb-0">
                 <thead><tr><th>Última vez</th><th>Problema</th><th>Vezes</th><th>Rota / último usuário</th></tr></thead>
@@ -331,13 +359,13 @@
           <div class="card-body p-4">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
               <h2 class="h5 fw-bold mb-0"><i class="bi bi-activity text-danger me-2"></i>Mais frequentes · 7 dias</h2>
-              <select class="form-select form-select-sm w-auto" id="devRouteStatusFilter">
+              <select class="form-select form-select-sm w-auto" id="devRouteStatusFilter" aria-label="Filtrar rotas por família HTTP">
                 <option value="">Todos</option>
                 <option value="4">4xx</option>
                 <option value="5">5xx</option>
               </select>
             </div>
-            <input class="form-control form-control-sm mb-3" type="search" id="devRouteFilter" placeholder="Filtrar endpoint ou caminho">
+            <input class="form-control form-control-sm mb-3" type="search" id="devRouteFilter" aria-label="Filtrar rotas" placeholder="Filtrar endpoint ou caminho">
             <div class="table-responsive">
               <table class="table align-middle mb-0">
                 <thead><tr><th>Rota</th><th>Falhas</th><th>Status</th></tr></thead>
@@ -388,7 +416,7 @@
               <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="backup"><i class="bi bi-cloud-check d-block fs-4 mb-2"></i>Backup</button>
               <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="skybox"><i class="bi bi-cloud-arrow-up d-block fs-4 mb-2"></i>Skybox</button>
             </div>
-            <div class="alert alert-info d-none" id="devManualCheckResult"></div>
+            <div class="alert alert-info d-none" id="devManualCheckResult" role="status"></div>
             <hr>
             <dl class="row mb-0">
               <dt class="col-4">Python</dt><dd class="col-8">{{ runtime.python }}</dd>
@@ -399,13 +427,52 @@
           </div>
         </aside>
       </div>
+        <details class="card dev-card dev-local-context mt-4">
+          <summary><i class="bi bi-geo-alt me-2"></i>Contexto local <span class="small text-muted">Clima e mapa de referência</span></summary>
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3"><i class="bi bi-cloud-sun-fill text-warning me-2"></i>Contexto local</h2>
+            <div class="d-flex align-items-end gap-3 mb-4">
+              <div class="dev-weather-value" id="devTemperature">--</div>
+              <div class="pb-2">
+                <div class="fw-semibold" id="devWeatherCondition">Aguardando clima</div>
+                <div class="small text-muted" id="devWeatherUpdated">--</div>
+              </div>
+            </div>
+            <div class="dev-mini-grid mb-3">
+              <div class="dev-tile">
+                <div class="small text-muted">Umidade</div>
+                <strong id="devHumidity">--</strong>
+              </div>
+              <div class="dev-tile">
+                <div class="small text-muted">Vento</div>
+                <strong id="devWind">--</strong>
+              </div>
+              <div class="dev-tile">
+                <div class="small text-muted">Referência</div>
+                <strong id="devLocationLabel">{{ local_context.default_location.label }}</strong>
+              </div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" type="button" id="devUseLocation">
+              <i class="bi bi-crosshair me-1"></i> Minha localização
+            </button>
+            <div class="dev-map-shell mt-3">
+              <div id="devMap"></div>
+              <div class="dev-map-placeholder" id="devMapPlaceholder">
+                <div>
+                  <i class="bi bi-map fs-2 d-block mb-2"></i>
+                  <span id="devMapStatus">{{ 'Carregando Google Maps...' if maps_enabled else 'Google Maps sem chave configurada.' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
     </section>
   </div>
 </div>
 
 <div class="modal fade" id="devErrorModal" tabindex="-1" aria-labelledby="devErrorModalTitle" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
+    <div class="modal-content dev-error-modal">
       <div class="modal-header">
         <div>
           <h2 class="modal-title h5" id="devErrorModalTitle">Detalhe do erro</h2>
@@ -414,13 +481,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <div class="modal-body">
+        <div class="dev-error-guide mb-4"><i class="bi bi-stars" aria-hidden="true"></i><div><strong>Investigue com contexto</strong><p class="small mb-0">Confira os dados abaixo. A Azul pode orientar a investigação; valide a causa nos logs e teste a correção.</p></div></div>
         <dl class="row mb-0" id="devErrorDetailList"></dl>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary btn-sm" type="button" id="devAnalyzeError" disabled>
           <i class="bi bi-stars me-1" aria-hidden="true"></i> Analisar com a Azul
         </button>
-        <button class="btn btn-outline-secondary btn-sm" type="button" id="devCopyErrorDetail">
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="devCopyErrorDetail" disabled>
           <i class="bi bi-copy me-1"></i> Copiar detalhe
         </button>
         <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Fechar</button>
@@ -432,7 +500,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/dev-glass.js', v='20261111-lens-final') }}" defer></script>
+<script src="{{ url_for('static', filename='js/dev-briefing.js', v='20261124-jett-v2-restored') }}" defer></script>
 <script>
   (function () {
     const mapsKey = {{ maps_key|tojson }};
@@ -444,6 +512,8 @@
     };
     let diagnosticSnapshot = {{ diagnostic_snapshot|tojson }};
     let liveRefreshTimer = null;
+    let refreshInFlight = null;
+    let recentErrors = {{ recent_errors_serialized|tojson }};
     let lastErrorDetailText = "";
     let selectedErrorId = null;
     let map = null;
@@ -511,11 +581,13 @@
       const container = document.getElementById("devFailureTimeline");
       if (!container) return;
       const max = Math.max(1, ...points.map((point) => Number(point.total) || 0));
+      const total = points.reduce((sum, point) => sum + (Number(point.total) || 0), 0);
+      setText("devTimelineSummary", points.length ? `${points[0].hour} ontem → ${points[points.length - 1].hour} hoje · ${total} falha(s) no período` : "Sem dados para o período.");
       container.innerHTML = points.map((point) => {
         const total = Number(point.total) || 0;
         const height = Math.max(4, Math.round((total / max) * 100));
         const label = `${point.hour} - ${total} falha(s)`;
-        return `<div class="dev-timeline-bar ${total === 0 ? "is-empty" : ""}" style="height: ${height}%;" data-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></div>`;
+        return `<div class="dev-timeline-bar ${total === 0 ? "is-empty" : ""}" style="height: ${height}%;" tabindex="0" role="img" aria-label="${escapeHtml(label)}" data-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></div>`;
       }).join("");
     }
 
@@ -523,6 +595,7 @@
       const body = document.getElementById("devPresenceBody");
       if (!body) return;
       const users = presence.users || [];
+      setText("presenceTrackedCount", presence.tracked_count ?? users.length);
       setText("presenceOnlineCount", presence.online_count ?? 0);
       setText("presenceAwayCount", presence.away_count ?? 0);
       setText("presenceOfflineCount", presence.offline_count ?? 0);
@@ -565,11 +638,13 @@
     function renderRecentErrors(errors) {
       const body = document.getElementById("devRecentErrorsBody");
       if (!body) return;
+      recentErrors = errors;
       if (!errors.length) {
+        updateErrorCount();
         body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhuma ocorrência para investigar nos últimos 7 dias.</td></tr>';
         return;
       }
-      body.innerHTML = errors.map((log) => `
+      body.innerHTML = sortedErrors(errors).map((log) => `
         <tr class="dev-clickable" data-error-id="${escapeHtml(log.id)}" data-filter-text="${escapeHtml(`${log.title || ""} ${log.user_name || ""} ${log.user_type || ""} ${log.endpoint || ""} ${log.path || ""}`)}" data-status-family="${String(log.status_code || "")[0] || ""}">
           <td>${formatDateTime(log.created_at)}</td>
           <td>${statusBadge(log.status_code)}<div class="small mt-1">${escapeHtml(log.title)}</div></td>
@@ -599,6 +674,7 @@
 
     function updateDashboard(payload) {
       const metrics = payload.metrics || {};
+      updateTriage(metrics);
       diagnosticSnapshot = payload.diagnostic_snapshot || diagnosticSnapshot;
 
       setText("metricOnlineUsers", metrics.online_users ?? 0);
@@ -609,12 +685,13 @@
       setText("metricErrors24h", metrics.errors_24h ?? 0);
       setText("metricErrorRate", metrics.error_rate ?? 0);
       setText("metricRouteCount", metrics.route_count ?? 0);
+      setText("runtimeRouteCount", metrics.route_count ?? 0);
       setText("metricServerErrors7d", metrics.server_errors_7d ?? 0);
       setText("metricWatchdogDeploys7d", payload.watchdog?.deploys_7d ?? 0);
       setText("metricWatchdogDeploys24h", payload.watchdog?.deploys_24h ?? 0);
       setText("metricWatchdogDeploysTotal", payload.watchdog?.deploys_total ?? 0);
       setText("heroHealthyChecks", `${metrics.healthy_checks ?? 0}/${metrics.total_checks ?? 0}`);
-      setText("devRefreshStatus", `Atualizado ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`);
+      setText("devRefreshStatus", `Atualizado ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })} · Brasília`);
 
       renderAlerts(payload.alerts || []);
       renderTimeline(payload.failure_timeline || []);
@@ -624,11 +701,60 @@
       renderTopRoutes(payload.top_error_routes || []);
     }
 
-    async function refreshDashboard() {
+    function updateTriage(metrics) {
+      const server = Number(metrics.server_errors_7d || 0);
+      const healthy = Number(metrics.healthy_checks || 0);
+      const total = Number(metrics.total_checks || 0);
+      setText("devTriageServer", server);
+      setText("devTriageChecks", `${healthy}/${total}`);
+      setText("devTriageTitle", server ? "Priorize as falhas de servidor" : healthy < total ? "Revise a infraestrutura" : "Verificações de infraestrutura em dia");
+      setText("devTriageDetail", server ? "Há respostas 5xx nos últimos 7 dias. Abra os registros para identificar a causa." : healthy < total ? "Uma ou mais verificações precisam de atenção. Consulte os detalhes na aba Infra." : "Confira as ocorrências e acompanhe a atividade dos usuários nas abas abaixo.");
+    }
+
+    function sortedErrors(errors) {
+      const order = document.getElementById("devErrorSort")?.value || "priority";
+      return [...errors].sort((a, b) => {
+        const recent = (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0);
+        if (order === "recent") return recent || b.id - a.id;
+        if (order === "frequent") return b.occurrences - a.occurrences || recent;
+        return Number(b.status_code >= 500) - Number(a.status_code >= 500) || recent;
+      });
+    }
+
+    function filteredErrors() {
+      const query = document.getElementById("devRecentFilter").value.trim().toLowerCase();
+      const family = document.getElementById("devRecentStatusFilter").value;
+      return sortedErrors(recentErrors).filter(log =>
+        (!family || String(log.status_code).startsWith(family)) &&
+        (!query || `${log.title || ""} ${log.user_name || ""} ${log.user_type || ""} ${log.endpoint || ""} ${log.path || ""}`.toLowerCase().includes(query)));
+    }
+
+    function updateErrorCount() {
+      const count = filteredErrors().length;
+      setText("devRecentCount", `${count} de ${recentErrors.length} grupos nesta lista`);
+      const button = document.getElementById("devExportErrors");
+      if (button) button.disabled = !count;
+    }
+
+    function refreshDashboard() {
+      if (refreshInFlight) return refreshInFlight;
       setText("devRefreshStatus", "Atualizando...");
-      const response = await fetch(endpoints.data, { headers: { "Accept": "application/json" } });
-      if (!response.ok) throw new Error("refresh_failed");
-      updateDashboard(await response.json());
+      const button = document.getElementById("devRefreshNow");
+      button.disabled = true;
+      refreshInFlight = (async () => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(endpoints.data, { headers: { "Accept": "application/json" }, signal: controller.signal });
+          if (!response.ok) throw new Error("refresh_failed");
+          updateDashboard(await response.json());
+        } finally {
+          window.clearTimeout(timeout);
+          button.disabled = false;
+          refreshInFlight = null;
+        }
+      })();
+      return refreshInFlight;
     }
 
     function applyTableFilters(inputId, selectId, bodyId) {
@@ -636,6 +762,7 @@
       const select = document.getElementById(selectId);
       const body = document.getElementById(bodyId);
       if (!input || !select || !body) return;
+      if (bodyId === "devRecentErrorsBody") updateErrorCount();
       const query = input.value.trim().toLowerCase();
       const statusFamily = select.value;
       body.querySelector(".dev-filter-empty")?.remove();
@@ -664,12 +791,17 @@
       if (!input || !select || !body) return;
       const query = input.value.trim().toLowerCase();
       const status = select.value;
+      body.querySelector(".dev-filter-empty")?.remove();
+      let visible = 0;
       body.querySelectorAll("tr").forEach((row) => {
         if (!row.dataset.filterText) return;
-        const matchesText = !query || row.dataset.filterText.toLowerCase().includes(query);
-        const matchesStatus = !status || row.dataset.presenceStatus === status;
-        row.classList.toggle("d-none", !(matchesText && matchesStatus));
+        const matches = (!query || row.dataset.filterText.toLowerCase().includes(query)) && (!status || row.dataset.presenceStatus === status);
+        row.classList.toggle("d-none", !matches);
+        if (matches) visible++;
       });
+      if (!visible && body.querySelector("tr[data-filter-text]")) {
+        body.insertAdjacentHTML("beforeend", '<tr class="dev-filter-empty"><td colspan="6" class="text-center text-muted py-4">Nenhum usuário corresponde aos filtros.</td></tr>');
+      }
     }
 
     async function copyText(text, statusElementId, successMessage) {
@@ -680,8 +812,12 @@
         textArea.value = text;
         document.body.appendChild(textArea);
         textArea.select();
-        document.execCommand("copy");
+        const copied = document.execCommand("copy");
         textArea.remove();
+        if (!copied) {
+          if (statusElementId) setText(statusElementId, "Não foi possível copiar. Tente novamente.");
+          return;
+        }
       }
       if (statusElementId) setText(statusElementId, successMessage);
     }
@@ -885,6 +1021,52 @@
     }
 
     function bindControls() {
+      const healthButton = document.getElementById("devAnalyzeHealth");
+      healthButton.disabled = !document.querySelector("[data-azul-help]");
+      healthButton.addEventListener("click", () => {
+        const root = document.querySelector("[data-azul-help]");
+        if (!root) return;
+        root.dispatchEvent(new CustomEvent("azul:open"));
+        root.dispatchEvent(new CustomEvent("azul:ask", {detail: {
+          message: "Analise a saúde do sistema e os erros mais recorrentes do Painel DEV. Mostre o que precisa de atenção, priorize as investigações e indique por onde começar a corrigir e como validar.",
+          intent: "dev_health_overview",
+        }}));
+      });
+      document.querySelectorAll("[data-dev-tab]").forEach(button => {
+        button.addEventListener("click", () => {
+          if (button.dataset.devFamily) {
+            document.getElementById("devRecentFilter").value = "";
+            document.getElementById("devRecentStatusFilter").value = button.dataset.devFamily;
+            applyTableFilters("devRecentFilter", "devRecentStatusFilter", "devRecentErrorsBody");
+          }
+          const tab = document.getElementById(`tab-${button.dataset.devTab}`);
+          bootstrap.Tab.getOrCreateInstance(tab).show();
+          tab.focus();
+        });
+      });
+      document.getElementById("devErrorSort").addEventListener("change", () => renderRecentErrors(recentErrors));
+      document.getElementById("devClearFilters").addEventListener("click", () => {
+        document.getElementById("devRecentFilter").value = "";
+        document.getElementById("devRecentStatusFilter").value = "";
+        document.getElementById("devErrorSort").value = "priority";
+        renderRecentErrors(recentErrors);
+      });
+      document.getElementById("devExportErrors").addEventListener("click", () => {
+        const errors = filteredErrors();
+        if (!errors.length) return;
+        const blob = new Blob([JSON.stringify({
+          exported_at: new Date().toISOString(), period: "Últimos 7 dias", scope: "Grupos carregados no painel (até 30), com os filtros atuais", errors,
+        }, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `dev-ocorrencias-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      document.getElementById("devErrorModal").addEventListener("hidden.bs.modal", () => { errorDetailRequest++; });
       document.getElementById("devRefreshNow")?.addEventListener("click", async (event) => {
         const button = event.currentTarget;
         button.disabled = true;
@@ -907,7 +1089,7 @@
         if (enabled) {
           refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar"));
           liveRefreshTimer = window.setInterval(() => {
-            refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar"));
+            if (!document.hidden) refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar · tente novamente"));
           }, 30000);
         } else {
           window.clearInterval(liveRefreshTimer);
@@ -983,9 +1165,27 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       bindControls();
+      updateTriage({{ metrics|tojson }});
+      renderRecentErrors(recentErrors);
+      const params = new URLSearchParams(window.location.search);
+      const errorId = params.get("erro");
+      if (/^[1-9][0-9]{0,17}$/.test(errorId || "")) {
+        bootstrap.Tab.getOrCreateInstance(document.getElementById("tab-erros")).show();
+        openErrorDetail(errorId);
+      } else if (params.get("aba") === "infra") {
+        bootstrap.Tab.getOrCreateInstance(document.getElementById("tab-infra")).show();
+      }
+      document.querySelectorAll('.dev-tabs [role="tab"]').forEach(tab => {
+        tab.setAttribute("aria-controls", tab.dataset.bsTarget.slice(1));
+        tab.setAttribute("aria-selected", tab.classList.contains("active") ? "true" : "false");
+      });
       renderTimeline({{ failure_timeline|tojson }});
-      applyLocation(defaultLocation, defaultLocation.label);
-      loadGoogleMaps();
+      document.querySelector(".dev-local-context").addEventListener("toggle", function () {
+        if (!this.open || this.dataset.loaded) return;
+        this.dataset.loaded = "true";
+        applyLocation(defaultLocation, defaultLocation.label);
+        loadGoogleMaps();
+      });
     });
   })();
 </script>

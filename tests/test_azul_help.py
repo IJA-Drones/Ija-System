@@ -23,7 +23,7 @@ class User(UserMixin):
 def env(tmp_path):
     from flask import Blueprint
     app = Flask(__name__, instance_path=str(tmp_path))
-    app.config.update(TESTING=True, SECRET_KEY='tests', OPENAI_API_KEY='test-key')
+    app.config.update(TESTING=True, AZUL_VOICE_PROFILE='original', SECRET_KEY='tests', OPENAI_API_KEY='test-key')
     user = User()
     login = LoginManager(app)
     login.user_loader(lambda uid: user)

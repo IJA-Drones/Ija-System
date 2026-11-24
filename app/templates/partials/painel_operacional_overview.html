@@ -1,0 +1,64 @@
+{# Templates may reload before Python services in local sessions without a reloader. #}
+{% set agenda_filter_available = overview.agenda_total is defined %}
+{% set agenda_total = overview.agenda_total|default(overview.totals.hoje) %}
+{% set agenda_team = overview.agenda_team|default('') %}
+{% set agenda_label = overview.agenda_label|default('Todas as equipes') %}
+{% macro management_link(endpoint, label, icon, args={}) %}
+  {% set target = url_for(endpoint, **args) %}
+  {% if central_ti_url_allowed is not defined or central_ti_url_allowed(target) %}
+  <a class="op-text-link" href="{{ target }}"><i class="bi bi-{{ icon }}"></i>{{ label }}<i class="bi bi-arrow-up-right"></i></a>
+  {% endif %}
+{% endmacro %}
+<div class="op-snapshot-meta"><span><span class="op-status-dot"></span>Visão geral da operação</span><span>Atualizado em {{ overview.generated_at }} · <a href="{{ url_for('main.painel_operacional', equipe_agenda=agenda_team) }}">Atualizar</a></span></div>
+<div class="op-summary-grid">
+  {% for key, label, icon, detail, tone in [
+    ('hoje', 'Na agenda de hoje', 'calendar2-check', 'Solicitações ainda em aberto', 'blue'),
+    ('em_analise', 'Aguardando análise', 'hourglass-split', 'Pendentes / em análise, em todas as datas', 'amber'),
+    ('sem_equipe', 'Sem equipe definida', 'people', 'Aprovadas que precisam de alocação', 'purple'),
+    ('concluidas_mes', 'Concluídas no período', 'check2-circle', 'Agendadas do início do mês até hoje', 'green')
+  ] %}
+  <div class="op-summary-card {{ tone }}"><div class="op-summary-top"><span>{{ label }}</span><i class="bi bi-{{ icon }}"></i></div><strong>{{ overview.totals[key] }}</strong><small>{{ detail }}</small></div>
+  {% endfor %}
+</div>
+<div class="op-management-grid">
+  <section id="opAgenda" class="op-panel">
+    <div class="op-panel-header"><h3 class="op-panel-title"><i class="bi bi-calendar2-week text-primary"></i>Agenda de hoje</h3><span class="badge text-bg-light">{{ overview.today.strftime('%d/%m') }}</span></div>
+    <div class="op-panel-body">
+      {% if agenda_filter_available %}
+      <form class="op-agenda-filter" method="get" action="{{ url_for('main.painel_operacional') }}#opAgenda">
+        <label for="opAgendaTeam">Agenda da equipe</label>
+        <div class="op-agenda-filter-controls">
+          <select id="opAgendaTeam" name="equipe_agenda" class="form-select form-select-sm">
+            <option value="" {{ 'selected' if not agenda_team else '' }}>Todas as equipes</option>
+            <option value="sem_equipe" {{ 'selected' if agenda_team == 'sem_equipe' else '' }}>Sem equipe definida</option>
+            {% for team in overview.agenda_teams %}
+            <option value="{{ team.id }}" {{ 'selected' if agenda_team == team.id|string else '' }}>{{ team.nome_equipe }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-funnel"></i>Filtrar</button>
+        </div>
+      </form>
+      {% endif %}
+      <p class="op-agenda-scope"><i class="bi bi-people"></i>{{ agenda_label }} · {{ agenda_total }} {{ 'solicitação' if agenda_total == 1 else 'solicitações' }} hoje</p>
+      {% for item in overview.agenda %}
+      <div class="op-agenda-row"><time>{{ item.hora_agendamento.strftime('%H:%M') if item.hora_agendamento else '—' }}</time><div class="op-agenda-info"><strong>#{{ item.id }} · {{ item.foco or 'Operação' }}</strong><span>{{ item.logradouro }}, {{ item.numero or 'S/N' }} · {{ item.bairro }}</span><span class="op-agenda-team"><i class="bi bi-people"></i> {{ item.equipe_nome or ("Equipe #" ~ item.equipe_id if item.equipe_id else "Sem equipe definida") }}</span><small>{{ item.status }}</small></div><button type="button" class="op-location-button" data-op-address="{{ item.logradouro }}, {{ item.numero or 'S/N' }}, {{ item.bairro }}, {{ item.cidade }}/{{ item.uf }}" aria-label="Consultar local da solicitação {{ item.id }}" title="Consultar local"><i class="bi bi-arrow-up-right"></i></button></div>
+      {% else %}
+      <div class="op-inline-empty op-agenda-empty"><i class="bi bi-calendar2-check"></i><div><strong>Nenhuma operação em aberto para hoje{{ " nesta equipe" if agenda_team and agenda_team != "sem_equipe" else " sem equipe definida" if agenda_team == "sem_equipe" else "" }}</strong><p class="mb-0 small">Altere o filtro de equipe ou acompanhe os próximos dias abaixo.</p></div></div>
+      {% endfor %}
+      <div class="op-panel-footer"><span class="small text-muted">{% if agenda_total > 6 %}Exibindo as primeiras 6 de {{ agenda_total }} solicitações{% else %}Horários de agendamento · Brasília{% endif %}</span>{{ management_link('main.admin_dashboard', 'Painel de gestão', 'grid') }}</div>
+    </div>
+  </section>
+  <section class="op-panel">
+    <div class="op-panel-header"><h3 class="op-panel-title"><i class="bi bi-flag text-primary"></i>Pontos de atenção</h3><span class="small text-muted">Para priorizar</span></div>
+    <div class="op-panel-body">
+      <div class="op-attention-row {{ 'has-alert' if overview.totals.sem_equipe else '' }}"><i class="bi bi-person-plus"></i><div><strong>{{ overview.totals.sem_equipe }} aguardando equipe</strong><span>Aprovadas sem equipe vinculada</span></div>{{ management_link('main.admin_dashboard', 'Ver', 'arrow-right', {'atencao': 'sem_equipe', 'referencia': overview.today.isoformat()}) }}</div>
+      <div class="op-week-heading"><strong>Próximos 7 dias</strong><span>Solicitações em aberto</span></div>
+      <p class="op-agenda-scope"><i class="bi bi-people"></i>{{ agenda_label }}</p>
+      <div class="op-week" role="list" aria-label="Agenda dos próximos sete dias">
+        {% set weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] %}
+        {% for day in overview.week %}<div class="op-week-day {{ 'is-today' if loop.first else '' }}" role="listitem" aria-label="{{ day.date.strftime('%d/%m') }}: {{ day.count }} solicitações"><strong>{{ day.count }}</strong><div class="op-week-track"><span style="height: {{ (day.count / overview.week_max * 100)|round }}%"></span></div><span>{{ 'Hoje' if loop.first else weekdays[day.date.weekday()] }}</span><small>{{ day.date.strftime('%d/%m') }}</small></div>{% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+<nav class="op-shortcuts" aria-label="Atalhos de gestão operacional"><span>Acesso rápido</span>{{ management_link('main.mapa_relatorio', 'Mapa de operações', 'geo-alt') }}{{ management_link('main.listar_equipes', 'Equipes', 'people') }}{{ management_link('main.listar_equipamentos', 'Equipamentos', 'cpu') }}{{ management_link('main.veiculos_menu', 'Veículos', 'truck') }}</nav>

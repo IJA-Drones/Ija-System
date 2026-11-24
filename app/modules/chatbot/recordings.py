@@ -4,22 +4,30 @@ import json
 from pathlib import Path
 
 from flask import current_app, url_for
-from app.modules.chatbot import settings
+from app.modules.chatbot import settings, voice_profiles
 
 STYLE = 'marin-suave-ptbr-v1'
 DIRECTORY = Path(__file__).resolve().parents[2] / 'static' / 'audio' / 'azul-falas'
 
 
-def text_key(text):
-    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+def text_key(text, profile='original'):
+    value = text if profile == 'original' else profile + '|' + voice_profiles.spec(profile)['style'] + '|' + text
+    return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
 
-def catalog():
+def manifest_path(profile):
+    return DIRECTORY / ('manifest.json' if profile == 'original' else f'manifest-{profile}.json')
+
+
+def catalog(profile=None):
     # These sources contain generic instructions only: no users, links or records.
     from app.modules.chatbot import guide, topics
     from app.modules.portal_cidadao.companion import QUICK_ANSWERS, WELCOME
     result = {'apresentacao': topics.IDENTITY, 'cumprimento': topics.GREETING,
-              'agradecimento': topics.THANKS, 'boas-vindas-portal': WELCOME}
+              'agradecimento': topics.THANKS, 'boas-vindas-portal': WELCOME,
+              'convite-dev': 'Gostaria de ouvir suas pendências de hoje?'}
+    if (profile or settings.get('voice_profile')) != 'original':
+        result.update({'amostra-voz': voice_profiles.SAMPLE, 'abertura-chamada': voice_profiles.WELCOME, 'escopo-chamada': voice_profiles.SCOPE})
     result.update({f'pergunta-portal-{index}': text
                    for index, text in enumerate(QUICK_ANSWERS.values(), 1)})
     result.update({f'guia-{key}': title + '. ' + body
@@ -27,14 +35,15 @@ def catalog():
     return result
 
 
-def find(text):
+def find(text, profile=None):
     try:
-        manifest = json.loads((DIRECTORY / 'manifest.json').read_text())
-        if (manifest.get('style') != STYLE
-                or manifest.get('voice') != settings.get('voice_name')
-                or manifest.get('model') != settings.get('voice_model')):
+        chosen = voice_profiles.spec(profile)
+        manifest = json.loads(manifest_path(chosen['profile']).read_text())
+        if (manifest.get('style') != chosen['style']
+                or manifest.get('voice') != chosen['voice']
+                or manifest.get('model') != chosen['model']):
             return None
-        key = text_key(text)
+        key = text_key(text, chosen['profile'])
         entry = manifest.get('clips', {}).get(key, {})
         path = DIRECTORY / (key + '.wav')
         if entry.get('text') != text or not path.is_file() or path.stat().st_size <= 44:
@@ -46,6 +55,8 @@ def find(text):
 
 
 def decorate(offer, text):
+    offer['profile'] = settings.get('voice_profile')
+    offer['style'] = voice_profiles.spec()['style']
     recorded = find(text)
     if recorded:
         offer['clip'] = recorded[1]

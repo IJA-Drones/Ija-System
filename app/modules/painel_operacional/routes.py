@@ -1,9 +1,10 @@
 from app.modules.gestao_ti.permissions import route_access
-from flask import current_app, jsonify, render_template, request
+from flask import abort, current_app, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from app.modules.painel_operacional.service import (
     build_operational_context,
+    build_operational_overview,
     can_access_operational_panel,
     get_operational_panel_maps_key,
 )
@@ -21,9 +22,17 @@ def register_routes(bp):
                 mensagem="Você não tem permissão para acessar o Painel Operacional.",
             ), 403
 
+        try:
+            overview = build_operational_overview(
+                current_user, agenda_team=request.args.get("equipe_agenda", ""),
+            )
+        except ValueError as exc:
+            abort(400, description=str(exc))
+
         return render_template(
             "painel_operacional.html",
             google_maps_key=get_operational_panel_maps_key(),
+            overview=overview,
         )
 
     @bp.route("/api/painel-operacional/contexto-local", methods=["POST"], endpoint="api_painel_operacional_contexto")

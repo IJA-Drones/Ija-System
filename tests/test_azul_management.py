@@ -26,7 +26,7 @@ CONTEXT = {'perfil':'dev','permissoes_completas':True,'capacidades':[],
 
 def make_app(tmp_path):
     app = Flask('azul-control-tests',instance_path=str(tmp_path),static_folder=str(ROOT/'app/static'),template_folder=str(ROOT/'app/templates'))
-    app.config.update(TESTING=True,SECRET_KEY='management-test-secret',OPENAI_API_KEY='not-a-real-key',
+    app.config.update(TESTING=True, AZUL_VOICE_PROFILE='original',SECRET_KEY='management-test-secret',OPENAI_API_KEY='not-a-real-key',
         AZUL_CONTROL_DATABASE_URI='sqlite:///'+str(tmp_path/'control.sqlite'))
     user = User()
     manager = LoginManager(app)

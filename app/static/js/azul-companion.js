@@ -18,6 +18,7 @@
     function droneState(value) { root.dataset.droneState = value; }
     function settleDrone() { droneState(voicePlaying ? 'speak' : (thinking || audioRequest) ? 'think' : listening ? 'listen' : 'idle'); }
     function stopVoice() {
+      root.azulNativeVoice?.stop();
       voiceVersion++;
       audioRequest?.abort();
       audioRequest = null;
@@ -38,9 +39,9 @@
       clips.clear();
     }
     function attachSpeech(container, offer, idleLabel = 'Ouvir resposta') {
+      if (offer?.engine === 'browser-pt-BR') return window.AzulNativeVoice?.attach(root, container, offer, idleLabel);
       if (!['/api/azul/voz', '/portal-cidadao/voz'].includes(voiceUrl) || !offer || offer.url !== voiceUrl || typeof offer.token !== 'string' || typeof Audio !== 'function') return;
       const recorded = typeof offer.clip === 'string' && /^\/static\/audio\/azul-falas\/[a-f0-9]{64}\.wav(?:\?v=[a-f0-9]{12})?$/.test(offer.clip) ? offer.clip : null;
-      const cacheKey = recorded || offer.token;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'azul-speak';
@@ -60,21 +61,25 @@
           setVoiceStatus(root.azulAudioPolicy.message || agentText('O som da AZUL está desativado nas configurações.')); return;
         }
         if (wasConversation && !root.azulVoice?.isActive()) return;
+        const sameProfile = !offer.profile || !root.dataset.voiceProfile || offer.profile === root.dataset.voiceProfile;
+        const sameStyle = !root.dataset.voiceStyle || offer.style === root.dataset.voiceStyle || (!offer.style && root.dataset.voiceProfile === 'original');
+        const selectedClip = sameProfile && sameStyle ? recorded : null;
+        const cacheKey = selectedClip || offer.token + '|' + (root.dataset.voiceProfile || 'original') + '|' + (root.dataset.voiceStyle || '');
         stopVoice();
         const version = voiceVersion;
         voiceButton = button;
         button.setAttribute('aria-pressed', 'true');
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), recorded ? 10000 : 55000);
+        const timer = setTimeout(() => controller.abort(), selectedClip ? 10000 : 55000);
         try {
           let url = clips.get(cacheKey), rawAudio = null;
           if (!url) {
             audioRequest = controller;
             button.textContent = 'Parar preparação';
             button.setAttribute('aria-busy', 'true');
-            setVoiceStatus(recorded ? agentText('Carregando a voz da Azul…') : agentText('Preparando a voz da Azul…'));
+            setVoiceStatus(selectedClip ? agentText('Carregando a voz da Azul…') : agentText('Preparando a voz da Azul…'));
             settleDrone();
-            const response = await fetch(recorded || voiceUrl, recorded ? {
+            const response = await fetch(selectedClip || voiceUrl, selectedClip ? {
               signal:controller.signal, credentials:'same-origin'
             } : {
               method: 'POST', signal: controller.signal,
@@ -114,7 +119,7 @@
             setVoiceStatus(agentText('A Azul está falando · voz gerada por IA'));
             settleDrone();
             root.dispatchEvent(new CustomEvent('azul:voice-started'));
-            if (recorded) root.azulAudioPolicy?.record(recorded);
+            if (selectedClip) root.azulAudioPolicy?.record(selectedClip);
           };
           if (speechContext && speechContext.state !== 'closed') {
             const bytes = rawAudio || await (await fetch(url)).arrayBuffer();

@@ -13,7 +13,7 @@
 {% block title %}Configurações da AZUL | Oceano Azul{% endblock %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul-settings.css', v='20261118-responsive') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul-settings.css', v='20261124-voices') }}">
 {% endblock %}
 {% block content %}
 <div class="azul-management azul-help" data-azul-management data-config-url="{{ url_for('main.azul_settings_api') }}" data-usage-url="{{ url_for('main.azul_usage') }}" data-config-csrf="{{ control_csrf }}" data-csrf="{{ csrf_token() if csrf_token is defined else '' }}">
@@ -49,8 +49,19 @@
         </section>
         <section id="azmPanelmodels" role="tabpanel" aria-labelledby="azmTabmodels" data-panel="models" hidden>
           <div class="azm-section-head"><div><h2>Modelos e voz</h2><p>Selecione os modelos usados em cada etapa do atendimento.</p></div></div>
-          <div class="azm-card azm-grid">{{ model('internal_model','Respostas do sistema interno',text_models) }}{{ model('prospecting_search_model','Pesquisa de parceiros IJA Fly',text_models) }}{{ model('prospecting_model','Análise dos parceiros IJA Fly',text_models) }}{{ model('public_model','Saúde e atendimento público',text_models) }}{{ model('voice_model','Geração de voz',voice_models) }}{{ model('transcribe_model','Transcrição do microfone',transcribe_models) }}{{ model('voice_name','Voz',voices) }}</div>
-          <p class="azm-note">A disponibilidade depende da chave e do acesso da conta ao modelo. A chave permanece no servidor. Alterar a voz ou o modelo de áudio pode exigir novas gerações para falas que não correspondam à biblioteca. As duas falas de abertura e escopo já gravadas mantêm a voz original Marin.</p>
+          <div class="azm-card">
+            <h3>Escolha a voz da Azul</h3>
+            <label class="azm-field"><span>Perfil de voz</span><select required data-setting="voice_profile">{% for name, profile in voice_profiles.items() %}<option value="{{ name }}" {% if cfg.voice_profile == name %}selected{% endif %}>{{ profile.label }}</option>{% endfor %}</select></label>
+            <p class="azm-note">Jett V2 tem uma voz feminina mais doce, delicada e com ritmo de conversa. Reyna tem um timbre mais encorpado e tranquilo. Ouça as amostras antes de salvar.</p>
+            <div class="azm-grid">
+              {% for name in ['reyna', 'jett'] %}<div class="azm-field"><strong>{{ voice_profiles[name].label }}</strong>
+                {% if voice_previews[name] and cfg.sound_enabled %}<audio controls preload="none" src="{{ voice_previews[name][1] }}" aria-label="Amostra da voz {{ name|capitalize }}"></audio>
+                {% else %}<small>{{ 'Ative o som da Azul para ouvir a amostra.' if not cfg.sound_enabled else 'Amostra ainda não disponível.' }}</small>{% endif %}
+              </div>{% endfor %}
+            </div>
+          </div>
+          <p class="azm-note">Jett V2 e Reyna usam o modelo de voz completo, com custo diferente do modelo mini. A escolha vale para respostas, abertura das chamadas e convite do DEV. Os áudios prontos são reutilizados.</p>
+          <div class="azm-card azm-grid">{{ model('internal_model','Respostas do sistema interno',text_models) }}{{ model('prospecting_search_model','Pesquisa de parceiros IJA Fly',text_models) }}{{ model('prospecting_model','Análise dos parceiros IJA Fly',text_models) }}{{ model('public_model','Saúde e atendimento público',text_models) }}{{ model('voice_model','Geração de voz (perfil Original)',voice_models) }}{{ model('transcribe_model','Transcrição do microfone',transcribe_models) }}{{ model('voice_name','Voz original (usada no perfil Original)',voices) }}</div>
           <div class="azm-card azm-grid">{{ number('max_output_prospecting','Máximo de tokens por etapa da prospecção',2000,12000) }}{{ number('max_output_internal','Máximo de tokens por resposta interna',256,8000) }}{{ number('max_output_public','Máximo de tokens por resposta pública',256,8000) }}{{ number('max_message_chars','Máximo de caracteres por pergunta',100,1500) }}</div>
         </section>
         <section id="azmPanellimits" role="tabpanel" aria-labelledby="azmTablimits" data-panel="limits" hidden>
@@ -74,4 +85,4 @@
   <script type="application/json" data-initial-settings>{{ cfg|tojson }}</script>
 </div>
 {% endblock %}
-{% block scripts %}{{ super() }}<script src="{{ url_for('static', filename='js/azul-settings.js', v='20261111-1') }}" defer></script>{% endblock %}
+{% block scripts %}{{ super() }}<script src="{{ url_for('static', filename='js/azul-settings.js', v='20261124-jett-v2-restored') }}" defer></script>{% endblock %}

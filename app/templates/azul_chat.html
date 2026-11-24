@@ -2,7 +2,7 @@
 {% from '_azul_drone.html' import drone with context %}
 {% block title %}{{ azul_agent_name|default('Azul') }} · Conversa | Oceano Azul{% endblock %}
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261119-fly2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261124-rich-text') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul_chat.css', v='20261110-2') }}">
@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-voice-call.css', v='20261110-3') }}">
 {% endblock %}
 {% block content %}
-<div class="azul-help azul-workspace" data-azul-help data-agent-id="{{ azul_agent_id|default('azul') }}" data-agent-name="{{ azul_agent_name|default('Azul') }}" data-agent-welcome="{{ azul_agent_welcome|default('') }}" data-view="page" data-conversation="0"
+<div class="azul-help azul-workspace" data-azul-help data-voice-profile="{{ azul_voice_profile|default('original') }}" data-call-welcome="{{ azul_call_welcome|default('') }}" data-call-scope="{{ azul_call_scope|default('') }}" data-agent-id="{{ azul_agent_id|default('azul') }}" data-agent-name="{{ azul_agent_name|default('Azul') }}" data-agent-welcome="{{ azul_agent_welcome|default('') }}" data-view="page" data-conversation="0"
      data-tutorial-url="{{ azul_tutorial_url|default('', true) }}"
      data-transcribe-url="{{ azul_transcribe_url|default('') }}"
      data-usage-scope="{{ azul_usage_scope|default('') }}" data-chat-key="{{ azul_chat_key }}" data-export="{{ '1' if azul_can_export else '0' }}"
@@ -77,10 +77,10 @@
 {% endblock %}
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261119-fly1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261119-fly1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-runtime.js', v='20261124-jett-v2-restored') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-companion.js', v='20261124-jett-v2-restored') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261124-jett-v2-restored') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261119-fly1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261124-rich-text') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-composer.js', v='20261119-fly1') }}" defer></script>
 {% endblock %}

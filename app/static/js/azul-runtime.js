@@ -12,7 +12,15 @@
     function headers(){return{'X-CSRFToken':root.dataset.csrf||'','X-Azul-Conversation':root.dataset.conversationId,
       ...(publicChat?{'X-Portal-Chat-Token':root.dataset.token}:{'X-Azul-Chat-Key':root.dataset.chatKey})};}
     function apply(value){
-      policy=value;root.dataset.soundEnabled=value.sound_enabled===false?'0':'1';
+      policy=value;
+      if (value.voice_profile) {
+        root.dataset.voiceProfile=value.voice_profile;
+        root.dataset.voiceEngine=value.voice_engine || 'server';
+        root.dataset.voiceStyle=value.voice_style || '';
+        root.dataset.callWelcome=value.call_welcome || '';
+        root.dataset.callScope=value.call_scope || '';
+      }
+      root.dataset.soundEnabled=value.sound_enabled===false?'0':'1';
       root.dataset.microphoneEnabled=value.microphone_enabled===false?'0':'1';
       root.dataset.conversationEnabled=value.conversation_enabled===false?'0':'1';
       const input=root.querySelector('[data-compose-input]');if(input&&value.max_message_chars)input.maxLength=value.max_message_chars;

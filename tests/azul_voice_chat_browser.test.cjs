@@ -7,7 +7,7 @@ class Element {
  dispatchEvent(event){this.events[event.type]?.(event);}
  focus(){}
 }
-function setup({fetcher,permission,identity={}}={}){
+function setup({fetcher,permission,identity={},nativeVoice}={}){
  const root=new Element(),controls=new Element(),mic=new Element(),label=new Element(),action=new Element(),status=new Element(),dictate=new Element(),input=new Element();input.value='';input.maxLength=1500;
  const call=new Element(),callTitle=new Element(),callDescription=new Element(),callAction=new Element(),callActionLabel=new Element(),callEnd=new Element();call.hidden=true;
  call.querySelector=key=>({'[data-call-title]':callTitle,'[data-call-description]':callDescription,'[data-call-action]':callAction,'[data-call-action-label]':callActionLabel,'[data-call-end]':callEnd}[key]);
@@ -35,7 +35,7 @@ function setup({fetcher,permission,identity={}}={}){
  }};
  vm.runInNewContext(source,{
   document:{querySelectorAll:key=>key==='[data-azul-help]'?[root]:[],addEventListener:(name,fn)=>documentEvents[name]=fn},
-  window:{AudioContext,addEventListener(){}},navigator:{mediaDevices:media},performance:{now:()=>now},
+  window:{AudioContext,AzulNativeVoice:nativeVoice,addEventListener(){}},navigator:{mediaDevices:media},performance:{now:()=>now},
   Float32Array,DataView,ArrayBuffer,Blob,AbortController,
   Event:class{constructor(type){this.type=type;}},
   CustomEvent:class{constructor(type,opts={}){this.type=type;this.detail=opts.detail;}},
@@ -173,4 +173,26 @@ test('IJA Fly opens voice without playing the Azul identity recording', async()=
  assert.ok(env.mic['aria-label'].includes('IJA Fly'));
  env.root.azulVoice.stop();
  assert.ok(env.tracks.every(track=>track.readyState==='ended'));
+});
+
+
+test('selected profile uses its own greeting instead of the original Marin clip',async()=>{
+ const clip='/static/audio/azul-falas/'+'a'.repeat(64)+'.wav';
+ const env=setup({identity:{voiceProfile:'jett',callWelcome:clip}});
+ await start(env);
+ assert.equal(env.clips[0],clip);
+ assert.ok(!env.clips.includes('/static/audio/azul-inicio-chamada.wav'));
+ env.root.azulVoice.stop();
+});
+
+
+test('native Brazilian opening uses the device voice and resumes listening only when it ends',async()=>{
+ let finish,called=0;
+ const env=setup({identity:{voiceEngine:'browser-pt-BR',voiceProfile:'jett'},nativeVoice:{speak(root,text,options){called++;options.onStart('Luciana');return new Promise(resolve=>finish=resolve);}}});
+ await env.mic.events.click();await settle();
+ assert.equal(called,1);assert.equal(env.clips.length,0);assert.equal(env.root.dataset.voiceState,'speaking');
+ assert.ok(env.tracks.every(track=>track.readyState==='ended'));
+ finish();await settle();
+ [...env.timers.values()].find(timer=>timer.ms===200).fn();await settle();
+ assert.equal(env.root.dataset.voiceState,'listening');env.root.azulVoice.stop();
 });

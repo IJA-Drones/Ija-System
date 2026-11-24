@@ -28,8 +28,15 @@ def register_routes(bp):
     def chat_session_signals(state):
         def reset_chat_session(sender, **kwargs):
             session.pop('azul_chat_id', None)
+            session.pop('dev_briefing_pending', None)
+            user = kwargs.get('user')
+            if user and is_dev_user(user) and getattr(user, 'is_authenticated', False):
+                session['dev_briefing_pending'] = True
         user_logged_in.connect(reset_chat_session, sender=state.app, weak=False)
-        user_logged_out.connect(reset_chat_session, sender=state.app, weak=False)
+        def clear_chat_session(sender, **kwargs):
+            session.pop('azul_chat_id', None)
+            session.pop('dev_briefing_pending', None)
+        user_logged_out.connect(clear_chat_session, sender=state.app, weak=False)
     from app.modules.chatbot.exports import register_routes as register_exports
     register_exports(bp)
     @bp.after_app_request
@@ -78,6 +85,9 @@ def register_routes(bp):
         return {**identity, 'azul_chat_key':key,
                 'azul_usage_scope':hashlib.sha256(key.encode()).hexdigest()[:24] if key else '',
                 'azul_audio_policy':audio_policy,
+                'azul_voice_profile':audio_policy.get('voice_profile', 'original'),
+                'azul_call_welcome':audio_policy.get('call_welcome', ''),
+                'azul_call_scope':audio_policy.get('call_scope', ''),
                 'azul_settings_url':url_for('main.azul_settings') if is_dev_user(current_user) else None,
                 'azul_help_url': url_for('main.azul_help') if allowed else None,
                 'azul_page_url': url_for('main.azul_chat', **({'area': 'agro'} if fly else {})) if allowed and can_access_endpoint(

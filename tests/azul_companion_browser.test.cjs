@@ -184,3 +184,28 @@ test('a missing recording leaves text available and does not silently spend a ne
   assert.equal(env.audioInstances.length,0);assert.equal(env.root.dataset.droneState,'idle');
   assert.ok(env.sent.some(event=>event.type==='azul:voice-error'));
 });
+
+
+test('switching profile bypasses a recording and cached audio from the previous voice',async()=>{
+  const clip='/static/audio/azul-falas/'+'a'.repeat(64)+'.wav';
+  const env=setup(async()=>audioResponse(),true,null,{profile:'reyna',clip});
+  env.root.dataset.voiceProfile='reyna';
+  await env.button.events.click();
+  assert.equal(env.requests[0].url,clip);
+  env.root.azulCompanion.stopVoice();
+  env.root.dataset.voiceProfile='jett';
+  await env.button.events.click();
+  assert.equal(env.requests[1].url,'/api/azul/voz');
+  assert.equal(JSON.parse(env.requests[1].body).token,'signed-server-text');
+  env.root.azulCompanion.clear();
+});
+
+
+test('a softer revision of the same voice never replays the previous style recording',async()=>{
+  const clip='/static/audio/azul-falas/'+'a'.repeat(64)+'.wav';
+  const env=setup(async()=>audioResponse(),true,null,{profile:'jett',style:'azul-ptbr-jett-v1',clip});
+  env.root.dataset.voiceProfile='jett'; env.root.dataset.voiceStyle='azul-ptbr-jett-v2';
+  await env.button.events.click();
+  assert.equal(env.requests[0].url,'/api/azul/voz');
+  env.root.azulCompanion.clear();
+});
