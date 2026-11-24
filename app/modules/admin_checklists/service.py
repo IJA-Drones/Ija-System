@@ -337,7 +337,7 @@ def group_admin_checklists_by_week(records):
             continue
 
         base_date = registered_at.date()
-        week_start = base_date - timedelta(days=base_date.weekday())
+        week_start = item.get("semana_inicio") or base_date - timedelta(days=base_date.weekday())
         week_end = week_start + timedelta(days=6)
         actor_type = item.get("actor_type") or "piloto"
         actor_id = item.get("actor_id") or item.get("piloto_id")

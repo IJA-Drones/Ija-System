@@ -153,7 +153,7 @@ def current_rules(profile_code):
             allow("prefeitura.vigilancia", "excluir")
 
         if can_access_agro_panel(user):
-            for module in ("clientes", "comercial", "mapeamentos", "os", "equipes", "equipamentos"):
+            for module in ("clientes", "comercial", "mapeamentos", "os", "equipes", "equipamentos", "checklists"):
                 allow(f"agro.{module}", "consultar")
             allow("agro.comercial", "exportar")
             allow("agro.contratos", "consultar exportar midias")
@@ -163,6 +163,7 @@ def current_rules(profile_code):
                 allow("agro.mapeamentos", "editar concluir")
                 allow("agro.contratos", "editar")
                 allow("agro.os", "editar exportar")
+                allow("agro.checklists", "corrigir")
                 if role in DRONE_IMPORT_ROLES:
                     allow("agro.equipamentos", "importar")
             if is_admin_global_user(user):
@@ -181,6 +182,7 @@ def current_rules(profile_code):
                 allow("agro.talentos", "criar editar excluir")
         if role == "piloto_agro":
             allow("agro.equipamentos", "consultar")
+            allow("agro.checklists", "consultar editar")
             allow("agro.mapeamentos", "consultar editar concluir")
             allow("agro.os", "consultar criar editar concluir")
             notes["agro"] = "Piloto ativo e vínculo com a equipe Agro; somente registros da equipe."

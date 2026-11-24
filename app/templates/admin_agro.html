@@ -244,6 +244,19 @@
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
             </a>
+            {% if current_user.tipo_usuario != 'piloto_agro' %}
+            {% set agro_checklists_url = url_for('main.agro_checklists_semanais') %}
+            <a href="{{ agro_checklists_url }}" class="agro-menu-link" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(agro_checklists_url, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+              <div class="agro-menu-main">
+                <span class="agro-menu-icon"><i class="bi bi-ui-checks-grid"></i></span>
+                <div class="agro-menu-copy">
+                  <span class="agro-menu-title">Checklists semanais</span>
+                  <span class="agro-menu-subtitle">Inspeções de veículos e drones</span>
+                </div>
+              </div>
+              <i class="bi bi-arrow-right text-muted"></i>
+            </a>
+            {% endif %}
           </div>
         </div>
       </div>
