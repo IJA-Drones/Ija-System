@@ -158,7 +158,7 @@ def register_routes(bp):
                 raise ValueError("Informe um CNPJ válido.")
             empresa_slug = uuid4().hex
             prefeitura = Prefeitura(nome=f"Financeiro · {nome} · {empresa_slug[:8]}",
-                                    slug=f"financeiro-{empresa_slug}", ativa=True)
+                                    slug=f"financeiro-{empresa_slug}", ativa=False)
             db.session.add(prefeitura)
             db.session.flush()
             perfil = FinanceiroEmpresaPerfil(empresa_slug=empresa_slug, prefeitura_id=prefeitura.id,

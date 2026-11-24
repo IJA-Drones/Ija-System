@@ -804,7 +804,9 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.assertIn(f'empresa={slug}', company_html)
         with self.app.app_context():
             self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "ija").uf, "SP")
-            self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, slug).uf, "RJ")
+            perfil_novo = db.session.get(FinanceiroEmpresaPerfil, slug)
+            self.assertEqual(perfil_novo.uf, "RJ")
+            self.assertFalse(db.session.get(Prefeitura, perfil_novo.prefeitura_id).ativa)
         from io import BytesIO
         from PIL import Image
         logo = BytesIO()

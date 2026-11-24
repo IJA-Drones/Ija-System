@@ -31,7 +31,7 @@ def upgrade():
         ), {
             "nome": f"Financeiro · {perfil['nome'] or 'Empresa'} · {token[:8]}",
             "slug": f"financeiro-{perfil['empresa_slug']}-{token[:8]}",
-            "ativa": True,
+            "ativa": False,
         }).scalar_one()
         connection.execute(sa.text(
             "UPDATE financeiro_empresa_perfis SET prefeitura_id = :prefeitura_id "
