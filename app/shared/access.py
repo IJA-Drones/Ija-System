@@ -195,6 +195,18 @@ def central_ti_team_ids(user):
 
 
 def apply_prefeitura_scope(query, user, column):
+    # A company opened through Central Financeiro owns an isolated municipal
+    # tenant. This request-local scope takes precedence over a global finance
+    # user's usual unrestricted Agro scope and keeps different browser tabs safe.
+    try:
+        from flask import g, has_request_context
+        empresa = getattr(g, "financeiro_empresa", None) if has_request_context() else None
+        financeiro_prefeitura_id = empresa.get("prefeitura_id") if empresa else None
+    except (RuntimeError, AttributeError):
+        financeiro_prefeitura_id = None
+    if financeiro_prefeitura_id is not None:
+        return query.filter(column == financeiro_prefeitura_id)
+
     role = normalize_role(getattr(user, "tipo_usuario", None)) if user is not None else None
     if role in GLOBAL_ADMIN_USER_TYPES:
         return query

@@ -10,7 +10,7 @@ from requests import RequestException
 from app.shared.skybox import SkyboxError, stream_skybox_file
 from app.modules.financeiro.logos import upload_company_logo, cleanup_company_logo
 from app.extensions import db
-from app.models import FinanceiroEmpresaPerfil
+from app.models import FinanceiroEmpresaPerfil, Prefeitura
 from app.shared.formatters import only_digits
 from app.shared.validators import validate_cnpj
 
@@ -55,7 +55,7 @@ def _resolve_empresa(empresa_slug, *, existing_data=False):
                     if item["slug"] == empresa_slug), None)
     if empresa is None:
         abort(404)
-    if not empresa["disponivel"] or (existing_data and empresa["slug"] != "ija"):
+    if not empresa["disponivel"] or (existing_data and empresa["slug"] != "ija" and not empresa.get("prefeitura_id")):
         abort(403)
     return empresa
 
@@ -98,12 +98,19 @@ def register_routes(bp):
         if not current_user.is_authenticated:
             return current_app.login_manager.unauthorized()
         _require_financeiro_access()
-        empresa = next((item for item in build_financeiro_empresas(current_user) if item["slug"] == "ija"), None)
+        empresa_slug = request.args.get("empresa") or "ija"
+        empresa = next((item for item in build_financeiro_empresas(current_user) if item["slug"] == empresa_slug), None)
         if empresa is None or not empresa["disponivel"]:
             abort(403)
         if is_financeiro_settings_endpoint(request.endpoint) and not route_access(current_user, can_manage_financeiro_settings(current_user)):
             abort(403)
         g.financeiro_empresa = empresa
+
+    @bp.url_defaults
+    def preserve_financeiro_empresa_context(endpoint, values):
+        empresa = getattr(g, "financeiro_empresa", None)
+        if empresa and is_financeiro_legacy_endpoint(endpoint) and empresa["slug"] != "ija":
+            values.setdefault("empresa", empresa["slug"])
 
     @bp.app_context_processor
     def inject_financeiro_access():
@@ -149,8 +156,13 @@ def register_routes(bp):
                 raise ValueError("Preencha o nome (até 120 caracteres) e a razão social (até 180).")
             if not validate_cnpj(cnpj):
                 raise ValueError("Informe um CNPJ válido.")
-            perfil = FinanceiroEmpresaPerfil(empresa_slug=uuid4().hex, nome=nome, razao_social=razao,
-                                             cnpj=cnpj, cadastrada=True)
+            empresa_slug = uuid4().hex
+            prefeitura = Prefeitura(nome=f"Financeiro · {nome} · {empresa_slug[:8]}",
+                                    slug=f"financeiro-{empresa_slug}", ativa=True)
+            db.session.add(prefeitura)
+            db.session.flush()
+            perfil = FinanceiroEmpresaPerfil(empresa_slug=empresa_slug, prefeitura_id=prefeitura.id,
+                                             nome=nome, razao_social=razao, cnpj=cnpj, cadastrada=True)
             db.session.add(perfil)
             db.session.commit()
         except (ValueError, SQLAlchemyError) as exc:

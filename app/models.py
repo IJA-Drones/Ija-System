@@ -2182,6 +2182,7 @@ class FinanceiroAgroCompetenciaControle(db.Model):
     __tablename__ = "financeiro_agro_competencia_controle"
 
     id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     competencia_ano = db.Column(db.Integer, nullable=False, index=True)
     competencia_mes = db.Column(db.Integer, nullable=False, index=True)
     liberado = db.Column(db.Boolean, nullable=False, default=False, index=True)
@@ -2190,7 +2191,7 @@ class FinanceiroAgroCompetenciaControle(db.Model):
     atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
 
     __table_args__ = (
-        db.UniqueConstraint("competencia_ano", "competencia_mes", name="uq_financeiro_agro_competencia_controle"),
+        db.UniqueConstraint("prefeitura_id", "competencia_ano", "competencia_mes", name="uq_financeiro_agro_competencia_controle"),
         db.Index("ix_financeiro_agro_competencia_controle_ano_mes", "competencia_ano", "competencia_mes"),
     )
 
@@ -3502,6 +3503,7 @@ class FinanceiroEmpresaPerfil(db.Model):
     __tablename__ = "financeiro_empresa_perfis"
 
     empresa_slug = db.Column(db.String(80), primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, unique=True, index=True)
     cadastrada = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     nome = db.Column(db.String(120), nullable=True)
     razao_social = db.Column(db.String(180), nullable=True)
@@ -3522,6 +3524,8 @@ class FinanceiroEmpresaPerfil(db.Model):
     municipio = db.Column(db.String(100), nullable=True)
     uf = db.Column(db.String(2), nullable=True)
     codigo_municipio_ibge = db.Column(db.String(7), nullable=True)
+
+    prefeitura = db.relationship("Prefeitura", lazy="joined")
 
 
 class EdicaoReserva(db.Model):

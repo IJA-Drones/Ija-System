@@ -470,6 +470,14 @@ def _current_user_display_name():
     return "Nao informado"
 
 
+def _active_agro_prefeitura_id():
+    """Tenant selected by the finance company URL, falling back to the user tenant."""
+    empresa = getattr(g, "financeiro_empresa", None)
+    if empresa and empresa.get("prefeitura_id") is not None:
+        return empresa["prefeitura_id"]
+    return getattr(current_user, "prefeitura_id", None)
+
+
 def _get_logged_piloto_agro():
     return getattr(current_user, "piloto_agro", None)
 
@@ -752,8 +760,9 @@ def _get_agro_categoria_tipo_mapping(tipo_movimento):
 
 
 def _agro_categoria_scope_filter(model):
-    prefeitura_id = getattr(current_user, "prefeitura_id", None)
-    if prefeitura_id is None or is_admin_global_user(current_user):
+    prefeitura_id = _active_agro_prefeitura_id()
+    empresa = getattr(g, "financeiro_empresa", None)
+    if prefeitura_id is None or (is_admin_global_user(current_user) and not empresa):
         return True
     return or_(model.prefeitura_id.is_(None), model.prefeitura_id == prefeitura_id)
 
@@ -813,7 +822,7 @@ def _ensure_financeiro_agro_categoria_subcategoria(tipo_movimento, categoria_nom
     if not categoria_nome or not subcategoria_nome or tipo_movimento not in FinanceiroAgroCategoria.TIPO_OPTIONS:
         return None, None
 
-    prefeitura_id = getattr(current_user, "prefeitura_id", None)
+    prefeitura_id = _active_agro_prefeitura_id()
     categoria = _find_financeiro_agro_categoria(tipo_movimento, categoria_nome, prefeitura_id=prefeitura_id)
     if categoria is None:
         categoria = _find_financeiro_agro_categoria(tipo_movimento, categoria_nome, prefeitura_id=None)
@@ -944,6 +953,7 @@ def _build_agro_retroactive_alert_context():
         f"{item.competencia_ano:04d}-{item.competencia_mes:02d}"
         for item in (
             FinanceiroAgroCompetenciaControle.query
+            .filter(FinanceiroAgroCompetenciaControle.prefeitura_id == _active_agro_prefeitura_id())
             .filter(FinanceiroAgroCompetenciaControle.liberado.is_(True))
             .all()
         )
@@ -4242,7 +4252,7 @@ def register_routes(bp):
                 )
 
             banco = BancoAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 nome=form["nome"],
                 banco_nome=form["banco_nome"],
                 agencia=form["agencia"] or None,
@@ -4418,7 +4428,7 @@ def register_routes(bp):
                 return render_template("agro_cliente_form.html", form=form, errors=errors, modo="novo")
 
             cliente = ClienteAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 documento=doc_digits,
                 nome=form["nome"],
                 cep=cep_digits,
@@ -4541,7 +4551,7 @@ def register_routes(bp):
                 return render_template("agro_fornecedor_form.html", form=form, errors=errors, modo="novo")
 
             fornecedor = FornecedorAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 documento=doc_digits or None,
                 nome=form["nome"],
                 cep=cep_digits or None,
@@ -4710,7 +4720,7 @@ def register_routes(bp):
                 )
 
             orcamento = OrcamentoAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 cliente_agro_id=cliente.id if cliente else None,
                 cliente_nome=form["cliente_nome"],
                 cliente_documento=cliente_documento_digits or None,
@@ -5196,7 +5206,7 @@ def register_routes(bp):
 
             if contrato is None:
                 contrato = ContratoAgro(
-                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    prefeitura_id=_active_agro_prefeitura_id(),
                     orcamento_agro_id=orcamento.id,
                 )
 
@@ -5590,6 +5600,7 @@ def register_routes(bp):
         controle = get_agro_finance_competencia_controle(ano, mes)
         if controle is None:
             controle = FinanceiroAgroCompetenciaControle(
+                prefeitura_id=_active_agro_prefeitura_id(),
                 competencia_ano=ano,
                 competencia_mes=mes,
             )
@@ -5662,7 +5673,7 @@ def register_routes(bp):
 
             orcamento = contrato.orcamento if contrato else None
             lancamento = FinanceiroAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 cliente_agro_id=getattr(orcamento, "cliente_agro_id", None),
                 orcamento_agro_id=getattr(orcamento, "id", None),
                 contrato_agro_id=contrato.id,
@@ -6035,7 +6046,7 @@ def register_routes(bp):
             for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
                 competencia = payload["data_recebimento"] if quantidade_parcelas == 1 and payload["data_recebimento"] else data_vencimento
                 lancamento = FinanceiroAgroEntrada(
-                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    prefeitura_id=_active_agro_prefeitura_id(),
                     cliente_agro_id=getattr(payload["cliente"], "id", None),
                     banco_agro_id=getattr(payload["banco"], "id", None),
                     cliente_nome=payload["cliente_nome"],
@@ -6327,7 +6338,7 @@ def register_routes(bp):
                 competencia = payload["data_pagamento"] if quantidade_parcelas == 1 and payload["data_pagamento"] else data_vencimento
                 fornecedor = payload["fornecedor"]
                 lancamento = FinanceiroAgroSaida(
-                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    prefeitura_id=_active_agro_prefeitura_id(),
                     fornecedor_agro_id=getattr(fornecedor, "id", None),
                     cliente_agro_id=None,
                     banco_agro_id=getattr(payload["banco"], "id", None),
@@ -6574,7 +6585,7 @@ def register_routes(bp):
 
         if caixa is None:
             caixa = FinanceiroAgroCaixaDiario(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 data_caixa=data_caixa,
             )
             db.session.add(caixa)
@@ -7399,7 +7410,7 @@ def register_routes(bp):
                 return render_template("agro_equipe_form.html", form=form, errors=errors, modo="novo")
 
             equipe = EquipeAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 nome=form["nome"],
                 descricao=form["descricao"] or None,
                 ativa=ativa,
@@ -7489,7 +7500,7 @@ def register_routes(bp):
                 return render_template("agro_piloto_form.html", form=form, errors=errors, modo="novo", equipes=equipes)
 
             piloto = PilotoAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 equipe_agro_id=equipe_id,
                 nome=form["nome"],
                 telefone=telefone_digits or None,
@@ -7618,7 +7629,7 @@ def register_routes(bp):
                 return render_template("agro_equipamento_form.html", form=form, errors=errors, modo="novo", equipes=equipes)
 
             equipamento = EquipamentoAgro(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=_active_agro_prefeitura_id(),
                 equipe_agro_id=equipe_id,
                 tipo=form["tipo"],
                 modelo=form["modelo"],
