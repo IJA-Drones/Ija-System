@@ -2352,6 +2352,29 @@ class EquipamentoAgro(db.Model):
     ordens_servico_mapeamento = db.relationship("OrdemServicoAgro", foreign_keys="[OrdemServicoAgro.drone_mapeamento_id]", back_populates="drone_mapeamento", lazy="select")
 
 
+class ChecklistSemanalAgro(db.Model):
+    __tablename__ = "checklists_semanais_agro"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id", ondelete="SET NULL"))
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id", ondelete="SET NULL"))
+    piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id", ondelete="SET NULL"))
+    equipamento_agro_id = db.Column(db.Integer, db.ForeignKey("equipamentos_agro.id", ondelete="SET NULL"))
+    semana_inicio = db.Column(db.Date, nullable=False)
+    data_registro = db.Column(db.DateTime, nullable=False)
+    tipo = db.Column(db.String(10), nullable=False)
+    equipamento_identificacao = db.Column(db.String(100), nullable=False)
+    equipamento_modelo = db.Column(db.String(100), nullable=False)
+    nome_responsavel = db.Column(db.String(150), nullable=False)
+    assinatura_piloto = db.Column(db.Text, nullable=False)
+    respostas = db.Column(db.JSON, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("piloto_agro_id", "equipe_agro_id", "semana_inicio", "equipamento_agro_id",
+                            name="uq_checklists_semanais_agro_registro"),
+    )
+
+
 # -------------------------------------------------------------
 # EQUIPES
 # -------------------------------------------------------------

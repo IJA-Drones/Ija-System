@@ -576,6 +576,14 @@
               <i class="bi bi-clipboard2-data-fill me-2"></i><span>Minhas OS</span>
             </a>
           </li>
+          {% set checklist_agro_url = url_for('main.agro_piloto_checklist_semanal') %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.agro_piloto_checklist_semanal' %}active{% endif %}"
+               href="{{ checklist_agro_url }}"
+               data-ti-allowed="{{ 'true' if (central_ti_url_allowed(checklist_agro_url, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+              <i class="bi bi-ui-checks-grid me-2"></i><span>Checklist semanal</span>
+            </a>
+          </li>
           {% elif not is_agro_context and current_user.tipo_usuario == 'uvis' %}
           <li class="nav-item">
             <a
@@ -655,7 +663,10 @@
             'main.agro_equipamentos_listar',
             'main.agro_equipamento_novo',
             'main.agro_equipamento_editar',
-            'main.agro_importar_planilha_drones'
+            'main.agro_importar_planilha_drones',
+            'main.agro_checklists_semanais',
+            'main.agro_checklist_semanal_detalhe',
+            'main.agro_checklist_semanal_editar'
           ] %}
           {% if (central_ti_ui_guard(['main.agro_clientes_menu', 'main.agro_clientes_listar', 'main.agro_fornecedores_listar'], true) if central_ti_ui_guard is defined else (true)) %}
           <li class="nav-item">
@@ -753,7 +764,7 @@
             </div>
           </li>
           {% endif %}
-          {% if (central_ti_ui_guard(['main.agro_contratos_template', 'main.agro_os_listar', 'main.agro_logs_voo', 'main.agro_equipes_listar', 'main.agro_pilotos_listar', 'main.agro_talentos_listar', 'main.agro_equipamentos_listar'], true) if central_ti_ui_guard is defined else (true)) %}
+          {% if (central_ti_ui_guard(['main.agro_contratos_template', 'main.agro_os_listar', 'main.agro_logs_voo', 'main.agro_equipes_listar', 'main.agro_pilotos_listar', 'main.agro_talentos_listar', 'main.agro_equipamentos_listar', 'main.agro_checklists_semanais'], true) if central_ti_ui_guard is defined else (true)) %}
           <li class="nav-item">
             <button
               type="button"
@@ -831,6 +842,15 @@
                     <i class="bi bi-cpu-fill me-2"></i><span>Equipamentos</span>
                   </a>
                 </li>
+                {% if current_user.tipo_usuario != 'piloto_agro' %}
+                {% set agro_checklists_url = url_for('main.agro_checklists_semanais') %}
+                <li class="nav-item">
+                  <a class="nav-link sub-link {% if request.endpoint in ['main.agro_checklists_semanais', 'main.agro_checklist_semanal_detalhe', 'main.agro_checklist_semanal_editar'] %}active{% endif %}"
+                     href="{{ agro_checklists_url }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(agro_checklists_url, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+                    <i class="bi bi-ui-checks-grid me-2"></i><span>Checklists semanais</span>
+                  </a>
+                </li>
+                {% endif %}
               </ul>
             </div>
           </li>

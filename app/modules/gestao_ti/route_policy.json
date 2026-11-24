@@ -989,6 +989,20 @@
   "main.agro_piloto_mapeamentos_listar": {
     "GET": "agro.mapeamentos.consultar"
   },
+  "main.agro_piloto_checklist_semanal": {
+    "GET": "agro.checklists.consultar",
+    "POST": "agro.checklists.editar"
+  },
+  "main.agro_checklists_semanais": {
+    "GET": "agro.checklists.consultar"
+  },
+  "main.agro_checklist_semanal_detalhe": {
+    "GET": "agro.checklists.consultar"
+  },
+  "main.agro_checklist_semanal_editar": {
+    "GET": "agro.checklists.corrigir",
+    "POST": "agro.checklists.corrigir"
+  },
   "main.admin_agro": {
     "GET": "area:agro"
   },
