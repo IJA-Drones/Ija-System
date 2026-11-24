@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync('app/static/js/azul-help.js', 'utf8');
 class Element {
   dispatchEvent(event) { return this.events[event.type]?.(event); }
-  constructor() {this.style={};this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
+  constructor(tag = '') {this.tagName=tag.toUpperCase();this.style={};this.children=[]; this.dataset={}; this.events={}; this.value=''; this.hidden=true;}
   set innerHTML(value) {throw new Error('Unsafe HTML');}
   set textContent(value) {this.text=value;}
   append(...values) {this.children.push(...values);}
@@ -31,7 +31,7 @@ function setup(fetcher, storage, chatKey, page = false, identity = {}) {
   parts.form.querySelector=()=>send;
   root.querySelector=key=>parts[key];root.querySelectorAll=()=>[chip];
   const requests=[];
-  vm.runInNewContext(source,{document:{querySelectorAll:()=>[root],createElement:()=>new Element()},
+  vm.runInNewContext(source,{document:{querySelectorAll:()=>[root],createElement:tag=>new Element(tag)},
     navigator:{clipboard:{writeText:async text=>copied.push(text)}},sessionStorage:storage,window:{location:{origin:'http://localhost:5002'}},URL,AbortController,setTimeout,clearTimeout,
     CustomEvent:class{constructor(type,options={}){this.type=type;this.detail=options.detail;}},
     fetch:async(url,options)=>{requests.push(options);return fetcher(url,options);}});
@@ -386,4 +386,42 @@ test('partner actions reject external destinations from restored data',async()=>
  const env=setup(async()=>({ok:true,json:async()=>({answer:'Parceiros',partner_preview:{token:'x',rows:[{}],list_url:'https://evil.example',export_url:'/agro/parceiros/exportar-pesquisa'}})}));
  await env.chip.events.click(); await settle();
  assert.ok(env.parts['[data-messages]'].children.at(-1).children.every(c=>c.className!=='azul-export'));
+});
+
+
+function descendants(node) { return [node, ...node.children.flatMap(descendants)]; }
+function renderedText(node) { return (node.text || '') + node.children.map(renderedText).join(''); }
+
+test('assistant Markdown uses semantic headings, lists, emphasis and code without HTML execution',async()=>{
+  const answer='## Visão geral\n\n**22 erros** em 24h.\n\n- Rota `main.upload`\n- <img src=x onerror=alert(1)>\n\n1. Conferir logs\n2. Testar correção\n\n```html\n<script>alert(1)</script>\n```';
+  const env=setup(async()=>({ok:true,json:async()=>({answer,mode:'ia'})}));
+  await env.chip.events.click();await settle();
+  const content=env.parts['[data-messages]'].children.at(-1).children[1];
+  const nodes=descendants(content);
+  assert.equal(content.className,'azul-rich-text');
+  assert.equal(nodes.filter(n=>n.tagName==='H3').length,1);
+  assert.equal(nodes.filter(n=>n.tagName==='UL').length,1);
+  assert.equal(nodes.filter(n=>n.tagName==='OL').length,1);
+  assert.equal(nodes.filter(n=>n.tagName==='LI').length,4);
+  assert.ok(nodes.some(n=>n.tagName==='STRONG' && n.text==='22 erros'));
+  assert.ok(nodes.some(n=>n.tagName==='CODE' && n.text==='main.upload'));
+  assert.ok(nodes.some(n=>n.tagName==='CODE' && n.text==='<script>alert(1)</script>'));
+  assert.ok(!nodes.some(n=>['IMG','SCRIPT','A'].includes(n.tagName)));
+  assert.ok(!renderedText(content).includes('##'));
+  assert.ok(!renderedText(content).includes('**'));
+});
+
+test('formatted answers survive navigation while user Markdown remains literal',async()=>{
+  const storage=memoryStorage(), answer='\\## Atenção\n\n\\- **Upload**\n\n1\\. Verificar `rota`';
+  const env=setup(async()=>({ok:true,json:async()=>({answer,mode:'ia'})}),storage,'formatting',true);
+  env.parts.textarea.value='## minha mensagem';
+  env.parts.form.events.submit({preventDefault(){}});await settle();
+  const user=env.parts['[data-messages]'].children.find(n=>n.className==='azul-message azul-user');
+  assert.equal(user.children[0].text,'## minha mensagem');
+  const restored=setup(()=>{throw Error('No request expected');},storage,'formatting',true);
+  const content=restored.parts['[data-messages]'].children.at(-1).children[1];
+  assert.ok(descendants(content).some(n=>n.tagName==='H3'));
+  assert.ok(descendants(content).some(n=>n.tagName==='UL'));
+  assert.ok(descendants(content).some(n=>n.tagName==='OL'));
+  assert.ok(!renderedText(content).includes('##'));
 });

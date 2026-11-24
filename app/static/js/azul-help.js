@@ -12,6 +12,66 @@
     }
     return recent;
   }
+  // Render a small Markdown subset with DOM nodes; model text never becomes HTML.
+  function renderAnswer(container, text) {
+    if (!/(?:^|\n)\s*(?:\\?#{1,6}\s|\\?[-*•]\s|\d+\\?[.)]\s|```)|\*\*[^*]+\*\*|`[^`\n]+`/.test(text)) {
+      container.textContent = text;
+      return;
+    }
+    container.className = 'azul-rich-text';
+    function inline(parent, value) {
+      const pattern = /(`[^`\n]+`|\*\*[^*\n]+\*\*|__[^_\n]+__)/g;
+      let offset = 0;
+      for (const match of value.matchAll(pattern)) {
+        if (match.index > offset) {
+          const span = document.createElement('span'); span.textContent = value.slice(offset, match.index); parent.append(span);
+        }
+        const code = match[0][0] === '`';
+        const node = document.createElement(code ? 'code' : 'strong');
+        node.textContent = match[0].slice(code ? 1 : 2, code ? -1 : -2);
+        parent.append(node); offset = match.index + match[0].length;
+      }
+      if (offset < value.length) {
+        const span = document.createElement('span'); span.textContent = value.slice(offset); parent.append(span);
+      }
+    }
+    let list = null, paragraph = null, fence = null, codeLines = [];
+    function flushCode() {
+      const pre = document.createElement('pre'), code = document.createElement('code');
+      code.textContent = codeLines.join('\n'); pre.append(code); container.append(pre);
+      codeLines = []; fence = null;
+    }
+    for (const raw of text.replace(/\r\n?/g, '\n').split('\n')) {
+      const line = raw.trim();
+      if (/^```/.test(line)) {
+        if (fence) flushCode(); else fence = true;
+        list = paragraph = null; continue;
+      }
+      if (fence) { codeLines.push(raw); continue; }
+      if (!line) { paragraph = null; continue; }
+      const heading = line.match(/^\\?(#{1,6})\s+(.+?)(?:\s+#+)?$/);
+      if (heading) {
+        const title = document.createElement(heading[1].length <= 2 ? 'h3' : 'h4');
+        inline(title, heading[2]); container.append(title); list = paragraph = null; continue;
+      }
+      const bullet = line.match(/^(?:\\?[-*•]|(\d+)\\?[.)])\s+(.+)$/);
+      if (bullet) {
+        const tag = bullet[1] ? 'ol' : 'ul';
+        if (!list || list.tag !== tag) {
+          const node = document.createElement(tag);
+          if (bullet[1]) node.setAttribute('start', String(Number(bullet[1])));
+          container.append(node); list = {tag, node};
+        }
+        const item = document.createElement('li'); inline(item, bullet[2]); list.node.append(item);
+        paragraph = null; continue;
+      }
+      list = null;
+      if (!paragraph) { paragraph = document.createElement('p'); container.append(paragraph); }
+      else paragraph.append(document.createElement('br'));
+      inline(paragraph, line);
+    }
+    if (fence) flushCode();
+  }
   document.querySelectorAll('[data-azul-help]').forEach(root => {
     const agentName = root.dataset.agentName || 'Azul';
     const agentText = text => root.dataset.agentId === 'ija-fly' ? text.replace(/da (?:AZUL|Azul)/g, 'do IJA Fly').replace(/(?:a |A )?(?:AZUL|Azul)/g, 'IJA Fly') : text;
@@ -163,8 +223,13 @@
         return true;
       } catch (_) { restoring = false; return false; }
     }
+    function positionAnswer(bubble) {
+      messages.scrollTop = messages.scrollHeight;
+      if (bubble.dataset.formatted === '1' && bubble.getBoundingClientRect && messages.getBoundingClientRect) {
+        messages.scrollTop += bubble.getBoundingClientRect().top - messages.getBoundingClientRect().top - 16;
+      }
+    }
     function append(text, role, mode) {
-      if (role === 'assistant') text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
       const bubble = document.createElement('div');
       bubble.className = `azul-message azul-${role}`;
       if (role === 'assistant') {
@@ -173,8 +238,9 @@
         bubble.append(label);
       }
       const content = document.createElement('div');
-      content.textContent = text;
+      if (role === 'assistant') renderAnswer(content, text); else content.textContent = text;
       bubble.append(content);
+      if (content.className === 'azul-rich-text') bubble.dataset.formatted = '1';
       if (isPage && role === 'assistant') {
         const copy = document.createElement('button');
         copy.type = 'button';
@@ -191,7 +257,7 @@
         bubble.append(copy);
       }
       messages.append(bubble);
-      messages.scrollTop = messages.scrollHeight;
+      positionAnswer(bubble);
       if (!restoring) {
         transcript.push({content:text, role, mode});
         transcript = transcript.slice(-40);
@@ -378,7 +444,7 @@
         const speechButton = root.azulCompanion?.attachSpeech(bubble, data.speech);
         root.querySelector('[data-profile]').textContent = data.profile ? `· ${data.profile}` : '';
         history = boundedHistory([...(intent === 'start_report' ? [] : history), {role:'user', content:text}, {role:'assistant', content:data.answer}]);
-        messages.scrollTop = messages.scrollHeight;
+        positionAnswer(bubble);
         root.dispatchEvent(new CustomEvent('azul:reply',{detail:{speechButton,mode:data.mode}}));
       } catch (error) {
         if (version === generation) append(error.name === 'AbortError' ? 'A resposta demorou mais que o esperado. Tente novamente.' : error.message, 'assistant', 'error');

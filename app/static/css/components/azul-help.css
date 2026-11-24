@@ -103,3 +103,20 @@ body.dark-mode .azul-help {--azul-ink:#e1ecfa;--azul-bg:#172333;--azul-card:#1e2
 [data-agent-id="ija-fly"] .azd-shell-name { font-size:7px; letter-spacing:.2px; }
 [data-agent-id="ija-fly"] .azul-page-brand h1 { color:#246b50; }
 .dark-mode .azul-help[data-agent-id="ija-fly"] { --azul-ink:#e4f5eb; --azul-bg:#14251f; --azul-card:#1a3027; --azul-border:#325546; --azul-muted:#adc9bb; }
+
+/* Shared readable answers in the floating chat and the Azul page. */
+.azul-message > div.azul-rich-text:first-of-type { white-space: normal; }
+.azul-rich-text { color: var(--azul-ink); line-height: 1.75; }
+.azul-rich-text :is(h3,h4) { color: var(--azul-ink); font-size: 1em; font-weight: 750; line-height: 1.4; letter-spacing: -.015em; margin: 1.35em 0 .65em; }
+.azul-rich-text h3 { padding-bottom: .5em; border-bottom: 1px solid var(--azul-border); }
+.azul-rich-text h4 { font-size: .95em; }
+.azul-rich-text p { margin: 0 0 .85em; }
+.azul-rich-text :is(ul,ol) { margin: .4em 0 1em; padding-left: 1.45em; }
+.azul-rich-text li { padding-left: .25em; margin-bottom: .6em; }
+.azul-rich-text li::marker { color: var(--azul-muted); font-weight: 650; }
+.azul-rich-text strong { font-weight: 750; }
+.azul-rich-text code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .85em; padding: .15em .35em; border-radius: 5px; background: var(--azul-bg); color: var(--azul-ink); overflow-wrap: anywhere; }
+.azul-rich-text pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: .85em; background: var(--azul-bg); border: 1px solid var(--azul-border); border-radius: 8px; }
+.azul-rich-text pre code { padding: 0; background: transparent; }
+.azul-rich-text > :first-child { margin-top: 0; }
+.azul-rich-text > :last-child { margin-bottom: 0; }

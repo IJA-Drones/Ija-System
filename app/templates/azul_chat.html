@@ -2,7 +2,7 @@
 {% from '_azul_drone.html' import drone with context %}
 {% block title %}{{ azul_agent_name|default('Azul') }} · Conversa | Oceano Azul{% endblock %}
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261119-fly2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-help.css', v='20261124-rich-text') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-drone.css', v='20261110-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/azul-tutorial-launcher.css', v='20261106-1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/azul_chat.css', v='20261110-2') }}">
@@ -81,6 +81,6 @@
 <script src="{{ url_for('static', filename='js/azul-companion.js', v='20261119-fly1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-voice-chat.js', v='20261119-fly1') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-tutorial-launcher.js', v='20261119-fly1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/azul-help.js', v='20261119-fly1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/azul-help.js', v='20261124-rich-text') }}" defer></script>
 <script src="{{ url_for('static', filename='js/azul-composer.js', v='20261119-fly1') }}" defer></script>
 {% endblock %}
