@@ -42,10 +42,13 @@
                         aria-expanded="false" aria-controls="{{ prefix }}-{{ registro.id }}">
                   <i class="bi bi-card-list me-1"></i> Ver dados
                 </button>
+                {% set edit_url = registro.editar_url or url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id) %}
+                {% if registro.pode_corrigir is not defined or registro.pode_corrigir %}
                 <a class="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                   href="{{ url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
+                   href="{{ edit_url }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(edit_url, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
                   <i class="bi bi-pencil me-1"></i> Corrigir
                 </a>
+                {% endif %}
               </td>
             </tr>
             <tr class="collapse-row">
@@ -147,6 +150,7 @@
 {% endblock %}
 
 {% block content %}
+{% set checklist_list_url = lista_url or url_for('main.admin_checklists_semanais') %}
 <div class="container-fluid py-4 checklist-detail-page">
   <div class="detail-header mb-4">
     <div>
@@ -157,14 +161,14 @@
         {{ piloto_nome }} • Semana de {{ semana_inicio.strftime('%d/%m/%Y') }} a {{ semana_fim.strftime('%d/%m/%Y') }}
       </div>
     </div>
-    <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_checklists_semanais')) if central_ti_url_allowed is defined else true) else 'false' }}">
+    <a href="{{ checklist_list_url }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(checklist_list_url, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
       <i class="bi bi-arrow-left me-1"></i> Voltar para a lista
     </a>
   </div>
 
   <div class="summary-strip mb-4">
     <div class="summary-card">
-      <div class="label">{{ 'Equipe' if actor_type == 'equipe' else 'Piloto' }}</div>
+      <div class="label">{{ actor_label or ('Equipe' if actor_type == 'equipe' else 'Piloto') }}</div>
       <div class="value">{{ piloto_nome }}</div>
     </div>
     <div class="summary-card">

@@ -22,6 +22,11 @@
       </div>
 
       <div class="listing-actions agro-pilot-header-actions">
+        {% set checklist_agro_url = url_for('main.agro_piloto_checklist_semanal') %}
+        <a href="{{ checklist_agro_url }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2"
+           data-ti-allowed="{{ 'true' if (central_ti_url_allowed(checklist_agro_url, 'GET') if central_ti_url_allowed is defined else true) else 'false' }}">
+          <i class="bi bi-ui-checks-grid"></i> Checklist semanal
+        </a>
         <a href="{{ url_for('main.agro_piloto_mapeamentos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.agro_piloto_mapeamentos_listar')) if central_ti_url_allowed is defined else true) else 'false' }}">
           <i class="bi bi-map"></i> Meus mapeamentos
         </a>

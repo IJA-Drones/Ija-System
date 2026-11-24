@@ -2182,6 +2182,7 @@ class FinanceiroAgroCompetenciaControle(db.Model):
     __tablename__ = "financeiro_agro_competencia_controle"
 
     id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     competencia_ano = db.Column(db.Integer, nullable=False, index=True)
     competencia_mes = db.Column(db.Integer, nullable=False, index=True)
     liberado = db.Column(db.Boolean, nullable=False, default=False, index=True)
@@ -2190,7 +2191,7 @@ class FinanceiroAgroCompetenciaControle(db.Model):
     atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
 
     __table_args__ = (
-        db.UniqueConstraint("competencia_ano", "competencia_mes", name="uq_financeiro_agro_competencia_controle"),
+        db.UniqueConstraint("prefeitura_id", "competencia_ano", "competencia_mes", name="uq_financeiro_agro_competencia_controle"),
         db.Index("ix_financeiro_agro_competencia_controle_ano_mes", "competencia_ano", "competencia_mes"),
     )
 
@@ -2350,6 +2351,29 @@ class EquipamentoAgro(db.Model):
     equipe = db.relationship("EquipeAgro", back_populates="equipamentos", lazy="joined")
     ordens_servico_pulverizacao = db.relationship("OrdemServicoAgro", foreign_keys="[OrdemServicoAgro.drone_pulverizacao_id]", back_populates="drone_pulverizacao", lazy="select")
     ordens_servico_mapeamento = db.relationship("OrdemServicoAgro", foreign_keys="[OrdemServicoAgro.drone_mapeamento_id]", back_populates="drone_mapeamento", lazy="select")
+
+
+class ChecklistSemanalAgro(db.Model):
+    __tablename__ = "checklists_semanais_agro"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id", ondelete="SET NULL"))
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id", ondelete="SET NULL"))
+    piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id", ondelete="SET NULL"))
+    equipamento_agro_id = db.Column(db.Integer, db.ForeignKey("equipamentos_agro.id", ondelete="SET NULL"))
+    semana_inicio = db.Column(db.Date, nullable=False)
+    data_registro = db.Column(db.DateTime, nullable=False)
+    tipo = db.Column(db.String(10), nullable=False)
+    equipamento_identificacao = db.Column(db.String(100), nullable=False)
+    equipamento_modelo = db.Column(db.String(100), nullable=False)
+    nome_responsavel = db.Column(db.String(150), nullable=False)
+    assinatura_piloto = db.Column(db.Text, nullable=False)
+    respostas = db.Column(db.JSON, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("piloto_agro_id", "equipe_agro_id", "semana_inicio", "equipamento_agro_id",
+                            name="uq_checklists_semanais_agro_registro"),
+    )
 
 
 # -------------------------------------------------------------
@@ -3479,6 +3503,7 @@ class FinanceiroEmpresaPerfil(db.Model):
     __tablename__ = "financeiro_empresa_perfis"
 
     empresa_slug = db.Column(db.String(80), primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, unique=True, index=True)
     cadastrada = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     nome = db.Column(db.String(120), nullable=True)
     razao_social = db.Column(db.String(180), nullable=True)
@@ -3499,6 +3524,8 @@ class FinanceiroEmpresaPerfil(db.Model):
     municipio = db.Column(db.String(100), nullable=True)
     uf = db.Column(db.String(2), nullable=True)
     codigo_municipio_ibge = db.Column(db.String(7), nullable=True)
+
+    prefeitura = db.relationship("Prefeitura", lazy="joined")
 
 
 class EdicaoReserva(db.Model):

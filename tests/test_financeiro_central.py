@@ -71,6 +71,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         db.init_app(self.app)
         with self.app.app_context():
+            Prefeitura.__table__.create(db.engine)
             FinanceiroEmpresaPerfil.__table__.create(db.engine)
         manager = LoginManager(self.app)
         manager.login_view = "auth.login"
@@ -106,7 +107,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.app.register_error_handler(Exception, reraise)
         self.login("financeiro_admin")
         with self.app.app_context():
-            Prefeitura.__table__.create(db.engine)
+            Prefeitura.__table__.create(db.engine, checkfirst=True)
             FinanceiroAgroCaixaDiario.__table__.create(db.engine)
             for day in (date(2020, 1, 2), date.today(), date(2030, 1, 2)):
                 caixa = FinanceiroAgroCaixaDiario(
@@ -615,7 +616,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         from app.models import Prefeitura
 
         with self.app.app_context():
-            Prefeitura.__table__.create(db.engine)
+            Prefeitura.__table__.create(db.engine, checkfirst=True)
             ClienteAgro.__table__.create(db.engine)
         path = "/financeiro/empresas/ija/clientes/cadastrar"
         for role in ("financeiro", "financeiro_admin", "dev"):
@@ -657,7 +658,7 @@ class FinanceiroCentralTests(unittest.TestCase):
 
         self.login(trabalha_agro=False)
         with self.app.app_context():
-            Prefeitura.__table__.create(db.engine)
+            Prefeitura.__table__.create(db.engine, checkfirst=True)
             ClienteAgro.__table__.create(db.engine)
         permissions = frozenset({
             "area:financeiro", "financeiro.comercial.consultar",
@@ -776,8 +777,18 @@ class FinanceiroCentralTests(unittest.TestCase):
         response = self.client.post("/financeiro/empresas/cadastrar", data={
             "nome": "Outra empresa", "razao_social": "Outra Ltda", "cnpj": "11.222.333/0001-81"})
         self.assertEqual(response.status_code, 302)
-        other = response.location.split("?")[0]
+        self.assertNotIn("configuracoes", response.location)
+        self.assertNotIn("secao=fiscal", response.location)
+        company = response.location
+        slug = company.rstrip("/").split("/")[-1]
+        other = f"/financeiro/empresas/{slug}/configuracoes"
         self.assertNotEqual(other, path)
+        company_html = self.client.get(company).get_data(as_text=True)
+        self.assertIn("O cadastro fiscal e a logo são opcionais", company_html)
+        for modulo in ("Painel financeiro", "Contas", "Relatório Geral", "Comprovantes",
+                       "Caixa Diário", "Recebíveis", "Contas a Receber", "Nova Entrada Manual",
+                       "Contas a Pagar", "Nova Saída Manual", "Bancos", "Conciliação Bancária"):
+            self.assertIn(modulo, company_html)
         self.assertIn("Outra empresa", self.client.get("/financeiro").get_data(as_text=True))
         self.client.post(other, data={"secao": "fiscal", "logradouro": "Endereço Outra", "uf": "RJ"})
         self.client.post(path, data={"secao": "fiscal", "uf": "SP"})
@@ -788,9 +799,9 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.assertNotIn('href="/agro/financeiro/categorias"', html)
         html_ija = self.client.get(path + "?secao=fiscal").get_data(as_text=True)
         self.assertIn("Endereço IJA", html_ija)
-        slug = other.split("/")[-2]
-        self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/clientes").status_code, 403)
-        self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/comercial").status_code, 403)
+        self.assertIn(f'href="/financeiro/empresas/{slug}/clientes"', company_html)
+        self.assertIn(f'href="/financeiro/empresas/{slug}/comercial', company_html)
+        self.assertIn(f'empresa={slug}', company_html)
         with self.app.app_context():
             self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "ija").uf, "SP")
             self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, slug).uf, "RJ")

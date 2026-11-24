@@ -1,7 +1,7 @@
 """Authorized company catalog with persisted identity and branding overrides.
 
-Explicit company registration includes independent identity, fiscal data and branding.
-Financial records remain restricted to the legacy IJA workspace.
+Explicit company registration includes independent identity, fiscal data, branding
+and an isolated financial workspace.
 """
 
 from app.modules.agro.service import can_access_agro_finance_panel
@@ -50,6 +50,7 @@ def build_financeiro_empresas(user):
                 "cnpj": perfil.cnpj, "sigla": (perfil.nome or "")[:3].upper(),
                 "cnpj_formatado": format_documento(perfil.cnpj), "operacao": "Cadastro da empresa",
                 "disponivel": can_access_financeiro_panel(user), "demonstracao": False,
+                "prefeitura_id": perfil.prefeitura_id,
             })
     for empresa in empresas:
         perfil = perfis.get(empresa["slug"])
@@ -66,14 +67,12 @@ def build_financeiro_empresas(user):
 
 def build_financeiro_menu(user, empresa):
     from app.modules.gestao_ti.permissions import active_configuration, can_access_endpoint
-    # Existing Agro records are available only through IJA until company storage
-    # and data scopes have been modeled; another card must not expose these data.
     if not empresa or not empresa["disponivel"] or not can_access_financeiro_panel(user):
         return []
     settings = {"label": "Configurações", "icon": "bi-sliders",
                 "endpoint": "main.financeiro_empresa_configuracoes", "params": {"empresa_slug": empresa["slug"]}}
     configured = active_configuration(user) is not None
-    if empresa["slug"] != "ija":
+    if empresa["slug"] != "ija" and not empresa.get("prefeitura_id"):
         allowed = (can_access_endpoint(user, settings["endpoint"], args=settings["params"])
                    if configured else can_manage_financeiro_settings(user))
         return [settings] if allowed else []

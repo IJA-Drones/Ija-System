@@ -6,7 +6,7 @@ from decimal import Decimal
 import os
 import uuid
 
-from flask import current_app
+from flask import current_app, g, has_request_context
 from sqlalchemy import false, or_
 from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
@@ -146,9 +146,12 @@ def get_agro_finance_competencia_controle(ano: int | None, mes: int | None):
     if not ano or not mes:
         return None
 
+    empresa = getattr(g, "financeiro_empresa", None) if has_request_context() else None
+    prefeitura_id = empresa.get("prefeitura_id") if empresa else None
     return (
         FinanceiroAgroCompetenciaControle.query
         .filter(
+            FinanceiroAgroCompetenciaControle.prefeitura_id == prefeitura_id,
             FinanceiroAgroCompetenciaControle.competencia_ano == int(ano),
             FinanceiroAgroCompetenciaControle.competencia_mes == int(mes),
         )
@@ -177,9 +180,11 @@ def can_user_write_agro_finance_competencia(user, ano: int | None, mes: int | No
 
 def build_agro_finance_competencia_settings(months_back: int = 18, months_forward: int = 0) -> list[dict]:
     current_month = date.today().replace(day=1)
+    empresa = getattr(g, "financeiro_empresa", None) if has_request_context() else None
+    prefeitura_id = empresa.get("prefeitura_id") if empresa else None
     controles = {
         (item.competencia_ano, item.competencia_mes): item
-        for item in FinanceiroAgroCompetenciaControle.query.all()
+        for item in FinanceiroAgroCompetenciaControle.query.filter_by(prefeitura_id=prefeitura_id).all()
     }
     items = []
 

@@ -29,6 +29,7 @@ SCREENS = {
  'agro.os': [('agro_os_listar','Ordens de serviço')],
  'agro.equipes': [('agro_equipes_listar','Equipes'),('agro_pilotos_listar','Pilotos'),('agro_equipe_nova','Cadastrar equipe'),('agro_piloto_novo','Cadastrar piloto')],
  'agro.equipamentos': [('agro_equipamentos_listar','Equipamentos'),('agro_equipamento_novo','Cadastrar equipamento'),('agro_importar_planilha_drones','Importar equipamentos')],
+ 'agro.checklists': [('agro_checklists_semanais', 'Checklists semanais')],
  'agro.voos': [('agro_logs_voo','Logs de voo')],
  'agro.talentos': [('agro_talentos_listar','Banco de talentos'),('agro_talento_novo','Cadastrar candidato')],
  'financeiro.contas': [('agro_financeiro_contas','Visão geral'),('agro_contas_receber_listar','Contas a receber'),('agro_contas_pagar_listar','Contas a pagar'),('agro_financeiro_entrada_novo','Nova entrada'),('agro_financeiro_saida_novo','Nova saída')],
@@ -72,6 +73,7 @@ def _screens_for(user, key):
         'piloto_agro': {
             'agro.os': [('agro_piloto_os_listar', 'Ordens de serviço')],
             'agro.mapeamentos': [('agro_piloto_mapeamentos_listar', 'Mapeamentos')],
+            'agro.checklists': [('agro_piloto_checklist_semanal', 'Checklist semanal')],
         },
     }
     return overrides.get('piloto' if role == 'equipe_oceano' else role, {}).get(key, SCREENS.get(key, ()))

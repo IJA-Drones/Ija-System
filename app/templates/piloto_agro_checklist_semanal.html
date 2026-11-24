@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Checklist semanal | IJA Agro{% endblock %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_checklist_semanal.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 checklist-page agro-content-width-1360">
+  <div class="checklist-topbar mb-4">
+    <div>
+      <h2 class="m-0"><i class="bi bi-ui-checks-grid text-primary me-2" aria-hidden="true"></i>Checklist semanal</h2>
+      <p class="text-muted mb-0">{{ week.strftime('%d/%m/%Y') }} a {{ week_end.strftime('%d/%m/%Y') }}</p>
+    </div>
+    <a href="{{ url_for('main.agro_piloto_dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Painel do piloto
+    </a>
+  </div>
+
+  {% if errors %}
+    <div class="alert alert-warning" role="alert">
+      <p class="fw-bold mb-1">Revise os dados para salvar o checklist.</p>
+      <ul class="mb-0">
+        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if not options.veiculo and not options.drone %}
+    <p class="alert alert-info">Nenhum veículo ou drone ativo está disponível para sua equipe Agro. Confira os vínculos no cadastro de Equipamentos Agro.</p>
+  {% else %}
+    <form method="post" id="agro-weekly-checklist" data-can-save="{{ 'true' if can_save else 'false' }}" data-ti-allowed="{{ 'true' if can_save else 'false' }}">
+      {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+      {% if not can_save %}<p class="alert alert-info">Seu perfil tem acesso de consulta ao checklist.</p>{% endif %}
+
+      {% for kind, title, icon, select_label in [
+        ('veiculo', 'Inspeção do veículo', 'bi-car-front', 'Placa do veículo'),
+        ('drone', 'Inspeção do drone', 'bi-airplane-engines', 'Modelo e código do drone')
+      ] %}
+        <section class="section-box mb-4" data-checklist-section="{{ kind }}">
+          <div class="section-title-line">
+            <span class="section-title-icon"><i class="bi {{ icon }} fs-5" aria-hidden="true"></i></span>
+            <h3 class="h5 m-0 fw-bold text-dark-blue">{{ title }}</h3>
+          </div>
+          {% if not options[kind] %}
+            <p class="text-muted mb-0">{{ 'Nenhum veículo' if kind == 'veiculo' else 'Nenhum drone' }} disponível para sua equipe Agro.</p>
+          {% else %}
+            <label class="form-label fw-semibold small" for="{{ kind }}_id">{{ select_label }}</label>
+            <select class="form-select" name="{{ kind }}_id" id="{{ kind }}_id" data-ti-independent="true">
+              <option value="">Selecione para inspecionar</option>
+              {% for equipment_id, equipment in options[kind].items() %}
+                <option value="{{ equipment_id }}" {% if equipment_id == selected[kind] %}selected{% endif %}
+                        {% if kind == 'drone' %}data-has-tank="{{ 'true' if has_tank(equipment) else 'false' }}"{% endif %}>{{ equipment.identificacao }} - {{ equipment.modelo }}</option>
+              {% endfor %}
+            </select>
+            <p class="small text-success fw-semibold mt-2 mb-0" data-saved-status aria-live="polite"></p>
+
+            <fieldset class="mt-3" data-checklist-fields disabled hidden>
+              <div class="row g-3">
+                {% if kind == 'veiculo' %}
+                  <div class="col-sm-6 col-lg-4">
+                    <label class="form-label small fw-semibold" for="km_leitura">Quilometragem (km)</label>
+                    <input class="form-control" type="number" id="km_leitura" name="km_leitura" min="0" max="9999999.99" step="0.01" required>
+                  </div>
+                {% else %}
+                  {% for field, label in [('num_baterias', 'Número de baterias'), ('num_baterias_wb', 'Baterias WB')] %}
+                    <div class="col-sm-6 col-lg-4">
+                      <label class="form-label small fw-semibold" for="{{ field }}">{{ label }}</label>
+                      <input class="form-control" type="number" id="{{ field }}" name="{{ field }}" min="0" max="9999" step="1" required>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              </div>
+
+              {% for group, fields in groups[kind].items() %}
+                <div data-inspection-group>
+                  <h4 class="topic-divider" {% if group == 'condicao_estrutura' %}data-structure-title{% endif %}>{{ titles[group] }}</h4>
+                  <div class="check-grid">
+                    {% for field in fields %}
+                      <div class="check-row-container" {% if field == 'tanque' %}data-tank-row{% endif %}>
+                        <div class="check-row">
+                          <span class="check-row-title fw-bold text-dark-blue" id="label_{{ field }}">{{ labels[field] }}</span>
+                          <div class="btn-group btn-group-sm check-toggle" role="group" aria-labelledby="label_{{ field }}">
+                            {% for value, status in [('1', 'Funcional'), ('0', 'Defeituoso')] %}
+                              <input class="btn-check" type="radio" name="{{ field }}" id="{{ field }}_{{ value }}" value="{{ value }}" required>
+                              <label class="btn btn-outline-primary fw-bold" for="{{ field }}_{{ value }}">{{ status }}</label>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <div class="mt-2" data-inspection-observation hidden>
+                    <label class="form-label text-primary small fw-semibold" for="{{ group }}">Defeito em {{ titles[group]|lower }}</label>
+                    <textarea class="form-control" id="{{ group }}" name="{{ group }}" maxlength="{{ max_observation }}"></textarea>
+                  </div>
+                </div>
+              {% endfor %}
+
+              {% if kind == 'drone' %}
+                <label class="topic-divider" for="observacoes_equipamento">Observações do equipamento</label>
+                <textarea class="form-control" id="observacoes_equipamento" name="observacoes_equipamento" maxlength="{{ max_observation }}" rows="3"></textarea>
+              {% endif %}
+            </fieldset>
+          {% endif %}
+        </section>
+      {% endfor %}
+
+      {% if can_save %}
+        <section class="section-box">
+          <div class="section-title-line">
+            <span class="section-title-icon"><i class="bi bi-pen fs-5" aria-hidden="true"></i></span>
+            <h3 class="h5 m-0 fw-bold text-dark-blue">Responsável pela inspeção</h3>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label fw-semibold small" for="nome_responsavel">Nome do responsável</label>
+              <input class="form-control" id="nome_responsavel" name="nome_responsavel" value="{{ name }}" maxlength="150" required>
+            </div>
+            <div class="col-md-7">
+              <p class="form-label fw-semibold small" id="signature-label">Assinatura do responsável</p>
+              <div class="signature-container">
+                <canvas id="signature-pad" width="640" height="160" aria-labelledby="signature-label"></canvas>
+              </div>
+              <input type="hidden" name="assinatura_piloto" value="{{ signature }}">
+              <p class="small text-danger mt-2 mb-0" data-signature-error role="alert" hidden>Assine o checklist no quadro de assinatura.</p>
+            </div>
+          </div>
+          <div class="checklist-actions mt-3">
+            <button type="button" class="btn btn-outline-secondary" data-clear-signature>Limpar assinatura</button>
+            <button type="submit" class="btn btn-primary" disabled><i class="bi bi-check2-all me-2" aria-hidden="true"></i>Salvar checklist</button>
+          </div>
+        </section>
+      {% endif %}
+    </form>
+    <script type="application/json" id="agro-checklist-data">{{ {'saved': saved, 'draft': draft}|tojson }}</script>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {% if options.veiculo or options.drone %}
+    <script src="{{ url_for('static', filename='js/agro-piloto-checklist.js') }}" defer></script>
+  {% endif %}
+{% endblock %}

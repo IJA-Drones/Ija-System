@@ -198,6 +198,13 @@
           "consultar criar editar excluir importar"
         ],
         [
+          "checklists",
+          "Checklists semanais",
+          "Preenchimento e acompanhamento das inspeções de veículos e drones do Agro.",
+          "bi-ui-checks-grid",
+          "consultar editar corrigir"
+        ],
+        [
           "voos",
           "Logs de voo",
           "Importação, rotas KML e vínculo com OS.",
