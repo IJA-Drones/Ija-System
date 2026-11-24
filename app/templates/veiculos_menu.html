@@ -71,7 +71,7 @@
       </a>
     </div>
 
-    {% if can_view_logs %}
+    {% if (central_ti_ui_guard(['main.veiculos_logs'], can_view_logs) if central_ti_ui_guard is defined else can_view_logs) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_logs') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_logs')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--logs border-start border-success border-4">
@@ -119,7 +119,7 @@
     </div>
     {% endif %}
 
-    {% if can_view_checklist %}
+    {% if (central_ti_ui_guard(['main.admin_checklists_semanais'], can_view_checklist) if central_ti_ui_guard is defined else can_view_checklist) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.admin_checklists_semanais') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_checklists_semanais')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--checklist border-start border-warning border-4">
