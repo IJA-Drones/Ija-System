@@ -26,7 +26,7 @@ Pausar a geração paga mantém os guias, as respostas locais e as gravações d
 O painel mede novas interações a partir da implantação. Não reconstrói custos antigos. Apresenta filtros por período/canal, totais e conversas recentes, com:
 
 - Tokens informados pelo provedor, incluindo entrada em cache e tokens de saída não visíveis, quando reportados.
-- Duração do áudio de transcrição e tokens de texto/áudio da narração.
+- Duração do áudio de transcrição, duração faturável da Bossa e tokens das vozes legadas.
 - Chamadas à pesquisa web retornadas na resposta.
 - Respostas locais, gravações e reutilizações de cache com custo de geração zero.
 - Operações incompletas ou sem dados suficientes separadas das que têm medição.
@@ -47,9 +47,46 @@ Em uma aplicação inicializada com Flask-SQLAlchemy, configurações, auditoria
 
 O serviço suporta PostgreSQL e SQLite, com serialização de operações de escrita. Se o controle não puder ser consultado, novas chamadas pagas falham antes de acessar o provedor. O widget opcional não derruba páginas públicas; a política de áudio também falha com som desativado. Uma medição que falhe após a resposta mantém a reserva para não liberar artificialmente o orçamento.
 
-As 14 gravações existentes e o cache temporário de áudio continuam funcionando. A escolha de outra voz/modelo pode exigir geração de respostas que não correspondam à biblioteca gravada; o cache é separado por voz e modelo. Não há geração automática de novas gravações ao salvar as configurações.
+## Voz brasileira Bossa (24/11/2026)
 
-As duas falas fixas de abertura e de retorno ao escopo mantêm a voz original Marin. A seleção do painel se aplica às novas gerações. O painel cobre as chamadas dos canais AZUL integrados; scripts administrativos de geração de arquivos, executados fora de uma requisição, devem ser acompanhados no provedor.
+O perfil padrão é **Bossa**, a voz feminina brasileira aprovada em escuta. Usa
+`gpt-live-1.1` pela API Live, incluindo chat interno, IJA Fly, portal, guias práticos,
+chamadas por voz e resumo do DEV. Transcrição do microfone e permissões continuam
+separadas da narração. As vozes anteriores permanecem como opções explícitas no
+painel; não são usadas como fallback quando a Bossa falha.
+
+O fluxo é híbrido: falas genéricas revisadas ficam no catálogo público por perfil;
+respostas variáveis usam geração sob demanda e cache temporário vinculado ao
+acesso/sessão. As aberturas e o convite do DEV também usam a Bossa. Mudanças de
+perfil/estilo invalidam o reaproveitamento da voz anterior. Respostas privadas não
+são adicionadas à biblioteca pública. Falhas de geração mantêm a resposta em texto.
+
+`live_voice.py` envia somente o texto aprovado, sem histórico, ferramentas ou
+backend de raciocínio. O servidor retém o áudio até conferir a transcrição e o
+encerramento da sessão. Palavras e números alterados são rejeitados. A duração
+da conexão é limitada entre 45 e 170 segundos conforme o texto, além dos limites
+de memória, concorrência e consumo. Uma resposta longa pode levar mais tempo
+na primeira geração; o cache evita repetir esse trabalho dentro do mesmo escopo.
+
+A tarifa inicial é **US$ 0,05 por minuto ativo**, revisada em 24/11/2026 na
+[documentação do modelo](https://developers.openai.com/api/docs/models/gpt-live-1.1).
+WebSockets usam duração ativa. Antes da conexão é reservado o teto da duração;
+o recibo `session.closed.usage.seconds` determina a medição. Ausência de recibo
+válido mantém a reserva, sem inventar tokens ou liberar orçamento como custo zero.
+Tarifas personalizadas dos demais modelos e eventos históricos são preservados.
+
+Para renovar apenas falas genéricas aprovadas:
+
+```bash
+.venv/bin/python scripts/build_azul_recordings.py --generate --profile bossa
+```
+
+O script usa o banco de controle configurado, executa em contexto de requisição
+para registrar consumo e respeitar limites, e reutiliza arquivos cujo texto e hash
+já foram conferidos. `--only abertura-chamada` limita a geração a uma entrada.
+Salvar as configurações não regenera a biblioteca automaticamente. Alterações na
+direção vocal devem atualizar o estilo em `voice_profiles.py` antes de renovar os
+áudios, para que arquivos antigos não sejam confundidos com a voz revisada.
 
 
 ## Orientação financeira (18/11/2026)

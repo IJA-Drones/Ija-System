@@ -53,7 +53,9 @@ def identity():
 
 
 def estimate_reservation(kind, rate, payload, audio_seconds=0):
-    if kind == 'transcription':
+    if kind == 'transcription' or (kind == 'voice' and 'minute' in rate):
+        if kind == 'voice' and (type(audio_seconds) not in (int,float) or not 0 < audio_seconds <= 180):
+            raise ValueError('A duration-priced voice request needs a bounded reservation.')
         return Decimal(str(audio_seconds))/60*Decimal(rate.get('minute','0'))
     # UTF-8 byte count + framing is a conservative input-token ceiling.
     inputs = len(json.dumps(payload,ensure_ascii=False,default=lambda _:None).encode())+512
@@ -152,7 +154,16 @@ def finish(event_id, response=None, *, usage=None, failed=False, audio_seconds=0
         rate = json.loads(event['pricing'])
         usd = None
         seconds = audio_seconds or event['audio_seconds']
-        if kind == 'transcription' and not failed:
+        if kind == 'voice' and 'minute' in rate:
+            reported = field(usage, 'seconds')
+            # Only provider-reported billable duration releases the reservation.
+            # Failed/incomplete sessions without a receipt retain their full cap.
+            if type(reported) in (int,float) and 0 < reported <= event['audio_seconds']:
+                seconds = reported
+                usd = Decimal(str(seconds))/60*Decimal(rate['minute'])
+            else:
+                has_usage = False
+        elif kind == 'transcription' and not failed:
             # Completed WAV duration is known even when the provider omits usage.
             reported = field(usage,'seconds')
             seconds = reported if type(reported) in (int,float) and reported>0 else seconds

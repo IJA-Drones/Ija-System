@@ -4,8 +4,6 @@ import hashlib
 import json
 from pathlib import Path
 import sys
-import subprocess
-import tempfile
 import io
 import wave
 
@@ -21,10 +19,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--generate', action='store_true', help='Generate missing clips using the configured API.')
     parser.add_argument('--only', nargs='+', help='Limit generation to the named catalog entries.')
-    parser.add_argument('--profile', choices=tuple(voice_profiles.PROFILES), default='original')
+    parser.add_argument('--profile', choices=tuple(voice_profiles.PROFILES), default='bossa')
     args = parser.parse_args()
     app = Flask('azul-recordings', static_folder=str(ROOT / 'app/static'))
     app.config.from_object(Config)
+    app.config['AZUL_CONTROL_DATABASE_URI'] = (
+        app.config.get('AZUL_CONTROL_DATABASE_URI') or app.config['SQLALCHEMY_DATABASE_URI'])
     app.config['AZUL_VOICE_PROFILE'] = args.profile
     manifest_path = recordings.manifest_path(args.profile)
     with app.app_context():
@@ -61,22 +61,15 @@ def main():
                 print(name + ': missing (use --generate)', flush=True)
                 continue
             try:
-                if chosen['model'] == 'browser-pt-BR':
-                    if sys.platform != 'darwin':
-                        raise ValueError('Amostras nativas devem ser preparadas em um Mac com voz Luciana pt-BR.')
-                    with tempfile.TemporaryDirectory() as temporary_dir:
-                        aiff = str(Path(temporary_dir) / 'speech.aiff')
-                        wav = str(Path(temporary_dir) / 'speech.wav')
-                        subprocess.run(['/usr/bin/say', '-v', 'Luciana', '-r', '175', '-o', aiff, text], check=True, capture_output=True)
-                        subprocess.run(['/usr/bin/afconvert', '-f', 'WAVE', '-d', 'LEI16@24000', '-c', '1', aiff, wav], check=True, capture_output=True)
-                        data = Path(wav).read_bytes()
-                else:
+                # Real request context: generation obeys the product's saved
+                # budgets/kill switches and records actual provider usage.
+                with app.test_request_context('/api/azul/voz', method='POST'):
                     data = voice.synthesize(text, profile=args.profile).getvalue()
                 with wave.open(io.BytesIO(data)) as recorded:
                     if not recorded.getnframes():
                         raise ValueError('A síntese não produziu áudio.')
-            except Exception:
-                print(name + ': generation failed; no recording published', flush=True)
+            except Exception as exc:
+                print(name + ': generation failed; no recording published (' + type(exc).__name__ + ')', flush=True)
                 failed = True
                 continue
             recordings.DIRECTORY.mkdir(parents=True, exist_ok=True)

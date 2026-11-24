@@ -71,19 +71,6 @@
     async function sayClip(kind) {
       // Do not play the Azul-branded recording in the Agro identity.
       if (root.dataset.agentId === 'ija-fly') { listen(); return; }
-      if (root.dataset.voiceEngine === 'browser-pt-BR') {
-        const expected = version;
-        const text = kind === 'welcome' ? agentText('Olá! Sou a AZUL. Como posso ajudar você?') : 'Posso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Sobre qual desses assuntos você quer conversar?';
-        state('preparing','Preparando a voz brasileira do dispositivo…');
-        try {
-          if (!window.AzulNativeVoice) throw new Error('Voz brasileira indisponível.');
-          await window.AzulNativeVoice.speak(root,text,{emitEvents:false,onStart:()=>state('speaking',text)});
-          if (active && expected === version) nextTimer=setTimeout(listen,200);
-        } catch (error) {
-          if (active && expected === version) stop(error.name === 'AbortError' ? 'Áudio interrompido.' : error.message);
-        }
-        return;
-      }
       const expected = version, controller = new AbortController(); request = controller;
       const clips = {
         welcome:{url:'/static/audio/azul-inicio-chamada.wav',text:agentText('Olá! Sou a AZUL. Como posso ajudar você?')},

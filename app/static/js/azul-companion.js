@@ -39,7 +39,7 @@
       clips.clear();
     }
     function attachSpeech(container, offer, idleLabel = 'Ouvir resposta') {
-      if (offer?.engine === 'browser-pt-BR') return window.AzulNativeVoice?.attach(root, container, offer, idleLabel);
+      if (offer?.engine === 'browser-pt-BR') return;
       if (!['/api/azul/voz', '/portal-cidadao/voz'].includes(voiceUrl) || !offer || offer.url !== voiceUrl || typeof offer.token !== 'string' || typeof Audio !== 'function') return;
       const recorded = typeof offer.clip === 'string' && /^\/static\/audio\/azul-falas\/[a-f0-9]{64}\.wav(?:\?v=[a-f0-9]{12})?$/.test(offer.clip) ? offer.clip : null;
       const button = document.createElement('button');
@@ -70,7 +70,7 @@
         voiceButton = button;
         button.setAttribute('aria-pressed', 'true');
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), selectedClip ? 10000 : 55000);
+        const timer = setTimeout(() => controller.abort(), selectedClip ? 10000 : 185000);
         try {
           let url = clips.get(cacheKey), rawAudio = null;
           if (!url) {
@@ -230,6 +230,7 @@
     }));
     root.azulCompanion = {
       attachSpeech,
+      clearAudio,
       closeGuide,
       stopVoice,
       thinking(value) { thinking = value; settleDrone(); },

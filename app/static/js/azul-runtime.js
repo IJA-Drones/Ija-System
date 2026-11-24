@@ -12,6 +12,10 @@
     function headers(){return{'X-CSRFToken':root.dataset.csrf||'','X-Azul-Conversation':root.dataset.conversationId,
       ...(publicChat?{'X-Portal-Chat-Token':root.dataset.token}:{'X-Azul-Chat-Key':root.dataset.chatKey})};}
     function apply(value){
+      if(policy.voice_style!==value.voice_style||policy.voice_profile!==value.voice_profile){
+        root.azulVoice?.stop('A voz foi atualizada. Toque no microfone para retomar.');
+        root.azulCompanion?.clearAudio?.();
+      }
       policy=value;
       if (value.voice_profile) {
         root.dataset.voiceProfile=value.voice_profile;

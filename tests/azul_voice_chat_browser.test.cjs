@@ -186,13 +186,11 @@ test('selected profile uses its own greeting instead of the original Marin clip'
 });
 
 
-test('native Brazilian opening uses the device voice and resumes listening only when it ends',async()=>{
- let finish,called=0;
- const env=setup({identity:{voiceEngine:'browser-pt-BR',voiceProfile:'jett'},nativeVoice:{speak(root,text,options){called++;options.onStart('Luciana');return new Promise(resolve=>finish=resolve);}}});
- await env.mic.events.click();await settle();
- assert.equal(called,1);assert.equal(env.clips.length,0);assert.equal(env.root.dataset.voiceState,'speaking');
- assert.ok(env.tracks.every(track=>track.readyState==='ended'));
- finish();await settle();
- [...env.timers.values()].find(timer=>timer.ms===200).fn();await settle();
+test('the approved Bossa opening never falls back to a device voice even with a stale engine flag',async()=>{
+ let called=0;
+ const clip='/static/audio/azul-falas/'+'b'.repeat(64)+'.wav?v=111111111111';
+ const env=setup({identity:{voiceEngine:'browser-pt-BR',voiceProfile:'bossa',callWelcome:clip},nativeVoice:{speak(){called++;}}});
+ await start(env);
+ assert.equal(called,0);assert.equal(env.clips[0],clip);
  assert.equal(env.root.dataset.voiceState,'listening');env.root.azulVoice.stop();
 });
