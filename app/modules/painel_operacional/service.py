@@ -1,7 +1,10 @@
 from app.modules.gestao_ti.permissions import capability
 import math
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from sqlalchemy import case, func, or_
 from time import time
 from urllib.parse import urlencode
 
@@ -9,13 +12,14 @@ import requests
 from flask import current_app
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipe, Solicitacao, Usuario, Veiculos
+from app.models import Baterias, Drones, Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario, Veiculos
 from app.shared.access import (
     DEV_USER_TYPE,
     DIRECTOR_USER_TYPE,
     apply_prefeitura_scope,
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
+    central_ti_team_ids,
 )
 
 
@@ -400,4 +404,80 @@ def build_operational_context(user, address: str):
             "route": f"https://www.google.com/maps/dir/?api=1&destination={geocode['lat']},{geocode['lng']}",
             "windy": f"https://www.windy.com/{geocode['lat']}/{geocode['lng']}?{geocode['lat']},{geocode['lng']},14",
         },
+    }
+
+
+def build_operational_overview(user, *, today=None, agenda_team=""):
+    """Read a scoped management snapshot without geocoding or weather calls."""
+    from app.modules.admin_dashboard.attention import criteria
+    from app.modules.mapas.service import build_heatmap_query
+
+    now = datetime.now(ZoneInfo("America/Sao_Paulo"))
+    today = today or now.date()
+    query = build_heatmap_query(user, visao="todos", com_coordenadas=False)
+    teams = central_ti_team_ids(user)
+    if teams is not None:
+        query = query.filter(Solicitacao.equipe_id.in_(teams))
+    concluded = or_(
+        Solicitacao.status.in_(["CONCLUIDO", "CONCLUÍDO"]),
+        Solicitacao.ordem_servico.has(OrdemServico.respondido_em.isnot(None)),
+        Solicitacao.ordem_servico_equipe_uvis.has(
+            OrdemServicoEquipeUvis.status.in_(["CONCLUIDO", "CONCLUÍDO"])
+        ),
+    )
+    active = ~concluded & ~Solicitacao.status.in_([
+        "CANCELADO", "CANCELADA", "NEGADO", "NEGADA", "REPROVADO", "INDEFERIDO"
+    ])
+    attention = criteria(today)
+    conditions = {
+        "hoje": (Solicitacao.data_agendamento == today) & active,
+        "em_analise": Solicitacao.status.in_(["PENDENTE", "EM ANALISE", "EM ANÁLISE"]) & ~concluded,
+        "anteriores": attention["anteriores"] & ~concluded,
+        "sem_equipe": attention["sem_equipe"] & ~concluded,
+        "concluidas_mes": concluded & (Solicitacao.data_agendamento >= today.replace(day=1))
+            & (Solicitacao.data_agendamento <= today),
+    }
+    totals = query.with_entities(*[
+        func.coalesce(func.sum(case((condition, 1), else_=0)), 0).label(key)
+        for key, condition in conditions.items()
+    ]).one()._asdict()
+    # Derive options from visible requests, including inactive teams with history.
+    agenda_teams = query.join(Equipe, Solicitacao.equipe_id == Equipe.id).with_entities(
+        Equipe.id, Equipe.nome_equipe,
+    ).distinct().order_by(Equipe.nome_equipe, Equipe.id).all()
+    agenda_team = str(agenda_team or "").strip()
+    agenda_query = query
+    agenda_label = "Todas as equipes"
+    if agenda_team == "sem_equipe":
+        agenda_query = agenda_query.filter(Solicitacao.equipe_id.is_(None))
+        agenda_label = "Sem equipe definida"
+    elif agenda_team:
+        available = {str(team.id): team.nome_equipe for team in agenda_teams}
+        if agenda_team not in available:
+            raise ValueError("Equipe indisponível para esta agenda.")
+        agenda_query = agenda_query.filter(Solicitacao.equipe_id == int(agenda_team))
+        agenda_label = available[agenda_team]
+
+    agenda_total = agenda_query.filter(conditions["hoje"]).count()
+    agenda = agenda_query.filter(conditions["hoje"]).outerjoin(
+        Equipe, Solicitacao.equipe_id == Equipe.id,
+    ).with_entities(
+        Solicitacao.id, Solicitacao.hora_agendamento, Solicitacao.logradouro,
+        Solicitacao.numero, Solicitacao.bairro, Solicitacao.cidade, Solicitacao.uf,
+        Solicitacao.status, Solicitacao.equipe_id, Solicitacao.foco,
+        Equipe.nome_equipe.label("equipe_nome"),
+    ).order_by(Solicitacao.hora_agendamento, Solicitacao.id).limit(6).all()
+    end = today + timedelta(days=6)
+    grouped = dict(agenda_query.filter(active, Solicitacao.data_agendamento.between(today, end))
+        .with_entities(Solicitacao.data_agendamento, func.count(Solicitacao.id))
+        .group_by(Solicitacao.data_agendamento).all())
+    week = [{"date": today + timedelta(days=i), "count": grouped.get(today + timedelta(days=i), 0)}
+            for i in range(7)]
+    return {
+        "totals": totals, "agenda": agenda, "week": week,
+        "agenda_teams": agenda_teams, "agenda_team": agenda_team,
+        "agenda_label": agenda_label, "agenda_total": agenda_total,
+        "week_max": max(1, *(day["count"] for day in week)),
+        "assets": _build_assets_summary(user),
+        "today": today, "generated_at": now.strftime("%d/%m/%Y às %H:%M"),
     }
