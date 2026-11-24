@@ -144,15 +144,16 @@ def test_bossa_policy_also_builds_relative_clip_urls_during_startup(env):
         assert '?v=' in policy['call_welcome']
 
 
-def test_bossa_generic_library_is_complete_and_matches_the_approved_text_and_hashes(env):
+@pytest.mark.parametrize('profile', ['bossa','jet'])
+def test_live_generic_library_is_complete_and_matches_the_approved_text_and_hashes(env, profile):
     app, _, _ = env
     with app.test_request_context():
-        manifest = json.loads(recordings.manifest_path('bossa').read_text())
-        catalog = recordings.catalog('bossa')
+        manifest = json.loads(recordings.manifest_path(profile).read_text())
+        catalog = recordings.catalog(profile)
         assert len(catalog) == 16
         for text in catalog.values():
-            path, url = recordings.find(text, profile='bossa')
-            entry = manifest['clips'][recordings.text_key(text,'bossa')]
+            path, url = recordings.find(text, profile=profile)
+            entry = manifest['clips'][recordings.text_key(text,profile)]
             assert entry['text'] == text
             assert hashlib.sha256(path.read_bytes()).hexdigest() == entry['audio_sha256']
             assert url.endswith('?v='+entry['audio_sha256'][:12])
@@ -161,16 +162,36 @@ def test_bossa_generic_library_is_complete_and_matches_the_approved_text_and_has
                 assert 1 < wav.getnframes()/wav.getframerate() < live_voice.MAX_SESSION_SECONDS
 
 
-def test_bossa_recorded_identity_needs_no_provider_or_generation_quota(env):
+@pytest.mark.parametrize('profile', ['bossa','jet'])
+def test_live_recorded_identity_needs_no_provider_or_generation_quota(env, profile):
     app, client, _ = env
-    app.config['AZUL_VOICE_PROFILE'] = 'bossa'
+    app.config['AZUL_VOICE_PROFILE'] = profile
     with patch.object(voice,'synthesize') as provider, patch(
             'app.modules.chatbot.azul.consume_help_quota') as quota:
         result = client.post('/api/azul/ajuda', json={'message':'Qual seu nome?'})
         signed = result.json['speech']
-        assert signed['profile'] == 'bossa' and signed['clip']
+        assert signed['profile'] == profile and signed['clip']
         response = client.post(signed['url'], json={'token':signed['token']})
         assert response.status_code == 200
         assert response.headers['X-Azul-Audio-Source'] == 'recorded'
         assert response.data.startswith(b'RIFF')
         provider.assert_not_called(); quota.assert_not_called()
+
+
+def test_jet_uses_the_approved_deep_velvety_direction_and_its_own_cache(env):
+    app, _, _ = env
+    assert voice_profiles.PROFILES['jet']['label'].startswith('JET ·')
+    chosen = voice_profiles.spec('jet')
+    assert chosen['model'] == 'gpt-live-1.1' and chosen['voice'] == 'bossa'
+    assert chosen['style'] == 'azul-ptbr-jet-v1'
+    direction = voice_profiles.instructions('jet')
+    assert 'grave e confortável' in direction and 'baixo, quente e aveludado' in direction
+    assert 'sensualidade discreta' in direction
+    assert voice_profiles.spec('jett')['voice'] == 'shimmer'
+    from app.modules.chatbot import audio_cache
+    with app.app_context():
+        app.config['AZUL_VOICE_PROFILE'] = 'bossa'
+        previous = audio_cache.cache_key(voice_profiles.SAMPLE,['internal','same-user'])
+        app.config['AZUL_VOICE_PROFILE'] = 'jet'
+        current = audio_cache.cache_key(voice_profiles.SAMPLE,['internal','same-user'])
+    assert current != previous

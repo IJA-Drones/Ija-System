@@ -15,7 +15,7 @@ from app.modules.chatbot import control_store
 TEXT_MODELS = ('gpt-6-luna', 'gpt-6.1-terra', 'gpt-6.1-sol')
 VOICE_MODELS = ('gpt-realtime-2.1-mini', 'gpt-realtime-2.1')
 TRANSCRIBE_MODELS = ('gpt-transcribe', 'gpt-4o-mini-transcribe')
-VOICE_PROFILES = ('bossa', 'reyna', 'jett', 'original')
+VOICE_PROFILES = ('jet', 'bossa', 'reyna', 'jett', 'original')
 VOICES = ('marin', 'cedar', 'coral', 'shimmer', 'sage')
 # USD / 1M tokens, except minute. Standard rates, reviewed 2026-11-11.
 RATES = {
@@ -60,7 +60,7 @@ def defaults():
         voice_model=cfg.get('AZUL_VOICE_MODEL','gpt-realtime-2.1-mini'),
         transcribe_model=cfg.get('AZUL_TRANSCRIBE_MODEL','gpt-transcribe'),
         voice_name=cfg.get('AZUL_VOICE','marin'),
-        voice_profile=cfg.get('AZUL_VOICE_PROFILE', 'bossa'),
+        voice_profile=cfg.get('AZUL_VOICE_PROFILE', 'jet'),
         max_output_internal=1800, max_output_public=2500, max_message_chars=1500,
         session_minutes=5, session_turns=10, speech_seconds=30, silence_seconds=8,
         internal_daily_text=cfg.get('AZUL_HELP_DAILY_LIMIT',500),

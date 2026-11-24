@@ -10,12 +10,12 @@ from app.modules.chatbot import audio_cache, recordings, settings, voice, voice_
 from tests.test_azul_help import env
 
 
-def test_bossa_is_default_and_named_profiles_are_validated(env):
+def test_jet_is_default_and_named_profiles_are_validated(env):
     app, _, _ = env
     with app.app_context():
         app.config.pop('AZUL_VOICE_PROFILE')
-        assert settings.defaults()['voice_profile'] == 'bossa'
-        for name in ('bossa', 'reyna', 'jett', 'original'):
+        assert settings.defaults()['voice_profile'] == 'jet'
+        for name in ('jet', 'bossa', 'reyna', 'jett', 'original'):
             assert settings.validate({'voice_profile':name})['voice_profile'] == name
         with pytest.raises(settings.ValidationError):
             settings.validate({'voice_profile':'untrusted-voice'})

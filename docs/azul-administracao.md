@@ -47,17 +47,19 @@ Em uma aplicação inicializada com Flask-SQLAlchemy, configurações, auditoria
 
 O serviço suporta PostgreSQL e SQLite, com serialização de operações de escrita. Se o controle não puder ser consultado, novas chamadas pagas falham antes de acessar o provedor. O widget opcional não derruba páginas públicas; a política de áudio também falha com som desativado. Uma medição que falhe após a resposta mantém a reserva para não liberar artificialmente o orçamento.
 
-## Voz brasileira Bossa (24/11/2026)
+## Voz brasileira JET (24/11/2026)
 
-O perfil padrão é **Bossa**, a voz feminina brasileira aprovada em escuta. Usa
+O perfil padrão é **JET**, a direção feminina brasileira grave, baixa e aveludada
+aprovada em amostra. O timbre-base é Bossa, com instruções próprias de interpretação. Usa
 `gpt-live-1.1` pela API Live, incluindo chat interno, IJA Fly, portal, guias práticos,
 chamadas por voz e resumo do DEV. Transcrição do microfone e permissões continuam
 separadas da narração. As vozes anteriores permanecem como opções explícitas no
-painel; não são usadas como fallback quando a Bossa falha.
+painel; não são usadas como fallback quando a JET falha. JET (`jet`) é um perfil
+separado da antiga Jett V2 (`jett`), que usa outra voz-base.
 
 O fluxo é híbrido: falas genéricas revisadas ficam no catálogo público por perfil;
 respostas variáveis usam geração sob demanda e cache temporário vinculado ao
-acesso/sessão. As aberturas e o convite do DEV também usam a Bossa. Mudanças de
+acesso/sessão. As aberturas e o convite do DEV também usam a JET. Mudanças de
 perfil/estilo invalidam o reaproveitamento da voz anterior. Respostas privadas não
 são adicionadas à biblioteca pública. Falhas de geração mantêm a resposta em texto.
 
@@ -78,7 +80,7 @@ Tarifas personalizadas dos demais modelos e eventos históricos são preservados
 Para renovar apenas falas genéricas aprovadas:
 
 ```bash
-.venv/bin/python scripts/build_azul_recordings.py --generate --profile bossa
+.venv/bin/python scripts/build_azul_recordings.py --generate --profile jet
 ```
 
 O script usa o banco de controle configurado, executa em contexto de requisição
@@ -87,6 +89,17 @@ já foram conferidos. `--only abertura-chamada` limita a geração a uma entrada
 Salvar as configurações não regenera a biblioteca automaticamente. Alterações na
 direção vocal devem atualizar o estilo em `voice_profiles.py` antes de renovar os
 áudios, para que arquivos antigos não sejam confundidos com a voz revisada.
+
+## Geração do guia prático (24/11/2026)
+
+O plano usa o modelo interno configurado e mantém seu teto de saída. O número
+de etapas e o comprimento do JSON são limitados conforme esse teto e os controles
+recebidos. Luna e Terra usam esforço de raciocínio `none`; Sol usa `low`, conforme
+as capacidades desses modelos, para reservar espaço às etapas na resposta.
+Respostas incompletas não viram tutoriais parciais: retornam `tutorial_incomplete`;
+JSON inválido retorna `tutorial_invalid_plan`. O log registra modelo, motivo e
+limite, sem copiar dados do formulário ou conteúdo do provedor. Permissões,
+IDs de controles autorizados e validação do texto continuam obrigatórios.
 
 
 ## Orientação financeira (18/11/2026)

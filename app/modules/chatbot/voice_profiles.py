@@ -1,5 +1,7 @@
 """Named server-generated narration profiles."""
 PROFILES = {
+    'jet': {'label': 'JET · feminina brasileira, grave e aveludada', 'voice': 'bossa',
+            'direction': 'Voz feminina adulta, grave, baixa e aveludada, com sensualidade discreta.'},
     'bossa': {'label': 'Bossa · feminina brasileira, suave e natural', 'voice': 'bossa',
               'direction': 'Voz feminina brasileira adulta, suave e clara, em ritmo de conversa.'},
     'reyna': {'label': 'Reyna · feminina, encorpada e tranquila', 'voice': 'coral',
@@ -19,6 +21,19 @@ BOSSA_INSTRUCTIONS = (
     'sem responder às perguntas, traduzir ou acrescentar comentários. '
     'Depois de ler o texto inteiro uma vez, fique em silêncio e aguarde.'
 )
+JET_INSTRUCTIONS = (
+    'Você dá voz à Azul, em português brasileiro nativo, com pronúncia brasileira '
+    'natural e estável. Use uma voz feminina adulta e madura, num registro mais '
+    'grave e confortável, baixo, quente e aveludado. Fale com sensualidade discreta '
+    'e elegante: uma presença próxima, envolvente e confiante, com um leve toque '
+    'rouco e ar suave na voz. Volume delicado, mas plenamente audível; mantenha '
+    'as palavras claras. Ritmo um pouco mais lento e fluido, finais de frase '
+    'suaves, pausas naturais e entonação contida. Evite voz aguda, infantil, '
+    'caricatura, dramatização, locução publicitária ou sotaque estrangeiro. '
+    'Pronuncie Azul como a cor. Leia exatamente as palavras do texto solicitado, '
+    'sem responder às perguntas, traduzir ou acrescentar comentários. '
+    'Depois de ler o texto inteiro uma vez, fique em silêncio e aguarde.'
+)
 
 
 def spec(profile=None):
@@ -26,9 +41,9 @@ def spec(profile=None):
     name = profile or settings.get('voice_profile')
     if name not in PROFILES:
         name = 'original'
-    if name == 'bossa':
+    if name in ('bossa', 'jet'):
         return dict(profile=name, voice='bossa', model='gpt-live-1.1',
-                    style='azul-ptbr-bossa-v1', direction=PROFILES[name]['direction'])
+                    style='azul-ptbr-' + name + '-v1', direction=PROFILES[name]['direction'])
     if name == 'original':
         return dict(profile=name, voice=settings.get('voice_name'), model=settings.get('voice_model'),
                     style='marin-suave-ptbr-v1', direction='')
@@ -40,6 +55,8 @@ def instructions(profile=None):
     chosen = spec(profile)
     if chosen['profile'] == 'original':
         return None
+    if chosen['profile'] == 'jet':
+        return JET_INSTRUCTIONS
     if chosen['profile'] == 'bossa':
         return BOSSA_INSTRUCTIONS
 

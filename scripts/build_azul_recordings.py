@@ -19,7 +19,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--generate', action='store_true', help='Generate missing clips using the configured API.')
     parser.add_argument('--only', nargs='+', help='Limit generation to the named catalog entries.')
-    parser.add_argument('--profile', choices=tuple(voice_profiles.PROFILES), default='bossa')
+    parser.add_argument('--profile', choices=tuple(voice_profiles.PROFILES), default='jet')
     args = parser.parse_args()
     app = Flask('azul-recordings', static_folder=str(ROOT / 'app/static'))
     app.config.from_object(Config)
