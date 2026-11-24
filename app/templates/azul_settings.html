@@ -52,15 +52,15 @@
           <div class="azm-card">
             <h3>Escolha a voz da Azul</h3>
             <label class="azm-field"><span>Perfil de voz</span><select required data-setting="voice_profile">{% for name, profile in voice_profiles.items() %}<option value="{{ name }}" {% if cfg.voice_profile == name %}selected{% endif %}>{{ profile.label }}</option>{% endfor %}</select></label>
-            <p class="azm-note">Jett V2 tem uma voz feminina mais doce, delicada e com ritmo de conversa. Reyna tem um timbre mais encorpado e tranquilo. Ouça as amostras antes de salvar.</p>
+            <p class="azm-note">JET é a voz feminina brasileira padrão da Azul, com timbre grave, baixo e aveludado. Ela mantém a mesma direção vocal nas falas prontas, nos guias e nas respostas geradas.</p>
             <div class="azm-grid">
-              {% for name in ['reyna', 'jett'] %}<div class="azm-field"><strong>{{ voice_profiles[name].label }}</strong>
+              {% for name in ['jet', 'bossa', 'reyna', 'jett'] %}<div class="azm-field"><strong>{{ voice_profiles[name].label }}</strong>
                 {% if voice_previews[name] and cfg.sound_enabled %}<audio controls preload="none" src="{{ voice_previews[name][1] }}" aria-label="Amostra da voz {{ name|capitalize }}"></audio>
                 {% else %}<small>{{ 'Ative o som da Azul para ouvir a amostra.' if not cfg.sound_enabled else 'Amostra ainda não disponível.' }}</small>{% endif %}
               </div>{% endfor %}
             </div>
           </div>
-          <p class="azm-note">Jett V2 e Reyna usam o modelo de voz completo, com custo diferente do modelo mini. A escolha vale para respostas, abertura das chamadas e convite do DEV. Os áudios prontos são reutilizados.</p>
+          <p class="azm-note">A escolha vale para chat, portal, guias práticos, chamadas e resumo do DEV. Falas prontas e áudios em cache são reutilizados; respostas variáveis são geradas ao ouvir. JET e Bossa são cobradas pela duração da geração, conforme as tarifas cadastradas.</p>
           <div class="azm-card azm-grid">{{ model('internal_model','Respostas do sistema interno',text_models) }}{{ model('prospecting_search_model','Pesquisa de parceiros IJA Fly',text_models) }}{{ model('prospecting_model','Análise dos parceiros IJA Fly',text_models) }}{{ model('public_model','Saúde e atendimento público',text_models) }}{{ model('voice_model','Geração de voz (perfil Original)',voice_models) }}{{ model('transcribe_model','Transcrição do microfone',transcribe_models) }}{{ model('voice_name','Voz original (usada no perfil Original)',voices) }}</div>
           <div class="azm-card azm-grid">{{ number('max_output_prospecting','Máximo de tokens por etapa da prospecção',2000,12000) }}{{ number('max_output_internal','Máximo de tokens por resposta interna',256,8000) }}{{ number('max_output_public','Máximo de tokens por resposta pública',256,8000) }}{{ number('max_message_chars','Máximo de caracteres por pergunta',100,1500) }}</div>
         </section>

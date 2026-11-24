@@ -192,26 +192,46 @@ def reply(payload, user, history, current_key):
         context['capacidades'] = [item for item in context.get('capacidades', []) if item.get('modulo') == module_title]
         faq, _ = help_material('sistema', context)
         evidence = dict(function=function, controls=controls, action='question' if question else 'plan', context=context)
+        output_limit = settings.get('max_output_internal')
+        step_limit = min(8, len(controls), max(1, output_limit // 240))
+        body_limit = 160 if output_limit < 600 else 300
+        answer_limit = (600 if question else 160) if output_limit < 600 else (1200 if question else 300)
+        compact = (f'\nLIMITE DESTA RESPOSTA: no máximo {step_limit} etapas distintas; '
+                   f'títulos de até 90 caracteres, corpos de até {body_limit} caracteres '
+                   f'e answer de até {answer_limit} caracteres. Priorize os controles essenciais '
+                   'na ordem de preenchimento. Cada control deve aparecer uma única vez.')
         schema = dict(type='object', additionalProperties=False, required=['answer', 'steps'], properties={
-            'answer': {'type': 'string'}, 'steps': {'type': 'array', 'items': {
+            'answer': {'type': 'string', 'minLength': 1, 'maxLength': answer_limit},
+            'steps': {'type': 'array', 'minItems': 0 if question else 1, 'maxItems': step_limit, 'items': {
                 'type': 'object', 'additionalProperties': False, 'required': ['control', 'title', 'body'],
                 'properties': {'control': {'type': 'string', 'enum': [item['id'] for item in controls]},
-                               'title': {'type': 'string'}, 'body': {'type': 'string'}}}}})
+                               'title': {'type': 'string', 'minLength': 1, 'maxLength': 90},
+                               'body': {'type': 'string', 'minLength': 1, 'maxLength': body_limit}}}}})
+        model = settings.get('internal_model')
+        # This is bounded screen guidance, without tools or record queries. Leave
+        # room for the JSON itself instead of spending the output cap on reasoning.
+        reasoning = {'effort': 'low' if model == 'gpt-6.1-sol' else 'none'}
         with OpenAI(api_key=current_app.config['OPENAI_API_KEY'], timeout=30, max_retries=0) as client:
-            result = metering.respond(client, model=settings.get('internal_model'),
-                instructions=INSTRUCTIONS + settings.context() + '\nEVIDÊNCIAS:\n' + json.dumps(evidence, ensure_ascii=False)
+            result = metering.respond(client, model=model, reasoning=reasoning,
+                instructions=INSTRUCTIONS + compact + settings.context() + '\nEVIDÊNCIAS:\n' + json.dumps(evidence, ensure_ascii=False)
                     + '\nMANUAL GERAL (não concede permissões):\n' + json.dumps(faq, ensure_ascii=False),
                 input=history[-6:] + [{'role': 'user', 'content': payload['message']}],
                 text={'format': {'type': 'json_schema', 'name': 'azul_practical_tutorial', 'strict': True, 'schema': schema}},
-                store=False, max_output_tokens=settings.get('max_output_internal'))
+                store=False, max_output_tokens=output_limit)
         if result.status != 'completed':
-            raise ValueError('A Azul não concluiu o tutorial. Tente novamente.')
+            reason = getattr(getattr(result, 'incomplete_details', None), 'reason', result.status)
+            if reason not in {'max_output_tokens', 'content_filter', 'incomplete', 'failed', 'cancelled'}:
+                reason = 'unknown'
+            current_app.logger.warning('AZUL: tutorial incompleto; modelo=%s motivo=%s limite=%s', model, reason, output_limit)
+            return response('A Azul não concluiu as etapas dentro do limite disponível. Tente novamente.',
+                            503, code='tutorial_incomplete')
         plan = validate_plan(result.output_text, controls, question)
         for step in plan['steps']:
             step['speech'] = voice.offer(step['title'] + '. ' + step['body'], user)
         return response(plan['answer'], mode='ia', tutorial=selected, steps=plan['steps'])
-    except (ValueError, TypeError):
-        return response('A Azul não conseguiu montar as etapas desta vez. Tente novamente.', 503)
+    except (ValueError, TypeError) as exc:
+        current_app.logger.warning('AZUL: plano de tutorial inválido (%s)', type(exc).__name__)
+        return response('A Azul não conseguiu montar as etapas desta vez. Tente novamente.', 503, code='tutorial_invalid_plan')
     except (OpenAIError, sqlite3.Error):
         current_app.logger.warning('AZUL: tutorial por IA indisponível')
         return response('Não foi possível consultar a Azul agora. Tente novamente.', 503)

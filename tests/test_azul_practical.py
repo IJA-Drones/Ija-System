@@ -33,10 +33,43 @@ def test_tutorial_uses_real_ai_without_business_tools_and_links_only_visible_con
         assert 'speech' in result.json['steps'][0]
         args = create.call_args.kwargs
         assert args['store'] is False
+        assert args['reasoning'] == {'effort':'none'}
         assert 'tools' not in args
         assert args['text']['format']['schema']['properties']['steps']['items']['properties']['control']['enum'] == ['c0']
         assert 'Tipo de visita' in args['instructions']
         assert result.headers['Cache-Control'] == 'private, no-store'
+
+
+@pytest.mark.parametrize('model,effort', [('gpt-6-luna','none'),('gpt-6.1-terra','none'),('gpt-6.1-sol','low')])
+def test_tutorial_leaves_room_for_json_without_raising_the_saved_output_cap(env, context, model, effort):
+    app, client, _ = env
+    app.config['OPENAI_CHAT_MODEL'] = model
+    with patch.object(practical,'catalog',return_value=[dict(functions=[FUNCTION])]), \
+         patch.object(azul,'help_context',return_value=context), patch.object(practical,'OpenAI') as sdk:
+        create=sdk.return_value.__enter__.return_value.responses.create
+        create.return_value=SimpleNamespace(status='completed',output_text=json.dumps(PLAN))
+        assert client.post('/api/azul/ajuda',json=payload()).status_code == 200
+        args=create.call_args.kwargs
+        assert args['reasoning']=={'effort':effort}
+        assert args['max_output_tokens']==1800
+        schema=args['text']['format']['schema']
+        assert schema['properties']['steps']['maxItems']==1
+        assert schema['properties']['steps']['items']['properties']['body']['maxLength']==300
+
+
+@pytest.mark.parametrize('reason', ['max_output_tokens','PRIVATE-SENTINEL'])
+def test_incomplete_tutorial_never_exposes_partial_steps_or_private_provider_text(env, context, caplog, reason):
+    _, client, _ = env
+    with patch.object(practical,'catalog',return_value=[dict(functions=[FUNCTION])]), \
+         patch.object(azul,'help_context',return_value=context), patch.object(practical,'OpenAI') as sdk:
+        sdk.return_value.__enter__.return_value.responses.create.return_value=SimpleNamespace(
+            status='incomplete',incomplete_details=SimpleNamespace(reason=reason),
+            output_text='PRIVATE-SENTINEL partial JSON')
+        result=client.post('/api/azul/ajuda',json=payload())
+        assert result.status_code==503 and result.json['code']=='tutorial_incomplete'
+        assert 'steps' not in result.json
+        assert 'PRIVATE-SENTINEL' not in result.get_data(as_text=True)+caplog.text
+        assert ('max_output_tokens' if reason=='max_output_tokens' else 'unknown') in caplog.text
 
 
 @pytest.mark.parametrize('change,status', [({'tutorial':'pilot-secret'},403), ({'page':'/agro/admin'},400),

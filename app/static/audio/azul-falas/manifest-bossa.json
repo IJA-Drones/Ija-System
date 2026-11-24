@@ -1,0 +1,87 @@
+{
+  "style": "azul-ptbr-bossa-v1",
+  "voice": "bossa",
+  "model": "gpt-live-1.1",
+  "clips": {
+    "55e15fc3f61f92767af0bed8a5a1fb308e8ce62f08d0acdb48fa9291295fcb49": {
+      "name": "amostra-voz",
+      "text": "Bom dia! Sou a Azul. Gostaria de ouvir suas pendências de hoje? Vou resumir os erros das últimas vinte e quatro horas e mostrar por onde começar.",
+      "audio_sha256": "94078695d1e1e48de3d177d2abe4114260d2c5fdcd5e741ee25053741dc65ddc"
+    },
+    "2eb0e0a2ad758801b16b2fff9342d09c693763b3abcebbd17b47fec8b37c41eb": {
+      "name": "abertura-chamada",
+      "text": "Olá! Sou a AZUL. Como posso ajudar você?",
+      "audio_sha256": "909ffbb911607c4235c34275432b3659f1e7139f86622cdbd2532295f836e4b8"
+    },
+    "3283072e7e1f3aae1ac800c731b65c10f0c486de77d121f9540c5bdbba4a8199": {
+      "name": "apresentacao",
+      "text": "Sou a AZUL, a inteligência artificial da Oceano Azul. Posso ajudar com o sistema, saúde, dengue e dados epidemiológicos.",
+      "audio_sha256": "2bfa400520d35d4fdd80e63e0bb68436de79f3d58e2f2456d17d07acc1c4a532"
+    },
+    "b5d747350cfe42de543d566b29b3674eb59d6062efe7209904fa6044926328d9": {
+      "name": "cumprimento",
+      "text": "Olá! Sou a AZUL. Como posso ajudar com o sistema ou com saúde?",
+      "audio_sha256": "d30561752dcc716e59d528641f0de9248f2b70dea38fa47ee268c7571b59d8a3"
+    },
+    "05b17ac8f27666f540a6ebb6df50ed8f57aeabbedec579b70e416c55df2a37cd": {
+      "name": "agradecimento",
+      "text": "Por nada! Conte com a AZUL para dúvidas sobre o sistema e saúde.",
+      "audio_sha256": "ac82de08480feffad9924b3b1673b0a3a952c096aa1f410cc751ac9ef155ce3b"
+    },
+    "e87ab71271055a28f90a4459f713b30f287d7d6a5dbde3fe802d35388ce21f40": {
+      "name": "boas-vindas-portal",
+      "text": "Olá! Sou a AZUL. Posso ajudar com saúde, prevenção, vigilância e uso do Portal do Cidadão, além dos contatos da Prefeitura e do canal institucional da Oceano Azul. Escolha uma dúvida abaixo ou escreva sua pergunta. Você também pode registrar um relato por aqui.",
+      "audio_sha256": "3cf325afb6bd9439515046e35e140dd77ff3b93b326ef47d8e7b54892cc004ee"
+    },
+    "a39fbffa3b5b525b749bb8ae128ecc2d10c7ce75551f8f4571ec03973f02f8eb": {
+      "name": "convite-dev",
+      "text": "Gostaria de ouvir suas pendências de hoje?",
+      "audio_sha256": "aa1e7ad49c374cc5d35f3b3ff4d6bfe17ce398e3cb3d56bbf397e4c9567888f6"
+    },
+    "3738de8ff153a254ce4c97186504627ddc912c8b8a2430c6eb9fe4937eec3d7e": {
+      "name": "escopo-chamada",
+      "text": "Posso ajudar com o sistema, saúde, dengue e dados epidemiológicos. Sobre qual desses assuntos você quer conversar?",
+      "audio_sha256": "973335700858ae2c818f6e61fa92828b5d0b8fb5d90742f41d7af6844679152d"
+    },
+    "b5b1aac60c29b0fb5103fedfb6d9fcfe4208c56007d4dda839caeeb560ec867c": {
+      "name": "pergunta-portal-1",
+      "text": "Abra Registrar relato. No Portal do Cidadão, o formulário guia você por cinco etapas: ocorrência, endereço, identificação, detalhes e revisão. Depois de conferir os dados e o consentimento, clique em Confirmar e enviar. Guarde o protocolo exibido após a confirmação.",
+      "audio_sha256": "1eac74d93d43af482cf3f13c295a55e25ead64d23c946a0d091977ccb65abd6b"
+    },
+    "679d76a43a6960a0bfe216879607b8990f11242133f90ad22bcf45528f9e0767": {
+      "name": "pergunta-portal-2",
+      "text": "Sim! Na etapa Detalhes do relato, você pode anexar até cinco fotos ou vídeos. Os anexos são opcionais e ajudam a equipe a entender o problema. Envie os arquivos pelo formulário de relato, não pela conversa.",
+      "audio_sha256": "27c9093182d517d6c119c79532bd4ebc42e2d46dbbc107164e3182f8c8a9b8ed"
+    },
+    "fa59ea3f875627b4f8ae12f1af819585c18e5dbeb62ca23186666d105a386f9c": {
+      "name": "pergunta-portal-3",
+      "text": "Informe o tipo de ocorrência, o foco, logradouro, número, bairro e cidade, além de nome completo, CPF e telefone com DDD. Para Aedes, selecione também o tipo de local. RG e CEP são opcionais. Preencha seus dados pessoais somente nos campos do formulário e confirme o consentimento antes de enviar.",
+      "audio_sha256": "9772005ae709989a26842e9e1d1b44d1cf8d27be490dcdf0ece00f3a881485e1"
+    },
+    "1aa16c9d28683a8b5038b03a17b660e620c21bbd9aa8339b53cb48e42a9b00e6": {
+      "name": "pergunta-portal-4",
+      "text": "Após a confirmação, seu relato recebe um protocolo. A COVISA analisa as informações, encaminha à coordenadoria e esta define a UVIS responsável. A unidade avalia o atendimento. O envio não garante visita imediata nem prazo de execução. Ainda não há consulta pública do andamento pelo chatbot.",
+      "audio_sha256": "6bca70b96974bc6f42ebcfde3b5ab7f942f4f479aa990508f929383d90280cc3"
+    },
+    "6f012bef683026b80908effa9117915bdd7cfa0de08160ea77d90c5450b35ef9": {
+      "name": "guia-start",
+      "text": "Comece pelos recursos do seu acesso. O menu do sistema reúne as áreas disponíveis para você. Escolha um dos atalhos abaixo ou use “Meu acesso” para conhecer seus recursos.",
+      "audio_sha256": "9e4681509d5524802e1c7414407abf53be491265c44f1fc512dd21155d054557"
+    },
+    "36247a42baa95873051e82dbb818b46cc44ec92cc6303b003224f83d30c05dbd": {
+      "name": "guia-screen",
+      "text": "Abra uma área e peça orientação. Entre na tela em que deseja trabalhar e escolha “Ajuda nesta tela”. A Azul usa o guia do sistema e os recursos permitidos para orientar você. Se um recurso não aparecer no seu acesso, procure o administrador.",
+      "audio_sha256": "99e7cbdfd356f7d3a66e7e8e937e3453d8fa06b80fbf542644158075d3a0ecec"
+    },
+    "27d085357e95a2153649270d564a7eec71e5f9bff67d5d737092aada8aac0416": {
+      "name": "guia-review",
+      "text": "Confira antes de confirmar. Revise os dados e os campos obrigatórios antes de salvar ou enviar um formulário. Este tutorial apenas orienta: quem confirma uma ação na tela é você.",
+      "audio_sha256": "cf795d4cfcd051b7c6b862d497cc23119224c1afe183de45c55a443c232cd534"
+    },
+    "a0007ef91b8552f0f82da22a44b056e1fd26b9dfa48d9e3fb0fda9f74c08c78f": {
+      "name": "guia-continue",
+      "text": "Continue com a Azul. Escreva sua dúvida em linguagem simples. Nas novas respostas, “Ouvir resposta” reproduz a voz gerada por inteligência artificial, quando disponível. Você pode parar o áudio a qualquer momento e reabrir este guia quando precisar.",
+      "audio_sha256": "fc24a5a3f3f2806f116f25f25d04b28f7e010fc574acc431a05ee8409a6e227d"
+    }
+  }
+}

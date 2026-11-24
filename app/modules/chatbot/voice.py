@@ -59,6 +59,9 @@ def synthesize(text, profile=None):
     from websockets.sync.client import connect
 
     chosen = voice_profiles.spec(profile)
+    if chosen['model'] == 'gpt-live-1.1':
+        from app.modules.chatbot import live_voice
+        return live_voice.synthesize(text, chosen, max_audio=MAX_AUDIO)
     model = chosen['model']
     voice = chosen['voice']
     instructions = (

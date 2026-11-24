@@ -3,7 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from flask import current_app, url_for
+from flask import current_app, has_request_context, url_for
 from app.modules.chatbot import settings, voice_profiles
 
 STYLE = 'marin-suave-ptbr-v1'
@@ -48,8 +48,15 @@ def find(text, profile=None):
         path = DIRECTORY / (key + '.wav')
         if entry.get('text') != text or not path.is_file() or path.stat().st_size <= 44:
             return None
-        return path, url_for('static', filename='audio/azul-falas/' + path.name,
-                             v=entry['audio_sha256'][:12])
+        values = {'filename': 'audio/azul-falas/' + path.name, 'v': entry['audio_sha256'][:12]}
+        if has_request_context():
+            url = url_for('static', **values)
+        else:
+            # Startup/CLI policy reads still need relative, content-versioned URLs.
+            adapter = current_app.url_map.bind('localhost',
+                script_name=current_app.config.get('APPLICATION_ROOT') or '/')
+            url = adapter.build('static', values)
+        return path, url
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
 

@@ -4,6 +4,7 @@
     const card = document.getElementById('devBriefing');
     const root = document.querySelector('[data-azul-help]');
     if (!card || !root) return;
+    const invitationStyle = root.dataset.voiceStyle;
     const listen = document.getElementById('devBriefingListen');
     const read = document.getElementById('devBriefingRead');
     const status = document.getElementById('devBriefingStatus');
@@ -25,19 +26,12 @@
     async function invite() {
       if (invited || document.hidden || card.hidden || card.dataset.invite !== '1') return;
       invited = true;
-      if (root.dataset.voiceEngine === 'browser-pt-BR') {
-        const version = generation;
-        if (!root.azulAudioPolicy || !await root.azulAudioPolicy.check('sound')) return;
-        if (version !== generation || card.hidden || document.hidden) return;
-        try { await window.AzulNativeVoice?.speak(root,'Gostaria de ouvir suas pendências de hoje?',{emitEvents:false}); }
-        catch (_) { setStatus('Escolha Ouvir pendências para iniciar a voz brasileira da Jett.'); }
-        return;
-      }
       // A generic prerecorded phrase has no user data and never invokes synthesis on load.
       if (!/^\/static\/audio\/azul-falas\/[a-f0-9]{64}\.wav(?:\?v=[a-f0-9]{12})?$/.test(card.dataset.clip || '') || typeof Audio !== 'function') return;
       const version = generation;
       if (!root.azulAudioPolicy || !await root.azulAudioPolicy.check('sound')) return;
       if (version !== generation || card.hidden || document.hidden) return;
+      if (invitationStyle && invitationStyle !== root.dataset.voiceStyle) return;
       invitation = new Audio(card.dataset.clip);
       invitation.onplaying = () => root.azulCompanion?.speaking(true);
       invitation.onended = stopInvitation;

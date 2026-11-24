@@ -15,10 +15,12 @@ from app.modules.chatbot import control_store
 TEXT_MODELS = ('gpt-6-luna', 'gpt-6.1-terra', 'gpt-6.1-sol')
 VOICE_MODELS = ('gpt-realtime-2.1-mini', 'gpt-realtime-2.1')
 TRANSCRIBE_MODELS = ('gpt-transcribe', 'gpt-4o-mini-transcribe')
-VOICE_PROFILES = ('reyna', 'jett', 'original')
+VOICE_PROFILES = ('jet', 'bossa', 'reyna', 'jett', 'original')
 VOICES = ('marin', 'cedar', 'coral', 'shimmer', 'sage')
 # USD / 1M tokens, except minute. Standard rates, reviewed 2026-11-11.
 RATES = {
+    # GPT-Live WebSocket sessions: active duration, USD/minute (2026-11-24).
+    'gpt-live-1.1':dict(minute='0.05'),
     'gpt-6-luna':dict(input='0.10', cached_input='0.01', output='0.50'),
     'gpt-6.1-terra':dict(input='1.00', cached_input='0.05', output='5.00'),
     'gpt-6.1-sol':dict(input='2.00', cached_input='0.10', output='10.00'),
@@ -58,7 +60,7 @@ def defaults():
         voice_model=cfg.get('AZUL_VOICE_MODEL','gpt-realtime-2.1-mini'),
         transcribe_model=cfg.get('AZUL_TRANSCRIBE_MODEL','gpt-transcribe'),
         voice_name=cfg.get('AZUL_VOICE','marin'),
-        voice_profile=cfg.get('AZUL_VOICE_PROFILE', 'jett'),
+        voice_profile=cfg.get('AZUL_VOICE_PROFILE', 'jet'),
         max_output_internal=1800, max_output_public=2500, max_message_chars=1500,
         session_minutes=5, session_turns=10, speech_seconds=30, silence_seconds=8,
         internal_daily_text=cfg.get('AZUL_HELP_DAILY_LIMIT',500),
@@ -79,6 +81,8 @@ def current():
     saved = control_store.current().load()
     result = defaults()
     result.update(saved['data'])
+    # Preserve saved prices while making newly supported models available.
+    result['rates'] = {**deepcopy(RATES), **saved['data'].get('rates', {})}
     result.update(revision=saved['revision'], updated_at=saved['updated_at'], updated_by=saved['updated_by'])
     if has_request_context():
         g.azul_settings = result
