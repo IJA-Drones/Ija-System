@@ -15,7 +15,7 @@ from tests.test_azul_voice import wav
 @pytest.fixture
 def env(tmp_path):
     app = Flask(__name__, instance_path=str(tmp_path))
-    app.config.update(TESTING=True, VIGILANCIA_UI_ENABLED=True, SECRET_KEY='public-tests', OPENAI_API_KEY='test-key')
+    app.config.update(TESTING=True, AZUL_VOICE_PROFILE='original', VIGILANCIA_UI_ENABLED=True, SECRET_KEY='public-tests', OPENAI_API_KEY='test-key')
     login = LoginManager(app)
     login.user_loader(lambda uid: None)
     bp = Blueprint('main', __name__)

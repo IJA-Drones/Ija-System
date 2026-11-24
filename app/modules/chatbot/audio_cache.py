@@ -8,7 +8,7 @@ import time
 
 from flask import current_app
 from app.modules.chatbot.recordings import STYLE
-from app.modules.chatbot import settings
+from app.modules.chatbot import settings, voice_profiles
 
 TTL = 600
 MAX_BYTES = 16 * 1024 * 1024
@@ -58,7 +58,7 @@ class AudioCache:
 
 def cache_key(text, scope):
     payload = json.dumps([scope, settings.get('voice_name'), settings.get('voice_model'),
-                          STYLE, text], ensure_ascii=False).encode()
+                          STYLE, voice_profiles.spec(), text], ensure_ascii=False).encode()
     secret = current_app.secret_key
     if not isinstance(secret, bytes):
         secret = str(secret).encode()

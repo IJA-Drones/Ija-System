@@ -15,6 +15,7 @@ from app.modules.chatbot import control_store
 TEXT_MODELS = ('gpt-6-luna', 'gpt-6.1-terra', 'gpt-6.1-sol')
 VOICE_MODELS = ('gpt-realtime-2.1-mini', 'gpt-realtime-2.1')
 TRANSCRIBE_MODELS = ('gpt-transcribe', 'gpt-4o-mini-transcribe')
+VOICE_PROFILES = ('reyna', 'jett', 'original')
 VOICES = ('marin', 'cedar', 'coral', 'shimmer', 'sage')
 # USD / 1M tokens, except minute. Standard rates, reviewed 2026-11-11.
 RATES = {
@@ -57,6 +58,7 @@ def defaults():
         voice_model=cfg.get('AZUL_VOICE_MODEL','gpt-realtime-2.1-mini'),
         transcribe_model=cfg.get('AZUL_TRANSCRIBE_MODEL','gpt-transcribe'),
         voice_name=cfg.get('AZUL_VOICE','marin'),
+        voice_profile=cfg.get('AZUL_VOICE_PROFILE', 'jett'),
         max_output_internal=1800, max_output_public=2500, max_message_chars=1500,
         session_minutes=5, session_turns=10, speech_seconds=30, silence_seconds=8,
         internal_daily_text=cfg.get('AZUL_HELP_DAILY_LIMIT',500),
@@ -95,7 +97,11 @@ def policy(public=False):
     if public:
         sound = sound and current_app.config.get('PORTAL_AZUL_VOICE_ENABLED',True)
     microphone = cfg['microphone_enabled'] and current_app.config.get('AZUL_CONVERSATION_ENABLED',True) and has_key and cfg['enabled']
-    return dict(revision=cfg['revision'], sound_enabled=bool(sound), microphone_enabled=bool(microphone),
+    from app.modules.chatbot import recordings, voice_profiles
+    welcome = recordings.find(voice_profiles.WELCOME)
+    scope = recordings.find(voice_profiles.SCOPE)
+    return dict(voice_engine='server', voice_profile=cfg['voice_profile'], voice_style=voice_profiles.spec()['style'], call_welcome=welcome[1] if welcome else '', call_scope=scope[1] if scope else '',
+                revision=cfg['revision'], sound_enabled=bool(sound), microphone_enabled=bool(microphone),
                 conversation_enabled=bool(sound and microphone and cfg['conversation_enabled']),
                 session_minutes=cfg['session_minutes'], session_turns=cfg['session_turns'],
                 speech_seconds=cfg['speech_seconds'], silence_seconds=cfg['silence_seconds'],
@@ -142,6 +148,10 @@ def validate(payload):
             if not isinstance(value,str) or len(value)>6000 or '\x00' in value:
                 raise ValidationError('O contexto aceita até 6.000 caracteres.')
             result[key] = value.strip()
+        elif key == 'voice_profile':
+            if value not in VOICE_PROFILES:
+                raise ValidationError('Escolha Reyna, Jett ou Original para a voz.')
+            result[key] = value
         elif key in ('internal_model','public_model','prospecting_model','prospecting_search_model','voice_model','transcribe_model','voice_name'):
             choices = TEXT_MODELS if key.endswith('_model') and key.startswith(('internal','public','prospecting')) else (
                 VOICE_MODELS if key=='voice_model' else TRANSCRIBE_MODELS if key=='transcribe_model' else VOICES)

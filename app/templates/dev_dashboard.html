@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dev_dashboard.css', v='20261124-console') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dev_dashboard.css', v='20261124-briefing') }}">
 {% endblock %}
 
 {% block content %}
@@ -12,9 +12,9 @@
       <div>
         <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Oceano Azul · Console DEV</span>
         <h1 class="dev-title">Visão geral do sistema</h1>
-        <p class="dev-welcome">{{ dev_profile.greeting }}, {{ dev_profile.name }}. Sua visão técnica da operação.</p>
+        <p class="dev-welcome">{{ dev_profile.greeting }}, {{ dev_profile.name }}. Sua visão do desenvolvimento.</p>
         <p class="dev-subtitle">
-          Monitore a operação, identifique falhas e investigue com a Azul.
+          Monitore o desenvolvimento, identifique falhas e investigue com a Azul.
         </p>
         <div class="dev-hero-actions">
           <button class="btn btn-light btn-sm dev-refresh-control" type="button" id="devRefreshNow" aria-label="Atualizar painel" title="Atualizar painel">
@@ -26,6 +26,9 @@
           <button class="btn btn-outline-light btn-sm" type="button" id="devAnalyzeHealth">
             <i class="bi bi-stars" aria-hidden="true"></i> Analisar saúde com a Azul
           </button>
+          {% if dev_briefing_enabled|default(false) %}
+          <button class="btn btn-outline-light btn-sm" type="button" id="devBriefingOpen"><i class="bi bi-volume-up" aria-hidden="true"></i> Resumo do dia</button>
+          {% endif %}
           <button class="btn btn-outline-light btn-sm" type="button" id="devCopySnapshot">
             <i class="bi bi-copy me-1"></i> Copiar diagnóstico
           </button>
@@ -53,6 +56,27 @@
     </div>
   </section>
   </div>
+
+  {% if dev_briefing_enabled|default(false) %}
+  <section class="dev-briefing mb-4" id="devBriefing" aria-label="Resumo de desenvolvimento com a Azul"
+      data-url="{{ url_for('main.dev_dashboard_briefing') }}" data-invite="{{ '1' if dev_briefing_invite else '0' }}"
+      data-clip="{{ dev_briefing_clip or '' }}" {% if not dev_briefing_invite %}hidden{% endif %}>
+    <div class="dev-briefing-icon"><i class="bi bi-soundwave" aria-hidden="true"></i></div>
+    <div class="dev-briefing-main">
+      <span class="dev-label">Azul · Seu início de trabalho</span>
+      <h2 class="h5 fw-bold">Gostaria de ouvir suas pendências de hoje?</h2>
+      <p class="small text-muted">Um resumo das falhas e dos novos bugs técnicos ainda abertos nas últimas 24 horas. Você escolhe quando ouvir.</p>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-primary btn-sm" type="button" id="devBriefingListen"><i class="bi bi-play-fill" aria-hidden="true"></i> Ouvir pendências</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="devBriefingRead">Ler resumo</button>
+        <button class="btn btn-link btn-sm" type="button" id="devBriefingDismiss">Agora não</button>
+      </div>
+      <p class="small text-muted mt-2 mb-0" id="devBriefingStatus" role="status">Voz gerada por IA. Nenhum microfone será aberto.</p>
+      <div id="devBriefingResult" class="dev-briefing-result" hidden></div>
+      <div id="devBriefingSpeech" class="mt-2"></div>
+    </div>
+  </section>
+  {% endif %}
 
   <nav class="dev-shortcuts" aria-label="Ferramentas administrativas">
     <span>Acessos rápidos</span>
@@ -476,7 +500,7 @@
 
 {% block scripts %}
 {{ super() }}
-
+<script src="{{ url_for('static', filename='js/dev-briefing.js', v='20261124-jett-v2-restored') }}" defer></script>
 <script>
   (function () {
     const mapsKey = {{ maps_key|tojson }};

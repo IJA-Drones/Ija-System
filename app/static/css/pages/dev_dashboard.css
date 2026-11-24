@@ -137,3 +137,13 @@
   .dev-local-context > summary span { display: block; margin: .4rem 0 0; }
   .dev-error-modal .modal-footer { gap: .5rem; }
 }
+
+.dev-briefing { display: flex; align-items: flex-start; gap: 1rem; border: 1px solid var(--dev-line); border-radius: 14px; padding: 1.4rem; background: var(--dev-soft); }
+.dev-briefing[hidden] { display: none; }
+.dev-briefing-icon { display: grid; place-items: center; flex: 0 0 46px; height: 46px; border-radius: 12px; color: var(--dev-accent); background: var(--dev-surface); font-size: 1.5rem; }
+.dev-briefing-main { min-width: 0; flex: 1; }
+.dev-briefing-result { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--dev-line); font-size: .88rem; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+.dev-briefing-links { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; white-space: normal; }
+.dev-briefing-links a { font-size: .8rem; }
+.dev-briefing .azul-speak { background: var(--dev-surface); color: var(--dev-ink); border-color: var(--dev-line); }
+@media (max-width: 575.98px) { .dev-briefing { padding: 1rem; gap: .7rem; } .dev-briefing-icon { flex-basis: 34px; height: 34px; } }

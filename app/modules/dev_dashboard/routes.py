@@ -2,7 +2,7 @@ from app.modules.gestao_ti.permissions import route_access
 import hmac
 import os
 
-from flask import abort, current_app, jsonify, render_template, request
+from flask import abort, current_app, jsonify, render_template, request, session
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -51,7 +51,29 @@ def register_routes(bp):
     @login_required
     def dev_dashboard():
         require_dev_user()
-        return render_template("dev_dashboard.html", **build_dev_dashboard_context())
+        from app.modules.chatbot import dev_briefing, recordings
+        context = build_dev_dashboard_context()
+        context['dev_briefing_enabled'] = dev_briefing.allowed(current_user)
+        context['dev_briefing_invite'] = bool(session.pop('dev_briefing_pending', False) and context['dev_briefing_enabled'])
+        recorded = recordings.find(dev_briefing.INVITATION) if context['dev_briefing_enabled'] else None
+        context['dev_briefing_clip'] = recorded[1] if recorded else None
+        return render_template("dev_dashboard.html", **context)
+
+    @bp.get("/dev/briefing", endpoint="dev_dashboard_briefing")
+    @login_required
+    def dev_dashboard_briefing():
+        require_dev_user()
+        from app.modules.chatbot import dev_briefing
+        try:
+            payload = dev_briefing.build(current_user)
+        except PermissionError:
+            abort(403)
+        except SQLAlchemyError:
+            db.session.rollback()
+            return jsonify(error="Não foi possível consultar as pendências agora. Tente novamente."), 503
+        response = jsonify(payload)
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
 
     @bp.route("/dev/data", methods=["GET"], endpoint="dev_dashboard_data")
     @login_required

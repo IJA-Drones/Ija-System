@@ -63,7 +63,9 @@ def register_routes(bp):
                 .order_by(control_store.audit.c.created_at.desc()).limit(10)).mappings()]
         for row in history:
             row['fields'] = ', '.join(json.loads(row['fields'])) or 'Sem mudança de valores'
-        return render_template('azul_settings.html',azul_settings=cfg,control_csrf=csrf(),
+        from app.modules.chatbot import recordings, voice_profiles
+        previews = {name: recordings.find(voice_profiles.SAMPLE, profile=name) for name in ('reyna', 'jett')}
+        return render_template('azul_settings.html',voice_profiles=voice_profiles.PROFILES, voice_previews=previews, voice_sample=voice_profiles.SAMPLE,azul_settings=cfg,control_csrf=csrf(),
             text_models=settings.TEXT_MODELS,voice_models=settings.VOICE_MODELS,
             transcribe_models=settings.TRANSCRIBE_MODELS,voices=settings.VOICES,history=history)
 

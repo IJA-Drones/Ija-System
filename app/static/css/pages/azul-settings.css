@@ -78,3 +78,4 @@ body:has(.azul-launcher) .azul-management { padding-bottom: calc(156px + env(saf
   .azm-save { flex-wrap: wrap; }
   .azm-save button { max-width: 100%; white-space: normal; }
 }
+.azul-management .azm-field audio { display:block; width:100%; max-width:100%; margin-top:.65rem; }
