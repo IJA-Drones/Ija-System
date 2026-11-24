@@ -20,6 +20,11 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 financeiro-config-actions">
+      {% if secao in ['fiscal', 'layout'] and financeiro_empresa_atual.slug != 'ija' %}
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug) }}" class="btn btn-primary d-flex align-items-center gap-2">
+        <i class="bi bi-skip-forward"></i> Pular e ir ao financeiro
+      </a>
+      {% endif %}
       <a href="{{ url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.financeiro_empresa', empresa_slug=financeiro_empresa_atual.slug)) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>

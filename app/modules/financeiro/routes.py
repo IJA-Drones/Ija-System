@@ -164,8 +164,8 @@ def register_routes(bp):
                 message = "Não foi possível cadastrar. Tente novamente."
             flash(message, "warning")
             return render_template("financeiro_empresa_cadastrar.html", valores=request.form), 422
-        flash("Empresa cadastrada. Complete as configurações fiscais e a logo.", "success")
-        return redirect(url_for("main.financeiro_empresa_configuracoes", empresa_slug=perfil.empresa_slug, secao="fiscal"))
+        flash("Empresa cadastrada. O cadastro fiscal e a logo são opcionais e podem ser preenchidos depois.", "success")
+        return redirect(url_for("main.financeiro_empresa", empresa_slug=perfil.empresa_slug))
 
     @bp.route("/financeiro/empresas/<empresa_slug>", methods=["GET"], endpoint="financeiro_empresa")
     @login_required

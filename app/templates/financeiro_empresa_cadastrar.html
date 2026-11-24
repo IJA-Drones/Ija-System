@@ -8,7 +8,7 @@
   </div>
   <section class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-4">
-      <p>Cadastre a empresa para configurar seus próprios dados fiscais e sua identidade visual.</p>
+      <p>Informe apenas os dados básicos para criar a empresa. O cadastro fiscal, a aparência e a logo são opcionais e podem ser configurados depois.</p>
       <form method="post" class="row g-3">
         {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
         {% for name, label, limit in [('nome', 'Nome da empresa', 120), ('razao_social', 'Razão social', 180), ('cnpj', 'CNPJ', 18)] %}
@@ -17,7 +17,7 @@
           <input id="cadastro-{{ name }}" class="form-control" name="{{ name }}" maxlength="{{ limit }}" value="{{ valores.get(name, '') }}" required>
         </div>
         {% endfor %}
-        <div class="col-12"><button class="btn btn-primary" type="submit">Cadastrar e configurar</button></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Cadastrar e acessar o financeiro</button></div>
       </form>
     </div>
   </section>

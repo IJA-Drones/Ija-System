@@ -1,7 +1,7 @@
 <section class="card shadow-sm rounded-4 border-0 mb-4">
   <div class="card-body p-4">
     <h3 class="h5">Cadastro fiscal da empresa</h3>
-    <p class="text-muted">Preencha os dados conforme o cadastro da empresa. Você pode salvar o preenchimento parcial e continuar depois.</p>
+    <p class="text-muted">Esta configuração é opcional. Você pode salvar o preenchimento parcial, continuar depois ou ir direto ao financeiro.</p>
     <div class="alert alert-info" role="note">Esta etapa prepara o cadastro. A emissão de notas fiscais ainda não está habilitada.</div>
     {% if empresa.demonstracao %}<div class="alert alert-warning">Atualize o CNPJ fictício em <a href="{{ url_for('main.financeiro_empresa_configuracoes', empresa_slug=empresa.slug, secao='dados') }}">Dados da empresa</a> antes de configurar a futura emissão.</div>{% endif %}
     <form method="post" action="{{ url_for('main.financeiro_empresa_configuracoes_salvar', empresa_slug=empresa.slug) }}">
@@ -41,7 +41,10 @@
         </div>
       </fieldset>
       {% endfor %}
-      <button type="submit" class="btn btn-primary">Salvar cadastro fiscal</button>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary">Salvar cadastro fiscal</button>
+        {% if empresa.slug != 'ija' %}<a class="btn btn-outline-secondary" href="{{ url_for('main.financeiro_empresa', empresa_slug=empresa.slug) }}">Pular por enquanto</a>{% endif %}
+      </div>
     </form>
   </div>
 </section>

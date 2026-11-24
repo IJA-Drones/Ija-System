@@ -776,8 +776,14 @@ class FinanceiroCentralTests(unittest.TestCase):
         response = self.client.post("/financeiro/empresas/cadastrar", data={
             "nome": "Outra empresa", "razao_social": "Outra Ltda", "cnpj": "11.222.333/0001-81"})
         self.assertEqual(response.status_code, 302)
-        other = response.location.split("?")[0]
+        self.assertNotIn("configuracoes", response.location)
+        self.assertNotIn("secao=fiscal", response.location)
+        company = response.location
+        slug = company.rstrip("/").split("/")[-1]
+        other = f"/financeiro/empresas/{slug}/configuracoes"
         self.assertNotEqual(other, path)
+        company_html = self.client.get(company).get_data(as_text=True)
+        self.assertIn("O cadastro fiscal e a logo são opcionais", company_html)
         self.assertIn("Outra empresa", self.client.get("/financeiro").get_data(as_text=True))
         self.client.post(other, data={"secao": "fiscal", "logradouro": "Endereço Outra", "uf": "RJ"})
         self.client.post(path, data={"secao": "fiscal", "uf": "SP"})
@@ -788,7 +794,6 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.assertNotIn('href="/agro/financeiro/categorias"', html)
         html_ija = self.client.get(path + "?secao=fiscal").get_data(as_text=True)
         self.assertIn("Endereço IJA", html_ija)
-        slug = other.split("/")[-2]
         self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/clientes").status_code, 403)
         self.assertEqual(self.client.get(f"/financeiro/empresas/{slug}/comercial").status_code, 403)
         with self.app.app_context():
