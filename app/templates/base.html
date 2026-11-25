@@ -312,9 +312,9 @@
         {% elif is_agro_context %}
           {% set sidebar_dashboard_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
           {% set sidebar_dashboard_active = request.endpoint == sidebar_dashboard_endpoint %}
-        {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and request.endpoint == 'main.central_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+        {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and request.endpoint in ['main.central_ti', 'main.central_ti_usuarios'] and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
           {% set sidebar_dashboard_endpoint = 'main.central_ti' %}
-          {% set sidebar_dashboard_active = request.endpoint == 'main.central_ti' %}
+          {% set sidebar_dashboard_active = true %}
         {% elif is_financeiro_context %}
           {% set sidebar_dashboard_endpoint = 'main.financeiro_central' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.financeiro_central' %}
@@ -512,7 +512,7 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
-          {% if current_user.trabalha_oceano_azul %}
+          {% if (central_ti_ui_guard(['main.piloto_caixa_entrada'], current_user.trabalha_oceano_azul) if central_ti_ui_guard is defined else current_user.trabalha_oceano_azul) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_caixa_entrada' %}active{% endif %}"
@@ -1078,7 +1078,7 @@
               {% endif %}
             </a>
           </li>
-          {% if current_user.trabalha_oceano_azul %}
+          {% if (central_ti_ui_guard(['main.veiculos_alertas_limpeza'], current_user.trabalha_oceano_azul) if central_ti_ui_guard is defined else current_user.trabalha_oceano_azul) %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.veiculos_alertas_limpeza' %}active{% endif %}"
                href="{{ url_for('main.veiculos_alertas_limpeza') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_alertas_limpeza')) if central_ti_url_allowed is defined else true) else 'false' }}">

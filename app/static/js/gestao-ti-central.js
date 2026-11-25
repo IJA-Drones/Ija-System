@@ -369,7 +369,9 @@
           root.setAttribute("aria-busy", "true");
           const response = await fetch(editorData.save_url, {
             method: "POST", credentials: "same-origin",
-            headers: { "Content-Type": "application/json", "X-Central-TI-CSRF": editorData.csrf_token },
+            headers: { "Content-Type": "application/json", "X-Central-TI-CSRF": editorData.csrf_token,
+              "X-CSRFToken": editorData.global_csrf_token || "",
+              "X-Central-TI-Permission-Schema": editorData.permission_schema_version },
             body: JSON.stringify({ profiles: pending.map((profile) => ({
               id: profile.id, version: stored.get(profile.id).version,
               areas: Array.from(drafts.get(profile.id).areas), permissions: Array.from(drafts.get(profile.id).permissions),

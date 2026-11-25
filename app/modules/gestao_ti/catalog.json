@@ -72,10 +72,31 @@
         ],
         [
           "veiculos",
-          "Veículos e turnos",
-          "Frota, KM, abastecimento e limpeza.",
+          "Frota e turnos",
+          "Cadastro da frota, turnos, KM e registros da operação.",
           "bi-truck",
           "consultar criar editar excluir operar corrigir exportar"
+        ],
+        [
+          "rastreamento_veiculos",
+          "Rastreamento de veículos",
+          "Posições, trajetos e reprodução das rotas. O histórico de logs exige acesso próprio.",
+          "bi-geo-alt",
+          "consultar"
+        ],
+        [
+          "limpezas_veiculos",
+          "Limpezas de veículos",
+          "Consulta dos registros de limpeza e seus filtros.",
+          "bi-droplet",
+          "consultar"
+        ],
+        [
+          "alertas_limpeza_veiculos",
+          "Alertas de limpeza",
+          "Acompanhamento dos prazos de limpeza e das ciências registradas.",
+          "bi-exclamation-triangle",
+          "consultar"
         ],
         [
           "checklists",

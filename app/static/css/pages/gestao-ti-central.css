@@ -12,6 +12,22 @@ body:has(#ti-central) .app-content { height: auto; margin-top: 0 !important; }
   font-size: 0.82rem;
 }
 .ti-central [hidden] { display: none !important; }
+.ti-mode-nav { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.3rem; }
+.ti-user-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.ti-user-login { display: block; color: var(--color-text-muted); font-size: .7rem; overflow-wrap: anywhere; margin-top: .25rem; }
+.ti-user-pagination { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .2rem; font-size: .7rem; }
+.ti-user-placeholder { padding: 2rem; color: var(--color-text-muted); }
+.ti-user-scope { color: var(--color-text-muted); overflow-wrap: anywhere; }
+.ti-user-baseline { padding: 1rem; margin-bottom: 1rem; display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.ti-user-baseline > div { flex: 1 1 260px; }
+.ti-user-baseline label { display: block; margin-bottom: .35rem; }
+.ti-user-baseline p { flex-basis: 100%; margin: 0; color: var(--color-text-muted); font-size: .75rem; }
+.ti-user-review { width: min(620px, calc(100% - 2rem)); max-height: 85vh; padding: 1.5rem; color: var(--color-text-main); }
+.ti-user-review::backdrop { background: rgba(19, 47, 67, .55); }
+.ti-user-review h2 { font-size: 1.25rem; }
+.ti-user-review ul { max-height: 40vh; overflow: auto; padding-left: 1.25rem; }
+.ti-user-review li { margin-bottom: .35rem; }
+.ti-user-review-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
 .ti-central button, .ti-central input { font: inherit; }
 .ti-central button:focus-visible, .ti-central summary:focus-visible, .ti-central input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
 .ti-heading { margin-bottom: 1.6rem; }

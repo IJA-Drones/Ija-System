@@ -103,6 +103,8 @@ class Config:
     CENTRAL_TI_ENABLED = os.getenv("CENTRAL_TI_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
 
     CENTRAL_TI_ENFORCE_PERMISSIONS = os.getenv("CENTRAL_TI_ENFORCE_PERMISSIONS", "0").strip().lower() in {"1", "true", "yes", "on"}
+    # Enable only after installing the individual permissions migration.
+    CENTRAL_TI_USER_PERMISSIONS_ENABLED = os.getenv("CENTRAL_TI_USER_PERMISSIONS_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
 
     # Nova variável (sem restrição de site) apenas para o Geocode do Python
     Maps_KEY_BACK = os.getenv("GOOGLE_MAPS_KEY_BACK")

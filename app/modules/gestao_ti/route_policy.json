@@ -64,16 +64,16 @@
     "GET": "sistema.tecnico.consultar"
   },
   "main.veiculos_rastreamento": {
-    "GET": "prefeitura.veiculos.consultar"
+    "GET": "prefeitura.rastreamento_veiculos.consultar"
   },
   "main.veiculos_rastreamento_dados": {
-    "GET": "prefeitura.veiculos.consultar"
+    "GET": "prefeitura.rastreamento_veiculos.consultar"
   },
   "main.veiculos_rastreamento_historico": {
-    "POST": "prefeitura.veiculos.consultar"
+    "POST": "prefeitura.rastreamento_veiculos.consultar"
   },
   "main.veiculos_menu": {
-    "GET": "prefeitura.veiculos.consultar"
+    "GET": ["prefeitura.veiculos.consultar", "prefeitura.rastreamento_veiculos.consultar", "prefeitura.limpezas_veiculos.consultar", "prefeitura.alertas_limpeza_veiculos.consultar", "prefeitura.logs_veiculos.consultar", "prefeitura.checklists.consultar"]
   },
   "main.listar_veiculos": {
     "GET": "prefeitura.veiculos.consultar"
@@ -85,10 +85,10 @@
     "GET": "prefeitura.logs_veiculos.consultar"
   },
   "main.veiculos_limpezas": {
-    "GET": "prefeitura.veiculos.consultar"
+    "GET": "prefeitura.limpezas_veiculos.consultar"
   },
   "main.veiculos_alertas_limpeza": {
-    "GET": "prefeitura.veiculos.consultar"
+    "GET": "prefeitura.alertas_limpeza_veiculos.consultar"
   },
   "main.veiculo_logs_detalhe": {
     "GET": "prefeitura.logs_veiculos.consultar"
@@ -132,7 +132,7 @@
     "GET": "prefeitura.veiculos.consultar"
   },
   "main.piloto_caixa_entrada": {
-    "GET": "prefeitura.veiculos.consultar"
+    "GET": "prefeitura.alertas_limpeza_veiculos.consultar"
   },
   "main.piloto_confirmar_alerta_limpeza": {
     "POST": "prefeitura.veiculos.operar"

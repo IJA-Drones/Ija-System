@@ -10,7 +10,10 @@ SCREENS = {
  'prefeitura.clientes': [('clientes_menu','Visão geral'),('listar_clientes','Clientes'),('admin_uvis_listar','UVIS'),('cadastrar_clientes','Cadastrar cliente'),('admin_uvis_novo','Cadastrar UVIS')],
  'prefeitura.equipes': [('listar_equipes','Equipes OA'),('listar_pilotos','Pilotos'),('admin_listar_equipes_uvis','Equipes UVIS'),('cadastrar_equipes','Cadastrar equipe'),('cadastrar_pilotos','Cadastrar piloto')],
  'prefeitura.equipamentos': [('listar_equipamentos','Visão geral'),('listar_drones','Drones'),('listar_baterias','Baterias'),('equipamentos_manutencao','Em manutenção'),('equipamentos_manutencoes_historico','Histórico de manutenção'),('cadastrar_drone','Cadastrar drone'),('cadastrar_bateria','Cadastrar bateria'),('importar_planilha_drones','Importar drones')],
- 'prefeitura.veiculos': [('veiculos_menu','Visão geral'),('listar_veiculos','Frota'),('veiculos_rastreamento','Rastreamento'),('veiculos_limpezas','Limpezas'),('veiculos_alertas_limpeza','Alertas de limpeza'),('cadastrar_veiculo','Cadastrar veículo')],
+ 'prefeitura.veiculos': [('veiculos_menu','Visão geral'),('listar_veiculos','Frota'),('cadastrar_veiculo','Cadastrar veículo')],
+ 'prefeitura.rastreamento_veiculos': [('veiculos_rastreamento','Rastreamento')],
+ 'prefeitura.limpezas_veiculos': [('veiculos_limpezas','Limpezas')],
+ 'prefeitura.alertas_limpeza_veiculos': [('veiculos_alertas_limpeza','Alertas de limpeza')],
  'prefeitura.logs_veiculos': [('veiculos_logs','Histórico de veículos')],
  'prefeitura.checklists': [('admin_checklists_semanais','Checklists semanais')],
  'prefeitura.relatorios': [('relatorios','Relatórios')],
@@ -60,7 +63,8 @@ def _screens_for(user, key):
         'agente_endemias': {'prefeitura.vigilancia': [('vigilancia_agente', 'Meus levantamentos')]},
         'piloto': {
             'prefeitura.os': [('piloto_os', 'Ordens de serviço'), ('piloto_os_historico', 'Histórico de OS')],
-            'prefeitura.veiculos': [('piloto_veiculos', 'Veículos'), ('piloto_caixa_entrada', 'Alertas'), ('listar_veiculos', 'Frota')],
+            'prefeitura.veiculos': [('piloto_veiculos', 'Veículos'), ('listar_veiculos', 'Frota')],
+            'prefeitura.alertas_limpeza_veiculos': [('piloto_caixa_entrada', 'Alertas')],
             'prefeitura.checklists': [('piloto_checklist_semanal', 'Checklists semanais')],
         },
         'uvis': {

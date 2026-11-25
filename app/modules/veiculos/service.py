@@ -650,7 +650,7 @@ def build_piloto_veiculos_context(user):
         "agora_brasilia": _now_brazil(),
     }
 
-@capability(['prefeitura.veiculos.consultar'])
+@capability(['prefeitura.alertas_limpeza_veiculos.consultar'])
 def can_access_limpeza_alertas_operacionais(user):
     return (
         getattr(user, "tipo_usuario", None) in {"piloto", EQUIPE_OCEANO_USER_TYPE, "sup_veiculos"}
@@ -658,7 +658,7 @@ def can_access_limpeza_alertas_operacionais(user):
     )
 
 
-@capability(['prefeitura.veiculos.consultar'])
+@capability(['prefeitura.alertas_limpeza_veiculos.consultar'])
 def can_access_limpeza_alertas_admin(user):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
     return (

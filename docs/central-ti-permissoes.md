@@ -1,8 +1,53 @@
-# Central de TI: telas e ações por tipo de usuário
+# Central de TI: telas e ações por usuário e por perfil
 
-Implementação validada em 09/10/2026. A configuração pertence ao tipo de usuário (por exemplo, Piloto OA, Financeiro ou Admin Prefeitura) e vale para todas as pessoas daquele tipo.
+O modo por perfil foi validado em 09/10/2026. A preparação do modo individual, de 24/11/2026, está descrita a seguir; sua ativação depende da opção específica do ambiente.
 
-## Como configurar
+## Consultas independentes de veículos — 25/11/2026
+
+A primeira etapa de separação oferece **Frota e turnos**, **Rastreamento de veículos**, **Limpezas de veículos** e **Alertas de limpeza** como módulos independentes, tanto por usuário quanto nos modelos por perfil. Histórico de veículos e checklists conservam suas permissões próprias. É possível manter frota e rastreamento liberados e retirar limpezas e alertas sem alterar as outras contas.
+
+Os cartões, a sidebar, os acessos por URL, as APIs e os materiais de treinamento acompanham as opções. A API de rastreamento não inclui dados de turnos e condutores provenientes dos logs quando o usuário não tem a consulta do histórico. Continuam valendo os limites de prefeitura e de equipe, inclusive ao solicitar o histórico de uma rota.
+
+Esta etapa separa as **consultas**. A operação de turnos continua agrupando seus registros operacionais. A exportação geral de veículos conserva a compatibilidade anterior, que também permite a planilha de logs; a separação dessa ação é uma etapa posterior. Não foram criadas opções de exportação para telas que não possuem essa operação.
+
+As seleções anteriores de `prefeitura.veiculos.consultar` continuam representando o conjunto antigo de consultas. A leitura apenas expande o conjunto efetivo em memória, sem modificar registros no banco. Ao salvar pelo editor atualizado, a escolha recebe o marcador interno `schema:vehicles-v1`, permitindo retirar cada consulta sem que o acesso geral de frota a reative. Esse marcador não aparece como uma função e não é aceito no payload de permissões do cliente. Clientes antigos continuam com a interpretação anterior; os editores atualizados informam `X-Central-TI-Permission-Schema: vehicles-v1`.
+
+O armazenamento existente já comporta os novos códigos. Esta etapa não acrescenta campos em `models.py`, não exige outra migração e não regrava automaticamente seleções no Neon ou no Render. Os testes usam contas fictícias e SQLite descartável; código mantido localmente, sem merge ou publicação.
+
+## Acessos individuais — preparação de 24/11/2026
+
+A nova tela `/central-ti/usuarios` permite buscar uma conta por nome ou login, escolher áreas e ações, dar um nome ao acesso e revisar as inclusões e remoções antes de salvar. O botão **Cadastrar usuário** abre o cadastro existente quando o administrador tem autorização; depois do cadastro, a conta pode ser localizada na central. O cadastro e seus vínculos continuam usando os fluxos existentes.
+
+A precedência é: **configuração individual salva → configuração do perfil → regras anteriores**. A seleção individual é completa: não é somada às permissões do perfil. Uma seleção individual vazia bloqueia as funções de negócio. Alterar posteriormente o modelo de um perfil não reescreve os acessos individuais. **Usar acessos do perfil atual** apenas copia suas opções para revisão; é preciso salvar para aplicar a cópia à conta selecionada.
+
+As ações são verificadas no servidor por usuário, com cache restrito à requisição e identificado pela conta. Usuários com o mesmo tipo podem ter conjuntos distintos. O tipo, a senha, a prefeitura, a região e os vínculos de equipe não são alterados pela central. Restrições próprias de identidades especiais, como o acesso dedicado de Ortomosaicos, continuam valendo; personalizar ações não converte uma conta em outro tipo operacional.
+
+Dev e Gestor de TI continuam administrando a central. A conta Dev fica fora da edição individual para preservar o acesso técnico de recuperação. As seleções recebem versão, autor, usuário afetado e auditoria de antes/depois. Edições concorrentes retornam conflito e exigem revisão; não há sobrescrita automática. A validação CSRF da central e a proteção global, quando habilitada, são verificadas separadamente.
+
+Para ativar em um ambiente compatível, depois de instalar e validar a estrutura:
+
+```dotenv
+CENTRAL_TI_ENABLED=1
+CENTRAL_TI_ENFORCE_PERMISSIONS=1
+CENTRAL_TI_USER_PERMISSIONS_ENABLED=1
+```
+
+A última opção permanece desativada por padrão. Ao ativá-la, `/central-ti` abre o modo individual; `/central-ti?modo=perfis` mantém os modelos anteriores. Desativar apenas a última opção restaura o controle por perfil, preservando as configurações individuais para uma futura retomada. Isso pode restaurar acessos retirados individualmente; a troca deve ser deliberada.
+
+Foram acrescentadas as tabelas `central_ti_usuarios_configuracoes`, `central_ti_usuarios_selecoes` e `central_ti_usuarios_auditoria`, na revisão `d92e7a4b6c81`, após `c81f0e2a4d67`. A revisão é aditiva, reutiliza uma estrutura preparada equivalente e recusa uma estrutura parcial. O downgrade remove os dados individuais e não é a forma recomendada de desativar o modo.
+
+**Neon, 24/11/2026:** as três tabelas foram preparadas com autorização, sem criar seleções individuais. Os 31 usuários e as três tabelas da central anterior foram preservados, com comparação de contagens e resumos determinísticos antes/depois. O `alembic_version` foi mantido em `a3e5c7d901b2`; esta preparação não declara como executadas outras migrações pendentes. A conexão foi obtida da variável Neon comentada, sem usar a conexão Render ativa do checkout. Código e opção de ativação não foram publicados nesta etapa.
+
+O preparador aceita somente destinos Neon diretos com SSL. Seu modo inicial é somente leitura:
+
+```sh
+.venv/bin/python scripts/prepare_central_ti_users_neon.py
+.venv/bin/python scripts/prepare_central_ti_users_neon.py --apply --expected-target IDENTIFICADOR_DA_INSPECAO
+```
+
+Os testes usam SQLite descartável para cobrir isolamento entre contas do mesmo perfil, seleção vazia, herança inicial, auditoria, concorrência, CSRF, consultas, proteção de contas e preservação de vínculos. A tela foi exercitada no navegador com contas fictícias: seleção, personalização, revisão, salvamento e leitura após recarregar. A preparação e a validação do schema também foram executadas no PostgreSQL do Neon autorizado. Isso não representa uma auditoria de todas as combinações de telas e integrações do sistema.
+
+## Como configurar os modelos por perfil
 
 1. Entre como Dev ou Gestor de TI e abra a Central de TI.
 2. Selecione o tipo de usuário. As regras existentes aparecem marcadas quando esse perfil ainda não possui uma configuração própria.
