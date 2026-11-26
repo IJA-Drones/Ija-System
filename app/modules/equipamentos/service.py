@@ -724,10 +724,17 @@ def validate_bateria_form(form_data, *, existing_bateria=None, user=None):
     if not renomacao:
         errors["renomacao"] = "Informe a renomacao (ex: BAT-01)."
 
-    ciclo = 0
+    if status not in {"Ativo", "Inativo", *MANUTENCAO_STATUS_ALIASES}:
+        errors["status"] = "Selecione um status válido para a bateria."
+    for field, value in (("modelo", modelo), ("renomacao", renomacao), ("numero_serie", numero_serie), ("categoria", categoria)):
+        if len(value) > 100:
+            errors[field] = "Use no máximo 100 caracteres."
+
+    ciclo = None
     if ciclo_raw:
         try:
-            ciclo = _parse_int(ciclo_raw, min_value=0, error_message="Ciclo invalido (use numero inteiro).")
+            from app.modules.equipamentos.baterias import parse_cycle_count
+            ciclo = parse_cycle_count(ciclo_raw)
         except ValueError as exc:
             errors["ciclo"] = str(exc)
 
@@ -754,8 +761,16 @@ def validate_bateria_form(form_data, *, existing_bateria=None, user=None):
     if drone_id_raw:
         try:
             drone_id = _validate_drone_id(drone_id_raw, user=user)
-            if existing_bateria is not None:
-                resolve_linked_prefeitura(existing_bateria.prefeitura_id, db.session.get(Drones, drone_id))
+            from app.modules.equipamentos.baterias import resolve_battery_tenant
+            resolve_battery_tenant(owner=getattr(user, "prefeitura_id", None),
+                drone=db.session.get(Drones, drone_id), existing=existing_bateria)
+        except ValueError as exc:
+            errors["drone_id"] = str(exc)
+
+    if not drone_id_raw:
+        from app.modules.equipamentos.baterias import resolve_battery_tenant
+        try:
+            resolve_battery_tenant(owner=getattr(user, "prefeitura_id", None), existing=existing_bateria)
         except ValueError as exc:
             errors["drone_id"] = str(exc)
 
@@ -785,9 +800,10 @@ def validate_bateria_form(form_data, *, existing_bateria=None, user=None):
     return form, cleaned, errors
 
 
-def create_bateria(cleaned_data, *, prefeitura_id=None):
-    if cleaned_data["drone_id"]:
-        prefeitura_id = resolve_linked_prefeitura(prefeitura_id, db.session.get(Drones, cleaned_data["drone_id"]))
+def create_bateria(cleaned_data, *, prefeitura_id=None, user=None):
+    from app.modules.equipamentos.baterias import record_battery_update, resolve_battery_tenant
+    prefeitura_id = resolve_battery_tenant(owner=prefeitura_id,
+        drone=db.session.get(Drones, cleaned_data["drone_id"]) if cleaned_data["drone_id"] else None)
     bateria = Baterias(
         tipo_equipamento="baterias",
         status=cleaned_data["status"],
@@ -802,13 +818,18 @@ def create_bateria(cleaned_data, *, prefeitura_id=None):
         drone_id=cleaned_data["drone_id"],
     )
     db.session.add(bateria)
+    record_battery_update(bateria, user=user, tipo="cadastro", confirm_cycles=bateria.ciclo is not None)
     db.session.commit()
     return bateria
 
 
-def update_bateria(bateria, cleaned_data):
+def update_bateria(bateria, cleaned_data, *, user=None):
+    from app.modules.equipamentos.baterias import battery_snapshot, record_battery_update, resolve_battery_tenant
+    before = battery_snapshot(bateria)
+    bateria.prefeitura_id = resolve_battery_tenant(existing=bateria,
+        drone=db.session.get(Drones, cleaned_data["drone_id"]) if cleaned_data["drone_id"] else None)
     if cleaned_data["drone_id"]:
-        bateria.prefeitura_id = resolve_linked_prefeitura(bateria.prefeitura_id, db.session.get(Drones, cleaned_data["drone_id"]))
+        bateria.equipe_id = None
     bateria.modelo = cleaned_data["modelo"]
     bateria.renomacao = cleaned_data["renomacao"]
     bateria.status = cleaned_data["status"]
@@ -818,6 +839,7 @@ def update_bateria(bateria, cleaned_data):
     bateria.drone_id = cleaned_data["drone_id"]
     bateria.ano_fabricacao = cleaned_data["ano_fabricacao"]
     bateria.ultima_manutencao = cleaned_data["ultima_manutencao"]
+    record_battery_update(bateria, user=user, before=before)
     db.session.commit()
     return bateria
 
@@ -830,36 +852,40 @@ def build_bateria_edit_form(bateria):
         "categoria": bateria.categoria,
         "ano_fabricacao": bateria.ano_fabricacao,
         "numero_serie": bateria.numero_serie,
-        "ciclo": bateria.ciclo,
+        "ciclo": bateria.ciclo if bateria.ciclo is not None else "",
         "drone_id": bateria.drone_id,
         "ultima_manutencao": bateria.ultima_manutencao.strftime("%Y-%m-%d") if bateria.ultima_manutencao else "",
     }
 
 
 def delete_bateria(bateria):
+    from app.models import BateriaAtualizacao
+    if BateriaAtualizacao.query.filter_by(bateria_id=bateria.id).first():
+        raise ValueError("Esta bateria possui histórico. Altere o status para Inativo para preservar os registros.")
     bateria.drone_id = None
     db.session.flush()
     db.session.delete(bateria)
     db.session.commit()
 
 
-def update_bateria_ciclos(bateria, payload):
-    quantidade = payload.get("quantidade", 1)
+def update_bateria_ciclos(bateria, payload, *, user=None):
+    from app.modules.equipamentos.baterias import battery_snapshot, parse_cycle_count, record_battery_update
+    if not isinstance(payload, dict):
+        raise ValueError("Dados de ciclos inválidos.")
     operacao = payload.get("operacao", "add")
-
-    try:
-        quantidade_int = int(quantidade)
-    except (TypeError, ValueError):
-        quantidade_int = 1
-
-    if operacao == "add":
-        bateria.ciclo += quantidade_int
+    if not isinstance(operacao, str) or operacao not in {"add", "sub", "definir"}:
+        raise ValueError("Operação de ciclos inválida.")
+    quantidade = parse_cycle_count(payload.get("quantidade", 1))
+    db.session.refresh(bateria, attribute_names=["ciclo"], with_for_update={"of": Baterias.__table__})
+    if operacao != "definir" and bateria.ciclo is None:
+        raise ValueError("Informe primeiro a leitura total de ciclos na página da bateria.")
+    before = battery_snapshot(bateria)
+    if operacao == "definir":
+        bateria.ciclo = quantidade
+    elif operacao == "add":
+        bateria.ciclo = parse_cycle_count(bateria.ciclo + quantidade)
     else:
-        bateria.ciclo = max(0, bateria.ciclo - quantidade_int)
-
+        bateria.ciclo = max(0, bateria.ciclo - quantidade)
+    record_battery_update(bateria, user=user, before=before, tipo="ciclos", confirm_cycles=True)
     db.session.commit()
-
-    return {
-        "novo_ciclo": bateria.ciclo,
-        "cor": "bg-danger" if bateria.ciclo > 200 else "bg-success",
-    }
+    return {"novo_ciclo": bateria.ciclo, "cor": "bg-secondary"}

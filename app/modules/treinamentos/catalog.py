@@ -95,6 +95,7 @@ GUIDE_GROUPS = (
              ("guia-estoque-pecas", "Estoque de peças", 3, "guia-estoque-pecas.pdf"),
              ("guia-importacao-pecas-excel", "Importação de peças por Excel", 2, "guia-importacao-pecas-excel.pdf"),
              ("guia-busca-equipamentos-responsaveis", "Pesquisa de equipamentos, responsáveis e veículos", 2, "guia-busca-equipamentos-responsaveis.pdf"),
+             ("guia-gestao-baterias", "Gestão de baterias: filtros e histórico", 2, "guia-gestao-baterias.pdf"),
              ("guia-controles-remotos", "Controles remotos: cadastro e pesquisa", 2, "guia-controles-remotos.pdf"),
              ("guia-manutencao-equipamentos", "Manutenção de equipamentos", 3, "guia-manutencao-equipamentos.pdf"),
          )),

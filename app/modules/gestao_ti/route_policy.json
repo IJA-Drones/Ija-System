@@ -545,6 +545,15 @@
   "main.deletar_drone": {
     "POST": "prefeitura.equipamentos.excluir"
   },
+  "main.bateria_detalhe": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.bateria_conferir": {
+    "POST": "prefeitura.equipamentos.editar"
+  },
+  "main.bateria_registrar_ciclos": {
+    "POST": "prefeitura.equipamentos.editar"
+  },
   "main.cadastrar_bateria": {
     "GET": "prefeitura.equipamentos.criar",
     "POST": "prefeitura.equipamentos.criar"

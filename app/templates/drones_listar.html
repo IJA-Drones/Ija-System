@@ -80,7 +80,7 @@
                                       {% for bat in d.baterias %}
                                         <button type="button" class="btn badge bg-warning text-dark border border-warning shadow-sm p-2 text-start" 
                                                 data-bs-toggle="modal" data-bs-target="#modalBat{{ bat.id }}" style="font-size: 0.7rem; max-width: 150px;">
-                                            <i class="bi bi-battery-charging me-1"></i> {{ bat.renomacao }} ({{ bat.ciclo }}c)
+                                            <i class="bi bi-battery-charging me-1"></i> {{ bat.renomacao }}{% if bat.ciclo is not none %} ({{ bat.ciclo }}c){% endif %}
                                         </button>
                                       {% else %}
                                         <span class="text-muted small fst-italic">Nenhuma</span>
@@ -145,7 +145,7 @@
             <div class="modal-body p-4 text-dark">
                 <div class="row g-3">
                     <div class="col-6"><label class="small text-muted d-block">Modelo</label><strong>{{ bat.modelo or 'N/I' }}</strong></div>
-                    <div class="col-6"><label class="small text-muted d-block">Ciclos</label><span class="badge bg-dark">{{ bat.ciclo }} ciclos</span></div>
+                    <div class="col-6"><label class="small text-muted d-block">Ciclos</label><span class="badge bg-dark">{{ (bat.ciclo|string ~ ' ciclos') if bat.ciclo is not none else 'Não informado' }}</span></div>
                 </div>
             </div>
             <div class="modal-footer border-0">
