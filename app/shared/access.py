@@ -1,5 +1,5 @@
 from app.modules.gestao_ti.permissions import capability
-from sqlalchemy import false, func
+from sqlalchemy import false, func, select
 
 from app.models import Solicitacao, Usuario
 
@@ -194,6 +194,17 @@ def central_ti_team_ids(user):
     return cache[key]
 
 
+def _drone_link_scope(model, drone_condition):
+    """Resolve linked children for both their own list and the equipment overview."""
+    from app.models import Baterias, ControlesRemotos, Equipamentos
+    if model is Equipamentos:
+        return model.id.in_(select(Baterias.id).where(
+            Baterias.drone_vinculado.has(drone_condition)).correlate(None)) | model.id.in_(
+                select(ControlesRemotos.id).where(
+                    ControlesRemotos.drone_vinculado.has(drone_condition)).correlate(None))
+    return model.drone_vinculado.has(drone_condition)
+
+
 def apply_prefeitura_scope(query, user, column):
     # A company opened through Central Financeiro owns an isolated municipal
     # tenant. This request-local scope takes precedence over a global finance
@@ -232,7 +243,14 @@ def apply_prefeitura_scope(query, user, column):
                 & Solicitacao.origem_retorno.has(Solicitacao.equipe_id.in_(teams))
             ))
         elif model is not None and hasattr(model, "equipe_id"):
-            query = query.filter(model.equipe_id.in_(teams))
+            if model.__name__ in {"Baterias", "ControlesRemotos", "Equipamentos"}:
+                from app.models import Drones
+                inherited_drone = _drone_link_scope(model, Drones.equipe_id.in_(teams))
+                query = query.filter(model.equipe_id.in_(teams) | (
+                    model.equipe_id.is_(None) & inherited_drone
+                ))
+            else:
+                query = query.filter(model.equipe_id.in_(teams))
     if configured and role == "piloto_agro":
         pilot = getattr(user, "piloto_agro", None)
         team = getattr(pilot, "equipe_agro_id", None) if getattr(pilot, "ativo", False) else None
@@ -252,14 +270,23 @@ def apply_prefeitura_scope(query, user, column):
                 return query
         return query.filter(false())
 
-    from app.models import Equipamentos, Equipe
+    from app.models import Baterias, ControlesRemotos, Drones, Equipamentos, Equipe
     model = getattr(column, "class_", None)
     if model is not None and issubclass(model, Equipamentos):
         # Legacy equipment may inherit a municipality from its registered team.
         # An explicit, conflicting municipality always wins and is denied.
-        return query.filter((column == prefeitura_id) | (
-            column.is_(None) & model.equipe.has(Equipe.prefeitura_id == prefeitura_id)
-        ))
+        inherited_team = model.equipe.has(Equipe.prefeitura_id == prefeitura_id)
+        if model is Equipamentos or issubclass(model, (Baterias, ControlesRemotos)):
+            # A legacy battery without its own allocation follows its registered
+            # drone. Explicit municipality/team assignments never get overridden.
+            inherited_drone = _drone_link_scope(model,
+                (Drones.prefeitura_id == prefeitura_id) | (
+                    Drones.prefeitura_id.is_(None)
+                    & Drones.equipe.has(Equipe.prefeitura_id == prefeitura_id)
+                )
+            )
+            inherited_team = inherited_team | (model.equipe_id.is_(None) & inherited_drone)
+        return query.filter((column == prefeitura_id) | (column.is_(None) & inherited_team))
     return query.filter(column == prefeitura_id)
 
 

@@ -86,3 +86,35 @@
     text-transform: uppercase;
   }
 }
+
+.equipamentos-manutencao-page { max-width:1450px; color:#263f5c; }
+.maintenance-eyebrow { display:block; margin-bottom:9px; color:#7a8ca3; font-size:.65rem; font-weight:600; letter-spacing:1.5px; }
+.equipamentos-manutencao-toolbar h2 { font-size:1.9rem; letter-spacing:-.6px; font-weight:700; margin-bottom:10px!important; }
+.equipamentos-manutencao-toolbar p { font-size:.8rem; color:#75879c!important; }
+.equipamentos-manutencao-toolbar .btn { font-size:.75rem; padding:10px 16px; }
+.maintenance-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:28px 0 34px; }
+.maintenance-metrics article { display:flex; flex-direction:column; position:relative; padding:24px; background:#fff; border:1px solid #e5ecf4; border-radius:18px; box-shadow:0 4px 18px #263f5c04; }
+.maintenance-metrics article>span:not(.maintenance-metric-icon) { font-size:.76rem; color:#75879b; margin:12px 0; }
+.maintenance-metrics strong { font-size:2rem; font-weight:700; line-height:1.2; }
+.maintenance-metrics small { font-size:.67rem; color:#8a99ac; margin-top:10px; }
+.maintenance-metric-icon { display:grid; place-items:center; width:36px; height:36px; background:#edf3fc; color:#50759a; border-radius:11px; font-size:1rem; }
+.maintenance-metric-icon.is-green { background:#edf8f2; color:#438069; }
+.maintenance-queue-heading { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:19px; }
+.maintenance-queue-heading h3 { font-size:1rem; font-weight:700; margin:0 0 7px; }
+.maintenance-queue-heading p { color:#8493a8; font-size:.72rem; margin:0; }
+.maintenance-search { display:flex; gap:9px; align-items:center; }
+.maintenance-search input { font-size:.76rem; min-width:250px; border-color:#e0e8f1; padding:11px 14px; }
+.maintenance-search .btn { font-size:.75rem; }
+.equipamentos-manutencao-table-wrap { border:1px solid #e5ecf4!important; box-shadow:0 4px 18px #263f5c04!important; }
+.equipamentos-manutencao-page .table thead th { background:#f4f7fb!important; color:#7a8da4!important; font-size:.64rem; letter-spacing:.4px; border:0; padding:17px 18px; }
+.equipamentos-manutencao-page .table tbody td { font-size:.8rem; padding:24px 18px; color:#354d68; border-bottom-color:#edf1f6; }
+.equipamentos-manutencao-page .table tbody td.fw-bold { color:#315a85!important; }
+.equipamentos-manutencao-page .table tbody .btn { font-size:.7rem; padding:9px 13px; box-shadow:none; }
+.equipamentos-manutencao-page .manutencao-actions { max-width:390px; margin-left:auto; }
+.maintenance-time-label { display:block; font-size:.6rem; text-transform:none; font-weight:400; margin-top:5px; }
+body.dark-mode .maintenance-metrics article { background:#152438; border-color:#293f59; }
+body.dark-mode .maintenance-queue-heading h3, body.dark-mode .maintenance-metrics strong { color:#d6e4f5; }
+body.dark-mode .equipamentos-manutencao-page .table thead th { background:#1b2d42!important; color:#a7bbd1!important; }
+body.dark-mode .equipamentos-manutencao-page .table tbody td { color:#d0deee; border-color:#293f59; }
+@media(max-width:991.98px) { .maintenance-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .equipamentos-manutencao-toolbar { flex-direction:column; align-items:flex-start!important; } }
+@media(max-width:767.98px) { .maintenance-metrics { gap:12px; margin:22px 0; } .maintenance-metrics article { padding:18px; } .maintenance-queue-heading { flex-direction:column; align-items:stretch; } .maintenance-search input { min-width:0; } .maintenance-search { flex-wrap:wrap; } .maintenance-search input { flex:1; } }

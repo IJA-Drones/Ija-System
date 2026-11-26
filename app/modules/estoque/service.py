@@ -13,7 +13,7 @@ ESTOQUE_STATUS = {
 
 
 def list_pecas(user=None, local=None, q=None, status=None):
-    query = EstoquePeca.query
+    query = EstoquePeca.query.filter(EstoquePeca.arquivada_em.is_(None))
     local = (local or "").strip()
     if local:
         query = query.filter(EstoquePeca.prateleira_local.ilike(f"%{local}%"))
@@ -56,7 +56,7 @@ def modelos_para_estoque(equipamentos, peca=None):
 
 
 def get_peca_scoped_or_404(peca_id, user):
-    query = apply_prefeitura_scope(EstoquePeca.query, user, EstoquePeca.prefeitura_id)
+    query = apply_prefeitura_scope(EstoquePeca.query.filter(EstoquePeca.arquivada_em.is_(None)), user, EstoquePeca.prefeitura_id)
     return query.filter(EstoquePeca.id == peca_id).first_or_404()
 
 
@@ -81,7 +81,7 @@ def _form_values(form, key):
     return value if isinstance(value, (list, tuple)) else [value]
 
 
-def validate_peca_form(form_data, *, existing_peca=None, user=None):
+def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos_disponiveis=None, series_em_uso=None, modelos_adicionais=()):
     errors = {}
     numero_serie = (form_data.get("numero_serie") or "").strip()
     modelo_peca = (form_data.get("modelo_peca") or "").strip()
@@ -116,7 +116,8 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None):
     if status not in ESTOQUE_STATUS:
         errors["status"] = "Status inválido."
 
-    equipamentos_disponiveis = list_equipamentos_for_estoque(user=user)
+    if equipamentos_disponiveis is None:
+        equipamentos_disponiveis = list_equipamentos_for_estoque(user=user)
     por_id = {str(e.id): e for e in equipamentos_disponiveis}
     equipamentos = [por_id[i] for i in ids if i in por_id]
     if len(equipamentos) != len(ids):
@@ -143,16 +144,21 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None):
         errors["prefeitura_id"] = "Prefeitura inválida."
     form["prefeitura_id"] = str(prefeitura_id or prefeitura_raw)
     modelos_disponiveis = modelos_para_estoque([e for e in equipamentos_disponiveis if e.prefeitura_id == prefeitura_id], existing_peca)
+    modelos_disponiveis.extend(modelos_adicionais)
     canonicos = {m.casefold(): m for m in modelos_disponiveis}
     if any(m.casefold() not in canonicos for m in modelos):
         errors["modelos_compativeis"] = "Selecione modelos disponíveis na prefeitura deste estoque."
     modelos = list(dict.fromkeys(canonicos.get(m.casefold(), m) for m in modelos))
     form["modelos_compativeis"] = modelos
     if numero_serie:
-        query = EstoquePeca.query.filter(EstoquePeca.numero_serie == numero_serie)
-        if existing_peca is not None:
-            query = query.filter(EstoquePeca.id != existing_peca.id)
-        if query.first():
+        if series_em_uso is None:
+            query = EstoquePeca.query.filter(EstoquePeca.numero_serie == numero_serie, EstoquePeca.arquivada_em.is_(None))
+            if existing_peca is not None:
+                query = query.filter(EstoquePeca.id != existing_peca.id)
+            em_uso = query.first() is not None
+        else:
+            em_uso = numero_serie.casefold() in series_em_uso
+        if em_uso:
             errors["numero_serie"] = "Já existe uma peça com esse número de série."
     if "equipamento_ids" in errors:
         for legacy_field in ("equipamento_id", "drone_id"):

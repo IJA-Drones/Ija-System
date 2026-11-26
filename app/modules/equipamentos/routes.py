@@ -14,6 +14,7 @@ from app.modules.equipamentos.service import (
     delete_bateria,
     delete_drone,
     encerrar_manutencao_drone,
+    equipment_team_assignments,
     get_manutencao_aberta,
     get_manutencao_scoped_or_404,
     list_active_equipes,
@@ -22,6 +23,7 @@ from app.modules.equipamentos.service import (
     list_drones_for_baterias,
     list_equipamentos_dashboard,
     list_equipamentos_manutencao,
+    maintenance_overview,
     list_historico_manutencoes,
     list_historico_pecas_usadas,
     list_imagens_manutencao,
@@ -63,18 +65,33 @@ def _get_scoped_bateria_or_404(bateria_id: int):
 
 
 def register_routes(bp):
+    from app.modules.equipamentos.controles_routes import register_controle_routes
+    register_controle_routes(bp)
+
     @bp.route("/equipamentos", methods=["GET"], endpoint="listar_equipamentos")
     @login_required
     def listar_equipamentos():
-        return render_template("equipamentos_listar.html", **list_equipamentos_dashboard(user=current_user))
+        q = request.args.get("q", "").strip()
+        return render_template(
+            "equipamentos_listar.html", q=q,
+            **list_equipamentos_dashboard(user=current_user, q=q),
+        )
 
     @bp.route("/equipamentos/drones", methods=["GET"], endpoint="listar_drones")
     @login_required
     def listar_drones_view():
+        drones = list_drones(user=current_user, q=request.args.get("q"))
+        from app.modules.equipamentos.controles import list_controles
+        controles_por_drone = {}
+        for controle in list_controles(current_user):
+            controles_por_drone.setdefault(controle.drone_id, []).append(controle)
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "drones_listar.html",
-            drones=list_drones(user=current_user),
+            controles_por_drone=controles_por_drone,
+            drones=drones,
+            responsabilidades=equipment_team_assignments(drones, user=current_user),
+            q=request.args.get("q", "").strip(),
             can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
             is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
             can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
@@ -83,10 +100,13 @@ def register_routes(bp):
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
     @login_required
     def listar_baterias_view():
+        baterias = list_baterias(user=current_user, q=request.args.get("q"))
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "baterias_listar.html",
-            baterias=list_baterias(user=current_user),
+            baterias=baterias,
+            responsabilidades=equipment_team_assignments(baterias, user=current_user),
+            q=request.args.get("q", "").strip(),
             is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
             can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
         )
@@ -309,13 +329,20 @@ def register_routes(bp):
     @login_required
     def equipamentos_manutencao():
         equipamentos = list_equipamentos_manutencao(user=current_user)
+        total = len(equipamentos)
+        busca = (request.args.get('q') or '').strip()
+        if busca:
+            term = busca.casefold()
+            equipamentos = [eq for eq in equipamentos if term in ' '.join(str(value or '') for value in (
+                eq.renomacao, eq.modelo, eq.numero_serie, eq.equipe.nome_equipe if eq.equipe else '',
+            )).casefold()]
         manutencoes = apply_prefeitura_scope(
             ManutencaoEquipamento.query.filter_by(status="aberta"), current_user, ManutencaoEquipamento.prefeitura_id
         ).order_by(ManutencaoEquipamento.aberta_em.asc()).all()
         return render_template(
             "equipamentos_manutencao.html",
             equipamentos=equipamentos,
-            total=len(equipamentos),
+            total=total, busca=busca, resumo=maintenance_overview(current_user),
             manutencoes_por_drone={m.drone_id: m for m in manutencoes},
             can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
         )

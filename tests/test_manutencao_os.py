@@ -1,5 +1,5 @@
 """Maintenance OS workflow for Fernando's role, isolated from production data."""
-from datetime import date
+from datetime import date, datetime, timezone
 from io import BytesIO
 from pathlib import Path
 import unittest
@@ -57,6 +57,46 @@ class ManutencaoOsTests(unittest.TestCase):
         data = {'drone_id': (drone or self.drones[0]).id, 'avarias_identificadas': 'Hélice danificada',
                 'responsavel_manutencao': 'Fernando teste', **extra}
         return self.client.post('/equipamentos/manutencoes/nova', data=data)
+
+    def test_dashboard_uses_sao_paulo_time_and_search_does_not_change_totals(self):
+        self.open_os()
+        order = ManutencaoEquipamento.query.one()
+        order.aberta_em = datetime(2026, 11, 26, 1, 12)
+        db.session.commit()
+        page = self.client.get('/equipamentos/em-manutencao')
+        self.assertIn('25/11/2026 22:12', page.text)
+        self.assertNotIn('26/11/2026 01:12', page.text)
+        for label in ('Abertas hoje', 'Concluídas no mês', 'Peças utilizadas no mês', 'Fila de manutenção'):
+            self.assertIn(label, page.text)
+        self.assertIn(order.numero_os, self.client.get('/equipamentos/em-manutencao?q=DRONE-1').text)
+        filtered = self.client.get('/equipamentos/em-manutencao?q=DRONE-2')
+        self.assertNotIn(order.numero_os, filtered.text)
+        self.assertIn('Nenhum equipamento encontrado', filtered.text)
+
+    def test_dashboard_month_and_day_boundaries_are_scoped_to_sao_paulo_and_tenant(self):
+        from app.modules.equipamentos.service import maintenance_overview
+        # At 02:30 UTC on Nov 1 it is still Oct 31 in São Paulo.
+        point = datetime(2026, 11, 1, 2, 30, tzinfo=timezone.utc)
+        records = [
+            ManutencaoEquipamento(prefeitura_id=1, drone_id=self.drones[0].id, status='encerrada',
+                aberta_em=datetime(2026, 10, 31, 4), encerrada_em=datetime(2026, 11, 1, 2)),
+            ManutencaoEquipamento(prefeitura_id=1, drone_id=self.drones[0].id, status='encerrada',
+                aberta_em=datetime(2026, 10, 31, 2), encerrada_em=datetime(2026, 10, 1, 2)),
+            ManutencaoEquipamento(prefeitura_id=2, drone_id=self.drones[1].id, status='encerrada',
+                aberta_em=datetime(2026, 10, 31, 5), encerrada_em=datetime(2026, 11, 1, 2)),
+        ]
+        db.session.add_all(records)
+        db.session.commit()
+        self.assertEqual(maintenance_overview(self.user, point), dict(abertas_hoje=1, concluidas_mes=1, pecas_mes=0))
+
+    def test_maintenance_datetime_handles_timezone_aware_and_naive_utc_values(self):
+        from app.shared.maintenance_time import maintenance_datetime
+        from app.modules.equipamentos.exporters import _fmt_dt
+        naive = datetime(2026, 11, 26, 1, 12)
+        self.assertEqual(maintenance_datetime(naive), '25/11/2026 22:12')
+        self.assertEqual(maintenance_datetime(naive.replace(tzinfo=timezone.utc)), '25/11/2026 22:12')
+        self.assertEqual(_fmt_dt(naive), '25/11/2026 22:12')
+        self.assertEqual(maintenance_datetime(None), '—')
 
     def test_complete_workflow_with_stock_history_and_separate_os_number(self):
         validate_route_policy(self.app)

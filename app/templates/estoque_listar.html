@@ -13,6 +13,7 @@
       <div><h2>Estoque de peças</h2><p>Peças, compatibilidades e disponibilidade para manutenção.</p></div>
     </div>
     <div class="stock-toolbar-actions">
+      <a href="{{ url_for('main.estoque_importar') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_importar')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-file-earmark-arrow-up me-2" aria-hidden="true"></i>Importar Excel</a>
       <a href="{{ url_for('main.estoque_export_excel') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_export_excel')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-download me-2" aria-hidden="true"></i>Exportar Excel</a>
       <a href="{{ url_for('main.estoque_novo') }}" class="btn btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_novo')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nova peça</a>
     </div>

@@ -2570,6 +2570,10 @@ class Drones(Equipamentos):
         lazy="select",
         foreign_keys="[Baterias.drone_id]"
     )
+    controles_remotos = db.relationship(
+        "ControlesRemotos", back_populates="drone_vinculado",
+        foreign_keys="[ControlesRemotos.drone_id]", passive_deletes="all",
+    )
     pecas_estoque = db.relationship(
         "EstoquePeca",
         back_populates="drone",
@@ -2609,7 +2613,7 @@ class EstoquePeca(db.Model):
     # Mantido para compatibilidade com integrações e registros antigos.
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
 
-    numero_serie = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    numero_serie = db.Column(db.String(100), nullable=True)
     modelo_peca = db.Column(db.String(120), nullable=False, index=True)
     prateleira_local = db.Column(db.String(120), nullable=True, index=True)
     modelos_compativeis = db.Column(db.Text, nullable=True)
@@ -2619,6 +2623,7 @@ class EstoquePeca(db.Model):
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False, index=True)
+    arquivada_em = db.Column(db.DateTime, nullable=True, index=True)
 
     prefeitura = db.relationship("Prefeitura", back_populates="estoque_pecas", lazy="joined")
     equipamento = db.relationship("Equipamentos", lazy="joined", foreign_keys=[equipamento_id])
@@ -2637,6 +2642,25 @@ class EstoquePeca(db.Model):
     __table_args__ = (
         db.CheckConstraint("quantidade >= 0", name="ck_estoque_pecas_quantidade_nao_negativa"),
         db.Index("ix_estoque_pecas_drone_status", "drone_id", "status"),
+        db.Index("uq_estoque_pecas_serie_ativa", "numero_serie", unique=True,
+                 postgresql_where=db.text("arquivada_em IS NULL"), sqlite_where=db.text("arquivada_em IS NULL")),
+    )
+
+
+class EstoqueImportacao(db.Model):
+    __tablename__ = "estoque_importacoes"
+    id = db.Column(db.String(36), primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    arquivo_nome = db.Column(db.String(255), nullable=False)
+    digest = db.Column(db.String(64), nullable=False)
+    linhas = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    expira_em = db.Column(db.DateTime, nullable=False)
+    concluida_em = db.Column(db.DateTime, nullable=True)
+    __table_args__ = (
+        db.Index("uq_estoque_importacao_concluida", "prefeitura_id", "digest", unique=True,
+                 postgresql_where=db.text("concluida_em IS NOT NULL"), sqlite_where=db.text("concluida_em IS NOT NULL")),
     )
 
 
@@ -2726,6 +2750,18 @@ class Baterias(Equipamentos):
     )
 
     __mapper_args__ = {"polymorphic_identity": "baterias"}
+
+
+class ControlesRemotos(Equipamentos):
+    __tablename__ = "controles_remotos"
+
+    id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id", ondelete="RESTRICT"), nullable=False, index=True)
+    drone_vinculado = db.relationship(
+        "Drones", back_populates="controles_remotos", foreign_keys=[drone_id],
+    )
+
+    __mapper_args__ = {"polymorphic_identity": "controles_remotos"}
 
 
 class Veiculos(Equipamentos):

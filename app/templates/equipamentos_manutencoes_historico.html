@@ -52,8 +52,8 @@
                   <span class="badge bg-success-light text-success px-3">Encerrada</span>
                 {% endif %}
               </td>
-              <td class="text-muted small">{{ manutencao.aberta_em.strftime('%d/%m/%Y %H:%M') if manutencao.aberta_em else '-' }}</td>
-              <td class="text-muted small">{{ manutencao.encerrada_em.strftime('%d/%m/%Y %H:%M') if manutencao.encerrada_em else '-' }}</td>
+              <td class="text-muted small">{{ (manutencao.aberta_em|maintenance_datetime) if manutencao.aberta_em else '-' }}</td>
+              <td class="text-muted small">{{ (manutencao.encerrada_em|maintenance_datetime) if manutencao.encerrada_em else '-' }}</td>
               <td><span class="badge bg-light text-dark border">{{ manutencao.pecas_usadas|sum(attribute='quantidade_usada') }}</span></td>
               <td class="text-muted small">
                 Abertura: {{ manutencao.aberta_por.nome_uvis if manutencao.aberta_por else '-' }}<br>

@@ -37,6 +37,9 @@
         </div>
     </div>
 
+    {% include "_equipamentos_busca.html" %}
+    <p class="small text-muted mb-3">Baterias vinculadas a um drone seguem a equipe dele. Responsáveis e veículos refletem o cadastro atual dessa equipe.</p>
+
     {# --- LISTAGEM --- #}
     <div class="card shadow-sm border-0 rounded-4 menu-actions-table-wrap">
         <div class="card-body p-0">
@@ -47,7 +50,7 @@
                             <th class="ps-4 text-start">Bateria</th>
                             <th>n° Série</th>
                             <th>Ciclos</th>
-                            <th>Localização / Drone</th>
+                            <th>Drone, equipe e responsáveis</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -56,7 +59,7 @@
                         {% for b in baterias %}
                         <tr>
                             <td class="ps-4 fw-bold text-dark text-start">{{ b.renomacao }}</td>
-                            <td class="text-muted small">{{ b.numero_serie }}</td>
+                            <td class="text-muted small">{{ b.numero_serie or 'Não informado' }}</td>
                             
                             <td style="width: 180px;">
                                 <div class="d-flex flex-column ciclo-control-wrapper mx-auto" style="max-width: 140px; align-items: center;">
@@ -86,13 +89,17 @@
                             </td>
 
                             <td>
-                                {% if b.drone_vinculado %}
+                                {% if b.drone_vinculado and ((b.prefeitura_id is not none and b.drone_vinculado.prefeitura_id == b.prefeitura_id) or responsabilidades.get(b.id)) %}
                                     <span class="badge bg-primary-light text-primary border border-primary-subtle">
                                         <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
                                     </span>
                                 {% else %}
-                                    <span class="badge text-muted border border-dashed">Em Estoque</span>
+                                    <span class="badge text-muted border border-dashed">{{ 'Vínculo a revisar' if b.drone_id else 'Em Estoque' }}</span>
                                 {% endif %}
+                                <div class="mt-2">
+                                    {% set vinculo = responsabilidades.get(b.id) %}
+                                    {% include "_equipamento_equipe.html" %}
+                                </div>
                             </td>
 
                             <td>
@@ -122,6 +129,8 @@
                                 </div>
                             </td>
                         </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">{{ 'Nenhuma bateria encontrada para esta busca.' if q else 'Nenhuma bateria cadastrada.' }}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

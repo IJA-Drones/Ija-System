@@ -1,0 +1,18 @@
+{% if vinculo %}
+<div class="text-start d-flex flex-column gap-1">
+    <span class="fw-semibold"><i class="bi bi-people me-1" aria-hidden="true"></i>{{ vinculo.equipe.nome_equipe }}</span>
+    {% if not vinculo.equipe.ativa %}<span class="text-warning small">Equipe inativa</span>{% endif %}
+    <span class="small text-muted">Piloto titular: {{ vinculo.piloto.nome_piloto if vinculo.piloto else 'Não definido na equipe' }}</span>
+    {% if vinculo.auxiliar %}<span class="small text-muted">Auxiliar: {{ vinculo.auxiliar.nome_piloto }}</span>{% endif %}
+    <div class="small text-muted mt-1">Veículos da equipe</div>
+    <div class="d-flex flex-wrap gap-1">
+    {% for veiculo in vinculo.veiculos %}
+        <span class="badge bg-light text-dark border"><i class="bi bi-truck me-1" aria-hidden="true"></i>{{ veiculo.placa }} · {{ veiculo.modelo }}</span>
+    {% else %}
+        <span class="small text-muted">Nenhum veículo vinculado à equipe</span>
+    {% endfor %}
+    </div>
+</div>
+{% else %}
+<span class="text-muted small">Sem equipe vinculada</span>
+{% endif %}

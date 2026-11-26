@@ -2,14 +2,16 @@ import json
 import os
 import re
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from werkzeug.utils import secure_filename
 from sqlalchemy import case, update
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipamentos, Equipe, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso
+from app.models import Baterias, ControlesRemotos, Drones, Equipamentos, Equipe, EquipePiloto, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso, Veiculos
 from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
+from app.shared.maintenance_time import to_sao_paulo
 from app.shared.skybox import (
     SkyboxError,
     build_manutencao_media_remote_path,
@@ -20,6 +22,23 @@ from app.shared.skybox import (
 
 
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
+
+
+def maintenance_overview(user, now=None):
+    current = to_sao_paulo(now or datetime.now(timezone.utc))
+    day_start = current.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = day_start.replace(day=1)
+    utc_day = day_start.astimezone(timezone.utc).replace(tzinfo=None)
+    utc_month = month_start.astimezone(timezone.utc).replace(tzinfo=None)
+    utc_now = current.astimezone(timezone.utc).replace(tzinfo=None)
+    orders = apply_prefeitura_scope(ManutencaoEquipamento.query, user, ManutencaoEquipamento.prefeitura_id)
+    uses = apply_prefeitura_scope(ManutencaoPecaUso.query, user, ManutencaoPecaUso.prefeitura_id)
+    return dict(
+        abertas_hoje=orders.filter(ManutencaoEquipamento.aberta_em >= utc_day, ManutencaoEquipamento.aberta_em <= utc_now).count(),
+        concluidas_mes=orders.filter(ManutencaoEquipamento.encerrada_em >= utc_month, ManutencaoEquipamento.encerrada_em <= utc_now).count(),
+        pecas_mes=uses.with_entities(db.func.coalesce(db.func.sum(ManutencaoPecaUso.quantidade_usada), 0)).filter(
+            ManutencaoPecaUso.criado_em >= utc_month, ManutencaoPecaUso.criado_em <= utc_now).scalar(),
+    )
 MANUTENCAO_STATUS_ALIASES = (
     MANUTENCAO_STATUS,
     "Manuten\u00e7\u00e3o",
@@ -32,30 +51,90 @@ MANUTENCAO_IMAGE_MAX_COUNT = 10
 SIGNATURE_DATA_URL = re.compile(r"^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$")
 
 
-def list_equipamentos_dashboard(user=None):
+def _search_equipment(query, model, q):
+    term = (q or "").strip()
+    if term:
+        query = query.filter(db.or_(
+            model.numero_serie.icontains(term, autoescape=True),
+            model.renomacao.icontains(term, autoescape=True),
+            model.modelo.icontains(term, autoescape=True),
+        ))
+    return query
+
+
+def list_equipamentos_dashboard(user=None, q=None):
     query = Equipamentos.query
     if user is not None:
         query = apply_prefeitura_scope(query, user, Equipamentos.prefeitura_id)
     return {
-        "equipamentos": query.order_by(Equipamentos.criado_em.desc()).all(),
+        "equipamentos": _search_equipment(query, Equipamentos, q).order_by(Equipamentos.criado_em.desc()).all(),
         "total_drones": query.filter_by(tipo_equipamento="drones").count(),
         "total_baterias": query.filter_by(tipo_equipamento="baterias").count(),
+        "total_controles": query.filter_by(tipo_equipamento="controles_remotos").count(),
         "em_manutencao": query.filter(Equipamentos.status.in_(MANUTENCAO_STATUS_ALIASES)).count(),
     }
 
 
-def list_drones(user=None):
+def list_drones(user=None, q=None):
     query = Drones.query
     if user is not None:
         query = apply_prefeitura_scope(query, user, Drones.prefeitura_id)
-    return query.all()
+    return _search_equipment(query, Drones, q).order_by(Drones.renomacao, Drones.id).all()
 
 
-def list_baterias(user=None):
+def list_baterias(user=None, q=None):
     query = Baterias.query
     if user is not None:
         query = apply_prefeitura_scope(query, user, Baterias.prefeitura_id)
-    return query.all()
+    return _search_equipment(query, Baterias, q).options(selectinload(Baterias.drone_vinculado)).order_by(Baterias.renomacao, Baterias.id).all()
+
+
+def equipment_team_assignments(equipamentos, *, user):
+    """Resolve the current team roster without storing a second responsible person.
+
+    A linked battery follows its drone's team. Vehicles are team allocations,
+    not a claim that one particular vehicle is transporting the equipment.
+    """
+    sources = {}
+    equipment_by_id = {equipment.id: equipment for equipment in equipamentos}
+    for equipamento in equipamentos:
+        source = equipamento
+        if isinstance(equipamento, (Baterias, ControlesRemotos)) and equipamento.drone_id is not None:
+            source = equipamento.drone_vinculado
+        if source is not None and (source.prefeitura_id is None or equipamento.prefeitura_id is None
+                                   or source.prefeitura_id == equipamento.prefeitura_id):
+            sources[equipamento.id] = source
+    team_ids = {source.equipe_id for source in sources.values() if source.equipe_id is not None}
+    if not team_ids:
+        return {}
+    teams = apply_prefeitura_scope(Equipe.query, user, Equipe.prefeitura_id).filter(Equipe.id.in_(team_ids)).options(
+        selectinload(Equipe.membros).joinedload(EquipePiloto.piloto),
+    ).all()
+    teams_by_id = {team.id: team for team in teams}
+    vehicles = apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id).filter(
+        Veiculos.equipe_id.in_(team_ids),
+    ).order_by(Veiculos.placa, Veiculos.id).all()
+    vehicles_by_team = {}
+    for vehicle in vehicles:
+        team = teams_by_id.get(vehicle.equipe_id)
+        if team is not None and vehicle.prefeitura_id in (None, team.prefeitura_id):
+            vehicles_by_team.setdefault(team.id, []).append(vehicle)
+    assignments = {}
+    for equipment_id, source in sources.items():
+        team = teams_by_id.get(source.equipe_id)
+        if team is None or source.prefeitura_id not in (None, team.prefeitura_id):
+            continue
+        if equipment_by_id[equipment_id].prefeitura_id not in (None, team.prefeitura_id):
+            continue
+        def team_member(role):
+            return next((member.piloto for member in team.membros
+                         if member.papel == role and member.piloto is not None
+                         and member.piloto.prefeitura_id == team.prefeitura_id), None)
+        assignments[equipment_id] = dict(
+            equipe=team, piloto=team_member("piloto"), auxiliar=team_member("auxiliar"),
+            veiculos=vehicles_by_team.get(team.id, []),
+        )
+    return assignments
 
 
 def list_active_equipes(user=None):
@@ -89,6 +168,7 @@ def list_pecas_disponiveis_manutencao(drone, user=None):
         EstoquePeca.status == "disponivel_manutencao",
         EstoquePeca.quantidade > 0,
         EstoquePeca.prefeitura_id == drone.prefeitura_id,
+        EstoquePeca.arquivada_em.is_(None),
     )
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
@@ -279,6 +359,7 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
         consumed = db.session.execute(
             update(EstoquePeca).where(
                 EstoquePeca.id == peca.id,
+                EstoquePeca.arquivada_em.is_(None),
                 EstoquePeca.prefeitura_id == drone.prefeitura_id,
                 EstoquePeca.status == "disponivel_manutencao",
                 EstoquePeca.quantidade >= quantidade,
@@ -489,9 +570,9 @@ def validate_drone_form(form_data, *, existing_drone=None, user=None):
             )
 
     if numero_serie:
-        query = Drones.query.filter(Drones.numero_serie == numero_serie)
+        query = Equipamentos.query.filter(Equipamentos.numero_serie == numero_serie)
         if existing_drone is not None:
-            query = query.filter(Drones.id != existing_drone.id)
+            query = query.filter(Equipamentos.id != existing_drone.id)
         if query.first():
             errors["numero_serie"] = (
                 "Numero de serie ja utilizado."
@@ -574,6 +655,8 @@ def build_drone_edit_form(drone):
 
 
 def delete_drone(drone):
+    if drone.controles_remotos:
+        raise ValueError("Transfira os controles remotos vinculados antes de remover o drone.")
     for bateria in list(drone.baterias):
         bateria.drone_id = None
 

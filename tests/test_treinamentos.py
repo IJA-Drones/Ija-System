@@ -111,6 +111,60 @@ def test_every_material_has_an_explicit_valid_access_policy():
                    for code in policy.permissions)
 
 
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos'])
+@pytest.mark.parametrize('enforce', [True, False])
+def test_excel_guide_is_visible_and_downloadable_for_maintenance(training, enforce, key):
+    user = Usuario(login='training_maintenance', nome_uvis='Manutenção teste', senha_hash='unused',
+                   tipo_usuario='manutencao', prefeitura_id=14)
+    db.session.add(user)
+    db.session.commit()
+    training.users['manutencao'] = user
+    training.app.config['CENTRAL_TI_ENFORCE_PERMISSIONS'] = enforce
+    training.login('manutencao')
+    path = '/treinamentos/arquivos/' + key
+    assert path in training.client.get('/treinamentos').text
+    response = training.client.get(path)
+    assert response.status_code == 200
+    assert response.mimetype == 'application/pdf'
+    assert response.data == (RESOURCE_DIR / MATERIALS[key][0]).read_bytes()
+    assert response.headers['Cache-Control'] == 'private, no-store'
+    download = training.client.get(path + '?baixar=1')
+    assert download.status_code == 200
+    assert download.headers['Content-Disposition'].startswith('attachment')
+    response.close()
+    download.close()
+
+
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos'])
+def test_excel_guide_follows_stock_permission_for_listing_and_direct_download(training, key):
+    path = '/treinamentos/arquivos/' + key
+    for role in ('uvis', 'piloto', 'financeiro', 'agent'):
+        training.login(role)
+        assert path not in training.client.get('/treinamentos', follow_redirects=True).text
+        for method in ('GET', 'HEAD'):
+            denied = training.client.open(path + '?baixar=1', method=method, headers={'Range': 'bytes=0-99'})
+            assert denied.status_code == 403
+            assert denied.headers['Cache-Control'] == 'private, no-store'
+    training.login('uvis')
+    configure(training, 'uvis', ['area:sistema', 'sistema.estoque.consultar'])
+    assert path in training.client.get('/treinamentos').text
+    allowed = training.client.get(path)
+    assert allowed.status_code == 200
+    allowed.close()
+    # Removing the capability also removes the PDF, including a previously copied URL.
+    CentralTiSelecao.query.filter_by(perfil_codigo='uvis', codigo='sistema.estoque.consultar').delete()
+    db.session.commit()
+    assert path not in training.client.get('/treinamentos').text
+    assert training.client.get(path).status_code == 403
+
+
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos'])
+def test_excel_guide_requires_authentication(training, key):
+    response = training.client.get('/treinamentos/arquivos/' + key)
+    assert response.status_code == 302
+    assert '/login' in response.location
+
+
 @pytest.mark.parametrize("enforce", [True, False])
 def test_uvis_sees_own_guides_and_cannot_download_pilot_agro_or_finance(training, enforce):
     training.app.config["CENTRAL_TI_ENFORCE_PERMISSIONS"] = enforce
@@ -281,3 +335,17 @@ def test_azul_agro_manual_pilot_access_and_revocation(training):
     pilot.ativo = False
     db.session.commit()
     assert training.client.get('/treinamentos/arquivos/guia-azul-agro').status_code == 403
+
+
+def test_equipment_guide_accepts_maintenance_capability_without_stock_access(training):
+    path = '/treinamentos/arquivos/guia-busca-equipamentos-responsaveis'
+    training.login('uvis')
+    configure(training, 'uvis', ['area:prefeitura', 'prefeitura.equipamentos.consultar', 'prefeitura.equipamentos.editar'])
+    assert path in training.client.get('/treinamentos').text
+    response = training.client.get(path)
+    assert response.status_code == 200
+    response.close()
+    assert training.client.get('/estoque').status_code == 403
+    CentralTiSelecao.query.filter_by(perfil_codigo='uvis', codigo='prefeitura.equipamentos.editar').delete()
+    db.session.commit()
+    assert training.client.get(path).status_code == 403
