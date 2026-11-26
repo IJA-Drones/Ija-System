@@ -4,7 +4,7 @@ from io import BytesIO
 from pathlib import Path
 import unittest
 
-from flask import g
+from flask import Flask, g, render_template_string
 from openpyxl import load_workbook
 from pypdf import PdfReader
 
@@ -13,6 +13,7 @@ from app.models import Drones, EstoquePeca, ManutencaoEquipamento, ManutencaoPec
 from app.modules.equipamentos.exporters import build_manutencao_pdf
 from app.modules.gestao_ti.permissions import validate_route_policy
 from app.modules.gestao_ti.service import save_configurations
+from app.shared.template_values import finalize_template_value
 from tests import test_central_ti as fixture
 
 
@@ -114,6 +115,26 @@ class ManutencaoOsTests(unittest.TestCase):
         self.open_os(avarias_identificadas='Outro motivo')
         self.assertEqual(ManutencaoEquipamento.query.count(), 1)
         self.assertEqual(ManutencaoEquipamento.query.one().avarias_identificadas, 'Hélice danificada')
+
+    def test_empty_report_fields_and_signatures_never_render_none(self):
+        self.open_os()
+        response = self.client.get(f'/equipamentos/{self.drones[0].id}/manutencao/pecas')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('value="None"', response.text)
+        self.assertNotIn('>None</textarea>', response.text)
+        self.assertIn('value="Fernando teste"', response.text)
+        self.assertIn('>Hélice danificada</textarea>', response.text)
+        self.assertEqual(self.client.post(f'/equipamentos/{self.drones[0].id}/manutencao/pecas',
+            data={'observacoes': 'Diagnóstico sem assinatura', 'assinatura_responsavel_tecnico': '',
+                  'assinatura_responsavel_avaria': ''}).status_code, 302)
+
+    def test_global_template_fallback_preserves_zero_false_and_escaping(self):
+        app = Flask(__name__)
+        app.jinja_env.finalize = finalize_template_value
+        with app.app_context():
+            html = render_template_string('{{ empty }}|{{ zero }}|{{ flag }}|{{ text }}',
+                                          empty=None, zero=0, flag=False, text='<script>')
+        self.assertEqual(html, '|0|False|&lt;script&gt;')
 
     def test_global_admin_opens_os_in_drone_municipality(self):
         self.login('admin')
