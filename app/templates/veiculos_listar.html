@@ -21,6 +21,9 @@
             <p>Veículos, equipes e responsáveis em um só lugar.</p>
         </div>
         <div class="header-actions">
+{% if can_view_preventivas|default(false) %}
+            <a href="{{ url_for('main.preventivas', tipo='veiculos') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.preventivas')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-calendar-check me-1"></i> Manutenção preventiva</a>
+{% endif %}
             <a href="{{ url_for('main.veiculos_rastreamento') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_rastreamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-geo-alt me-1"></i> Rastreamento
             </a>

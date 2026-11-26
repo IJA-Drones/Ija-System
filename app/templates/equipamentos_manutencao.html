@@ -7,6 +7,10 @@
 {% endblock %}
 
 {% block content %}
+{% if can_view_preventivas|default(false) %}
+<div class="mb-3"><a class="btn btn-outline-primary" href="{{ url_for('main.preventivas') }}"><i class="bi bi-calendar-check me-1" aria-hidden="true"></i>Manutenção preventiva</a></div>
+{% endif %}
+
 <div class="container-fluid py-4 equipamentos-manutencao-page">
 
     <div class="d-flex justify-content-between align-items-center mb-4 equipamentos-manutencao-toolbar">

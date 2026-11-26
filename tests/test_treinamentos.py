@@ -111,7 +111,7 @@ def test_every_material_has_an_explicit_valid_access_policy():
                    for code in policy.permissions)
 
 
-@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos', 'guia-gestao-baterias'])
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos', 'guia-gestao-baterias', 'guia-manutencao-preventiva'])
 @pytest.mark.parametrize('enforce', [True, False])
 def test_excel_guide_is_visible_and_downloadable_for_maintenance(training, enforce, key):
     user = Usuario(login='training_maintenance', nome_uvis='Manutenção teste', senha_hash='unused',
@@ -163,6 +163,43 @@ def test_excel_guide_requires_authentication(training, key):
     response = training.client.get('/treinamentos/arquivos/' + key)
     assert response.status_code == 302
     assert '/login' in response.location
+
+
+@pytest.mark.parametrize('enforce', [True, False])
+def test_preventive_guide_restricted_audience_even_with_equipment_permissions(training, enforce):
+    training.app.config['CENTRAL_TI_ENFORCE_PERMISSIONS'] = enforce
+    path = '/treinamentos/arquivos/guia-manutencao-preventiva'
+    assert training.client.get(path).status_code == 302
+    for role in ('admin', 'diretor', 'uvis', 'piloto', 'prefeitura_admin'):
+        configure(training, role, ['area:prefeitura', 'prefeitura.equipamentos.consultar'])
+        training.login(role)
+        assert path not in training.client.get('/treinamentos').text
+        for method in ('GET', 'HEAD'):
+            response = training.client.open(path, method=method, headers={'Range': 'bytes=0-99'})
+            assert response.status_code == 403
+    training.login('dev')
+    response = training.client.get(path)
+    assert response.status_code == 200
+    response.close()
+
+
+def test_preventive_guide_follows_type_specific_consultation_permissions(training):
+    user = Usuario(login='training_preventive', nome_uvis='Manutenção teste', senha_hash='unused',
+                   tipo_usuario='manutencao', prefeitura_id=14)
+    db.session.add(user)
+    db.session.commit()
+    training.users['manutencao'] = user
+    configure(training, 'manutencao', ['area:prefeitura', 'prefeitura.veiculos.consultar'])
+    training.login('manutencao')
+    path = '/treinamentos/arquivos/guia-manutencao-preventiva'
+    assert path in training.client.get('/treinamentos').text
+    response = training.client.get(path)
+    assert response.status_code == 200
+    response.close()
+    CentralTiSelecao.query.filter_by(perfil_codigo='manutencao', codigo='prefeitura.veiculos.consultar').delete()
+    db.session.commit()
+    assert path not in training.client.get('/treinamentos').text
+    assert training.client.get(path).status_code == 403
 
 
 @pytest.mark.parametrize("enforce", [True, False])

@@ -32,6 +32,9 @@ def _legacy(user, name):
         return getattr(user, "tipo_usuario", "") in {"uvis", "dev", "diretor", "admin", "visualizar", "prefeitura_admin", "sup_veiculos", "sup_veiculo"}
     if name == "dev":
         return is_dev_user(user)
+    if name == "preventive":
+        from app.modules.equipamentos.preventivas_access import can_use_preventivas
+        return can_use_preventivas(user)
     if name == "maps":
         return not is_agro_finance_user(user) and role not in {"piloto_agro", "gestor_ti", "ortomosaico"}
     if name == "uvis_teams":
@@ -134,6 +137,7 @@ POLICIES = {
     "guia-controles-remotos": MaterialPolicy("prefeitura", ("sistema.estoque.consultar", "prefeitura.equipamentos.editar"), "stock"),
     "guia-importacao-pecas-excel": MaterialPolicy("prefeitura", ("sistema.estoque.consultar",), "stock"),
     "guia-manutencao-equipamentos": MaterialPolicy("prefeitura", ("prefeitura.equipamentos.editar",), "maintenance"),
+    "guia-manutencao-preventiva": MaterialPolicy("prefeitura", ("prefeitura.equipamentos.consultar", "prefeitura.veiculos.consultar"), "preventive"),
     "guia-central-ti-permissoes": MaterialPolicy("prefeitura", legacy="central_ti"),
     "guia-reporte-acompanhamento-bugs": MaterialPolicy("prefeitura", ("sistema.bugs.criar", "sistema.bugs.atender"), "bugs"),
     "guia-painel-operacional": MaterialPolicy("prefeitura", ("sistema.operacional.consultar",), "operational"),
@@ -162,6 +166,8 @@ def can_read_material(user, material_id):
     if policy.area == "common":
         return True
     role = profile_code(user)
+    if policy.legacy == "preventive" and not _legacy(user, "preventive"):
+        return False
     if role == "agente_endemias":
         # Os tutoriais atuais de vigilância ensinam planejamento/importação,
         # não apenas o formulário de visita autorizado ao agente.

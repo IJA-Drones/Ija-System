@@ -514,6 +514,13 @@
   "main.financeiro_empresa_comercial": {
     "GET": "financeiro.comercial.consultar"
   },
+  "main.preventivas": {
+    "GET": ["prefeitura.equipamentos.consultar", "prefeitura.veiculos.consultar"]
+  },
+  "main.preventiva_detalhe": {
+    "GET": ["prefeitura.equipamentos.consultar", "prefeitura.veiculos.consultar"],
+    "POST": ["prefeitura.equipamentos.editar", "prefeitura.veiculos.editar"]
+  },
   "main.listar_equipamentos": {
     "GET": "prefeitura.equipamentos.consultar"
   },

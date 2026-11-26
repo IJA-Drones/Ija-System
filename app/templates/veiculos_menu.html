@@ -18,6 +18,9 @@
     </div>
 
     <div class="d-flex gap-2 flex-wrap page-actions">
+{% if can_view_preventivas|default(false) %}
+            <a href="{{ url_for('main.preventivas', tipo='veiculos') }}" class="btn btn-outline-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.preventivas')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-calendar-check me-1"></i> Manutenção preventiva</a>
+{% endif %}
       <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>

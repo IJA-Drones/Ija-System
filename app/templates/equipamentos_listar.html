@@ -15,6 +15,9 @@
         </div>
     </div>
 
+{% if can_view_preventivas|default(false) %}
+<div class="mb-3"><a class="btn btn-outline-primary" href="{{ url_for('main.preventivas') }}"><i class="bi bi-calendar-check me-1" aria-hidden="true"></i>Manutenção preventiva</a></div>
+{% endif %}
     {# --- CARDS DE RESUMO / NAVEGAÇÃO --- #}
     <div class="row g-3 mb-4">
         <div class="col-md-6 col-xl-3">

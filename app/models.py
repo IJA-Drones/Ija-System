@@ -3722,3 +3722,30 @@ class ConfiguracaoSmtp(db.Model):
     ativo = db.Column(db.Boolean, nullable=False, default=True)
     atualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
     atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+
+class PreventivaPlano(db.Model):
+    __tablename__ = "preventiva_planos"
+    id = db.Column(db.Integer, primary_key=True)
+    equipamento_id = db.Column(db.Integer, db.ForeignKey("equipamentos.id", ondelete="RESTRICT"), nullable=False, unique=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=False)
+    intervalo_dias = db.Column(db.Integer, nullable=False)
+    ultima_realizada_em = db.Column(db.Date)
+    versao = db.Column(db.Integer, nullable=False, default=1)
+    atualizado_em = db.Column(db.DateTime, nullable=False)
+    equipamento = db.relationship("Equipamentos", foreign_keys=[equipamento_id])
+    __table_args__ = (db.CheckConstraint("intervalo_dias IN (60, 90)", name="ck_preventiva_intervalo"),)
+
+
+class PreventivaRegistro(db.Model):
+    __tablename__ = "preventiva_registros"
+    id = db.Column(db.Integer, primary_key=True)
+    plano_id = db.Column(db.Integer, db.ForeignKey("preventiva_planos.id", ondelete="RESTRICT"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"))
+    usuario_nome = db.Column(db.String(200), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)
+    realizada_em = db.Column(db.Date)
+    descricao = db.Column(db.Text, nullable=False)
+    dados = db.Column(db.JSON, nullable=False)
+    manutencao_id = db.Column(db.Integer, db.ForeignKey("manutencoes_equipamentos.id", ondelete="RESTRICT"))

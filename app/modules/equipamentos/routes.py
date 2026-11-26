@@ -67,6 +67,8 @@ def _get_scoped_bateria_or_404(bateria_id: int):
 def register_routes(bp):
     from app.modules.equipamentos.controles_routes import register_controle_routes
     register_controle_routes(bp)
+    from app.modules.equipamentos.preventivas import register_preventiva_routes
+    register_preventiva_routes(bp)
 
     @bp.route("/equipamentos", methods=["GET"], endpoint="listar_equipamentos")
     @login_required

@@ -98,6 +98,7 @@ GUIDE_GROUPS = (
              ("guia-gestao-baterias", "Gestão de baterias: filtros e histórico", 2, "guia-gestao-baterias.pdf"),
              ("guia-controles-remotos", "Controles remotos: cadastro e pesquisa", 2, "guia-controles-remotos.pdf"),
              ("guia-manutencao-equipamentos", "Manutenção de equipamentos", 3, "guia-manutencao-equipamentos.pdf"),
+             ("guia-manutencao-preventiva", "Manutenção preventiva: drones e veículos", 2, "guia-manutencao-preventiva.pdf"),
          )),
     dict(id="gestao-suporte", title="Gestão, acessos e suporte", icon="bi-shield-lock",
          documents=(

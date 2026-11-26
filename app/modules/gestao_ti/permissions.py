@@ -147,6 +147,10 @@ def route_options(endpoint, method="GET", args=None):
 
 
 def can_access_endpoint(user, endpoint, method="GET", args=None, legacy=True):
+    if endpoint in {"main.preventivas", "main.preventiva_detalhe"}:
+        from app.modules.equipamentos.preventivas_access import can_use_preventivas
+        if not can_use_preventivas(user):
+            return False
     from app.modules.ortomosaicos.access import is_orthomosaic_user, dedicated_endpoint_allowed
     if is_orthomosaic_user(user):
         return dedicated_endpoint_allowed(endpoint)
