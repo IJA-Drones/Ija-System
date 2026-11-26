@@ -44,7 +44,7 @@ SCREENS = {
  'sistema.perfis': [('central_ti','Central de TI')],
  'sistema.suporte': [('feedback_listar','Suporte'),('feedback_novo','Novo chamado')],
  'sistema.bugs': [('bugs_listar','Bugs'),('bug_report_novo','Reportar problema')],
- 'sistema.estoque': [('estoque_listar','Estoque'),('estoque_novo','Cadastrar item')],
+ 'sistema.estoque': [('estoque_listar','Estoque'),('estoque_novo','Cadastrar item'),('estoque_importar','Importar peças por Excel')],
  'sistema.operacional': [('painel_operacional','Painel operacional')],
  'sistema.auditoria': [('admin_logs_usuarios','Auditoria e presença'),('veiculos_logs_excluidos','Logs excluídos')],
  'sistema.tecnico': [('dev_dashboard','Ferramentas técnicas')],

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_importar.css') }}">{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 stock-import-page">
+  <header class="stock-import-heading"><div><span class="stock-import-eyebrow">ESTOQUE DE PEÇAS</span><h2>Importar peças por Excel</h2><p>Envie sua planilha, confira a prévia e confirme os dados antes de salvar.</p></div><a href="{{ url_for('main.estoque_listar') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Voltar ao estoque</a></header>
+  {% if errors %}<div class="alert alert-warning" role="alert"><strong>Confira o arquivo antes de continuar.</strong><ul class="mb-0 mt-2">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+  <div class="row g-4">
+    <div class="col-lg-5"><section class="stock-import-panel h-100"><span class="stock-import-step">1</span><h3>Baixe o modelo padrão</h3><p>Preencha a aba <strong>Peças</strong>. O arquivo inclui instruções e uma aba de exemplos que não será importada.</p><a class="btn btn-outline-primary w-100 mb-4" href="{{ url_for('main.estoque_importar_modelo') }}"><i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i>Baixar modelo Excel</a><div class="stock-import-hint"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Um saldo por peça</strong><p>Para compatibilidade com vários modelos ou equipamentos, use ponto e vírgula na mesma célula. Não repita a peça para cada vínculo.</p></div></div><ul class="stock-import-rules"><li><strong>Obrigatórios:</strong> peça e quantidade inteira.</li><li><strong>Compatibilidade:</strong> modelos cadastrados e números de série dos equipamentos da prefeitura escolhida.</li><li><strong>Limites:</strong> arquivo .xlsx ou .xlsm de até 5 MB e 1.000 linhas.</li><li><strong>Sem fórmulas:</strong> informe os valores nas células.</li></ul></section></div>
+    <div class="col-lg-7"><section class="stock-import-panel h-100"><span class="stock-import-step">2</span><h3>Envie para revisar</h3><p>Aceita o modelo padrão e o inventário por abas T10, T20, T30 e T40. O envio ainda não cadastra peças no estoque. Você verá as linhas reconhecidas e os erros a corrigir.</p>
+      <form method="post" enctype="multipart/form-data">
+        {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+        <div class="mb-4"><label for="import-prefeitura" class="form-label fw-semibold">Prefeitura do estoque</label><select id="import-prefeitura" name="prefeitura_id" class="form-select" required {% if not can_choose_prefeitura and prefeituras|length == 1 %}aria-readonly="true"{% endif %}><option value="">Selecione a prefeitura</option>{% for prefeitura in prefeituras %}<option value="{{ prefeitura.id }}" {% if selected == prefeitura.id|string or (not can_choose_prefeitura and prefeituras|length == 1) %}selected{% endif %}>{{ prefeitura.nome }}</option>{% endfor %}</select></div>
+        <div class="stock-import-upload mb-4"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i><label for="import-arquivo" class="form-label fw-semibold">Selecione a planilha preenchida</label><input id="import-arquivo" type="file" name="arquivo" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12" class="form-control" required><span>Excel .xlsx ou .xlsm · até 5 MB · macros não são executadas</span></div>
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-eye me-2" aria-hidden="true"></i>Gerar prévia e validar</button>
+      </form>
+    </section></div>
+  </div>
+  <div class="stock-import-next"><span class="stock-import-step">3</span><div><strong>Confira antes de confirmar</strong><p>A prévia identifica duplicidades, quantidades inválidas e compatibilidades não encontradas. O lote só é salvo quando todas as linhas estão válidas.</p></div></div>
+</div>
+{% endblock %}

@@ -89,6 +89,7 @@ def list_pecas_disponiveis_manutencao(drone, user=None):
         EstoquePeca.status == "disponivel_manutencao",
         EstoquePeca.quantidade > 0,
         EstoquePeca.prefeitura_id == drone.prefeitura_id,
+        EstoquePeca.arquivada_em.is_(None),
     )
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
@@ -279,6 +280,7 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
         consumed = db.session.execute(
             update(EstoquePeca).where(
                 EstoquePeca.id == peca.id,
+                EstoquePeca.arquivada_em.is_(None),
                 EstoquePeca.prefeitura_id == drone.prefeitura_id,
                 EstoquePeca.status == "disponivel_manutencao",
                 EstoquePeca.quantidade >= quantidade,

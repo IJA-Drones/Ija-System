@@ -950,6 +950,20 @@
   "main.estoque_listar": {
     "GET": "sistema.estoque.consultar"
   },
+  "main.estoque_importar": {
+    "GET": "sistema.estoque.criar",
+    "POST": "sistema.estoque.criar"
+  },
+  "main.estoque_importar_modelo": {
+    "GET": "sistema.estoque.criar"
+  },
+  "main.estoque_importar_previa": {
+    "GET": "sistema.estoque.criar",
+    "POST": "sistema.estoque.criar"
+  },
+  "main.estoque_importar_confirmar": {
+    "POST": "sistema.estoque.criar"
+  },
   "main.estoque_export_excel": {
     "GET": "sistema.estoque.exportar"
   },
