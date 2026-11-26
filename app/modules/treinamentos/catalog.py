@@ -94,6 +94,7 @@ GUIDE_GROUPS = (
              ("guia-rastreamento-veiculos", "Rastreamento de veículos", 3, "guia-rastreamento-veiculos.pdf"),
              ("guia-estoque-pecas", "Estoque de peças", 3, "guia-estoque-pecas.pdf"),
              ("guia-importacao-pecas-excel", "Importação de peças por Excel", 2, "guia-importacao-pecas-excel.pdf"),
+             ("guia-busca-equipamentos-responsaveis", "Pesquisa de equipamentos, responsáveis e veículos", 2, "guia-busca-equipamentos-responsaveis.pdf"),
              ("guia-manutencao-equipamentos", "Manutenção de equipamentos", 3, "guia-manutencao-equipamentos.pdf"),
          )),
     dict(id="gestao-suporte", title="Gestão, acessos e suporte", icon="bi-shield-lock",

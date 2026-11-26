@@ -14,6 +14,7 @@ from app.modules.equipamentos.service import (
     delete_bateria,
     delete_drone,
     encerrar_manutencao_drone,
+    equipment_team_assignments,
     get_manutencao_aberta,
     get_manutencao_scoped_or_404,
     list_active_equipes,
@@ -67,15 +68,22 @@ def register_routes(bp):
     @bp.route("/equipamentos", methods=["GET"], endpoint="listar_equipamentos")
     @login_required
     def listar_equipamentos():
-        return render_template("equipamentos_listar.html", **list_equipamentos_dashboard(user=current_user))
+        q = request.args.get("q", "").strip()
+        return render_template(
+            "equipamentos_listar.html", q=q,
+            **list_equipamentos_dashboard(user=current_user, q=q),
+        )
 
     @bp.route("/equipamentos/drones", methods=["GET"], endpoint="listar_drones")
     @login_required
     def listar_drones_view():
+        drones = list_drones(user=current_user, q=request.args.get("q"))
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "drones_listar.html",
-            drones=list_drones(user=current_user),
+            drones=drones,
+            responsabilidades=equipment_team_assignments(drones, user=current_user),
+            q=request.args.get("q", "").strip(),
             can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
             is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
             can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
@@ -84,10 +92,13 @@ def register_routes(bp):
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
     @login_required
     def listar_baterias_view():
+        baterias = list_baterias(user=current_user, q=request.args.get("q"))
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "baterias_listar.html",
-            baterias=list_baterias(user=current_user),
+            baterias=baterias,
+            responsabilidades=equipment_team_assignments(baterias, user=current_user),
+            q=request.args.get("q", "").strip(),
             is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
             can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
         )

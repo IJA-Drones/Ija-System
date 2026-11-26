@@ -1,0 +1,8 @@
+<form method="get" class="card border-0 shadow-sm rounded-4 p-3 mb-4" role="search">
+    <label for="equipment-search" class="form-label fw-semibold">Buscar por número de série, nome ou modelo</label>
+    <div class="d-flex flex-wrap gap-2">
+        <input id="equipment-search" type="search" name="q" value="{{ q|default('') }}" class="form-control flex-grow-1" style="flex-basis: 240px" placeholder="Digite o número de série completo ou parte dele…">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i> Buscar</button>
+        {% if q %}<a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary">Limpar</a>{% endif %}
+    </div>
+</form>

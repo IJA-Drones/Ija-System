@@ -78,6 +78,8 @@
         </div>
     </div>
 
+    {% include "_equipamentos_busca.html" %}
+
     {# --- TABELA GERAL (LINHA DO TEMPO) --- #}
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
         <div class="card-header py-3 border-0">
@@ -99,9 +101,9 @@
                         {% for eq in equipamentos %}
                         <tr>
                             <td class="ps-3">
-                                {% if eq.tipo_equipamento == 'drone' %}
+                                {% if eq.tipo_equipamento == 'drones' %}
                                     <i class="bi bi-airplane-engines-fill text-primary" title="Drone"></i>
-                                {% elif eq.tipo_equipamento == 'bateria' %}
+                                {% elif eq.tipo_equipamento == 'baterias' %}
                                     <i class="bi bi-battery-charging text-warning" title="Bateria"></i>
                                 {% else %}
                                     <i class="bi bi-cpu text-success"></i>
@@ -135,6 +137,8 @@
                                 {% endif %}
                             </td>
                         </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center py-4 text-muted">Nenhum equipamento encontrado.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
