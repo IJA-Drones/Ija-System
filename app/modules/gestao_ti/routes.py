@@ -3,7 +3,7 @@
 import json
 import secrets
 
-from flask import abort, current_app, jsonify, render_template, request, session, url_for
+from flask import abort, current_app, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -11,12 +11,15 @@ from app.modules.gestao_ti.service import (
     ConfigurationConflict, build_editor_data, can_manage_central_ti, save_configurations,
 )
 from app.shared.access import normalize_role
-from app.modules.gestao_ti.permissions import active_configuration, enforcement_enabled, invalidate_request_permissions
+from app.shared.csrf_security import csrf_token as global_csrf_token
+from app.modules.gestao_ti.permissions import (CENTRAL_TI_ENDPOINTS, active_configuration,
+                                              can_access_endpoint, enforcement_enabled, invalidate_request_permissions)
+from app.modules.gestao_ti import user_permissions
 
 
 CSRF_SESSION_KEY = "_ija_central_ti_csrf"
 MAX_PAYLOAD_BYTES = 262144
-CENTRAL_ENDPOINTS = {"main.central_ti", "main.central_ti_salvar"}
+CENTRAL_ENDPOINTS = CENTRAL_TI_ENDPOINTS
 
 
 def _require_access():
@@ -59,7 +62,8 @@ def register_routes(bp):
 
     @bp.app_context_processor
     def inject_central_ti_access():
-        return {"can_manage_central_ti": can_manage_central_ti}
+        return {"can_manage_central_ti": can_manage_central_ti,
+                "central_ti_users_enabled": user_permissions.enabled()}
 
     @bp.after_request
     def prevent_configuration_cache(response):
@@ -71,14 +75,80 @@ def register_routes(bp):
     @login_required
     def central_ti():
         _require_access()
+        if user_permissions.enabled() and request.args.get("modo") != "perfis":
+            return redirect(url_for("main.central_ti_usuarios"))
         try:
             data = build_editor_data()
         except SQLAlchemyError:
             current_app.logger.exception("Central de TI: falha ao carregar configurações.")
             return "Central de TI indisponível. Verifique a migração no ambiente autorizado.", 503
-        data.update(save_url=url_for("main.central_ti_salvar"), csrf_token=_csrf_token(),
+        data.update(save_url=url_for("main.central_ti_salvar"), csrf_token=_csrf_token(), global_csrf_token=global_csrf_token(),
                     active=enforcement_enabled())
         return render_template("gestao_ti_central.html", central_ti_data=data)
+
+    @bp.get("/central-ti/usuarios", endpoint="central_ti_usuarios")
+    @login_required
+    def central_ti_usuarios():
+        user_permissions.require_editor(current_user)
+        data = build_editor_data()
+        data.update(csrf_token=_csrf_token(), global_csrf_token=global_csrf_token(), active=enforcement_enabled(),
+                    search_url=url_for("main.central_ti_usuarios_buscar"),
+                    detail_url=url_for("main.central_ti_usuario", user_id=0),
+                    save_url=url_for("main.central_ti_usuario_salvar", user_id=0))
+        create_allowed = can_access_endpoint(current_user, "main.admin_usuario_novo", legacy=normalize_role(current_user.tipo_usuario) == "dev")
+        return render_template("gestao_ti_usuarios.html", central_ti_data=data,
+                               create_user_url=url_for("main.admin_usuario_novo") if create_allowed else None)
+
+    @bp.get("/central-ti/usuarios/busca", endpoint="central_ti_usuarios_buscar")
+    @login_required
+    def central_ti_usuarios_buscar():
+        user_permissions.require_editor(current_user)
+        try:
+            result = user_permissions.search_users(current_user, request.args.get("q", ""), int(request.args.get("page", "1")))
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 400
+        except SQLAlchemyError:
+            db_error("buscar usuários")
+            return jsonify(error="Não foi possível buscar os usuários."), 503
+        return jsonify(result)
+
+    @bp.get("/central-ti/usuarios/<int:user_id>", endpoint="central_ti_usuario")
+    @login_required
+    def central_ti_usuario(user_id):
+        user_permissions.require_editor(current_user)
+        try:
+            return jsonify(user_permissions.user_configuration(current_user, user_id))
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 400
+        except SQLAlchemyError:
+            db_error("consultar acessos individuais")
+            return jsonify(error="Não foi possível consultar os acessos deste usuário."), 503
+
+    @bp.post("/central-ti/usuarios/<int:user_id>/permissoes", endpoint="central_ti_usuario_salvar")
+    @login_required
+    def central_ti_usuario_salvar(user_id):
+        user_permissions.require_editor(current_user)
+        if not _valid_csrf():
+            return jsonify(error="Recarregue a central e tente novamente.", code="csrf_invalid"), 403
+        if not request.is_json:
+            return jsonify(error="Envie os acessos em JSON."), 415
+        if request.content_length is not None and request.content_length > MAX_PAYLOAD_BYTES:
+            return jsonify(error="Configuração maior que o limite permitido."), 413
+        raw = request.stream.read(MAX_PAYLOAD_BYTES + 1)
+        if len(raw) > MAX_PAYLOAD_BYTES:
+            return jsonify(error="Configuração maior que o limite permitido."), 413
+        try:
+            payload = json.loads(raw)
+            result = user_permissions.save_user_configuration(current_user, user_id, payload,
+                permission_schema_version=request.headers.get('X-Central-TI-Permission-Schema'))
+        except ConfigurationConflict as exc:
+            return jsonify(error=str(exc), code="configuration_conflict"), 409
+        except (ValueError, UnicodeError) as exc:
+            return jsonify(error=str(exc)), 400
+        except SQLAlchemyError:
+            db_error("salvar acessos individuais")
+            return jsonify(error="Não foi possível salvar os acessos."), 503
+        return jsonify(ok=True, configuration=result, active_rules_changed=enforcement_enabled())
 
     @bp.post("/central-ti/configuracoes", endpoint="central_ti_salvar")
     @login_required
@@ -99,7 +169,8 @@ def register_routes(bp):
         except (ValueError, UnicodeError):
             return jsonify(error="Formato JSON inválido."), 400
         try:
-            profiles = save_configurations(current_user, payload)
+            profiles = save_configurations(current_user, payload,
+                permission_schema_version=request.headers.get('X-Central-TI-Permission-Schema'))
         except ConfigurationConflict as exc:
             return jsonify(error=str(exc), code="configuration_conflict"), 409
         except ValueError as exc:
@@ -109,3 +180,9 @@ def register_routes(bp):
             return jsonify(error="Não foi possível salvar. Tente novamente em instantes."), 503
         invalidate_request_permissions()
         return jsonify(ok=True, profiles=profiles, active_rules_changed=enforcement_enabled())
+
+
+def db_error(action):
+    from app.extensions import db
+    db.session.rollback()
+    current_app.logger.exception("Central de TI: falha ao %s.", action)

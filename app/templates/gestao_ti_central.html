@@ -10,6 +10,13 @@
   <header class="page-toolbar ti-heading">
     <h1 class="h2 mb-0"><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Central de TI</h1>
   </header>
+  {% if central_ti_users_enabled %}
+  <nav class="ti-mode-nav" aria-label="Organização dos acessos">
+    <a class="btn btn-outline-primary" href="{{ url_for('main.central_ti_usuarios') }}">Por usuário</a>
+    <a class="btn btn-primary" aria-current="page" href="{{ url_for('main.central_ti', modo='perfis') }}">Modelos por perfil</a>
+  </nav>
+  <p class="text-muted">Os modelos valem para usuários que ainda não têm acessos individuais. As configurações personalizadas de cada conta são preservadas.</p>
+  {% endif %}
 
   <div class="ti-workspace">
     <aside class="ti-profiles ti-panel" aria-labelledby="ti-profiles-title">
@@ -56,5 +63,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261118-interface') }}" defer></script>
+<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261125-vehicles') }}" defer></script>
 {% endblock %}

@@ -12,6 +12,7 @@ from app.modules.veiculos.service import (
     VEICULOS_LOGS_ALLOWED_TYPES, _apply_log_actor_scope,
 )
 from app.shared.access import normalize_role
+from app.modules.gestao_ti.permissions import active_configuration, has_permission
 
 BRAZIL = ZoneInfo("America/Sao_Paulo")
 
@@ -28,6 +29,8 @@ def driver(log):
 
 def load_logs(vehicle_ids, user, day, period=None):
     if not vehicle_ids:
+        return {}
+    if active_configuration(user) is not None and not has_permission(user, 'prefeitura.logs_veiculos.consultar'):
         return {}
     # Include today's open shifts even when reviewing an earlier route. Closed
     # legacy shifts have no reliable end time and are linked by opening day only.
@@ -182,8 +185,10 @@ def reconciliation(logs, points, day, user, vehicle_id, now, period=None):
             difference = round(row["gps"]["distance_km"] - row["recorded_km"], 2)
             row["difference_km"] = difference
             row["comparison"] = "difference" if abs(difference) > row["tolerance_km"] else "within_tolerance"
+        can_open_logs = (has_permission(user, 'prefeitura.logs_veiculos.consultar') if active_configuration(user) is not None
+                         else normalize_role(user.tipo_usuario) in VEICULOS_LOGS_ALLOWED_TYPES)
         row["url"] = url_for("main.veiculo_logs_detalhe", veiculo_id=vehicle_id,
-                             _anchor=f"turnoHeader{row['id']}") if normalize_role(user.tipo_usuario) in VEICULOS_LOGS_ALLOWED_TYPES else None
+                             _anchor=f"turnoHeader{row['id']}") if can_open_logs else None
     for p, ids in zip(points, point_logs):
         p["log_id"] = ids[0] if len(ids) == 1 else None
         match = next((row for row in rows if row["id"] == p["log_id"]), None)

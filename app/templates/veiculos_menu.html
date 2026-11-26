@@ -33,6 +33,7 @@
   </div>
 
   <div class="row g-3">
+    {% if (central_ti_ui_guard(['main.listar_veiculos'], true) if central_ti_ui_guard is defined else true) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.listar_veiculos') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_veiculos')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--frota border-start border-primary border-4">
@@ -55,7 +56,9 @@
         </div>
       </a>
     </div>
+    {% endif %}
 
+    {% if (central_ti_ui_guard(['main.veiculos_rastreamento'], true) if central_ti_ui_guard is defined else true) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_rastreamento') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_rastreamento')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card border-start border-info border-4">
@@ -73,6 +76,7 @@
         </div>
       </a>
     </div>
+    {% endif %}
 
     {% if (central_ti_ui_guard(['main.veiculos_logs'], can_view_logs) if central_ti_ui_guard is defined else can_view_logs) %}
     <div class="col-md-6 col-xl-4">
@@ -97,7 +101,9 @@
         </div>
       </a>
     </div>
+    {% endif %}
 
+    {% if (central_ti_ui_guard(['main.veiculos_limpezas'], can_view_logs) if central_ti_ui_guard is defined else can_view_logs) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_limpezas') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_limpezas')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--limpezas border-start border-info border-4">
@@ -147,7 +153,7 @@
     </div>
     {% endif %}
 
-    {% if current_user.trabalha_oceano_azul %}
+    {% if (central_ti_ui_guard(['main.veiculos_alertas_limpeza'], current_user.trabalha_oceano_azul) if central_ti_ui_guard is defined else current_user.trabalha_oceano_azul) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_alertas_limpeza') }}" class="text-decoration-none" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.veiculos_alertas_limpeza')) if central_ti_url_allowed is defined else true) else 'false' }}">
         <div class="card veiculos-menu-card veiculos-menu-card--alertas border-start border-danger border-4">

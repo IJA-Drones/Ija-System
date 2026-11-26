@@ -225,6 +225,8 @@ def current_rules(profile_code):
         if can_import_dji_logs(user):
             allow("prefeitura.voos", "importar editar excluir")
 
+    from app.modules.gestao_ti.permission_versions import effective_codes
+    permissions = effective_codes(permissions)
     if not permissions <= PERMISSION_CODES:
         raise ValueError("Mapeamento atual contém opções ausentes no catálogo.")
     if role not in GLOBAL_ADMIN_USER_TYPES and any(code.startswith("prefeitura.") for code in permissions):

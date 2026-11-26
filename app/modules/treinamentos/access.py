@@ -44,6 +44,12 @@ def _legacy(user, name):
     if name == "tracking":
         from app.modules.veiculos.service import VEICULOS_ALLOWED_TYPES
         return (getattr(user, "tipo_usuario", "") or "").lower() in VEICULOS_ALLOWED_TYPES
+    if name == "vehicle_logs":
+        from app.modules.veiculos.service import VEICULOS_LOGS_ALLOWED_TYPES
+        return role in VEICULOS_LOGS_ALLOWED_TYPES
+    if name == "vehicle_alerts":
+        from app.modules.veiculos.service import can_access_limpeza_alertas_admin, can_access_limpeza_alertas_operacionais
+        return can_access_limpeza_alertas_admin(user) or can_access_limpeza_alertas_operacionais(user)
     if name == "stock":
         return role in {"dev", "diretor", "manutencao"}
     if name == "maintenance":
@@ -130,7 +136,7 @@ POLICIES = {
     "guia-equipes-acesso-uvis": MaterialPolicy("prefeitura", ("prefeitura.equipes.criar",), "uvis_teams"),
     "guia-checklists-semanais": MaterialPolicy("prefeitura", ("prefeitura.checklists.editar",), "checklists"),
     "guia-frota-turnos": MaterialPolicy("prefeitura", ("prefeitura.veiculos.operar",), "vehicle_operation"),
-    "guia-rastreamento-veiculos": MaterialPolicy("prefeitura", ("prefeitura.veiculos.consultar",), "tracking"),
+    "guia-rastreamento-veiculos": MaterialPolicy("prefeitura", ("prefeitura.rastreamento_veiculos.consultar",), "tracking"),
     "guia-estoque-pecas": MaterialPolicy("prefeitura", ("sistema.estoque.consultar",), "stock"),
     "guia-busca-equipamentos-responsaveis": MaterialPolicy("prefeitura", ("sistema.estoque.consultar", "prefeitura.equipamentos.editar"), "stock"),
     "guia-gestao-baterias": MaterialPolicy("prefeitura", ("sistema.estoque.consultar", "prefeitura.equipamentos.editar"), "stock"),

@@ -1,7 +1,7 @@
-"""Role capabilities only. This module never changes the user's identity or scope.
+"""Role or opt-in individual capabilities, preserving identity and record scope.
 
 The existing guards remain the default until a profile is explicitly saved.
-Selections are loaded once per request, without a process-wide authorization cache.
+Personal selections take precedence; all caches are isolated by user and request.
 """
 
 import json
@@ -15,13 +15,18 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 
 from app.extensions import db
-from app.models import CentralTiAuditoria, CentralTiPerfilConfiguracao, CentralTiSelecao
+from app.models import (CentralTiAuditoria, CentralTiPerfilConfiguracao, CentralTiSelecao,
+                        CentralTiUsuarioConfiguracao, CentralTiUsuarioSelecao)
 from app.modules.gestao_ti.catalog import AREA_CODES, PERMISSION_CODES
+from app.modules.gestao_ti.permission_versions import effective_codes
 
 
 POLICY = json.loads(Path(__file__).with_name("route_policy.json").read_text())
 EXCLUSIONS = json.loads(Path(__file__).with_name("route_exclusions.json").read_text())
-FIXED_ENDPOINTS = {"main.central_ti", "main.central_ti_salvar", "main.inicio", "main.acessos_dashboard"}
+CENTRAL_TI_ENDPOINTS = {"main.central_ti", "main.central_ti_salvar", "main.central_ti_usuarios",
+                        "main.central_ti_usuarios_buscar", "main.central_ti_usuario",
+                        "main.central_ti_usuario_salvar"}
+FIXED_ENDPOINTS = CENTRAL_TI_ENDPOINTS | {"main.inicio", "main.acessos_dashboard"}
 
 
 def validate_route_policy(app):
@@ -57,10 +62,19 @@ def active_configuration(user):
     if not enforcement_enabled() or not getattr(user, "is_authenticated", False):
         return None
     code = profile_code(user)
+    user_id = getattr(user, "id", None)
+    key = (code, user_id)
     cache = g.setdefault("_central_ti_permissions", {}) if has_request_context() else {}
-    if code in cache:
-        return cache[code]
+    if key in cache:
+        return cache[key]
     try:
+        if current_app.config.get("CENTRAL_TI_USER_PERMISSIONS_ENABLED", False) and user_id is not None:
+            personal = db.session.get(CentralTiUsuarioConfiguracao, user_id)
+            if personal is not None:
+                result = frozenset(effective_codes(code for (code,) in db.session.query(CentralTiUsuarioSelecao.codigo)
+                                   .filter_by(usuario_id=user_id).all()))
+                cache[key] = result
+                return result
         row = db.session.get(CentralTiPerfilConfiguracao, code)
         result = None
         if row is not None:
@@ -73,14 +87,14 @@ def active_configuration(user):
                            versao_anterior=0, versao_nova=1,
                        ).first() is not None)
             if not neutral:
-                result = frozenset(codes)
-        cache[code] = result
+                result = frozenset(effective_codes(codes))
+        cache[key] = result
         return result
     except SQLAlchemyError:
         db.session.rollback()
         # Error pages may render the shared layout. Deny its controls without
         # recursively querying the unavailable table or restoring legacy grants.
-        cache[code] = frozenset()
+        cache[key] = frozenset()
         current_app.logger.exception("Central de TI: não foi possível verificar permissões.")
         abort(503, description="Não foi possível verificar seu acesso. Tente novamente.")
 
@@ -161,7 +175,7 @@ def can_access_endpoint(user, endpoint, method="GET", args=None, legacy=True):
     choices = active_configuration(user)
     if choices is None:
         return bool(legacy)
-    if endpoint in {"main.central_ti", "main.central_ti_salvar"}:
+    if endpoint in CENTRAL_TI_ENDPOINTS:
         return profile_code(user) in {"dev", "gestor_ti"}
     if endpoint in FIXED_ENDPOINTS or endpoint in EXCLUSIONS or endpoint.startswith(("auth.", "session_security.")) or endpoint == "static":
         return True
@@ -211,7 +225,7 @@ def require_permission(user, code):
         abort(403, description="Seu perfil não possui permissão para esta ação.")
 
 
-def can_delegate_profile(actor, target_role):
+def can_delegate_profile(actor, target_role, target_user=None):
     """A delegated account manager cannot create a more privileged account."""
     choices = active_configuration(actor)
     if choices is None or profile_code(actor) in {"dev", "diretor", "admin"}:
@@ -223,7 +237,8 @@ def can_delegate_profile(actor, target_role):
     from app.modules.gestao_ti.current_rules import current_rules
     if target_role not in PROFILE_CODES:
         return False
-    target = active_configuration(SimpleNamespace(tipo_usuario=target_role, is_authenticated=True))
+    target = active_configuration(target_user if target_user is not None else
+                                  SimpleNamespace(tipo_usuario=target_role, is_authenticated=True))
     if target is None:
         defaults = current_rules(target_role)
         target = set(defaults["permissions"]) | {"area:" + area for area in defaults["areas"]}

@@ -14,6 +14,8 @@ from app.modules.gestao_ti.catalog import AREA_CODES, CATALOG, PERMISSION_CODES,
 from app.modules.gestao_ti.current_rules import current_rules
 from app.shared.access import normalize_role
 from app.modules.gestao_ti.permissions import enforcement_enabled
+from app.modules.gestao_ti.permission_versions import (PERMISSION_SCHEMA_VERSION, effective_codes,
+                                                     submitted_permissions, stored_codes)
 
 
 class ConfigurationConflict(ValueError):
@@ -37,9 +39,10 @@ def _snapshot(areas=(), permissions=()):
 
 
 def _selection_snapshot(rows):
+    codes = effective_codes(row.codigo for row in rows)
     return _snapshot(
-        (row.codigo[5:] for row in rows if row.codigo.startswith("area:")),
-        (row.codigo for row in rows if not row.codigo.startswith("area:")),
+        (code[5:] for code in codes if code.startswith("area:")),
+        (code for code in codes if not code.startswith("area:")),
     )
 
 
@@ -88,7 +91,8 @@ def build_editor_data():
     # application yet. Keep stored selections compatible, without advertising
     # an operation the user cannot perform.
     unavailable = ["prefeitura.equipes.exportar", "financeiro.bancos.operar", "sistema.tecnico.importar"]
-    return {**CATALOG, "states": load_configurations(), "unavailable_permissions": unavailable}
+    return {**CATALOG, "states": load_configurations(), "unavailable_permissions": unavailable,
+            "permission_schema_version": PERMISSION_SCHEMA_VERSION}
 
 
 def _codes(value, allowed, name):
@@ -134,7 +138,7 @@ def validate_configurations(payload):
     return sorted(validated, key=lambda profile: profile["id"])
 
 
-def save_configurations(actor, payload):
+def save_configurations(actor, payload, permission_schema_version=None):
     if not can_manage_central_ti(actor):
         raise Forbidden()
     changes = validate_configurations(payload)
@@ -148,7 +152,7 @@ def save_configurations(actor, payload):
             if (profile.versao if profile else 0) != expected:
                 raise ConfigurationConflict("Outra edição foi salva. Recarregue a central para revisar as opções.")
             before = _selection_snapshot(CentralTiSelecao.query.filter_by(perfil_codigo=code).all())
-            after = _snapshot(change["areas"], change["permissions"])
+            after = _snapshot(change["areas"], submitted_permissions(change["permissions"], permission_schema_version))
             version = expected
             # A deliberate empty save must be distinguishable from the neutral seed.
             seeded_empty = (profile is not None and expected == 1
@@ -178,7 +182,7 @@ def save_configurations(actor, payload):
                 db.session.execute(delete(CentralTiSelecao).where(CentralTiSelecao.perfil_codigo == code))
                 db.session.add_all([
                     CentralTiSelecao(perfil_codigo=code, codigo=permission)
-                    for permission in sorted([f"area:{area}" for area in after["areas"]] + after["permissions"])
+                    for permission in stored_codes(after["areas"], after["permissions"])
                 ])
                 db.session.add(CentralTiAuditoria(
                     lote=batch, perfil_codigo=code, usuario_id=actor.id,

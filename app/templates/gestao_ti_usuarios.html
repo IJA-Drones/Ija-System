@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Acessos por usuário · Central de TI | Oceano Azul{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/gestao-ti-central.css', v='20261124-users') }}">
+{% endblock %}
+{% block content %}
+<div class="ti-central" id="ti-users-central">
+  <header class="page-toolbar ti-heading ti-user-heading">
+    <div><h1 class="h2 mb-2"><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Central de TI</h1>
+      <p class="text-muted mb-0">Defina as funções de cada usuário, conforme sua responsabilidade.</p></div>
+    {% if create_user_url %}<a class="btn btn-outline-primary" href="{{ create_user_url }}"><i class="bi bi-person-plus me-2" aria-hidden="true"></i>Cadastrar usuário</a>{% endif %}
+  </header>
+  <nav class="ti-mode-nav" aria-label="Organização dos acessos">
+    <a class="btn btn-primary" aria-current="page" href="{{ url_for('main.central_ti_usuarios') }}">Por usuário</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('main.central_ti', modo='perfis') }}">Modelos por perfil</a>
+  </nav>
+  <p class="ti-feedback" id="ti-user-feedback" role="status" aria-live="polite" hidden></p>
+  <div class="ti-workspace">
+    <aside class="ti-profiles ti-panel" aria-labelledby="ti-users-title">
+      <h2 id="ti-users-title">Usuários</h2>
+      <div class="ti-search"><i class="bi bi-search" aria-hidden="true"></i>
+        <label class="visually-hidden" for="ti-user-search">Buscar usuário por nome ou login</label>
+        <input class="form-control" type="search" id="ti-user-search" maxlength="100" placeholder="Nome ou login" autocomplete="off">
+      </div>
+      <ul class="ti-profile-list" id="ti-user-list" aria-label="Usuários para configurar"></ul>
+      <p class="ti-empty" id="ti-users-empty" hidden>Nenhum usuário encontrado.</p>
+      <div class="ti-user-pagination"><button type="button" class="ti-text-button" id="ti-user-prev" disabled>Anterior</button>
+        <span id="ti-user-page">Página 1</span><button type="button" class="ti-text-button" id="ti-user-next" disabled>Próxima</button></div>
+    </aside>
+    <section class="ti-editor" aria-labelledby="ti-user-name">
+      <div class="ti-panel ti-user-placeholder" id="ti-user-placeholder">Selecione um usuário para conferir e personalizar seus acessos.</div>
+      <div id="ti-user-editor" hidden>
+        <div class="ti-selected"><span class="ti-avatar" aria-hidden="true"><i class="bi bi-person-check"></i></span>
+          <h2 id="ti-user-name">Acessos do usuário</h2><span class="ti-preview-label" id="ti-user-source"></span></div>
+        <p class="ti-user-scope" id="ti-user-scope"></p>
+        <div class="ti-user-baseline ti-panel">
+          <div><label for="ti-user-access-name">Nome do acesso personalizado</label>
+            <input class="form-control" id="ti-user-access-name" maxlength="80" placeholder="Ex.: Manutenção da frota"></div>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="ti-user-copy-profile">Usar acessos do perfil atual</button>
+          <p>As alterações são salvas apenas para este usuário. Os vínculos de prefeitura, região e equipe continuam valendo.</p>
+        </div>
+        <nav class="ti-area-nav" id="ti-user-areas" aria-label="Áreas de acesso do usuário"></nav>
+        <section class="ti-permissions ti-panel" aria-labelledby="ti-user-area-title">
+          <div class="ti-area-heading"><h3 id="ti-user-area-title">Prefeitura</h3>
+            <label class="ti-area-toggle"><input type="checkbox" id="ti-user-area-enabled"><span class="ti-switch" aria-hidden="true"></span><span>Permitir acesso</span></label></div>
+          <div class="ti-module-list" id="ti-user-modules"></div>
+        </section>
+        <div class="ti-save-bar"><span class="ti-preview-label" id="ti-user-save-note"></span>
+          <button type="button" class="btn btn-primary" id="ti-user-review">Revisar acessos</button></div>
+      </div>
+    </section>
+  </div>
+  <dialog class="ti-user-review ti-panel" id="ti-user-dialog" aria-labelledby="ti-user-review-title">
+    <h2 id="ti-user-review-title">Confirmar acessos individuais</h2>
+    <p id="ti-user-review-target"></p><p id="ti-user-review-summary"></p>
+    <ul id="ti-user-review-changes"></ul>
+    <div class="ti-user-review-actions"><button type="button" class="btn btn-outline-secondary" id="ti-user-cancel">Voltar à edição</button>
+      <button type="button" class="btn btn-primary" id="ti-user-confirm">Salvar para este usuário</button></div>
+  </dialog>
+  <noscript><p>Ative o JavaScript para configurar os acessos individuais.</p></noscript>
+</div>
+<script type="application/json" id="ti-users-data">{{ interface_permission_catalog(central_ti_data) | tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/gestao-ti-usuarios.js', v='20261125-vehicles') }}" defer></script>
+{% endblock %}

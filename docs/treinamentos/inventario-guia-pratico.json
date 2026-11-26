@@ -333,6 +333,16 @@
       "public_guide": false
     },
     {
+      "template": "agro_parceiro.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "agro_parceiros.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
       "template": "agro_piloto_form.html",
       "integration": "base.html",
       "public_guide": false
@@ -672,6 +682,11 @@
       "public_guide": false
     },
     {
+      "template": "gestao_ti_usuarios.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
       "template": "inicio.html",
       "integration": "base.html",
       "public_guide": false
@@ -738,6 +753,11 @@
     },
     {
       "template": "painel_operacional.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "piloto_agro_checklist_semanal.html",
       "integration": "base.html",
       "public_guide": false
     },

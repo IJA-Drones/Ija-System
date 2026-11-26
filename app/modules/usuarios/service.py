@@ -100,7 +100,7 @@ def can_manage_admin_user(actor, usuario) -> bool:
             and profile_code(usuario) in {"dev", "diretor", "admin", "gestor_ti"}):
         return False
     if (active_configuration(actor) is not None and not is_admin_global_user(actor)
-            and not can_delegate_profile(actor, profile_code(usuario))):
+            and not can_delegate_profile(actor, profile_code(usuario), target_user=usuario)):
         return False
     target_type = getattr(usuario, "tipo_usuario", None)
     if target_type in {DEV_USER_TYPE, DIRECTOR_USER_TYPE, TI_MANAGER_USER_TYPE}:
