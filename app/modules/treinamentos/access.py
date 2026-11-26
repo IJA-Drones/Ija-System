@@ -129,6 +129,7 @@ POLICIES = {
     "guia-frota-turnos": MaterialPolicy("prefeitura", ("prefeitura.veiculos.operar",), "vehicle_operation"),
     "guia-rastreamento-veiculos": MaterialPolicy("prefeitura", ("prefeitura.veiculos.consultar",), "tracking"),
     "guia-estoque-pecas": MaterialPolicy("prefeitura", ("sistema.estoque.consultar",), "stock"),
+    "guia-importacao-pecas-excel": MaterialPolicy("prefeitura", ("sistema.estoque.consultar",), "stock"),
     "guia-manutencao-equipamentos": MaterialPolicy("prefeitura", ("prefeitura.equipamentos.editar",), "maintenance"),
     "guia-central-ti-permissoes": MaterialPolicy("prefeitura", legacy="central_ti"),
     "guia-reporte-acompanhamento-bugs": MaterialPolicy("prefeitura", ("sistema.bugs.criar", "sistema.bugs.atender"), "bugs"),
