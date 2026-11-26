@@ -48,7 +48,7 @@
               <th>Qtd</th>
               <th>Compatível com</th>
               <th>Prateleira/Local</th>
-              <th>Equipamento</th>
+              <th>Equipamentos compatíveis</th>
               <th>Status</th>
               <th class="text-end pe-3">Ações</th>
             </tr>
@@ -64,17 +64,14 @@
               </td>
               <td class="text-muted small">{{ peca.numero_serie or '-' }}</td>
               <td><span class="badge bg-light text-dark border">{{ peca.quantidade }}</span></td>
-              <td><span class="fw-semibold">{{ peca.modelos_compativeis or (peca.drone.modelo if peca.drone else 'Todos / não informado') }}</span></td>
+              <td><span class="fw-semibold">{{ peca.modelos_compativeis or 'Sem modelos selecionados' }}</span></td>
               <td><span class="fw-semibold">{{ peca.prateleira_local or 'Não informado' }}</span></td>
               <td>
-                {% set equipamento = peca.equipamento or peca.drone %}
-                {% if equipamento %}
-                  {% set tipo_equipamento = {'drones': 'Drone', 'baterias': 'Bateria', 'veiculos': 'Veículo', 'geradores': 'Gerador'}.get(equipamento.tipo_equipamento, equipamento.tipo_equipamento|replace('_', ' ')|title) %}
-                  <span class="fw-semibold">{{ tipo_equipamento }} · {{ equipamento.renomacao }}</span>
-                  <div class="text-muted small">{{ equipamento.modelo }}</div>
+                {% for equipamento in peca.equipamentos_compativeis_exibicao %}
+                  <div class="mb-1"><span class="fw-semibold">{{ equipamento.renomacao }}</span><div class="text-muted small">{{ equipamento.modelo }}{% if equipamento.numero_serie %} · S/N {{ equipamento.numero_serie }}{% endif %}</div></div>
                 {% else %}
-                  <span class="text-muted">Sem vínculo</span>
-                {% endif %}
+                  <span class="text-muted">Sem equipamentos específicos</span>
+                {% endfor %}
               </td>
               <td>
                 {% if peca.status == 'disponivel_manutencao' %}

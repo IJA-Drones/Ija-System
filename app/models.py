@@ -2559,6 +2559,14 @@ class Drones(Equipamentos):
     __mapper_args__ = {"polymorphic_identity": "drones"}
 
 
+estoque_peca_equipamentos = db.Table(
+    "estoque_peca_equipamentos",
+    db.Column("peca_id", db.Integer, db.ForeignKey("estoque_pecas.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("equipamento_id", db.Integer, db.ForeignKey("equipamentos.id", ondelete="CASCADE"), primary_key=True),
+    db.Index("ix_estoque_peca_equipamentos_equipamento", "equipamento_id"),
+)
+
+
 class EstoquePeca(db.Model):
     __tablename__ = "estoque_pecas"
 
@@ -2583,6 +2591,15 @@ class EstoquePeca(db.Model):
     equipamento = db.relationship("Equipamentos", lazy="joined", foreign_keys=[equipamento_id])
     drone = db.relationship("Drones", back_populates="pecas_estoque", lazy="joined", foreign_keys=[drone_id])
     usos_manutencao = db.relationship("ManutencaoPecaUso", back_populates="peca", lazy="select")
+    equipamentos_compativeis = db.relationship("Equipamentos", secondary=estoque_peca_equipamentos, lazy="selectin")
+
+    @property
+    def equipamentos_compativeis_exibicao(self):
+        equipamentos = {e.id: e for e in self.equipamentos_compativeis}
+        for equipamento in (self.equipamento, self.drone):
+            if equipamento is not None:
+                equipamentos.setdefault(equipamento.id, equipamento)
+        return sorted(equipamentos.values(), key=lambda e: ((e.renomacao or "").casefold(), e.id))
 
     __table_args__ = (
         db.CheckConstraint("quantidade >= 0", name="ck_estoque_pecas_quantidade_nao_negativa"),

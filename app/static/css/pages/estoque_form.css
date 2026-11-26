@@ -5,3 +5,10 @@
 .estoque-form-page {
   max-width: 1000px;
 }
+
+.estoque-compatibilidade-lista {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.estoque-form-fields fieldset { min-width: 0; }
+.estoque-compatibilidade-lista .form-check-label { cursor: pointer; overflow-wrap: anywhere; }
