@@ -121,6 +121,17 @@ class EstoqueImportacaoTests(unittest.TestCase):
         self.assertFalse(confirm_preview(batch, self.user)[0])
         self.assertEqual(EstoquePeca.query.count(), 0)
 
+    def test_inventory_compatibility_does_not_require_a_registered_drone_of_that_model(self):
+        file = inventory_upload({model: [[1, model, 'CODE-' + model, None, 'Peça ' + model, 2]]
+                                 for model in ('T20', 'T30', 'T40')})
+        batch = create_preview(file, self.user, 1)
+        self.assertTrue(confirm_preview(batch, self.user)[0])
+        parts = EstoquePeca.query.order_by(EstoquePeca.id).all()
+        self.assertEqual([part.modelos_compativeis for part in parts], ['AGRAS T20', 'AGRAS T30', 'AGRAS T40'])
+        self.assertTrue(all(not part.equipamentos_compativeis for part in parts))
+        unknown = create_preview(inventory_upload({'T10': [[1, 'T99', 'BAD', None, 'Inválida', 2]]}), self.user, 1)
+        self.assertFalse(confirm_preview(unknown, self.user)[0])
+
     def test_edit_pending_quantities_in_preview_then_confirm_preserves_originals(self):
         batch = create_preview(inventory_upload({'T10': [
             [1, 'T10', 'A', 'A1', 'Peça A', '13+5'],

@@ -81,7 +81,7 @@ def _form_values(form, key):
     return value if isinstance(value, (list, tuple)) else [value]
 
 
-def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos_disponiveis=None, series_em_uso=None):
+def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos_disponiveis=None, series_em_uso=None, modelos_adicionais=()):
     errors = {}
     numero_serie = (form_data.get("numero_serie") or "").strip()
     modelo_peca = (form_data.get("modelo_peca") or "").strip()
@@ -144,6 +144,7 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos
         errors["prefeitura_id"] = "Prefeitura inválida."
     form["prefeitura_id"] = str(prefeitura_id or prefeitura_raw)
     modelos_disponiveis = modelos_para_estoque([e for e in equipamentos_disponiveis if e.prefeitura_id == prefeitura_id], existing_peca)
+    modelos_disponiveis.extend(modelos_adicionais)
     canonicos = {m.casefold(): m for m in modelos_disponiveis}
     if any(m.casefold() not in canonicos for m in modelos):
         errors["modelos_compativeis"] = "Selecione modelos disponíveis na prefeitura deste estoque."

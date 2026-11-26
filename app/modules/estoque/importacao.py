@@ -212,7 +212,11 @@ def validate_rows(rows, user, prefeitura_id):
                     return model_names[model.casefold()]
                 matches = [name for key, name in model_names.items()
                            if re.sub(r'^(?:dji\s+)?agras\s+', '', key) == model.casefold()]
-                return matches[0] if len(matches) == 1 else model
+                if len(matches) == 1:
+                    return matches[0]
+                if not matches and model.upper() in INVENTORY_SHEETS:
+                    return 'AGRAS ' + model.upper()
+                return model
             models = [canonical_model(model) for model in models]
         serials = list(dict.fromkeys(s.strip() for s in raw.get('equipamentos', '').split(';') if s.strip()))
         resolved = []
@@ -236,7 +240,11 @@ def validate_rows(rows, user, prefeitura_id):
         form.update({'quantidade': quantity, 'status': status, 'prefeitura_id': str(prefeitura_id), 'compatibilidade_multipla': '1'})
         form.setlist('modelos_compativeis', models)
         form.setlist('equipamento_ids', [str(e.id) for e in resolved])
-        presented, cleaned, validation = validate_peca_form(form, user=user, equipamentos_disponiveis=equipment, series_em_uso=used_serials)
+        presented, cleaned, validation = validate_peca_form(
+            form, user=user, equipamentos_disponiveis=equipment, series_em_uso=used_serials,
+            modelos_adicionais=tuple('AGRAS ' + model for model in INVENTORY_SHEETS)
+            if source.get('aba') in INVENTORY_SHEETS else (),
+        )
         if quantity == 'inválida':
             validation.pop('quantidade', None)  # The Excel-specific message above already explains the accepted range.
         errors.extend(f'{FIELDS[field][0] if field in FIELDS else "Compatibilidade"}: {message}'
