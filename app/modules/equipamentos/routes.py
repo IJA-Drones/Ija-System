@@ -1,11 +1,11 @@
-from app.modules.gestao_ti.permissions import route_access
+from app.modules.gestao_ti.permissions import can_access_endpoint, route_access
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.modules.equipamentos.exporters import XLSX_MIME, build_manutencao_pdf, build_manutencoes_excel, build_pecas_usadas_excel
 from app.shared.skybox import SkyboxError, stream_skybox_file
-from app.models import Baterias, Drones
+from app.models import Baterias, Drones, ManutencaoEquipamento
 from app.modules.equipamentos.service import (
     build_bateria_edit_form,
     build_drone_edit_form,
@@ -43,8 +43,12 @@ def _require_admin_or_operario():
         abort(403)
 
 
+def _maintenance_legacy_access():
+    return normalize_role(getattr(current_user, "tipo_usuario", None)) in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "manutencao"} or is_veiculos_supervisor(current_user)
+
+
 def _require_maintenance_access():
-    if not route_access(current_user, normalize_role(getattr(current_user, "tipo_usuario", None)) in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "manutencao"} or is_veiculos_supervisor(current_user)):
+    if not route_access(current_user, _maintenance_legacy_access()):
         abort(403)
 
 
@@ -71,6 +75,7 @@ def register_routes(bp):
         return render_template(
             "drones_listar.html",
             drones=list_drones(user=current_user),
+            can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
             is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
             can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
         )
@@ -270,14 +275,49 @@ def register_routes(bp):
 
         return redirect(url_for("main.listar_baterias"))
 
+    @bp.route("/equipamentos/manutencoes/nova", methods=["GET", "POST"], endpoint="equipamento_manutencao_nova")
+    @login_required
+    def equipamento_manutencao_nova():
+        _require_maintenance_access()
+        form = request.form if request.method == "POST" else request.args
+        errors = {}
+        if request.method == "POST":
+            drone_id = request.form.get("drone_id", type=int)
+            if drone_id is None:
+                errors["drone_id"] = "Selecione o drone."
+            if not (request.form.get("avarias_identificadas") or "").strip():
+                errors["avarias_identificadas"] = "Informe o motivo da manutenção."
+            if len(request.form.get("responsavel_manutencao", "").strip()) > 120:
+                errors["responsavel_manutencao"] = "Use até 120 caracteres."
+            drone = _get_scoped_drone_or_404(drone_id) if drone_id is not None else None
+            if not errors:
+                try:
+                    opened = send_drone_to_manutencao(drone, user=current_user, form_data=request.form)
+                    manutencao = get_manutencao_aberta(drone, user=current_user)
+                    if not opened:
+                        flash("Este drone já está em manutenção. Continue na OS existente.", "warning")
+                    elif manutencao:
+                        flash(f"OS de manutenção {manutencao.numero_os} aberta com sucesso.", "success")
+                    return redirect(url_for("main.equipamento_manutencao_pecas", drone_id=drone.id))
+                except Exception:
+                    db.session.rollback()
+                    current_app.logger.exception("Erro ao abrir OS de manutenção.")
+                    flash("Não foi possível abrir a OS de manutenção. Tente novamente.", "danger")
+        return render_template("equipamento_manutencao_nova.html", drones=list_drones(user=current_user), form=form, errors=errors)
+
     @bp.route("/equipamentos/em-manutencao", methods=["GET"], endpoint="equipamentos_manutencao")
     @login_required
     def equipamentos_manutencao():
         equipamentos = list_equipamentos_manutencao(user=current_user)
+        manutencoes = apply_prefeitura_scope(
+            ManutencaoEquipamento.query.filter_by(status="aberta"), current_user, ManutencaoEquipamento.prefeitura_id
+        ).order_by(ManutencaoEquipamento.aberta_em.asc()).all()
         return render_template(
             "equipamentos_manutencao.html",
             equipamentos=equipamentos,
             total=len(equipamentos),
+            manutencoes_por_drone={m.drone_id: m for m in manutencoes},
+            can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
         )
 
     @bp.route("/equipamentos/manutencoes/historico", methods=["GET"], endpoint="equipamentos_manutencoes_historico")
@@ -341,7 +381,7 @@ def register_routes(bp):
                     drone, request.form, user=current_user, files_data=request.files
                 )
                 if not errors:
-                    flash(f"{len(usos)} peca(s) registrada(s) na manutencao.", "success")
+                    flash(f"Atendimento da OS de manutenção salvo: {len(usos)} peça(s) registrada(s).", "success")
                     return redirect(url_for("main.equipamentos_manutencao"))
                 flash("Corrija os campos destacados.", "warning")
             except (ValueError, SkyboxError) as exc:
@@ -422,7 +462,7 @@ def register_routes(bp):
             if not encerrar_manutencao_drone(drone, user=current_user):
                 flash("Este drone nao esta em manutencao.", "warning")
             else:
-                flash(f"Manutencao do drone {drone.renomacao} encerrada com sucesso.", "success")
+                flash(f"OS de manutenção do drone {drone.renomacao} encerrada com sucesso.", "success")
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao encerrar manutencao do drone %s.", drone.id)
@@ -439,7 +479,7 @@ def register_routes(bp):
     @bp.route("/drones/<int:drone_id>/manutencao", methods=["POST"], endpoint="enviar_manutencao_drone")
     @login_required
     def enviar_manutencao_drone(drone_id):
-        _require_admin_or_operario()
+        _require_maintenance_access()
 
         drone = _get_scoped_drone_or_404(drone_id)
         try:
@@ -447,7 +487,8 @@ def register_routes(bp):
                 flash("Este drone ja esta em manutencao.", "warning")
                 return redirect(url_for("main.listar_drones"))
 
-            flash(f"Drone {drone.renomacao} enviado para manutencao.", "success")
+            manutencao = get_manutencao_aberta(drone, user=current_user)
+            flash(f"OS de manutenção {manutencao.numero_os} aberta para o drone {drone.renomacao}.", "success")
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao enviar drone %s para manutencao.", drone.id)

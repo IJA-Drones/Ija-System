@@ -139,6 +139,7 @@ def build_admin_users_query(q: str, tipo: str):
                     FINANCEIRO_ADMIN_USER_TYPE,
                     FINANCEIRO_USER_TYPE,
                     TI_MANAGER_USER_TYPE,
+                    "manutencao",
                     "ortomosaico",
                     *VEICULOS_SUPERVISOR_USER_TYPES,
                 )

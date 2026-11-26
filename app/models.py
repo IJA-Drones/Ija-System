@@ -2619,6 +2619,10 @@ class ManutencaoPecaUso(db.Model):
 class ManutencaoEquipamento(db.Model):
     __tablename__ = "manutencoes_equipamentos"
 
+    @property
+    def numero_os(self):
+        return f"OSM-{self.id:06d}" if self.id is not None else "OS de manutenção"
+
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)

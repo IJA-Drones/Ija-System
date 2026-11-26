@@ -183,7 +183,7 @@ def get_or_create_manutencao_aberta(drone, user=None):
         return manutencao
 
     manutencao = ManutencaoEquipamento(
-        prefeitura_id=getattr(user, "prefeitura_id", None) if user is not None else drone.prefeitura_id,
+        prefeitura_id=drone.prefeitura_id,
         drone_id=drone.id,
         aberta_por_id=getattr(user, "id", None),
         status="aberta",
@@ -288,7 +288,7 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
     usos = []
     for peca, quantidade in selecionadas:
         uso = ManutencaoPecaUso(
-            prefeitura_id=getattr(user, "prefeitura_id", None) if user is not None else drone.prefeitura_id,
+            prefeitura_id=drone.prefeitura_id,
             manutencao=manutencao,
             drone_id=drone.id,
             peca_id=peca.id,
@@ -561,13 +561,15 @@ def delete_drone(drone):
     db.session.commit()
 
 
-def send_drone_to_manutencao(drone, *, user=None):
+def send_drone_to_manutencao(drone, *, user=None, form_data=None):
     if (drone.status or "").strip() in MANUTENCAO_STATUS_ALIASES:
         return False
 
     drone.status = MANUTENCAO_STATUS
-    drone.ultima_manutencao = date.today()
-    get_or_create_manutencao_aberta(drone, user=user)
+    manutencao = get_or_create_manutencao_aberta(drone, user=user)
+    if form_data is not None:
+        manutencao.avarias_identificadas = (form_data.get("avarias_identificadas") or "").strip() or None
+        manutencao.responsavel_manutencao = (form_data.get("responsavel_manutencao") or "").strip() or None
     db.session.commit()
     return True
 

@@ -100,23 +100,19 @@
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                            {% if (central_ti_ui_guard(['main.deletar_drone', 'main.editar_drone', 'main.enviar_manutencao_drone'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
+                                            {% if (central_ti_ui_guard(['main.deletar_drone', 'main.editar_drone'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
                                             <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_drone', drone_id=d.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_drone', drone_id=d.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
-                                            <li>
-                                                <form method="post" action="{{ url_for('main.enviar_manutencao_drone', drone_id=d.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.enviar_manutencao_drone', drone_id=d.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-                                                    <button type="submit" class="dropdown-item py-2 text-danger" {% if d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] %}disabled{% endif %}>
-                                                        <i class="bi bi-tools me-2"></i> Enviar Manutenção
-                                                    </button>
-                                                </form>
-                                            </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <form method="post" action="{{ url_for('main.deletar_drone', drone_id=d.id) }}" class="form-deletar m-0" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_drone', drone_id=d.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                                                     <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Drone</button>
                                                 </form>
                                             </li>
-                                            {% else %}
+                                            {% elif not can_open_os %}
                                             <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
+                                            {% endif %}
+                                            {% if can_open_os %}
+                                            <li><a class="dropdown-item py-2 text-primary" href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=d.id) if d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] else url_for('main.equipamento_manutencao_nova', drone_id=d.id) }}"><i class="bi bi-tools me-2"></i>{{ 'Atender OS de manutenção' if d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] else 'Abrir OS de manutenção' }}</a></li>
                                             {% endif %}
                                         </ul>
                                     </div>

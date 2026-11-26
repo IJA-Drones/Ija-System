@@ -545,6 +545,10 @@
   "main.deletar_bateria": {
     "POST": "prefeitura.equipamentos.excluir"
   },
+  "main.equipamento_manutencao_nova": {
+    "GET": "prefeitura.equipamentos.editar",
+    "POST": "prefeitura.equipamentos.editar"
+  },
   "main.equipamentos_manutencao": {
     "GET": "prefeitura.equipamentos.consultar"
   },

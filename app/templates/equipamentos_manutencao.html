@@ -13,14 +13,17 @@
         <div>
             <h2 class="text-dark mb-0">
                 <i class="bi bi-tools me-2 text-primary"></i>
-                Equipamentos em Manutenção
+                OS de manutenção
             </h2>
             <p class="text-muted small mb-0">
-                Total em manutenção: <strong class="text-danger">{{ total }}</strong>
+                Equipamentos em manutenção: <strong class="text-danger">{{ total }}</strong>
             </p>
         </div>
 
         <div class="d-flex flex-wrap gap-2">
+            {% if can_open_os %}
+            <a href="{{ url_for('main.equipamento_manutencao_nova') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Abrir OS de manutenção</a>
+            {% endif %}
             <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-primary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_historico')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-clock-history me-1"></i> Histórico
             </a>
@@ -45,7 +48,7 @@
                             <th>Modelo</th>
                             <th>Nº de Série</th>
                             <th>Equipe</th>
-                            <th>Data Cadastro</th>
+                            <th>OS de manutenção / Abertura</th>
                             <th class="text-end pe-3">Ações</th>
                         </tr>
                     </thead>
@@ -85,9 +88,10 @@
                                     {% endif %}
                                 </td>
 
-                                <td class="text-muted small" data-label="Data Cadastro">
-                                    {% if eq.criado_em %}
-                                        {{ eq.criado_em.strftime('%d/%m/%Y') }}
+                                <td class="text-muted small" data-label="OS de manutenção / Abertura">
+                                    {% set os = manutencoes_por_drone.get(eq.id) %}
+                                    {% if os %}
+                                        <strong>{{ os.numero_os }}</strong><br>{{ os.aberta_em.strftime('%d/%m/%Y %H:%M') }}
                                     {% else %}
                                         -
                                     {% endif %}
@@ -99,7 +103,7 @@
                                         <a href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=eq.id) }}"
                                            class="btn btn-sm btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_pecas', drone_id=eq.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <i class="bi bi-clipboard-plus me-1"></i>
-                                            Peças usadas
+                                            Atender OS de manutenção
                                         </a>
                                         <a href="{{ url_for('main.equipamento_manutencao_pdf', drone_id=eq.id) }}"
                                            class="btn btn-sm btn-outline-danger"
@@ -109,10 +113,10 @@
                                         </a>
                                         <form method="post"
                                               action="{{ url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id) }}"
-                                              onsubmit="return confirm('Encerrar a manutenção deste drone?')" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+                                              onsubmit="return confirm('Encerrar a OS de manutenção e liberar este drone?')" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
                                             <button type="submit" class="btn btn-sm btn-success">
                                                 <i class="bi bi-check2-circle me-1"></i>
-                                                Encerrar
+                                                Encerrar OS de manutenção
                                             </button>
                                         </form>
                                       </div>

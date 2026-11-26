@@ -229,7 +229,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
         rightMargin=18 * mm,
         topMargin=38 * mm,
         bottomMargin=28 * mm,
-        title=f"Manutenção {drone.renomacao}",
+        title=f"OS de manutenção {getattr(manutencao, 'numero_os', '')} - {drone.renomacao}",
     )
 
     styles = getSampleStyleSheet()
@@ -267,7 +267,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
     encerrada_em = _fmt_dt(getattr(manutencao, "encerrada_em", None)) if manutencao else "-"
     status_manutencao = _safe(getattr(manutencao, "status", None)).capitalize() if manutencao else "Aberta"
     story = [
-        Paragraph("Relatório de manutenção", title_style),
+        Paragraph(f"OS de manutenção {getattr(manutencao, 'numero_os', '')}", title_style),
         Paragraph(
             f"Peças usadas na manutenção do drone {drone.renomacao}. Emitido em {datetime.now().strftime('%d/%m/%Y %H:%M')}.",
             subtitle_style,
@@ -320,7 +320,7 @@ def build_manutencoes_excel(manutencoes):
     ws.title = "Manutencoes"
     ws.append([""])
     ws.append([
-        "ID",
+        "OS de manutenção",
         "Drone",
         "Modelo",
         "Nº de série",
@@ -339,7 +339,7 @@ def build_manutencoes_excel(manutencoes):
         drone = manutencao.drone
         usos = list(manutencao.pecas_usadas)
         ws.append([
-            manutencao.id,
+            manutencao.numero_os,
             _excel_safe(getattr(drone, "renomacao", None)),
             _excel_safe(getattr(drone, "modelo", None)),
             _excel_safe(getattr(drone, "numero_serie", None)),
@@ -354,7 +354,7 @@ def build_manutencoes_excel(manutencoes):
             _excel_safe(manutencao.observacoes),
         ])
 
-    _style_worksheet(ws, title="Histórico geral de manutenções")
+    _style_worksheet(ws, title="Histórico de OS de manutenção")
     filename = f"historico_manutencoes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return _workbook_output(workbook), filename
 
@@ -366,7 +366,7 @@ def build_pecas_usadas_excel(usos):
     ws.append([""])
     ws.append([
         "ID",
-        "Manutenção",
+        "OS de manutenção",
         "Status manutenção",
         "Drone",
         "Modelo drone",
@@ -384,7 +384,7 @@ def build_pecas_usadas_excel(usos):
         peca = uso.peca
         ws.append([
             uso.id,
-            getattr(manutencao, "id", None) or "",
+            getattr(manutencao, "numero_os", None) or "",
             ("Aberta" if getattr(manutencao, "status", None) == "aberta" else "Encerrada") if manutencao else "",
             _excel_safe(getattr(drone, "renomacao", None)),
             _excel_safe(getattr(drone, "modelo", None)),
