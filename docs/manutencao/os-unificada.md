@@ -72,3 +72,26 @@ A sidebar passou a exibir **Manutenção → Ordens de serviço / Histórico de 
 Conferência visual com dados fictícios longos em 320, 390, 768, 1024 e 1440 px: nenhum controle saiu do conteúdo e não houve transbordamento horizontal nas medições finais. Foram exercitados os controles de quantidade, adição/remoção de fotos antes do envio, salvamento de rascunho e abertura do histórico pela sidebar. As validações são de navegador, sem teste em aparelho físico.
 
 Regressão específica do refinamento e da navegação: **76 testes e 555 subtestes aprovados**, incluindo retirada de acesso, consulta sem edição, usuário personalizado e separação das áreas. A prévia anterior foi reiniciada para remover o HTML antigo mantido em memória; o ambiente temporário passou a recarregar templates ao editar. O JavaScript também tolera a ausência dos novos controles em um formulário anterior.
+
+## Histórico por equipamento, preventivas e transporte
+
+- A lista de drones abre o histórico de OS com o drone selecionado. O filtro também vale para o Excel. Controles remotos têm histórico de cadastro e edição com responsável, data e valores anteriores e novos.
+- A Central de Notificações emite avisos por plano a partir de sete dias antes do vencimento, no dia e em atraso. Cada aviso respeita a visibilidade da preventiva. A leitura e o descarte são preservados durante a mesma fase do prazo.
+- Na abertura do turno do veículo, é possível marcar os drones cadastrados na equipe. O log guarda identificação, modelo e série daquele turno. O rastreamento mostra os drones do turno aberto e os que constam em cada log associado à rota. Turnos antigos aparecem com transporte não informado.
+- A revisão `a06d4f3c2b91` sucede `f2b6a9c4e830`. Ela cria o histórico dos controles e adiciona os campos de avisos preventivos e transporte. Os avisos são atualizados na Central de Notificações. Para processá-los em segundo plano, programe o comando ou inicie uma instância do serviço com `--watch`.
+
+```sh
+flask --app app:create_app sincronizar-preventivas --watch
+```
+
+### Ciclos de bateria via DJI
+
+O serviço recebe mensagens OSD da DJI Cloud API de um broker MQTT conectado ao DJI Pilot 2 ou ao DJI Dock. A série da aeronave determina o escopo da prefeitura e a série da bateria identifica o registro a atualizar. Mudanças aparecem no histórico como **Sincronização DJI**. Leituras antigas, repetidas ou que diminuiriam a contagem são ignoradas.
+
+Configure `DJI_MQTT_HOST`, `DJI_MQTT_USERNAME`, `DJI_MQTT_PASSWORD` e `DJI_MQTT_AIRCRAFT_SNS` no ambiente do processo. Informe as séries das aeronaves separadas por vírgulas e com a mesma grafia dos tópicos do broker. A credencial do serviço precisa de leitura nos tópicos individuais `thing/product/<série>/osd`. A conexão usa TLS na porta 8883 por padrão. `DJI_MQTT_PORT` permite configurar outra porta TLS. `DJI_MQTT_CA_FILE` permite informar a autoridade certificadora privada do broker, quando aplicável.
+
+```sh
+python scripts/sync_dji_batteries.py
+```
+
+A ativação em campo exige aeronaves que publiquem série e ciclos em `battery.batteries`. A fonte de ciclos dos Agras T10 e T25 ainda precisa ser confirmada. [Dados OSD da DJI Cloud API](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dock-to-cloud/mqtt/dock/device.html)

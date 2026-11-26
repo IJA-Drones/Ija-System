@@ -174,6 +174,13 @@
                                         {{ turno.data_inicio.strftime('%H:%M') if turno.data_inicio else '-' }}
                                         | {{ (turno.km_inicial or 0)|round|int }} -> {{ (turno.km_final or 0)|round|int }} km
                                     </div>
+                                    {% if turno.drones_transportados is not none %}
+                                    <div class="small text-muted text-break mt-1">
+                                        {% if turno.drones_transportados %}
+                                        Drones transportados · {% for drone in turno.drones_transportados %}{{ drone.identificacao }}{% if drone.numero_serie %} ({{ drone.numero_serie }}){% endif %}{{ ', ' if not loop.last else '' }}{% endfor %}
+                                        {% else %}Sem drones registrados para o turno{% endif %}
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <div class="vehicle-history-summary">
                                     <span class="timeline-chip">{{ turno.status }}</span>

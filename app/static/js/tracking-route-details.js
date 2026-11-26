@@ -6,6 +6,11 @@
   const date = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'medium' });
   const when = (value) => Number.isFinite(Date.parse(value)) ? date.format(new Date(value)) : '—';
   const ignition = (value) => ({ 0: 'Desligada', 1: 'Ligada' })[value] || 'Não informada';
+  function transportLabel(drones) {
+    if (!Array.isArray(drones)) return 'Transporte não informado';
+    if (!drones.length) return 'Sem drones no turno';
+    return drones.map((drone) => [drone.identificacao, drone.numero_serie && `S/N ${drone.numero_serie}`].filter(Boolean).join(' · ')).join(', ');
+  }
   const duration = (milliseconds) => {
     const seconds = Math.max(0, Math.round(milliseconds / 1000));
     return `${Math.floor(seconds / 3600) ? `${Math.floor(seconds / 3600)}h ` : ''}${Math.floor(seconds / 60) % 60}min ${seconds % 60}s`;
@@ -78,6 +83,7 @@
     field(grid, 'Equipe / PLOA', vehicle.team || 'Sem equipe');
     field(grid, 'Coordenadas GPS', `${Number(point.lat).toFixed(6)}, ${Number(point.lng).toFixed(6)}`);
     const log = daily?.logs?.find((item) => item.id === point.log_id);
+    if (log) field(grid, 'Drones transportados', transportLabel(log.drones_transportados));
     $('trackingPointLog').hidden = !log?.url;
     if (log?.url) $('trackingPointLog').href = log.url;
     else $('trackingPointLog').removeAttribute('href');
@@ -153,5 +159,5 @@
   $('trackingPointStreetTab')?.addEventListener('click', showStreet);
   $('trackingPointPlay')?.addEventListener('click', () => { const context = current; close(); context?.onPlay(context.index); });
   $('trackingPointModal')?.addEventListener('close', () => { token += 1; panorama?.setVisible(false); });
-  window.IjaTrackingDetails = { open, close, stops, sampleIndices, nearestIndex };
+  window.IjaTrackingDetails = { open, close, stops, sampleIndices, nearestIndex, transportLabel };
 })();

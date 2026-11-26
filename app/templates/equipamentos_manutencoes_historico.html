@@ -14,7 +14,8 @@
       <p class="text-muted small mb-0">Registro de abertura, encerramento e peças usadas em cada manutenção.</p>
     </div>
     <div class="page-toolbar-actions">
-      <a href="{{ url_for('main.equipamentos_manutencoes_historico_excel') }}" class="btn btn-outline-success btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_historico_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
+      {% set export_url = url_for('main.equipamentos_manutencoes_historico_excel', drone_id=drone_selecionado.id if drone_selecionado else none) %}
+      <a href="{{ export_url }}" class="btn btn-outline-success btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(export_url) if central_ti_url_allowed is defined else true) else 'false' }}">
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
       </a>
       <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencao')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -22,6 +23,20 @@
       </a>
     </div>
   </div>
+
+  <form method="get" action="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="row g-2 align-items-end mb-4">
+    <div class="col-12 col-md-6">
+      <label for="historico-drone" class="form-label fw-semibold">Filtrar por drone</label>
+      <select id="historico-drone" name="drone_id" class="form-select">
+        <option value="">Todos os drones</option>
+        {% for drone in drones %}
+        <option value="{{ drone.id }}" {% if drone_selecionado and drone_selecionado.id == drone.id %}selected{% endif %}>{{ drone.renomacao }} · {{ drone.modelo }}{% if drone.numero_serie %} · S/N {{ drone.numero_serie }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-primary">Filtrar</button></div>
+    {% if drone_selecionado %}<div class="col-auto"><a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-secondary">Limpar</a></div>{% endif %}
+  </form>
 
   <div class="card shadow-sm border-0 rounded-4 overflow-hidden manutencoes-historico-table-card">
     <div class="card-body p-0">
@@ -72,7 +87,7 @@
             </tr>
             {% else %}
             <tr>
-              <td colspan="7" class="text-center text-muted py-5">Nenhuma manutenção registrada.</td>
+              <td colspan="7" class="text-center text-muted py-5">{{ 'Nenhuma manutenção registrada para este drone.' if drone_selecionado else 'Nenhuma manutenção registrada.' }}</td>
             </tr>
             {% endfor %}
           </tbody>

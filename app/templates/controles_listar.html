@@ -35,7 +35,10 @@
                         {% include "_equipamento_equipe.html" %}
                     </td>
                     <td><span class="badge {{ 'bg-success' if controle.status == 'Ativo' else 'bg-secondary' }}">{{ controle.status }}</span></td>
-                    <td>{% if can_edit %}<a href="{{ url_for('main.editar_controle', controle_id=controle.id) }}" class="btn btn-outline-primary btn-sm">Editar</a>{% else %}<span class="small text-muted">Somente leitura</span>{% endif %}</td>
+                    <td><div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('main.historico_controle', controle_id=controle.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Histórico</a>
+                        {% if can_edit %}<a href="{{ url_for('main.editar_controle', controle_id=controle.id) }}" class="btn btn-outline-primary btn-sm">Editar</a>{% else %}<span class="small text-muted align-self-center">Somente leitura</span>{% endif %}
+                    </div></td>
                 </tr>
                 {% else %}
                 <tr><td colspan="5" class="text-center py-5 text-muted">{{ 'Nenhum controle encontrado para esta busca.' if q else 'Nenhum controle remoto cadastrado.' }}</td></tr>

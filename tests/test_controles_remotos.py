@@ -11,7 +11,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
 from app.extensions import db
-from app.models import CentralTiSelecao, ControlesRemotos, Equipe
+from app.models import CentralTiSelecao, ControleRemotoAtualizacao, ControlesRemotos, Equipe
 from app.modules.equipamentos.controles import list_controles, validate_controle_form
 from app.modules.equipamentos.service import delete_drone, equipment_team_assignments, list_equipamentos_dashboard
 from app.modules.gestao_ti.permissions import validate_route_policy
@@ -62,6 +62,15 @@ class ControlesTests(unittest.TestCase):
         self.assertEqual(controle.status, 'Inativo')
         self.assertEqual(ControlesRemotos.query.count(), 1)
         self.assertIn('Controle Reserva', self.client.get(f'/controles/{controle.id}/editar').text)
+        self.client.post(f'/controles/{controle.id}/editar', data=data)
+        events = ControleRemotoAtualizacao.query.filter_by(controle_id=controle.id).order_by(ControleRemotoAtualizacao.id).all()
+        self.assertEqual([event.tipo for event in events], ['cadastro', 'edicao'])
+        self.assertEqual(events[1].alteracoes['renomacao'], {'antes': 'Controle Norte', 'depois': 'Controle Reserva'})
+        self.assertEqual(events[1].usuario_id, self.user.id)
+        history = self.client.get(f'/equipamentos/controles/{controle.id}/historico')
+        self.assertEqual(history.status_code, 200)
+        self.assertIn('Controle Norte', history.text)
+        self.assertIn('Controle Reserva', history.text)
 
     def test_follows_drone_team_and_roster_without_copied_team(self):
         north, pilot = self.make_team('Norte')

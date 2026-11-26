@@ -1161,6 +1161,8 @@ class Notificacao(db.Model):
     titulo = db.Column(db.String(140), nullable=False)
     mensagem = db.Column(db.Text)
     link = db.Column(db.String(255))
+    preventiva_plano_id = db.Column(db.Integer, db.ForeignKey("preventiva_planos.id", ondelete="CASCADE"), index=True)
+    chave_preventiva = db.Column(db.String(100), unique=True, index=True)
 
     criada_em = db.Column(
         db.DateTime,
@@ -2810,6 +2812,20 @@ class ControlesRemotos(Equipamentos):
     __mapper_args__ = {"polymorphic_identity": "controles_remotos"}
 
 
+class ControleRemotoAtualizacao(db.Model):
+    __tablename__ = "controle_remoto_atualizacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    controle_id = db.Column(db.Integer, db.ForeignKey("controles_remotos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"))
+    usuario_nome = db.Column(db.String(200), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)
+    alteracoes = db.Column(db.JSON, nullable=False)
+    controle = db.relationship("ControlesRemotos", foreign_keys=[controle_id])
+
+
 class Veiculos(Equipamentos):
     __tablename__ = "veiculos"
 
@@ -2982,6 +2998,7 @@ class LogVeiculo(db.Model):
     # Vehicle shifts use naive Brasília timestamps, as does data_registro.
     encerrado_em = db.Column(db.DateTime, nullable=True)
     condutor_nome = db.Column(db.String(120), nullable=True)
+    drones_transportados = db.Column(db.JSON(none_as_null=True), nullable=True)
 
     # Quilometragem (Essencial para ambos os formulários)
     km_inicial = db.Column(db.Float, nullable=False)

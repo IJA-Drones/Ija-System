@@ -35,6 +35,7 @@ from app.modules.equipamentos.service import (
     validate_drone_form,
 )
 from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
+from app.shared.equipment_models import equipment_model_key
 from app.modules.equipamentos.manutencao import (
     build_manutencao_form, salvar_atendimento_manutencao,
     CONDICOES_CHEGADA, CONDICOES_FINAIS, TIPOS_MANUTENCAO,
@@ -56,9 +57,45 @@ def _require_maintenance_access():
         abort(403)
 
 
+# Product illustrations from DJI's product support pages.
+_MAINTENANCE_MODEL_IMAGES = {
+    "agrast10": "agras-t10",
+    "agrast25": "agras-t25",
+    "agrast25p": "agras-t25p",
+    "m4": "matrice-4",
+    "m4e": "matrice-4",
+    "m4t": "matrice-4",
+    "m30": "matrice-30",
+    "m30t": "matrice-30",
+    "m300": "matrice-300",
+    "m300rtk": "matrice-300",
+    "m350": "matrice-350",
+    "m350rtk": "matrice-350",
+    "m400": "matrice-400",
+}
+
+
+def _maintenance_model_image(model):
+    key = equipment_model_key(model).removeprefix("dji ")
+    key = "".join(key.replace("-", " ").split())
+    if key.startswith("matrice"):
+        key = "m" + key.removeprefix("matrice").removeprefix("m")
+    image = _MAINTENANCE_MODEL_IMAGES.get(key)
+    return f"img/equipamentos/{image}.png" if image else None
+
+
 def _get_scoped_drone_or_404(drone_id: int):
     query = apply_prefeitura_scope(Drones.query, current_user, Drones.prefeitura_id)
     return query.filter(Drones.id == drone_id).first_or_404()
+
+
+def _history_drone():
+    if not request.args.get("drone_id"):
+        return None
+    drone_id = request.args.get("drone_id", type=int)
+    if drone_id is None or not 0 < drone_id <= 2_147_483_647:
+        abort(404)
+    return _get_scoped_drone_or_404(drone_id)
 
 
 def _get_scoped_bateria_or_404(bateria_id: int):
@@ -97,6 +134,7 @@ def register_routes(bp):
             responsabilidades=equipment_team_assignments(drones, user=current_user),
             q=request.args.get("q", "").strip(),
             can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
+            can_view_history=can_access_endpoint(current_user, "main.equipamentos_manutencoes_historico", legacy=_maintenance_legacy_access()),
             is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
             can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
         )
@@ -368,7 +406,15 @@ def register_routes(bp):
                     db.session.rollback()
                     current_app.logger.exception("Erro ao abrir OS de manutenção.")
                     flash("Não foi possível abrir a OS de manutenção. Tente novamente.", "danger")
-        return render_template("equipamento_manutencao_nova.html", drones=list_drones(user=current_user), form=form, errors=errors)
+        drones = list_drones(user=current_user)
+        return render_template(
+            "equipamento_manutencao_nova.html",
+            drones=drones,
+            form=form,
+            errors=errors,
+            alocacoes=equipment_team_assignments(drones, user=current_user),
+            fotos_modelo={drone.id: _maintenance_model_image(drone.modelo) for drone in drones},
+        )
 
     @bp.route("/equipamentos/em-manutencao", methods=["GET"], endpoint="equipamentos_manutencao")
     @login_required
@@ -396,16 +442,22 @@ def register_routes(bp):
     @login_required
     def equipamentos_manutencoes_historico():
         _require_maintenance_access()
+        drone = _history_drone()
         return render_template(
             "equipamentos_manutencoes_historico.html",
-            manutencoes=list_historico_manutencoes(user=current_user),
+            manutencoes=list_historico_manutencoes(user=current_user, drone_id=drone.id if drone else None),
+            drones=list_drones(user=current_user),
+            drone_selecionado=drone,
         )
 
     @bp.route("/equipamentos/manutencoes/historico/excel", methods=["GET"], endpoint="equipamentos_manutencoes_historico_excel")
     @login_required
     def equipamentos_manutencoes_historico_excel():
         _require_maintenance_access()
-        output, filename = build_manutencoes_excel(list_historico_manutencoes(user=current_user))
+        drone = _history_drone()
+        output, filename = build_manutencoes_excel(
+            list_historico_manutencoes(user=current_user, drone_id=drone.id if drone else None),
+        )
         return send_file(output, mimetype=XLSX_MIME, as_attachment=True, download_name=filename)
 
     @bp.route("/equipamentos/manutencoes/pecas/historico", methods=["GET"], endpoint="equipamentos_manutencoes_pecas_historico")
@@ -490,6 +542,7 @@ def register_routes(bp):
             form=build_manutencao_form(manutencao, request.form if request.method == "POST" else None),
             condicoes_chegada=CONDICOES_CHEGADA, condicoes_finais=CONDICOES_FINAIS, tipos_manutencao=TIPOS_MANUTENCAO,
             alocacao=equipment_team_assignments([drone], user=current_user).get(drone.id, {}),
+            foto_modelo=_maintenance_model_image(drone.modelo),
             usos=list_pecas_usadas_manutencao(drone, user=current_user),
             errors=errors,
         )

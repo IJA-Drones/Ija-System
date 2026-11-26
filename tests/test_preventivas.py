@@ -1,9 +1,9 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import unittest
 from unittest.mock import patch
 from flask import g
 from app.extensions import db
-from app.models import CentralTiSelecao, PreventivaPlano, PreventivaRegistro, ManutencaoEquipamento
+from app.models import CentralTiSelecao, Notificacao, PreventivaPlano, PreventivaRegistro, ManutencaoEquipamento
 from app.modules.equipamentos.preventivas import situation
 from app.modules.gestao_ti.permissions import can_access_endpoint, validate_route_policy
 from tests import test_equipamentos_busca as fixture
@@ -51,6 +51,32 @@ class PreventivaTests(unittest.TestCase):
         response=self.client.post(f'/equipamentos/preventivas/{self.drones[0].id}',data={'acao':'concluir','versao':'1','realizada_em':TODAY.isoformat(),'descricao':'Primeira preventiva documentada.'})
         self.assertEqual(response.status_code,302)
         self.assertEqual(situation(plan,TODAY)['dias'],90)
+
+    def test_preventive_reminders_follow_each_due_date_without_reopening_read_alerts(self):
+        from app.modules.equipamentos.preventivas_notificacoes import sync_preventive_notifications, visible_preventive_plans
+
+        self.config(ultima_realizada_em=(TODAY - timedelta(days=54)).isoformat())
+        with self.app.test_request_context():
+            plans = visible_preventive_plans(self.user)
+            now = datetime.combine(TODAY, datetime.min.time())
+            sync_preventive_notifications(self.user, plans, now=now)
+            alert = Notificacao.query.one()
+            self.assertIn('próxima', alert.titulo)
+            self.assertIn('02/12/2026', alert.mensagem)
+            alert.lida_em = now
+            db.session.commit()
+            sync_preventive_notifications(self.user, plans, now=now)
+            self.assertEqual(Notificacao.query.count(), 1)
+            self.assertEqual(alert.lida_em, now)
+            sync_preventive_notifications(self.user, plans, now=now + timedelta(days=6))
+            self.assertIsNotNone(alert.apagada_em)
+            current = Notificacao.query.filter_by(apagada_em=None).one()
+            self.assertIn('vence hoje', current.titulo)
+            self.assertEqual(current.usuario_id, self.user.id)
+            notification_id = current.id
+        self.login('dev')
+        self.assertEqual(self.client.get(f'/notificacoes/{notification_id}/ler').status_code, 404)
+
     def test_invalid_dates_intervals_and_description_do_not_write(self):
         for extra in ({'intervalo':'30'},{'ultima_realizada_em':'amanha'},{'ultima_realizada_em':(TODAY+timedelta(days=1)).isoformat()}):
             self.config(**extra)

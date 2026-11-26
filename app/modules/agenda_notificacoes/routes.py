@@ -1,3 +1,5 @@
+import click
+
 from app.modules.gestao_ti.permissions import route_access
 from flask import abort, current_app, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
@@ -16,6 +18,30 @@ from app.modules.agenda_notificacoes.service import (
 
 
 def register_routes(bp):
+    @bp.record_once
+    def register_preventive_notifications_command(state):
+        @state.app.cli.command("sincronizar-preventivas")
+        @click.option("--watch", is_flag=True, help="Atualiza os avisos a cada 30 minutos.")
+        def sync_preventivas(watch):
+            """Atualiza os avisos da agenda preventiva de todas as contas elegíveis."""
+            from app.models import Usuario
+            from app.modules.equipamentos.preventivas_notificacoes import sync_preventive_notifications, visible_preventive_plans
+
+            def refresh():
+                with state.app.app_context(), state.app.test_request_context():
+                    users = Usuario.query.filter(Usuario.tipo_usuario.in_(("dev", "manutencao"))).all()
+                    for user in users:
+                        sync_preventive_notifications(user, visible_preventive_plans(user))
+                    click.echo(f"Avisos de manutenção preventiva atualizados para {len(users)} conta(s).")
+
+            refresh()
+            if watch:
+                from apscheduler.schedulers.blocking import BlockingScheduler
+
+                scheduler = BlockingScheduler(timezone="America/Sao_Paulo")
+                scheduler.add_job(refresh, "interval", minutes=30, max_instances=1, coalesce=True)
+                scheduler.start()
+
     @bp.route("/agenda", endpoint="agenda")
     @login_required
     def agenda():

@@ -112,8 +112,11 @@
                                                     <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Drone</button>
                                                 </form>
                                             </li>
-                                            {% elif not can_open_os %}
+                                            {% elif not can_open_os and not can_view_history %}
                                             <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
+                                            {% endif %}
+                                            {% if can_view_history %}
+                                            <li><a class="dropdown-item py-2" href="{{ url_for('main.equipamentos_manutencoes_historico', drone_id=d.id) }}"><i class="bi bi-clock-history me-2" aria-hidden="true"></i>Histórico de OS</a></li>
                                             {% endif %}
                                             {% if can_open_os %}
                                             <li><a class="dropdown-item py-2 text-primary" href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=d.id) if d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] else url_for('main.equipamento_manutencao_nova', drone_id=d.id) }}"><i class="bi bi-tools me-2"></i>{{ 'Atender OS de manutenção' if d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] else 'Abrir OS de manutenção' }}</a></li>

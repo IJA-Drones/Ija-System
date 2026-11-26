@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h2 class="mb-1 text-primary">Histórico do controle remoto</h2>
+            <p class="text-muted mb-0">{{ controle.renomacao }} · {{ controle.modelo }} · S/N {{ controle.numero_serie }}</p>
+        </div>
+        <a href="{{ url_for('main.listar_controles') }}" class="btn btn-outline-secondary">Voltar para controles</a>
+    </header>
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th scope="col">Data e responsável</th><th scope="col">Registro</th><th scope="col">Alterações</th></tr></thead>
+                <tbody>
+                    {% for registro in registros.items %}
+                    <tr>
+                        <td><strong>{{ registro.criado_em|maintenance_datetime }}</strong><div class="small text-muted">{{ registro.usuario_nome }}</div></td>
+                        <td>{{ 'Cadastro' if registro.tipo == 'cadastro' else 'Edição' }}</td>
+                        <td><ul class="list-unstyled mb-0">
+                            {% for campo, valores in registro.alteracoes.items() %}
+                            <li><strong>{{ campos.get(campo, campo) }}</strong> · {% if registro.tipo == 'edicao' %}{{ valores.antes or '—' }} → {% endif %}{{ valores.depois or '—' }}</li>
+                            {% endfor %}
+                        </ul></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center text-muted py-4">Nenhuma alteração registrada para este controle.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if registros.pages > 1 %}
+        <nav class="p-3 d-flex flex-wrap justify-content-between gap-2" aria-label="Páginas do histórico">
+            <span class="small text-muted">Página {{ registros.page }} de {{ registros.pages }}</span>
+            <div class="d-flex gap-2">
+                {% if registros.has_prev %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.historico_controle', controle_id=controle.id, page=registros.prev_num) }}">Anterior</a>{% endif %}
+                {% if registros.has_next %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.historico_controle', controle_id=controle.id, page=registros.next_num) }}">Próxima</a>{% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

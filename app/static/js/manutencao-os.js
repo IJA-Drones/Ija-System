@@ -4,6 +4,12 @@
   if (!form) return;
   const catalog = new Map(JSON.parse(document.getElementById('os-parts-catalog').textContent).map(part => [String(part.id), part]));
   const status = document.getElementById('os-save-status');
+  const workspace = form.closest('.equipamento-manutencao-pecas-page');
+  const saveActions = [...form.elements].filter(control => control.hasAttribute('data-save-action'));
+  const photoInput = document.getElementById('imagens-ocorrido');
+  const photoDropzone = form.querySelector('[data-photo-dropzone]');
+  const photoStatus = document.getElementById('os-upload-status');
+  const stageLinks = [...workspace.querySelectorAll('.os-stage-nav a')];
   let dirty = false;
   let submitting = false;
   let photos = [];
@@ -29,7 +35,10 @@
     }
     if (row.dataset.partRow !== 'repair') return;
     row.querySelector('[data-part-code]').value = part ? part.codigo || 'Não cadastrado' : '—';
-    row.querySelector('[data-part-balance]').textContent = part ? `${part.saldo} un.` : '—';
+    const balance = row.querySelector('[data-part-balance]');
+    balance.value = part ? `${part.saldo} un.` : '—';
+    balance.classList.toggle('is-neutral', !part);
+    balance.classList.toggle('is-unavailable', Boolean(part && (!part.disponivel || part.saldo === 0)));
     const quantity = row.querySelector('[name="reparo_quantidade"]');
     const requested = Number(quantity.value);
     const decrease = row.querySelector('[data-quantity-step="-1"]');
@@ -44,9 +53,10 @@
     for (const type of ['damaged', 'repair']) {
       form.querySelectorAll(`[data-part-row="${type}"]`).forEach((row, index) => {
         row.querySelector('[data-part-select]').setAttribute('aria-label', `${type === 'damaged' ? 'Peça avariada' : 'Peça nova'} ${index + 1}`);
-        row.querySelectorAll('[data-row-number]').forEach(number => { number.textContent = String(index + 1); });
         row.querySelector('[data-remove-row]').setAttribute('aria-label', `Remover peça ${type === 'damaged' ? 'avariada' : 'do reparo'} ${index + 1}`);
         row.querySelector('[data-part-code]')?.setAttribute('aria-label', `Código DJI da peça nova ${index + 1}`);
+        row.querySelector('[name="avariada_descricao"]')?.setAttribute('aria-label', `Descrição da avaria ${index + 1}`);
+        row.querySelector('[name="reparo_observacoes"]')?.setAttribute('aria-label', `Observação da substituição ${index + 1}`);
         row.querySelector('[name="reparo_quantidade"]')?.setAttribute('aria-label', `Quantidade ${index + 1}`);
         row.querySelectorAll('[data-quantity-step]').forEach(button => {
           button.setAttribute('aria-label', `${button.dataset.quantityStep === '1' ? 'Aumentar' : 'Diminuir'} quantidade da peça ${index + 1}`);
@@ -55,23 +65,78 @@
       });
     }
   }
+  function activateStage(section) {
+    if (!section) return;
+    stageLinks.forEach(link => {
+      if (link.hash === `#${section.id}`) link.setAttribute('aria-current', 'step');
+      else link.removeAttribute('aria-current');
+    });
+  }
+
+  function revealHash(hash) {
+    if (!hash) return;
+    const target = document.getElementById(hash.slice(1));
+    const section = target?.closest('[data-os-stage]');
+    if (!section) return;
+    section.open = true;
+    if (target.matches('details')) target.open = true;
+    activateStage(section);
+  }
+
+  workspace.addEventListener('click', event => {
+    const link = event.target.closest('.os-stage-nav a, .os-validation-summary a[href^="#"]');
+    if (link) revealHash(link.hash);
+  });
+  form.addEventListener('focusin', event => activateStage(event.target.closest('[data-os-stage]')));
+  window.addEventListener('hashchange', () => revealHash(location.hash));
+  revealHash(location.hash);
+
+  function replacePhotoSelection(files) {
+    const transfer = new DataTransfer();
+    files.forEach(file => transfer.items.add(file));
+    photoInput.files = transfer.files;
+    photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function validPhoto(file) {
+    return file.size <= 12 * 1024 * 1024 && ['image/jpeg', 'image/png'].includes(file.type);
+  }
+
+  photoDropzone?.addEventListener('dragover', event => {
+    if (!Array.from(event.dataTransfer.types).includes('Files')) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    photoDropzone.classList.add('is-dragover');
+  });
+  photoDropzone?.addEventListener('dragleave', event => {
+    if (!photoDropzone.contains(event.relatedTarget)) photoDropzone.classList.remove('is-dragover');
+  });
+  photoDropzone?.addEventListener('drop', event => {
+    photoDropzone.classList.remove('is-dragover');
+    if (!event.dataTransfer.files.length) return;
+    event.preventDefault();
+    const files = [...photoInput.files, ...event.dataTransfer.files];
+    if (files.length > 10 || files.some(file => !validPhoto(file))) {
+      photoStatus.textContent = 'Confira os arquivos: até 10 fotos JPG ou PNG, de no máximo 12 MB cada.';
+      photoStatus.classList.add('os-error');
+      return;
+    }
+    replacePhotoSelection(files);
+  });
+
   form.addEventListener('click', event => {
     const add = event.target.closest('[data-add-row]');
     const remove = event.target.closest('[data-remove-row]');
     const step = event.target.closest('[data-quantity-step]');
     const photo = event.target.closest('[data-remove-photo]');
-    if (event.target.closest('[data-choose-photos]')) document.getElementById('imagens-ocorrido').click();
+    if (event.target.closest('[data-choose-photos]')) photoInput.click();
     if (step) {
       const quantity = step.closest('[data-part-row]').querySelector('[name="reparo_quantidade"]');
       quantity.stepUp(Number(step.dataset.quantityStep));
       quantity.dispatchEvent(new Event('input', { bubbles: true }));
     }
     if (photo) {
-      const input = document.getElementById('imagens-ocorrido');
-      const transfer = new DataTransfer();
-      [...input.files].forEach((file, index) => { if (index !== Number(photo.dataset.removePhoto)) transfer.items.add(file); });
-      input.files = transfer.files;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
+      replacePhotoSelection([...photoInput.files].filter((file, index) => index !== Number(photo.dataset.removePhoto)));
       document.querySelector('[data-choose-photos]')?.focus();
     }
     if (add) {
@@ -108,24 +173,26 @@
       : finalCondition.value ? 'Ao concluir, o drone voltará ao status Ativo.' : 'A condição final define se o drone pode voltar à operação.';
   }
   finalCondition.addEventListener('change', updateFinalStatus);
-  document.getElementById('imagens-ocorrido').addEventListener('change', event => {
+  photoInput.addEventListener('change', event => {
     photos.forEach(url => URL.revokeObjectURL(url)); photos = [];
     const preview = document.getElementById('os-photo-preview');
     preview.querySelectorAll('[data-new-photo]').forEach(element => element.remove());
     const files = [...event.target.files];
-    const invalid = files.length > 10 || files.some(file => file.size > 12 * 1024 * 1024 || !['image/jpeg', 'image/png'].includes(file.type));
-    const info = document.getElementById('os-upload-status');
-    info.textContent = invalid ? 'Confira os arquivos: até 10 imagens JPG ou PNG de no máximo 12 MB cada.' : files.length ? `${files.length} foto(s) selecionada(s). Serão enviadas ao salvar.` : 'Nenhuma nova foto selecionada.';
-    info.classList.toggle('os-error', invalid);
+    const invalid = files.length > 10 || files.some(file => !validPhoto(file));
+    photoStatus.textContent = invalid ? 'Confira os arquivos: até 10 fotos JPG ou PNG, de no máximo 12 MB cada.'
+      : files.length ? `${files.length} foto(s) selecionada(s). Serão enviadas ao salvar.` : '';
+    photoStatus.classList.toggle('os-error', invalid);
     files.slice(0, 10).forEach((file, index) => {
-      if (!['image/jpeg', 'image/png'].includes(file.type)) return;
+      if (!validPhoto(file)) return;
       const url = URL.createObjectURL(file); photos.push(url);
       const item = document.createElement('div'); item.className = 'os-new-photo'; item.dataset.newPhoto = '';
       const image = document.createElement('img'); image.src = url; image.alt = `Nova foto da avaria ${index + 1}`;
       const remove = document.createElement('button'); remove.type = 'button'; remove.dataset.removePhoto = String(index);
       remove.setAttribute('aria-label', `Remover foto selecionada ${index + 1}`);
       const icon = document.createElement('i'); icon.className = 'bi bi-trash3'; icon.setAttribute('aria-hidden', 'true');
-      remove.append(icon); item.append(image, remove); preview.append(item);
+      remove.append(icon);
+      item.append(image, remove);
+      preview.insertBefore(item, preview.querySelector('[data-choose-photos]'));
     });
   });
   form.addEventListener('submit', event => {
@@ -137,7 +204,7 @@
     if (!hidden) { hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = 'acao'; hidden.dataset.submittedAction = ''; form.append(hidden); }
     hidden.value = action;
     form.setAttribute('aria-busy', 'true');
-    form.querySelectorAll('[data-save-action]').forEach(button => { button.disabled = true; });
+    saveActions.forEach(button => { button.disabled = true; });
     if (event.submitter) {
       event.submitter.dataset.originalLabel = event.submitter.innerHTML;
       event.submitter.replaceChildren();
@@ -153,7 +220,7 @@
     if (!event.persisted) return;
     submitting = false;
     form.removeAttribute('aria-busy');
-    form.querySelectorAll('[data-save-action]').forEach(button => { button.disabled = false; if (button.dataset.originalLabel) button.innerHTML = button.dataset.originalLabel; });
+    saveActions.forEach(button => { button.disabled = false; if (button.dataset.originalLabel) button.innerHTML = button.dataset.originalLabel; });
     form.querySelector('[data-submitted-action]')?.remove();
     status.textContent = dirty ? 'Alterações não salvas' : 'Confira a OS antes de salvar';
   });

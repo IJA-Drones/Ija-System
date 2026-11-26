@@ -8,7 +8,8 @@
   ] %}
   {% set maintenance = namespace(entries=[], active=false) %}
   {% for endpoint, title, icon, active_endpoints in maintenance_entries %}
-    {% if (central_ti_ui_guard([endpoint], maintenance_legacy) if central_ti_ui_guard is defined else maintenance_legacy) %}
+    {% set legacy_access = can_view_preventivas|default(false) if endpoint == 'main.preventivas' else maintenance_legacy %}
+    {% if (central_ti_ui_guard([endpoint], legacy_access) if central_ti_ui_guard is defined else legacy_access) %}
       {% set maintenance.entries = maintenance.entries + [(endpoint, title, icon, active_endpoints)] %}
       {% if request.endpoint in active_endpoints %}{% set maintenance.active = true %}{% endif %}
     {% endif %}

@@ -3,9 +3,10 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
+from app.models import ControleRemotoAtualizacao
 from app.modules.gestao_ti.permissions import can_access_endpoint, route_access
 from app.modules.equipamentos.controles import (
-    controle_form, controle_query, list_controles, save_controle, validate_controle_form,
+    CONTROL_FIELDS, controle_form, controle_query, list_controles, save_controle, validate_controle_form,
 )
 from app.modules.equipamentos.service import equipment_team_assignments, list_drones_for_baterias
 from app.shared.access import is_veiculos_supervisor, normalize_role
@@ -38,7 +39,7 @@ def register_controle_routes(bp):
             form, cleaned, errors = validate_controle_form(request.form, user=current_user, existing=controle)
             if not errors:
                 try:
-                    save_controle(cleaned, existing=controle)
+                    save_controle(cleaned, user=current_user, existing=controle)
                     flash('Controle remoto salvo com sucesso.', 'success')
                     return redirect(url_for('main.listar_controles'))
                 except IntegrityError:
@@ -62,3 +63,14 @@ def register_controle_routes(bp):
     def editar(controle_id):
         controle = controle_query(current_user).filter_by(id=controle_id).first_or_404()
         return form_page(controle)
+
+    @bp.route('/equipamentos/controles/<int:controle_id>/historico', endpoint='historico_controle')
+    @login_required
+    def historico(controle_id):
+        if not route_access(current_user, True):
+            abort(403)
+        controle = controle_query(current_user).filter_by(id=controle_id).first_or_404()
+        registros = ControleRemotoAtualizacao.query.filter_by(
+            controle_id=controle.id, prefeitura_id=controle.prefeitura_id,
+        ).order_by(ControleRemotoAtualizacao.id.desc()).paginate(per_page=25)
+        return render_template('controle_historico.html', controle=controle, registros=registros, campos=CONTROL_FIELDS)

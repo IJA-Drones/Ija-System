@@ -533,6 +533,9 @@
   "main.listar_controles": {
     "GET": "prefeitura.equipamentos.consultar"
   },
+  "main.historico_controle": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
   "main.cadastrar_controle": {
     "GET": "prefeitura.equipamentos.criar",
     "POST": "prefeitura.equipamentos.criar"

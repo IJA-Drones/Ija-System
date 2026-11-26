@@ -1,11 +1,19 @@
 """Cadastro e consulta de controles, com alocação herdada do drone."""
-from sqlalchemy import func
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
-from app.models import ControlesRemotos, Drones, Equipamentos
+from app.models import ControleRemotoAtualizacao, ControlesRemotos, Drones, Equipamentos
 from app.shared.access import apply_prefeitura_scope, get_user_prefeitura_id
 from app.modules.equipamentos.service import _search_equipment
+
+
+CONTROL_FIELDS = {
+    'modelo': 'Modelo', 'renomacao': 'Identificação', 'numero_serie': 'Número de série',
+    'status': 'Status', 'drone_id': 'Drone vinculado',
+}
 
 
 def drone_prefeitura(drone):
@@ -70,8 +78,20 @@ def validate_controle_form(data, *, user, existing=None):
     return form, cleaned, errors
 
 
-def save_controle(cleaned, *, existing=None):
+def _controle_snapshot(controle):
+    values = {key: getattr(controle, key) for key in CONTROL_FIELDS}
+    drone = controle.drone_vinculado
+    if drone:
+        values['drone_id'] = f'{drone.renomacao} · {drone.numero_serie or "Sem série"} (#{drone.id})'
+    return values
+
+
+def save_controle(cleaned, *, user, existing=None):
+    if existing is not None:
+        db.session.execute(select(Equipamentos.id).where(Equipamentos.id == existing.id).with_for_update()).scalar_one()
+        db.session.refresh(existing)
     controle = existing if existing is not None else ControlesRemotos()
+    before = _controle_snapshot(controle) if existing is not None else {}
     for key in ('modelo', 'renomacao', 'numero_serie', 'status'):
         setattr(controle, key, cleaned[key])
     controle.drone_vinculado = cleaned['drone']
@@ -79,6 +99,15 @@ def save_controle(cleaned, *, existing=None):
     # Only the drone owns the allocation; do not copy equipe_id to this row.
     controle.equipe_id = None
     db.session.add(controle)
+    after = _controle_snapshot(controle)
+    changes = {key: {'antes': before.get(key), 'depois': value} for key, value in after.items() if before.get(key) != value}
+    if changes:
+        db.session.add(ControleRemotoAtualizacao(
+            controle=controle, prefeitura_id=controle.prefeitura_id,
+            usuario_id=user.id, usuario_nome=(user.nome_uvis or user.login)[:200],
+            criado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+            tipo='cadastro' if existing is None else 'edicao', alteracoes=changes,
+        ))
     db.session.commit()
     return controle
 

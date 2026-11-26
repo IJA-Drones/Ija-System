@@ -135,6 +135,18 @@ test('comparison panel links a shift to its filtered route', () => {
   assert.equal(page.elements.trackingAllShifts.hidden, false);
 });
 
+test('tracking shows the drones recorded for the current and historical shifts', () => {
+  const data = fixture();
+  const vehicle = data.vehicles[0];
+  vehicle.drones_transportados = [{ identificacao: 'Matrice no turno', numero_serie: 'SN-ATUAL' }];
+  vehicle.daily.logs[0].drones_transportados = [{ identificacao: 'T25 da viagem anterior', numero_serie: 'SN-ANTERIOR' }];
+  const page = browser(data);
+  assert.equal(page.elements.trackingTransport.hidden, false);
+  assert.match(page.elements.trackingTransportDrones.textContent, /Matrice no turno.*SN-ATUAL/);
+  page.elements.trackingCompare.click();
+  assert.match(page.elements.trackingToolPanel.textContent, /T25 da viagem anterior.*SN-ANTERIOR/);
+});
+
 test('route CSV keeps missing speeds blank and includes driver and report times', async () => {
   const page = browser();
   page.view('reports');

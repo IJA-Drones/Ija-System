@@ -31,6 +31,7 @@ from app.modules.veiculos.service import (
     confirmar_alerta_limpeza_operacional,
     delete_veiculo_log,
     delete_veiculo,
+    drones_para_turnos,
     encerrar_turno_piloto,
     EQUIPE_OCEANO_USER_TYPE,
     iniciar_turno_piloto,
@@ -581,6 +582,7 @@ def register_routes(bp):
         return render_template(
             "piloto_veiculos.html",
             veiculos=context["veiculos"],
+            drones_por_veiculo=drones_para_turnos(context["veiculos"], current_user),
             veiculos_supervisor_ids=context.get("veiculos_supervisor_ids", []),
             turnos_abertos=context["turnos_abertos"],
             km_abastecimento_referencias=context.get("km_abastecimento_referencias", {}),

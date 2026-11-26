@@ -164,6 +164,7 @@ def reconciliation(logs, points, day, user, vehicle_id, now, period=None):
             reason = "estimated_gps"
         rows.append({
             "id": log.id, "driver": driver(log), "started_at": local_iso(log.data_registro),
+            "drones_transportados": log.drones_transportados,
             "ended_at": local_iso(log.encerrado_em), "status": "closed" if closed else "open",
             "initial_km": log.km_inicial, "final_km": log.km_final,
             "recorded_km": round(recorded, 2) if recorded is not None else None,
@@ -202,4 +203,5 @@ def reconciliation(logs, points, day, user, vehicle_id, now, period=None):
         "unlinked_samples": sum(not ids for ids in point_logs),
         "differences": sum(row["comparison"] == "difference" for row in rows),
     })
-    return {"driver": current_driver, "driver_conflict": len(active) > 1, "daily": summary}
+    return {"driver": current_driver, "driver_conflict": len(active) > 1,
+            "drones_transportados": active[0].drones_transportados if current_driver else None, "daily": summary}

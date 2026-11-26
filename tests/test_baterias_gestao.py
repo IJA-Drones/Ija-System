@@ -1,6 +1,7 @@
 """Manual battery management and allocation, with disposable SQLite databases."""
 import importlib.util
-from datetime import datetime
+import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -117,6 +118,37 @@ class BatteryManagementTests(unittest.TestCase):
         self.assertEqual(self.battery.ciclo, 0)
         self.assertIsNotNone(self.battery.ciclos_atualizados_em)
         self.assertTrue(all(event.usuario_id==self.user.id for event in events))
+
+    def test_dji_cycles_use_serial_timestamp_and_municipality(self):
+        from app.modules.equipamentos.dji_battery_sync import sync_battery_cycles
+
+        self.battery.numero_serie = 'BAT-DJI-1'
+        self.battery.ciclo = 180
+        self.drones[0].numero_serie = 'M30T-1'
+        foreign = Baterias(modelo='TB', renomacao='Bateria externa', numero_serie='BAT-DJI-2', prefeitura_id=2)
+        db.session.add(foreign)
+        db.session.commit()
+        now = datetime(2026, 11, 26, 15)
+
+        def osd(at, count):
+            return json.dumps({'timestamp': int(at.replace(tzinfo=timezone.utc).timestamp() * 1000),
+                'data': {'battery': {'batteries': [
+                    {'sn': 'bat-dji-1', 'loop_times': count}, {'sn': 'BAT-DJI-2', 'loop_times': 88},
+                    {'sn': 'BAT-INEXISTENTE', 'loop_times': 1},
+                ]}}}).encode()
+
+        self.assertEqual(sync_battery_cycles('INEXISTENTE', osd(now, 181), now=now), 0)
+        self.assertEqual(sync_battery_cycles('M30T-1', osd(now, 181), now=now), 1)
+        self.assertEqual(self.battery.ciclo, 181)
+        self.assertEqual(self.battery.ciclos_atualizados_em, now)
+        self.assertIsNone(foreign.ciclo)
+        self.assertEqual(sync_battery_cycles('M30T-1', osd(now, 181), now=now), 0)
+        self.assertEqual(sync_battery_cycles('M30T-1', osd(now - timedelta(seconds=1), 182), now=now), 0)
+        self.assertEqual(sync_battery_cycles('M30T-1', osd(now + timedelta(seconds=1), 179), now=now), 0)
+        event = BateriaAtualizacao.query.one()
+        self.assertEqual(event.alteracoes['ciclo'], {'antes': 180, 'depois': 181})
+        self.assertEqual(event.usuario_nome, 'DJI')
+        self.assertIn('Sincronização DJI', self.client.get(f'/equipamentos/baterias/{self.battery.id}').text)
 
     def test_invalid_cycles_do_not_write_or_silently_change_numbers(self):
         self.battery.ciclo = 5

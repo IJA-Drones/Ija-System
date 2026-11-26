@@ -286,10 +286,12 @@ def lock_maintenance_equipment(drone):
     db.session.refresh(drone, attribute_names=["status"])
 
 
-def list_historico_manutencoes(user=None):
+def list_historico_manutencoes(user=None, *, drone_id=None):
     query = ManutencaoEquipamento.query
     if user is not None:
         query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
+    if drone_id is not None:
+        query = query.filter(ManutencaoEquipamento.drone_id == drone_id)
     return query.order_by(ManutencaoEquipamento.aberta_em.desc(), ManutencaoEquipamento.id.desc()).all()
 
 

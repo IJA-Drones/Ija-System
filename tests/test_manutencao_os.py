@@ -159,6 +159,30 @@ class ManutencaoOsTests(unittest.TestCase):
         self.assertEqual(ManutencaoEquipamento.query.count(), 1)
         self.assertEqual(ManutencaoEquipamento.query.one().avarias_identificadas, 'Hélice danificada')
 
+    def test_history_and_export_are_filtered_by_the_selected_drone(self):
+        another = Drones(modelo='Agras T25', renomacao='Drone reserva', numero_serie='DRONE-RESERVA',
+                         registro_anatel='teste', registro_anac='ANAC-RESERVA', pmd_kg=1, prefeitura_id=1)
+        db.session.add(another)
+        db.session.commit()
+        self.open_os()
+        self.open_os(drone=another)
+        drone_id = self.drones[0].id
+        first = ManutencaoEquipamento.query.filter_by(drone_id=drone_id).one().numero_os
+        second = ManutencaoEquipamento.query.filter_by(drone_id=another.id).one().numero_os
+        history = '/equipamentos/manutencoes/historico'
+        page = self.client.get(f'{history}?drone_id={drone_id}')
+        self.assertEqual(page.status_code, 200)
+        body = page.text.split('manutencoes-historico-table">', 1)[1].split('</table>', 1)[0]
+        self.assertIn(first, body)
+        self.assertNotIn(second, body)
+        self.assertIn(f'{history}?drone_id={drone_id}', self.client.get('/equipamentos/drones').text)
+        response = self.client.get(f'{history}/excel?drone_id={drone_id}')
+        workbook = load_workbook(BytesIO(response.data))
+        rows = list(workbook.active.values)
+        self.assertIn(first, rows[2])
+        self.assertFalse(any(second in row for row in rows))
+        self.assertEqual(self.client.get(f'{history}?drone_id={self.drones[1].id}').status_code, 404)
+
     def test_empty_report_fields_and_signatures_never_render_none(self):
         self.open_os()
         response = self.client.get(f'/equipamentos/{self.drones[0].id}/manutencao/pecas')

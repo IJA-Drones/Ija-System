@@ -21,6 +21,7 @@ from app.extensions import db
 from app.models import (
     Abastecimento,
     AuditoriaUsuario,
+    Drones,
     Equipe,
     EquipePiloto,
     LimpezaVeiculo,
@@ -650,6 +651,43 @@ def build_piloto_veiculos_context(user):
         "agora_brasilia": _now_brazil(),
     }
 
+
+def drones_para_turnos(veiculos, user):
+    equipes = {
+        veiculo.id: veiculo.equipe for veiculo in veiculos if veiculo.equipe and veiculo.equipe.prefeitura_id
+        and veiculo.prefeitura_id in (None, veiculo.equipe.prefeitura_id)
+    }
+    if not equipes:
+        return {}
+    prefeituras = {equipe.id: equipe.prefeitura_id for equipe in equipes.values()}
+    drones = apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id).filter(
+        Drones.equipe_id.in_(prefeituras),
+    ).order_by(Drones.renomacao, Drones.id).all()
+    por_equipe = defaultdict(list)
+    for drone in drones:
+        if drone.prefeitura_id in (None, prefeituras[drone.equipe_id]):
+            por_equipe[drone.equipe_id].append(drone)
+    return {veiculo_id: por_equipe[equipe.id] for veiculo_id, equipe in equipes.items()}
+
+
+def _drones_transportados_no_turno(veiculo, user, form_data):
+    getlist = getattr(form_data, 'getlist', None)
+    raw_ids = getlist('drone_ids') if getlist else form_data.get('drone_ids', [])
+    if not raw_ids:
+        return [] if form_data.get('informou_transporte') == '1' else None
+    if isinstance(raw_ids, str):
+        raw_ids = [raw_ids]
+
+    disponiveis = {drone.id: drone for drone in drones_para_turnos([veiculo], user).get(veiculo.id, [])}
+    try:
+        selected = [disponiveis[drone_id] for drone_id in dict.fromkeys(int(value) for value in raw_ids)]
+    except (KeyError, TypeError, ValueError) as exc:
+        raise VeiculoTurnoError('Selecione apenas drones vinculados à equipe deste veículo.', 'warning') from exc
+    return [
+        {'id': drone.id, 'identificacao': drone.renomacao, 'modelo': drone.modelo, 'numero_serie': drone.numero_serie}
+        for drone in selected
+    ]
+
 @capability(['prefeitura.alertas_limpeza_veiculos.consultar'])
 def can_access_limpeza_alertas_operacionais(user):
     return (
@@ -878,6 +916,7 @@ def _buscar_ultimo_fechamento_veiculo(veiculo_id):
 
 def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
     veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
+    drones_transportados = _drones_transportados_no_turno(veiculo, user, form_data)
     is_supervisor = is_veiculos_supervisor(user)
     if is_supervisor:
         from app.modules.usuarios.service import garantir_piloto_para_supervisor
@@ -940,6 +979,7 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
         check_diario=True,
         assinatura_piloto=assinatura_b64,
         data_registro=_now_brazil(),
+        drones_transportados=drones_transportados,
         condutor_nome=(condutor_nome[:120] or None)
         if titular or getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
         else ((getattr(user, "piloto", None).nome_piloto if getattr(user, "piloto", None)
@@ -1950,6 +1990,7 @@ def _build_veiculos_timeline_from_logs(logs):
             "data_inicio": data_inicio,
             "encerrado_em": log.encerrado_em,
             "operador": _operador_log_veiculo(log),
+            "drones_transportados": log.drones_transportados,
             "km_inicial": log.km_inicial or 0,
             "km_final": log.km_final if log.km_final is not None else log.ultimo_km_registrado,
             "km_rodado": km_rodado,

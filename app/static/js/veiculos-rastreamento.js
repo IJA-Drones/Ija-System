@@ -193,6 +193,9 @@
     $('detailSpeedLabel').textContent = situation === 'stale' ? 'Velocidade na última leitura' : 'Velocidade atual';
     $('trackingResponsibleName').textContent = vehicle ? (state.demo ? 'Responsável fictício · demonstração' : vehicle.responsible || 'Não informado') : '—';
     $('trackingDriverName').textContent = vehicle ? (state.demo ? 'Condutor fictício · demonstração' : driverName(vehicle)) : 'Selecione um veículo';
+    const transport = $('trackingTransport');
+    transport.hidden = !vehicle?.driver || state.demo;
+    $('trackingTransportDrones').textContent = transport.hidden ? '' : window.IjaTrackingDetails.transportLabel(vehicle.drones_transportados);
     $('trackingDriverMeta').textContent = state.demo ? 'Identificação ilustrativa para explorar o rastreamento.' : vehicle?.ploa_driver ? `Piloto titular do ${vehicle.team}${vehicle.driver_conflict ? ' · Há turnos sobrepostos; confira os logs.' : vehicle.driver ? ` · Turno aberto: log #${vehicle.driver.log_id}` : ' · Sem turno aberto'}. A reprodução usa a identificação registrada em cada turno.` : 'Vincule um piloto titular ao PLOA do veículo para identificar o condutor.';
     renderDaySummary(vehicle);
     $('detailIgnition').textContent = p ? ({ 0: 'Desligada', 1: 'Ligada', 2: 'Desconhecida' }[p.ignition] || 'Desconhecida') : '—';
@@ -256,6 +259,7 @@
       const row = node('tr');
       const identity = node('td');
       identity.append(node('strong', '', `#${log.id} · ${log.driver.name || 'Condutor não informado'}`), node('small', '', log.status === 'open' ? 'Turno aberto' : 'Turno encerrado'));
+      identity.append(node('small', '', window.IjaTrackingDetails.transportLabel(log.drones_transportados)));
       const period = node('td', '', when(log.started_at));
       period.append(node('small', '', log.ended_at ? `Até ${when(log.ended_at)}` : 'Fechamento não registrado'));
       const result = node('td');

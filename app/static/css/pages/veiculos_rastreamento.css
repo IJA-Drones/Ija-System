@@ -93,6 +93,7 @@ body:has(.tracking-page) .app-content { margin-top: 0 !important; }
 .tracking-people strong { font-size: .82rem; font-weight: 550; margin-top: 5px; }
 .tracking-people small { font-size: .65rem; line-height: 1.6; margin-top: 3px; color: var(--color-text-muted); }
 .tracking-people .btn { align-self: center; white-space: nowrap; }
+.tracking-transport strong { display: block; overflow-wrap: anywhere; font-size: .82rem; font-weight: 550; }
 .tracking-module-tabs.nav-tabs { display: flex; align-items: stretch; gap: 2px; flex-wrap: wrap; padding: 0 18px; margin: 0; border-bottom: 1px solid var(--tracking-border); }
 .tracking-module-tabs .nav-link, .tracking-more > summary { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 13px 11px; margin: 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; font-size: .78rem; color: var(--color-text-muted); background: transparent; }
 .tracking-module-tabs .nav-link:hover { color: var(--tracking-accent); }

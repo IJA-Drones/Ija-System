@@ -1,37 +1,106 @@
 {% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_pecas.css', v='20261126-os-referencia-2') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <h2><i class="bi bi-tools me-2 text-primary"></i>Abrir OS de manutenção</h2>
-  <p class="text-muted">Registre a manutenção de um drone. Esta ordem é exclusiva da manutenção e possui identificação OSM.</p>
-  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
-    <form method="post">
+<div class="container equipamento-manutencao-pecas-page os-opening">
+  <div class="os-sheet">
+    <header class="os-page-heading">
+      <div>
+        <h2>Nova Ordem de Serviço</h2>
+        <nav class="os-breadcrumb" aria-label="Localização">
+          <a href="{{ url_for('main.equipamentos_manutencao') }}">Manutenção</a>
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          <a href="{{ url_for('main.equipamentos_manutencao') }}">Ordens de serviço</a>
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          <span aria-current="page">Nova OS</span>
+        </nav>
+      </div>
+    </header>
+
+    <form method="post" id="os-opening-form">
       {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
-      <div class="mb-3">
-        <label for="drone_id" class="form-label">Drone *</label>
-        <select id="drone_id" name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}" required>
-          <option value="">Selecione o drone</option>
-          {% for drone in drones %}
-          <option value="{{ drone.id }}" {% if form.get('drone_id')|string == drone.id|string %}selected{% endif %}>{{ drone.renomacao }} — {{ drone.modelo }} — S/N {{ drone.numero_serie or 'Não informado' }} ({{ drone.status }})</option>
-          {% endfor %}
-        </select>
-        {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.drone_id }}</div>{% endif %}
-        <div class="form-text">Se o drone já estiver em manutenção, você será direcionado à OS existente.</div>
-      </div>
-      <div class="mb-3">
-        <label for="avarias_identificadas" class="form-label">Motivo da manutenção / avarias identificadas *</label>
-        <textarea id="avarias_identificadas" name="avarias_identificadas" class="form-control {% if errors.get('avarias_identificadas') %}is-invalid{% endif %}" rows="4" required>{{ form.get('avarias_identificadas', '') }}</textarea>
-        {% if errors.get('avarias_identificadas') %}<div class="invalid-feedback">{{ errors.avarias_identificadas }}</div>{% endif %}
-      </div>
-      <div class="mb-4">
-        <label for="responsavel_manutencao" class="form-label">Responsável técnico pela manutenção</label>
-        <input id="responsavel_manutencao" name="responsavel_manutencao" maxlength="120" class="form-control {% if errors.get('responsavel_manutencao') %}is-invalid{% endif %}" value="{{ form.get('responsavel_manutencao', '') }}">
-        {% if errors.get('responsavel_manutencao') %}<div class="invalid-feedback">{{ errors.responsavel_manutencao }}</div>{% endif %}
-      </div>
-      <div class="d-flex flex-wrap gap-2">
+      <section class="os-panel" aria-labelledby="os-select-title">
+        <header class="os-section-heading os-static-heading"><h3 id="os-select-title">Selecionar drone</h3></header>
+        <div class="os-panel-body">
+          <div class="os-field">
+            <label for="drone_id" class="form-label">Drone *</label>
+            <select id="drone_id" name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}" required>
+              <option value="">Selecione o drone</option>
+              {% for equipment in drones %}
+              {% set assignment = alocacoes.get(equipment.id, {}) %}
+              {% set pilot = assignment.get('piloto') %}
+              {% set team = assignment.get('equipe') %}
+              <option value="{{ equipment.id }}" data-model="{{ equipment.modelo }}"
+                      data-serial="{{ equipment.numero_serie or 'Não informado' }}"
+                      data-identification="{{ equipment.renomacao }}"
+                      data-responsible="{{ pilot.nome_piloto if pilot else team.nome_equipe if team else 'Sem responsável vinculado' }}"
+                      data-photo="{{ url_for('static', filename=fotos_modelo[equipment.id]) if fotos_modelo[equipment.id] else '' }}"
+                      {% if form.get('drone_id')|string == equipment.id|string %}selected{% endif %}>
+                {{ equipment.renomacao }} — {{ equipment.modelo }} — S/N {{ equipment.numero_serie or 'Não informado' }} ({{ equipment.status }})
+              </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.drone_id }}</div>{% endif %}
+            <small>Se o drone já estiver em manutenção, será aberta a OS existente.</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="os-equipment os-panel" data-os-open-equipment aria-labelledby="os-selected-title" hidden>
+        <div class="os-equipment-visual">
+          <img data-os-equipment-photo alt="" decoding="async" hidden>
+          <span class="os-equipment-icon" data-os-equipment-icon><i class="bi bi-airplane-engines" aria-hidden="true"></i></span>
+        </div>
+        <div class="os-equipment-info">
+          <div class="os-equipment-heading">
+            <h3 id="os-selected-title">Dados do drone</h3>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-change-drone>
+              <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Alterar drone
+            </button>
+          </div>
+          <dl class="os-equipment-data" aria-live="polite">
+            <div><dt>Modelo</dt><dd data-os-equipment-field="model"></dd></div>
+            <div><dt>Nº de série</dt><dd data-os-equipment-field="serial"></dd></div>
+            <div><dt>Patrimônio / ID</dt><dd data-os-equipment-field="identification"></dd></div>
+            <div><dt>Responsável</dt><dd data-os-equipment-field="responsible"></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="os-panel" aria-labelledby="os-create-title">
+        <header class="os-section-heading os-static-heading"><h3 id="os-create-title">Relato inicial</h3></header>
+        <div class="os-panel-body">
+          <div class="os-two-columns mb-0">
+            <div class="os-field">
+              <label for="avarias_identificadas">Motivo da manutenção / avarias identificadas *</label>
+              <textarea id="avarias_identificadas" name="avarias_identificadas" class="form-control {% if errors.get('avarias_identificadas') %}is-invalid{% endif %}"
+                        rows="3" required>{{ form.get('avarias_identificadas', '') }}</textarea>
+              {% if errors.get('avarias_identificadas') %}<div class="invalid-feedback">{{ errors.avarias_identificadas }}</div>{% endif %}
+            </div>
+            <div class="os-field">
+              <label for="responsavel_manutencao">Responsável técnico pela manutenção</label>
+              <input id="responsavel_manutencao" name="responsavel_manutencao" maxlength="120"
+                     class="form-control {% if errors.get('responsavel_manutencao') %}is-invalid{% endif %}" value="{{ form.get('responsavel_manutencao', '') }}">
+              {% if errors.get('responsavel_manutencao') %}<div class="invalid-feedback">{{ errors.responsavel_manutencao }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" href="{{ url_for('main.equipamentos_manutencao') }}">Cancelar</a>
         <button class="btn btn-primary" type="submit">Abrir OS de manutenção</button>
-        <a class="btn btn-outline-secondary" href="{{ url_for('main.equipamentos_manutencao') }}">Voltar</a>
       </div>
     </form>
-  </div></div>
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/manutencao-nova.js') }}" defer></script>
 {% endblock %}

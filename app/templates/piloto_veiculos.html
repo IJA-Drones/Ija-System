@@ -202,6 +202,25 @@
                   </div>
                 </div>
 
+                <fieldset class="border rounded-3 p-3 my-3">
+                  <legend class="float-none w-auto px-1 small fw-bold mb-1">Drones transportados</legend>
+                  <input type="hidden" name="informou_transporte" value="1">
+                  {% set drones_do_turno = drones_por_veiculo.get(v.id, []) %}
+                  {% if drones_do_turno %}
+                  <p class="hint-line mb-2">Marque os drones levados no turno.</p>
+                  <div class="overflow-auto" style="max-height: 12rem">
+                    {% for drone in drones_do_turno %}
+                    <label class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="drone_ids" value="{{ drone.id }}">
+                      <span class="form-check-label d-block text-break">{{ drone.renomacao }} · {{ drone.modelo }}{% if drone.numero_serie %} · S/N {{ drone.numero_serie }}{% endif %}</span>
+                    </label>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <p class="hint-line mb-0">Nenhum drone vinculado à equipe deste veículo.</p>
+                  {% endif %}
+                </fieldset>
+
                 <div class="modal-section-title">2. Assinatura do Piloto/Supervisor</div>
                 <div class="modal-soft-card mb-3">
                   <div class="small text-muted">Fluxo do turno</div>

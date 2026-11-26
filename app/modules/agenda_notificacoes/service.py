@@ -812,13 +812,19 @@ def garantir_notificacoes_do_dia(usuario_id):
 
 def sincronizar_notificacoes_automaticas(user):
     if not getattr(user, "is_authenticated", False):
-        return
+        return []
+
+    from app.modules.equipamentos.preventivas_notificacoes import sync_preventive_notifications, visible_preventive_plans
+
+    planos = visible_preventive_plans(user)
+    plano_ids = [plano.id for plano in planos]
+    sync_preventive_notifications(user, planos)
 
     if can_view_all_notifications(user):
         _sincronizar_alertas_operacionais(user)
-        return
-
-    garantir_notificacoes_do_dia(user.id)
+    else:
+        garantir_notificacoes_do_dia(user.id)
+    return plano_ids
 
 
 def _sincronizar_alertas_operacionais(user):
@@ -1119,27 +1125,25 @@ def _build_veiculo_review_label(veiculo):
     return f"{placa} (faltam {int(faltante)} km)"
 
 
-def get_notificacao_or_404(user, notif_id):
-    if can_view_all_notifications(user):
-        return Notificacao.query.get_or_404(notif_id)
+def _visible_notification_query(user, plano_ids):
+    own = Notificacao.usuario_id == user.id
+    regular = Notificacao.preventiva_plano_id.is_(None)
+    preventive = own & Notificacao.preventiva_plano_id.in_(plano_ids)
+    return Notificacao.query.filter((regular if can_view_all_notifications(user) else own & regular) | preventive)
 
-    return (
-        Notificacao.query
-        .filter_by(id=notif_id, usuario_id=user.id)
-        .first_or_404()
-    )
+
+def get_notificacao_or_404(user, notif_id):
+    from app.modules.equipamentos.preventivas_notificacoes import visible_preventive_plans
+
+    plano_ids = [plano.id for plano in visible_preventive_plans(user)]
+    return _visible_notification_query(user, plano_ids).filter_by(id=notif_id).first_or_404()
 
 
 def list_notificacoes(user):
-    sincronizar_notificacoes_automaticas(user)
-
-    base = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
-    if can_view_all_notifications(user):
-        return base.order_by(Notificacao.criada_em.desc()).all()
-
+    plano_ids = sincronizar_notificacoes_automaticas(user)
     return (
-        base
-        .filter_by(usuario_id=user.id)
+        _visible_notification_query(user, plano_ids)
+        .filter(Notificacao.apagada_em.is_(None))
         .order_by(Notificacao.criada_em.desc())
         .all()
     )
@@ -1157,11 +1161,10 @@ def soft_delete_notificacao(notificacao):
 
 
 def clear_notificacoes(user):
+    from app.modules.equipamentos.preventivas_notificacoes import visible_preventive_plans
+
     agora = agora_brasilia_naive()
-    query = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
-
-    if not can_view_all_notifications(user):
-        query = query.filter_by(usuario_id=user.id)
-
+    plano_ids = [plano.id for plano in visible_preventive_plans(user)]
+    query = _visible_notification_query(user, plano_ids).filter(Notificacao.apagada_em.is_(None))
     query.update({"apagada_em": agora}, synchronize_session=False)
     db.session.commit()

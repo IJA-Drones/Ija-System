@@ -1,4 +1,4 @@
-"""Organização e conferência manual das baterias, sem integração externa."""
+"""Organização e histórico de conferência das baterias."""
 import re
 from datetime import datetime, timezone
 
@@ -25,7 +25,7 @@ def battery_snapshot(bateria):
     return values
 
 
-def record_battery_update(bateria, *, user, before=None, tipo='edicao', confirm_cycles=False):
+def record_battery_update(bateria, *, user, before=None, tipo='edicao', confirm_cycles=False, cycles_observed_at=None):
     after = battery_snapshot(bateria)
     before = before or {}
     changes = {key: {'antes': before.get(key), 'depois': value} for key, value in after.items() if key in BATTERY_FIELDS and before.get(key) != value}
@@ -34,11 +34,11 @@ def record_battery_update(bateria, *, user, before=None, tipo='edicao', confirm_
     if not changes and tipo == 'edicao':
         return False
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    name = ((getattr(user, 'nome_uvis', None) or getattr(user, 'login', None) or 'Não identificado')[:200])
+    name = 'DJI' if tipo == 'sincronizacao_dji' else (getattr(user, 'nome_uvis', None) or getattr(user, 'login', None) or 'Não identificado')[:200]
     bateria.atualizado_em = now
     bateria.atualizado_por_id = getattr(user, 'id', None)
     if confirm_cycles or ('ciclo' in changes and after['ciclo'] is not None):
-        bateria.ciclos_atualizados_em = now
+        bateria.ciclos_atualizados_em = cycles_observed_at or now
     elif 'ciclo' in changes:
         bateria.ciclos_atualizados_em = None
     db.session.add(BateriaAtualizacao(bateria=bateria, prefeitura_id=resolve_battery_tenant(existing=bateria),

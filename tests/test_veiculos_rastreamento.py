@@ -10,6 +10,7 @@ from jinja2 import ChoiceLoader, DictLoader
 
 from app.extensions import db
 from app.models import (
+    Drones,
     Equipe,
     EquipePiloto,
     LogVeiculo,
@@ -425,6 +426,39 @@ class VeiculosRastreamentoTests(unittest.TestCase):
             encerrar_turno_piloto(user, vehicle.id, {"km_final": "1240"}, {"foto_painel_final": photo()}, "/tmp")
         self.assertIsNotNone(log.encerrado_em)
         self.assertGreaterEqual(log.encerrado_em, log.data_registro)
+
+    def test_shift_registrations_show_transported_drone_snapshots_in_tracking(self):
+        from io import BytesIO
+
+        vehicle = self.vehicle('AAA1A11', prefeitura_id=1, equipe_id=1)
+        drone = Drones(modelo='DJI Matrice 4E', renomacao='Drone da viagem', numero_serie='DR-CARGA',
+                       registro_anac='ANAC-CARGA', registro_anatel='ANATEL-CARGA', pmd_kg=1, equipe_id=1, prefeitura_id=1)
+        other_team = Drones(modelo='T25', renomacao='Drone de outra equipe', numero_serie='DR-FORA',
+                            registro_anac='ANAC-FORA', registro_anatel='ANATEL-FORA', pmd_kg=1, equipe_id=2, prefeitura_id=1)
+        db.session.add_all([drone, other_team])
+        db.session.commit()
+        self.login('equipe_oceano', prefeitura_id=1, codigo_setor='1')
+
+        def submit(drone_ids):
+            return self.client.post(f'/piloto/veiculos/{vehicle.id}/km', data={
+                'assinatura_b64': 'ficticia', 'condutor_nome': 'Condutor de teste', 'informou_transporte': '1',
+                'drone_ids': drone_ids, 'foto_painel': (BytesIO(b'fake'), 'demo.png'),
+            })
+
+        with patch('app.modules.veiculos.service._salvar_upload_veiculo', return_value='fixture.png') as upload:
+            self.assertEqual(submit([str(other_team.id)]).status_code, 302)
+            self.assertEqual(LogVeiculo.query.count(), 0)
+            upload.assert_not_called()
+            self.assertEqual(submit([str(drone.id), str(drone.id)]).status_code, 302)
+        log = LogVeiculo.query.one()
+        snapshot = log.drones_transportados
+        self.assertEqual(snapshot, [{'id': drone.id, 'identificacao': 'Drone da viagem',
+                                     'modelo': 'DJI Matrice 4E', 'numero_serie': 'DR-CARGA'}])
+        drone.renomacao = 'Drone renomeado'
+        db.session.commit()
+        item = self.data()['vehicles'][0]
+        self.assertEqual(item['drones_transportados'], snapshot)
+        self.assertEqual(item['daily']['logs'][0]['drones_transportados'], snapshot)
 
     def test_history_api_imports_only_authorized_vehicle_and_reuses_recent_result(self):
         from tests.test_redgps_history import historical
