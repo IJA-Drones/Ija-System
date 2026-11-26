@@ -9,7 +9,7 @@ from sqlalchemy import case, update
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipamentos, Equipe, EquipePiloto, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso, Veiculos
+from app.models import Baterias, ControlesRemotos, Drones, Equipamentos, Equipe, EquipePiloto, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso, Veiculos
 from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
 from app.shared.maintenance_time import to_sao_paulo
 from app.shared.skybox import (
@@ -70,6 +70,7 @@ def list_equipamentos_dashboard(user=None, q=None):
         "equipamentos": _search_equipment(query, Equipamentos, q).order_by(Equipamentos.criado_em.desc()).all(),
         "total_drones": query.filter_by(tipo_equipamento="drones").count(),
         "total_baterias": query.filter_by(tipo_equipamento="baterias").count(),
+        "total_controles": query.filter_by(tipo_equipamento="controles_remotos").count(),
         "em_manutencao": query.filter(Equipamentos.status.in_(MANUTENCAO_STATUS_ALIASES)).count(),
     }
 
@@ -98,7 +99,7 @@ def equipment_team_assignments(equipamentos, *, user):
     equipment_by_id = {equipment.id: equipment for equipment in equipamentos}
     for equipamento in equipamentos:
         source = equipamento
-        if isinstance(equipamento, Baterias) and equipamento.drone_id is not None:
+        if isinstance(equipamento, (Baterias, ControlesRemotos)) and equipamento.drone_id is not None:
             source = equipamento.drone_vinculado
         if source is not None and (source.prefeitura_id is None or equipamento.prefeitura_id is None
                                    or source.prefeitura_id == equipamento.prefeitura_id):
@@ -654,6 +655,8 @@ def build_drone_edit_form(drone):
 
 
 def delete_drone(drone):
+    if drone.controles_remotos:
+        raise ValueError("Transfira os controles remotos vinculados antes de remover o drone.")
     for bateria in list(drone.baterias):
         bateria.drone_id = None
 

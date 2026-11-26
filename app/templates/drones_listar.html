@@ -19,6 +19,7 @@
         </h2>
 
         <div class="header-actions">
+            <a href="{{ url_for('main.listar_controles') }}" class="btn btn-outline-primary"><i class="bi bi-controller me-1" aria-hidden="true"></i>Controles remotos</a>
             <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipamentos')) if central_ti_url_allowed is defined else true) else 'false' }}">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
@@ -46,7 +47,7 @@
                             <th class="ps-3">Drone (Renomação)</th>
                             <th>Modelo / Categoria</th>
                             <th>Equipe e responsáveis</th>
-                            <th>Baterias Acopladas</th>
+                            <th>Controles e baterias</th>
                             <th>Status</th>
                             <th class="text-center">Ações</th>
                         </tr>
@@ -73,6 +74,9 @@
 
                                 <td>
                                     <div class="d-flex flex-column gap-1">
+                                      {% for controle in controles_por_drone.get(d.id, []) %}
+                                        <div class="small mb-1"><i class="bi bi-controller me-1" aria-hidden="true"></i><strong>{{ controle.renomacao }}</strong><div class="text-muted">S/N: {{ controle.numero_serie }} · {{ controle.status }}</div></div>
+                                      {% endfor %}
                                       {% for bat in d.baterias %}
                                         <button type="button" class="btn badge bg-warning text-dark border border-warning shadow-sm p-2 text-start" 
                                                 data-bs-toggle="modal" data-bs-target="#modalBat{{ bat.id }}" style="font-size: 0.7rem; max-width: 150px;">

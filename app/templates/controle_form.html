@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/controles.css') }}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 control-page">
+    <h2 class="text-dark mb-2"><i class="bi bi-controller text-primary me-2" aria-hidden="true"></i>{{ 'Editar' if controle else 'Cadastrar' }} controle remoto</h2>
+    <p class="text-muted mb-4">O controle acompanha a equipe do drone selecionado.</p>
+    <form method="post" class="card border-0 shadow-sm rounded-4 p-4">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-4">
+            {% for key, label, placeholder in [('renomacao', 'Identificação', 'Ex.: Controle T10 01'), ('modelo', 'Modelo', 'Ex.: DJI RC Plus'), ('numero_serie', 'Número de série', 'Informe a série do controle')] %}
+            <div class="col-md-6">
+                <label for="{{ key }}" class="form-label fw-semibold">{{ label }} *</label>
+                <input id="{{ key }}" name="{{ key }}" type="text" maxlength="100" required value="{{ form.get(key, '') }}" placeholder="{{ placeholder }}" class="form-control {{ 'is-invalid' if errors.get(key) else '' }}" {% if errors.get(key) %}aria-invalid="true" aria-describedby="error-{{ key }}"{% endif %}>
+                {% if errors.get(key) %}<div class="invalid-feedback" id="error-{{ key }}">{{ errors[key] }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="col-md-6">
+                <label for="status" class="form-label fw-semibold">Status *</label>
+                <select id="status" name="status" required class="form-select {{ 'is-invalid' if errors.get('status') else '' }}">
+                    {% for status in ['Ativo', 'Inativo'] %}<option value="{{ status }}" {{ 'selected' if form.get('status', 'Ativo') == status else '' }}>{{ status }}</option>{% endfor %}
+                </select>
+                {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.status }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+                <label for="drone_id" class="form-label fw-semibold">Drone vinculado *</label>
+                <select id="drone_id" name="drone_id" required class="form-select {{ 'is-invalid' if errors.get('drone_id') else '' }}" aria-describedby="drone-help">
+                    <option value="">Selecione um drone</option>
+                    {% for drone in drones %}<option value="{{ drone.id }}" {{ 'selected' if form.get('drone_id')|string == drone.id|string else '' }}>{{ drone.renomacao }} · {{ drone.modelo }} · S/N {{ drone.numero_serie or 'Não informado' }}{% if drone.equipe %} · {{ drone.equipe.nome_equipe }}{% endif %}</option>{% endfor %}
+                </select>
+                {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.drone_id }}</div>{% endif %}
+                <div class="form-text" id="drone-help">Equipe, piloto titular, auxiliar e veículos seguem o cadastro do drone. A seleção respeita as permissões e a prefeitura da sua conta.</div>
+                {% if not drones %}<div class="alert alert-info mt-3 mb-0">Nenhum drone disponível para sua conta. Solicite a revisão do cadastro e do acesso.</div>{% endif %}
+            </div>
+        </div>
+        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+            <a href="{{ url_for('main.listar_controles') }}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary" {{ 'disabled' if not drones else '' }}>Salvar controle remoto</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

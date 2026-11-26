@@ -65,6 +65,9 @@ def _get_scoped_bateria_or_404(bateria_id: int):
 
 
 def register_routes(bp):
+    from app.modules.equipamentos.controles_routes import register_controle_routes
+    register_controle_routes(bp)
+
     @bp.route("/equipamentos", methods=["GET"], endpoint="listar_equipamentos")
     @login_required
     def listar_equipamentos():
@@ -78,9 +81,14 @@ def register_routes(bp):
     @login_required
     def listar_drones_view():
         drones = list_drones(user=current_user, q=request.args.get("q"))
+        from app.modules.equipamentos.controles import list_controles
+        controles_por_drone = {}
+        for controle in list_controles(current_user):
+            controles_por_drone.setdefault(controle.drone_id, []).append(controle)
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "drones_listar.html",
+            controles_por_drone=controles_por_drone,
             drones=drones,
             responsabilidades=equipment_team_assignments(drones, user=current_user),
             q=request.args.get("q", "").strip(),

@@ -111,7 +111,7 @@ def test_every_material_has_an_explicit_valid_access_policy():
                    for code in policy.permissions)
 
 
-@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis'])
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos'])
 @pytest.mark.parametrize('enforce', [True, False])
 def test_excel_guide_is_visible_and_downloadable_for_maintenance(training, enforce, key):
     user = Usuario(login='training_maintenance', nome_uvis='Manutenção teste', senha_hash='unused',
@@ -135,7 +135,7 @@ def test_excel_guide_is_visible_and_downloadable_for_maintenance(training, enfor
     download.close()
 
 
-@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis'])
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos'])
 def test_excel_guide_follows_stock_permission_for_listing_and_direct_download(training, key):
     path = '/treinamentos/arquivos/' + key
     for role in ('uvis', 'piloto', 'financeiro', 'agent'):
@@ -158,7 +158,7 @@ def test_excel_guide_follows_stock_permission_for_listing_and_direct_download(tr
     assert training.client.get(path).status_code == 403
 
 
-@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis'])
+@pytest.mark.parametrize('key', ['guia-importacao-pecas-excel', 'guia-busca-equipamentos-responsaveis', 'guia-controles-remotos'])
 def test_excel_guide_requires_authentication(training, key):
     response = training.client.get('/treinamentos/arquivos/' + key)
     assert response.status_code == 302

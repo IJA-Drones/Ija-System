@@ -523,6 +523,17 @@
   "main.listar_baterias": {
     "GET": "prefeitura.equipamentos.consultar"
   },
+  "main.listar_controles": {
+    "GET": "prefeitura.equipamentos.consultar"
+  },
+  "main.cadastrar_controle": {
+    "GET": "prefeitura.equipamentos.criar",
+    "POST": "prefeitura.equipamentos.criar"
+  },
+  "main.editar_controle": {
+    "GET": "prefeitura.equipamentos.editar",
+    "POST": "prefeitura.equipamentos.editar"
+  },
   "main.cadastrar_drone": {
     "GET": "prefeitura.equipamentos.criar",
     "POST": "prefeitura.equipamentos.criar"

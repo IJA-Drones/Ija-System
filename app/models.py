@@ -2537,6 +2537,10 @@ class Drones(Equipamentos):
         lazy="select",
         foreign_keys="[Baterias.drone_id]"
     )
+    controles_remotos = db.relationship(
+        "ControlesRemotos", back_populates="drone_vinculado",
+        foreign_keys="[ControlesRemotos.drone_id]", passive_deletes="all",
+    )
     pecas_estoque = db.relationship(
         "EstoquePeca",
         back_populates="drone",
@@ -2713,6 +2717,18 @@ class Baterias(Equipamentos):
     )
 
     __mapper_args__ = {"polymorphic_identity": "baterias"}
+
+
+class ControlesRemotos(Equipamentos):
+    __tablename__ = "controles_remotos"
+
+    id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id", ondelete="RESTRICT"), nullable=False, index=True)
+    drone_vinculado = db.relationship(
+        "Drones", back_populates="controles_remotos", foreign_keys=[drone_id],
+    )
+
+    __mapper_args__ = {"polymorphic_identity": "controles_remotos"}
 
 
 class Veiculos(Equipamentos):

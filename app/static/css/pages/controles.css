@@ -1,0 +1,8 @@
+.control-page { max-width: 1280px; }
+.control-table th, .control-table td { padding: 1.1rem; }
+.control-table td { vertical-align: middle; }
+.control-serial { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+    .control-table { min-width: 720px; }
+    .control-page h2 { font-size: 1.65rem; }
+}

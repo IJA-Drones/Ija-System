@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/controles.css') }}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 control-page">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
+        <div><h2 class="text-dark mb-1"><i class="bi bi-controller text-primary me-2" aria-hidden="true"></i>Controles remotos</h2>
+        <p class="text-muted mb-0">Identificação e alocação dos controles vinculados aos drones.</p></div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary">Voltar</a>
+            {% if can_create %}<a href="{{ url_for('main.cadastrar_controle') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Novo controle remoto</a>{% endif %}
+        </div>
+    </div>
+    {% include "_equipamentos_busca.html" %}
+    <p class="text-muted small">Equipe, responsáveis e veículos seguem o drone vinculado e a prefeitura à qual ele pertence.</p>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="p-3 border-bottom d-flex justify-content-between gap-2"><strong>Controles cadastrados</strong><span class="badge bg-light text-dark">{{ controles|length }} resultado(s)</span></div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 control-table">
+                <thead class="table-light"><tr><th>Controle / modelo</th><th>Número de série</th><th>Drone e equipe</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody>
+                {% for controle in controles %}
+                <tr>
+                    <td><strong>{{ controle.renomacao }}</strong><div class="small text-muted">{{ controle.modelo }}</div></td>
+                    <td><span class="control-serial">{{ controle.numero_serie or 'Não informado' }}</span></td>
+                    <td>
+                        {% set vinculo = responsabilidades.get(controle.id) %}
+                        {% if vinculo or (controle.prefeitura_id is not none and controle.drone_vinculado.prefeitura_id == controle.prefeitura_id) %}
+                        <div class="mb-2"><span class="badge bg-light text-primary border">{{ controle.drone_vinculado.renomacao }}</span><div class="small text-muted mt-1">S/N: {{ controle.drone_vinculado.numero_serie or 'Não informado' }}</div></div>
+                        {% else %}<div class="small text-warning mb-2">Vínculo do drone a revisar</div>{% endif %}
+                        {% include "_equipamento_equipe.html" %}
+                    </td>
+                    <td><span class="badge {{ 'bg-success' if controle.status == 'Ativo' else 'bg-secondary' }}">{{ controle.status }}</span></td>
+                    <td>{% if can_edit %}<a href="{{ url_for('main.editar_controle', controle_id=controle.id) }}" class="btn btn-outline-primary btn-sm">Editar</a>{% else %}<span class="small text-muted">Somente leitura</span>{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center py-5 text-muted">{{ 'Nenhum controle encontrado para esta busca.' if q else 'Nenhum controle remoto cadastrado.' }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
