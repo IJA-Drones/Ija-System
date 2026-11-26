@@ -2,18 +2,19 @@
 from uuid import uuid4
 
 from flask import abort, current_app
-from sqlalchemy import delete, or_, update
+from sqlalchemy import and_, case, delete, func, or_, update
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import Forbidden
 
 from app.extensions import db
 from app.models import (Usuario, CentralTiUsuarioConfiguracao, CentralTiUsuarioSelecao,
-                        CentralTiUsuarioAuditoria)
+                        CentralTiUsuarioAuditoria, Prefeitura)
 from app.modules.gestao_ti.catalog import CATALOG, PROFILE_CODES
 from app.modules.gestao_ti.permissions import invalidate_request_permissions, profile_code
 from app.modules.gestao_ti.permission_versions import submitted_permissions, stored_codes
 from app.modules.gestao_ti.service import (ConfigurationConflict, _now, _selection_snapshot,
                                          can_manage_central_ti, load_configurations, validate_configurations)
+from app.shared.municipality_visibility import municipality_label, visible_municipalities
 
 
 def enabled():
@@ -28,54 +29,99 @@ def require_editor(actor):
         raise Forbidden()
 
 
-def target_user(user_id):
+def target_user(user_id, actor):
     user = db.session.get(Usuario, user_id)
     if user is None:
         abort(404)
-    # The technical recovery account remains outside the editable catalogue,
-    # just as Dev is excluded from the existing profile editor.
-    if profile_code(user) == "dev":
-        raise Forbidden(description="A conta Dev não é editável nesta central.")
+    if profile_code(user) == "dev" and profile_code(actor) != "dev":
+        raise Forbidden(description="Somente Dev pode configurar os acessos de outro Dev.")
     if profile_code(user) not in PROFILE_CODES:
         raise ValueError("O tipo atual desta conta precisa ser regularizado antes de personalizar os acessos.")
     return user
 
 
-def _identity(user):
+def _identity(user, actor):
     role = profile_code(user)
     labels = {item["id"]: item["name"] for item in CATALOG["profiles"]}
+    labels['dev'] = 'Desenvolvedor'
     return {"id": user.id, "name": user.nome_uvis or user.login, "login": user.login,
             "role": role, "role_label": labels.get(role, role),
-            "prefeitura_id": user.prefeitura_id, "regiao": user.regiao or ""}
+            "prefeitura_id": user.prefeitura_id, "prefeitura_nome": municipality_label(user.prefeitura) if user.prefeitura else "",
+            "regiao": user.regiao or "", "editable": role != 'dev' or profile_code(actor) == 'dev'}
 
 
-def search_users(actor, query="", page=1):
+def _search_profile():
+    role = func.lower(func.trim(Usuario.tipo_usuario))
+    return case((and_(role == 'visualizar',
+                      func.upper(func.trim(func.coalesce(Usuario.regiao, ''))) == 'COVISA'), 'covisa'),
+                else_=role)
+
+
+def _visible_users(actor):
+    rows = Usuario.query
+    if profile_code(actor) != 'dev':
+        role = func.lower(func.trim(Usuario.tipo_usuario))
+        rows = rows.filter(or_(Usuario.tipo_usuario.is_(None), role != 'dev'))
+    return rows
+
+
+def search_filters(actor):
+    require_editor(actor)
+    labels = {item['id']: item['name'] for item in CATALOG['profiles']}
+    labels['dev'] = 'Desenvolvedor'
+    rows = _visible_users(actor)
+    roles = rows.with_entities(_search_profile()).filter(Usuario.tipo_usuario.isnot(None)).distinct().all()
+    cities = (rows.join(Prefeitura).with_entities(Prefeitura.id, Prefeitura.nome)
+              .distinct().order_by(Prefeitura.nome).all())
+    return {'profiles': sorted([{'id': role, 'name': labels.get(role, role)} for (role,) in roles],
+                               key=lambda item: item['name'].casefold()),
+            'prefeituras': [{'id': city_id, 'name': name} for city_id, name in visible_municipalities(cities)]}
+
+
+def search_users(actor, query="", page=1, profile="", prefeitura=""):
     require_editor(actor)
     if type(page) is not int or not 1 <= page <= 100000:
         raise ValueError("Página inválida.")
     if not isinstance(query, str) or len(query) > 100:
         raise ValueError("Busca inválida.")
-    rows = Usuario.query.filter(Usuario.tipo_usuario != "dev")
+    if not isinstance(profile, str) or len(profile) > 40:
+        raise ValueError("Perfil inválido.")
+    if not isinstance(prefeitura, str) or len(prefeitura) > 12 or (
+            prefeitura not in {'', 'none'} and (not prefeitura.isascii() or not prefeitura.isdecimal() or int(prefeitura) < 1)):
+        raise ValueError("Prefeitura inválida.")
+    rows = _visible_users(actor)
+    if profile:
+        rows = rows.filter(_search_profile() == profile)
+    if prefeitura == 'none':
+        rows = rows.filter(Usuario.prefeitura_id.is_(None))
+    elif prefeitura:
+        rows = rows.filter(Usuario.prefeitura_id == int(prefeitura))
     if query.strip():
         # Escape wildcard characters so the search is a literal name/login.
         term = query.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        rows = rows.filter(or_(Usuario.nome_uvis.ilike(f"%{term}%", escape="\\"),
-                               Usuario.login.ilike(f"%{term}%", escape="\\")))
+        rows = rows.outerjoin(Prefeitura).filter(or_(Usuario.nome_uvis.ilike(f"%{term}%", escape="\\"),
+                               Usuario.login.ilike(f"%{term}%", escape="\\"),
+                               Usuario.regiao.ilike(f"%{term}%", escape="\\"),
+                               Prefeitura.nome.ilike(f"%{term}%", escape="\\")))
     size = 30
-    found = rows.order_by(Usuario.nome_uvis.asc(), Usuario.id.asc()).offset((page - 1) * size).limit(size + 1).all()
-    return {"users": [_identity(user) for user in found[:size]], "page": page, "has_more": len(found) > size}
+    total = rows.count()
+    pages = max(1, (total + size - 1) // size)
+    page = min(page, pages)
+    found = rows.order_by(func.lower(Usuario.nome_uvis), Usuario.id).offset((page - 1) * size).limit(size).all()
+    return {"users": [_identity(user, actor) for user in found], "page": page, "pages": pages,
+            "total": total, "page_size": size, "has_more": page < pages}
 
 
 def user_configuration(actor, user_id):
     require_editor(actor)
-    user = target_user(user_id)
+    user = target_user(user_id, actor)
     row = db.session.get(CentralTiUsuarioConfiguracao, user.id)
     base = next(state for state in load_configurations() if state["id"] == profile_code(user))
     if row is None:
         selection = {"areas": base["areas"], "permissions": base["permissions"]}
     else:
         selection = _selection_snapshot(CentralTiUsuarioSelecao.query.filter_by(usuario_id=user.id).all())
-    return {"user": _identity(user), "version": row.versao if row else 0,
+    return {"user": _identity(user, actor), "version": row.versao if row else 0,
             "configured": row is not None, "source": "user_configuration" if row else base["source"],
             "nome_acesso": row.nome_acesso if row else "", **selection,
             "profile_template": {"areas": base["areas"], "permissions": base["permissions"]}}
@@ -83,7 +129,7 @@ def user_configuration(actor, user_id):
 
 def save_user_configuration(actor, user_id, payload, permission_schema_version=None):
     require_editor(actor)
-    user = target_user(user_id)
+    user = target_user(user_id, actor)
     if not isinstance(payload, dict) or set(payload) != {"version", "areas", "permissions", "nome_acesso"}:
         raise ValueError("Formato de acesso individual inválido.")
     label = payload["nome_acesso"]

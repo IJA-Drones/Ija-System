@@ -92,6 +92,8 @@ def register_routes(bp):
         user_permissions.require_editor(current_user)
         data = build_editor_data()
         data.update(csrf_token=_csrf_token(), global_csrf_token=global_csrf_token(), active=enforcement_enabled(),
+                    user_filters=user_permissions.search_filters(current_user),
+                    show_protected_accounts=normalize_role(current_user.tipo_usuario) == 'dev',
                     search_url=url_for("main.central_ti_usuarios_buscar"),
                     detail_url=url_for("main.central_ti_usuario", user_id=0),
                     save_url=url_for("main.central_ti_usuario_salvar", user_id=0))
@@ -104,7 +106,8 @@ def register_routes(bp):
     def central_ti_usuarios_buscar():
         user_permissions.require_editor(current_user)
         try:
-            result = user_permissions.search_users(current_user, request.args.get("q", ""), int(request.args.get("page", "1")))
+            result = user_permissions.search_users(current_user, request.args.get("q", ""), int(request.args.get("page", "1")),
+                profile=request.args.get('profile', ''), prefeitura=request.args.get('prefeitura', ''))
         except ValueError as exc:
             return jsonify(error=str(exc)), 400
         except SQLAlchemyError:

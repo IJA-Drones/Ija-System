@@ -1,7 +1,7 @@
 /* Page-specific visual prototype; colors and widgets inherit the global system. */
-html:has(#ti-central), body:has(#ti-central) { height: auto; min-height: 100%; }
-body:has(#ti-central) { overflow: visible; }
-body:has(#ti-central) .app-content { height: auto; margin-top: 0 !important; }
+html:has(#ti-central, #ti-users-central), body:has(#ti-central, #ti-users-central) { height: auto; min-height: 100%; }
+body:has(#ti-central, #ti-users-central) { overflow: visible; }
+body:has(#ti-central, #ti-users-central) .app-content { height: auto; margin-top: 0 !important; }
 .ti-central {
   --ti-border: rgba(113, 128, 150, 0.2);
   --ti-soft: var(--color-accent-soft);
@@ -27,8 +27,8 @@ body:has(#ti-central) .app-content { height: auto; margin-top: 0 !important; }
 .ti-user-review h2 { font-size: 1.25rem; }
 .ti-user-review ul { max-height: 40vh; overflow: auto; padding-left: 1.25rem; }
 .ti-user-review li { margin-bottom: .35rem; }
-.ti-user-review-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
-.ti-central button, .ti-central input { font: inherit; }
+.ti-user-review-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; position: sticky; bottom: 0; background: var(--color-bg-white); padding: .75rem 0 .25rem; }
+.ti-central button, .ti-central input, .ti-central select { font: inherit; }
 .ti-central button:focus-visible, .ti-central summary:focus-visible, .ti-central input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
 .ti-heading { margin-bottom: 1.6rem; }
 .ti-heading h1 { font-size: clamp(1.6rem, 2.3vw, 2.05rem); font-weight: 600; }
@@ -102,15 +102,96 @@ body:has(#ti-central) .app-content { height: auto; margin-top: 0 !important; }
 .ti-confirm-popup.swal2-dark-mode .swal2-confirm:hover { background-color: var(--app-btn-hover-bg) !important; }
 body.dark-mode .ti-central { --ti-border: rgba(154, 168, 186, 0.2); }
 body.dark-mode .ti-area-button[aria-pressed="true"] { background: #284f80; border-color: #4f94f0; }
+/* Full-width account directory; permission editing opens in its own dialog. */
+#ti-users-central { padding-top: .65rem; }
+.ti-user-directory { overflow: hidden; }
+.ti-directory-tools { padding: 1.4rem 1.5rem 1rem; border-bottom: 1px solid var(--ti-border); }
+.ti-directory-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem; gap: 1rem; }
+.ti-directory-heading h2 { margin: 0; font-size: 1.1rem; color: var(--color-primary-dark); }
+.ti-directory-heading p { margin: .35rem 0 0; color: var(--color-text-muted); font-size: .83rem; }
+.ti-directory-heading > i { color: var(--color-primary-dark); font-size: 1.4rem; }
+.ti-directory-toolbar { display: grid; grid-template-columns: minmax(250px, 1.2fr) minmax(330px, 1fr); align-items: end; gap: 1rem; }
+.ti-directory-filters { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.ti-directory-filters > div { min-width: 0; }
+.ti-directory-filters label { display: block; margin-bottom: .35rem; font-size: .78rem; color: var(--color-text-muted); }
+.ti-user-directory .ti-search .form-control, .ti-directory-filters .form-select { min-height: 46px; font-size: .87rem; }
+.ti-user-directory .ti-search .form-control { padding-left: 2.2rem; }
+.ti-directory-filters .form-select { width: 100%; text-overflow: ellipsis; }
+.ti-directory-results { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: 1rem; min-height: 23px; }
+.ti-directory-results p { margin: 0; color: var(--color-text-muted); font-size: .8rem; }
+.ti-directory-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.ti-directory-table th { text-align: left; padding: .85rem 1.4rem; background: var(--color-bg-body); color: var(--color-text-muted); font-size: .76rem; font-weight: 500; }
+.ti-directory-table th:first-child { width: 37%; }
+.ti-directory-table th:nth-child(2) { width: 18%; }
+.ti-directory-table th:nth-child(3) { width: 23%; }
+.ti-directory-table th:last-child { width: 22%; }
+.ti-directory-table td { padding: 1rem 1.4rem; border-top: 1px solid var(--ti-border); vertical-align: middle; font-size: .87rem; overflow-wrap: anywhere; }
+.ti-directory-table tr:hover td { background: var(--color-bg-body); }
+.ti-directory-table tr.is-selected td { background: var(--ti-soft); }
+.ti-directory-identity { display: flex; align-items: center; gap: .85rem; }
+.ti-user-directory .ti-avatar { width: 42px; height: 42px; font-size: .84rem; font-weight: 600; background: var(--ti-soft); color: var(--color-primary-dark); }
+.ti-user-name-button { display: block; border: 0; padding: 0; background: transparent; color: var(--color-primary-dark); text-align: left; font-size: 1rem !important; font-weight: 600 !important; line-height: 1.5; overflow-wrap: anywhere; }
+.ti-user-name-button:hover { text-decoration: underline; }
+.ti-user-directory .ti-user-login { font-size: .81rem; margin-top: .25rem; color: var(--color-text-muted); }
+.ti-user-role { display: inline-block; padding: .3rem .65rem; border-radius: var(--radius-sm); background: var(--ti-soft); color: var(--color-primary-dark); font-size: .78rem; }
+.ti-directory-city small { display: block; margin-top: .25rem; color: var(--color-text-muted); font-size: .76rem; }
+.ti-directory-actions { text-align: right; }
+.ti-directory-actions .ti-manage-user { min-height: 40px; font-size: .79rem; white-space: nowrap; }
+.ti-directory-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--ti-border); }
+.ti-user-directory .ti-user-pagination { padding: 0; font-size: .82rem; max-width: 390px; margin: 0 auto; }
+.ti-user-directory .ti-user-pagination .btn { min-height: 38px; font-size: .8rem; }
+.ti-directory-note { margin: .9rem 0 0; text-align: center; font-size: .72rem; line-height: 1.6; color: var(--color-text-muted); }
+.ti-user-directory .ti-empty { padding: 2rem 1rem; margin: 0; }
+.ti-user-directory .ti-empty > i, .ti-user-directory .ti-empty > strong { display: block; margin-bottom: .6rem; }
+.ti-user-directory .ti-empty > i { font-size: 1.35rem; }
+.ti-user-directory .ti-empty p { margin: 0; }
+.ti-user-directory[aria-busy="true"] tbody { opacity: .55; pointer-events: none; }
+.ti-user-access-dialog { width: min(1060px, calc(100% - 3rem)); height: min(860px, calc(100dvh - 3rem)); max-height: calc(100dvh - 3rem); padding: 0; overflow: hidden; color: var(--color-text-main); }
+.ti-user-access-dialog[open] { display: flex; }
+.ti-user-access-dialog #ti-user-editor { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.ti-access-dialog-body { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 1.5rem; }
+.ti-user-access-dialog::backdrop { background: rgba(19, 47, 67, .55); }
+body:has(.ti-user-access-dialog[open]) { overflow: hidden; }
+.ti-access-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--ti-border); flex-shrink: 0; }
+.ti-access-dialog-actions { display: flex; align-items: center; gap: .6rem; }
+.ti-saving-status { display: flex; align-items: center; gap: .75rem; padding: .85rem 1.5rem; background: var(--ti-soft); color: var(--color-primary-dark); border-bottom: 1px solid var(--ti-border); flex-shrink: 0; }
+.ti-saving-spinner { width: 20px; height: 20px; border: 2px solid var(--ti-border); border-top-color: var(--color-primary-dark); border-radius: 50%; animation: ti-saving-turn .8s linear infinite; flex-shrink: 0; }
+@keyframes ti-saving-turn { to { transform: rotate(360deg); } }
+.ti-feedback[data-type="success"], .ti-feedback[data-type="error"] { padding: .8rem 1rem; border: 1px solid var(--ti-border); border-left: 4px solid var(--color-primary-dark); border-radius: var(--radius-sm); background: var(--ti-soft); font-size: .85rem; }
+.ti-feedback[data-type="error"] { border-left-color: var(--bs-danger, var(--color-primary-dark)); color: var(--bs-danger, var(--color-primary-dark)); background: var(--color-bg-white); }
+.ti-access-dialog-actions .btn, .ti-user-access-dialog .ti-save-bar .btn { min-height: 42px; white-space: nowrap; }
+.ti-access-dialog-heading p { margin: 0; color: var(--color-text-muted); font-size: .8rem; }
+.ti-user-access-dialog .ti-selected h2 { font-size: 1.4rem; }
+.ti-user-access-dialog .ti-user-scope { font-size: .85rem; }
+.ti-user-access-dialog .ti-save-bar { position: static; flex-shrink: 0; margin: 0; border: 0; border-top: 1px solid var(--ti-border); border-radius: 0; padding: 1rem 1.5rem; }
 @media (max-width: 1199px) {
   .ti-workspace { grid-template-columns: 220px minmax(0, 1fr); gap: 0.9rem; }
   .ti-action-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 991px) {
+  .ti-directory-toolbar { grid-template-columns: 1fr; }
+  .ti-directory-table td, .ti-directory-table th { padding-left: .8rem; padding-right: .8rem; }
+  .ti-directory-actions .ti-manage-user { white-space: normal; }
   .ti-workspace { grid-template-columns: 200px minmax(0, 1fr); }
   .ti-area-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
+  .ti-directory-tools, .ti-directory-footer { padding: 1rem; }
+  .ti-directory-table thead { display: none; }
+  .ti-directory-table, .ti-directory-table tbody { display: block; }
+  .ti-directory-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 1rem; gap: .8rem; border-top: 1px solid var(--ti-border); }
+  .ti-directory-table td { display: block; padding: 0; border: 0; }
+  .ti-directory-table .ti-directory-identity { display: flex; grid-column: 1 / -1; }
+  .ti-directory-table td[data-label]::before { content: attr(data-label); display: block; color: var(--color-text-muted); font-size: .7rem; margin-bottom: .35rem; }
+  .ti-directory-table .ti-directory-actions { grid-column: 1 / -1; }
+  .ti-directory-actions .ti-manage-user { width: 100%; }
+  .ti-user-access-dialog { width: calc(100% - 1rem); height: calc(100dvh - 1rem); max-height: calc(100dvh - 1rem); padding: 0; }
+  .ti-access-dialog-heading { padding: .8rem; gap: .5rem; }
+  .ti-access-dialog-heading > p { display: none; }
+  .ti-access-dialog-actions { justify-content: space-between; width: 100%; }
+  .ti-access-dialog-actions .btn { font-size: .78rem; }
+  .ti-access-dialog-body { padding: 1rem; }
+  .ti-user-access-dialog .ti-save-bar { padding: .8rem; }
   .ti-central { padding-top: 1rem; }
   .ti-workspace { grid-template-columns: 1fr; }
   .ti-profiles { position: static; }
@@ -125,4 +206,5 @@ body.dark-mode .ti-area-button[aria-pressed="true"] { background: #284f80; borde
 }
 @media (prefers-reduced-motion: reduce) {
   .ti-central *, .ti-central *::after { transition: none !important; }
+  .ti-saving-spinner { animation: none; }
 }

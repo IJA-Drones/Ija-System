@@ -15,7 +15,7 @@ from app.models import (CentralTiUsuarioAuditoria, CentralTiUsuarioConfiguracao,
                         Prefeitura, Veiculos)
 from app.modules.gestao_ti.permissions import active_configuration, has_permission
 from app.modules.gestao_ti.service import ConfigurationConflict, save_configurations
-from app.modules.gestao_ti.user_permissions import save_user_configuration, user_configuration, search_users
+from app.modules.gestao_ti.user_permissions import save_user_configuration, user_configuration, search_users, search_filters
 from tests import test_central_ti as central_fixture
 from scripts.prepare_central_ti_users_neon import target_url
 
@@ -165,11 +165,109 @@ class CentralTiUserTests(unittest.TestCase):
         self.assertIn('guia-rastreamento-veiculos', page.text)
         self.assertNotIn('video-quadra', page.text)
 
-    def test_search_is_paginated_and_never_exposes_passwords_or_dev(self):
+    def test_search_never_exposes_passwords_and_dev_can_edit_dev(self):
         result = search_users(self.actor, 'other-uvis')
         self.assertEqual([user['id'] for user in result['users']], [self.users['second'].id])
         self.assertNotIn('senha_hash', str(result)); self.assertNotIn('test-only', str(result))
-        self.assertEqual(search_users(self.actor, self.actor.login)['users'], [])
+        protected = search_users(self.actor, self.actor.login)['users']
+        self.assertEqual([user['id'] for user in protected], [self.actor.id])
+        self.assertTrue(protected[0]['editable'])
+
+    def test_dev_can_remove_another_developers_functions_without_changing_identity(self):
+        target = Usuario(nome_uvis='Dev demonstração', login='dev.demonstracao', senha_hash='test-only', tipo_usuario='dev')
+        db.session.add(target); db.session.commit()
+        saved = save_user_configuration(self.actor, target.id, self.payload(['prefeitura.veiculos.consultar']))
+        self.assertEqual(saved['permissions'], sorted(saved['permissions']))
+        self.assertIn('prefeitura.veiculos.consultar', saved['permissions'])
+        removed = save_user_configuration(self.actor, target.id, self.payload(version=1))
+        self.assertEqual((removed['permissions'], removed['areas'], removed['version']), ([], [], 2))
+        self.assertEqual((target.tipo_usuario, target.senha_hash), ('dev', 'test-only'))
+        self.assertEqual(CentralTiUsuarioAuditoria.query.filter_by(usuario_alvo_id=target.id).count(), 2)
+        self.users['other_dev'] = target; self.login('other_dev')
+        self.assertEqual(self.client.get('/veiculos').status_code, 403)
+        self.assertEqual(self.client.get('/central-ti/usuarios').status_code, 200)
+
+    def test_dev_can_save_own_empty_business_access_and_reopen_central(self):
+        self.login('dev'); self.client.get('/central-ti/usuarios')
+        with self.client.session_transaction() as stored:
+            csrf = stored['_ija_central_ti_csrf']['token']
+        path = f'/central-ti/usuarios/{self.actor.id}/permissoes'
+        response = self.client.post(path, json=self.payload(), headers={'X-Central-TI-CSRF': csrf})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['configuration']['permissions'], [])
+        self.assertEqual(self.client.get('/central-ti/usuarios').status_code, 200)
+
+    def test_dev_os_consultation_and_export_do_not_allow_editing_or_media(self):
+        from types import SimpleNamespace
+        from app.modules.gestao_ti.permissions import can_access_endpoint
+        from app.modules.piloto_os.service import _admin_can_edit_os_form
+        save_user_configuration(self.actor, self.actor.id,
+                                self.payload(['prefeitura.os.consultar', 'prefeitura.os.exportar']))
+        g.pop('_central_ti_permissions', None)
+        self.assertTrue(can_access_endpoint(self.actor, 'main.admin_os_formulario_view', 'GET'))
+        self.assertFalse(can_access_endpoint(self.actor, 'main.admin_os_formulario_view', 'POST'))
+        self.assertTrue(can_access_endpoint(self.actor, 'main.admin_export_os_pdf_v2', 'GET'))
+        self.assertFalse(has_permission(self.actor, 'prefeitura.os.midias'))
+        self.assertFalse(_admin_can_edit_os_form(self.actor, SimpleNamespace(status='CONCLUIDO')))
+
+    def test_directory_pagination_reports_totals_and_does_not_skip_users(self):
+        for index in range(35):
+            db.session.add(Usuario(nome_uvis=f'Equipe de teste {index:02}', login=f'directory-{index:02}',
+                                   senha_hash='test-only', tipo_usuario='uvis'))
+        db.session.commit()
+        first = search_users(self.actor, 'directory-')
+        second = search_users(self.actor, 'directory-', page=2)
+        self.assertEqual((first['total'], first['pages'], first['page_size'], first['has_more']), (35, 2, 30, True))
+        self.assertEqual((len(second['users']), second['has_more']), (5, False))
+        self.assertEqual(len({user['id'] for page in (first, second) for user in page['users']}), 35)
+        self.assertEqual(search_users(self.actor, 'directory-', page=99), second)
+        empty = search_users(self.actor, 'not-a-login')
+        self.assertEqual((empty['total'], empty['pages'], empty['users']), (0, 1, []))
+
+    def test_directory_combines_profile_city_and_search_without_changing_accesses(self):
+        city = Prefeitura(nome='Cidade demonstração', slug='cidade-demonstracao')
+        other = Prefeitura(nome='Outra cidade', slug='outra-cidade')
+        db.session.add_all([city, other]); db.session.flush()
+        self.users['uvis'].prefeitura_id = city.id
+        self.users['uvis'].regiao = 'Regional Norte'
+        self.users['second'].prefeitura_id = other.id
+        db.session.commit()
+        result = search_users(self.actor, 'Regional Norte', profile='uvis', prefeitura=str(city.id))
+        self.assertEqual([user['id'] for user in result['users']], [self.users['uvis'].id])
+        self.assertEqual(result['users'][0]['prefeitura_nome'], city.nome)
+        self.assertEqual(search_users(self.actor, city.nome)['total'], 1)
+        self.assertEqual(search_users(self.actor, profile='piloto', prefeitura=str(city.id))['total'], 0)
+        self.assertNotIn(self.users['uvis'].id, {u['id'] for u in search_users(self.actor, prefeitura='none')['users']})
+        self.assertEqual(CentralTiUsuarioConfiguracao.query.count(), 0)
+        self.assertEqual(CentralTiUsuarioAuditoria.query.count(), 0)
+
+    def test_directory_filters_include_covisa_and_protected_accounts(self):
+        city = Prefeitura(nome='Cidade da conta protegida', slug='cidade-protegida')
+        db.session.add(city); db.session.flush()
+        self.actor.prefeitura_id = city.id
+        self.users['second'].tipo_usuario = 'visualizar'; self.users['second'].regiao = ' covisa '
+        db.session.commit()
+        filters = search_filters(self.actor)
+        self.assertIn('dev', {item['id'] for item in filters['profiles']})
+        self.assertIn('covisa', {item['id'] for item in filters['profiles']})
+        self.assertEqual(filters['prefeituras'], [{'id': city.id, 'name': city.nome}])
+        self.assertEqual([user['id'] for user in search_users(self.actor, profile='covisa')['users']], [self.users['second'].id])
+        self.assertEqual(search_users(self.actor, profile='visualizar')['total'], 0)
+
+    def test_directory_route_validates_filters_and_escapes_search_wildcards(self):
+        self.login('dev')
+        for params in ({'prefeitura': '-1'}, {'prefeitura': 'abc'}, {'profile': 'a' * 41}, {'page': 'abc'}):
+            with self.subTest(params=params):
+                self.assertEqual(self.client.get('/central-ti/usuarios/busca', query_string=params).status_code, 400)
+        for term in ('%', '\\'):
+            self.assertEqual(search_users(self.actor, term)['total'], 0)
+        literal_underscore = {user['id'] for user in search_users(self.actor, '_')['users']}
+        self.assertIn(self.users['uvis'].id, literal_underscore)
+        self.assertNotIn(self.users['second'].id, literal_underscore)
+        response = self.client.get('/central-ti/usuarios/busca', query_string={'profile': 'uvis', 'prefeitura': 'none'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['total'], 2)
+        self.assertNotIn('senha_hash', response.text)
 
     def test_ti_manager_can_configure_users_but_dev_recovery_account_is_protected(self):
         saved = save_user_configuration(self.users['gestor_ti'], self.users['uvis'].id,
@@ -178,6 +276,38 @@ class CentralTiUserTests(unittest.TestCase):
         self.login('gestor_ti')
         self.assertEqual(self.client.get('/central-ti/usuarios').status_code, 200)
         self.assertEqual(self.client.get(f'/central-ti/usuarios/{self.actor.id}').status_code, 403)
+        protected = self.client.get('/central-ti/usuarios/busca', query_string={'profile': 'dev'}).json
+        self.assertEqual((protected['users'], protected['total']), ([], 0))
+        with self.client.session_transaction() as session:
+            csrf = session['_ija_central_ti_csrf']['token']
+        response = self.client.post(f'/central-ti/usuarios/{self.actor.id}/permissoes',
+                                    json=self.payload(), headers={'X-Central-TI-CSRF': csrf})
+        self.assertEqual(response.status_code, 403)
+
+    def test_only_dev_can_find_dev_accounts_in_results_counts_and_filter_options(self):
+        city = Prefeitura(nome='Prefeitura da conta Dev', slug='prefeitura-dev')
+        db.session.add(city); db.session.flush()
+        self.actor.prefeitura_id = city.id
+        # Match the same role normalization used by permission enforcement.
+        other_dev = Usuario(nome_uvis='Conta técnica teste', login='dev.protegido',
+                            senha_hash='test-only', tipo_usuario=' DEV ', prefeitura_id=city.id)
+        db.session.add(other_dev); db.session.commit()
+        manager = self.users['gestor_ti']
+        self.assertEqual(search_users(self.actor, profile='dev')['total'], 2)
+        self.assertEqual(search_users(self.actor)['total'] - search_users(manager)['total'], 2)
+        self.assertNotIn('dev', {item['id'] for item in search_filters(manager)['profiles']})
+        self.assertEqual(search_filters(manager)['prefeituras'], [])
+        for query, filters in [(self.actor.login, {}), (other_dev.login, {}), ('', {'profile': 'dev'}),
+                               ('', {'prefeitura': str(city.id)})]:
+            result = search_users(manager, query, **filters)
+            self.assertEqual((result['users'], result['total']), ([], 0))
+        self.login('gestor_ti')
+        page = self.client.get('/central-ti/usuarios')
+        self.assertNotIn('Contas Dev aparecem na lista', page.text)
+        self.assertNotIn('Desenvolvedor', page.text)
+        response = self.client.get('/central-ti/usuarios/busca', query_string={'q': other_dev.login})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual((response.json['users'], response.json['total']), ([], 0))
 
     def test_personal_grant_never_allows_delegated_account_manager_to_edit_a_more_privileged_user(self):
         from app.modules.usuarios.service import can_manage_admin_user
