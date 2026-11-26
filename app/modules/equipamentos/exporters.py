@@ -10,6 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill, Side, Border
 from openpyxl.utils import get_column_letter
 from app.shared.pdf_watermark import municipal_canvas
+from app.shared.maintenance_time import to_sao_paulo
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -31,7 +32,7 @@ def _fmt_dt(value):
     if not value:
         return "-"
     try:
-        return value.strftime("%d/%m/%Y %H:%M")
+        return to_sao_paulo(value).strftime("%d/%m/%Y %H:%M")
     except Exception:
         return str(value)
 
@@ -269,7 +270,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
     story = [
         Paragraph(f"OS de manutenção {getattr(manutencao, 'numero_os', '')}", title_style),
         Paragraph(
-            f"Peças usadas na manutenção do drone {drone.renomacao}. Emitido em {datetime.now().strftime('%d/%m/%Y %H:%M')}.",
+            f"Peças usadas na manutenção do drone {drone.renomacao}. Emitido em {_fmt_dt(datetime.now())} (São Paulo).",
             subtitle_style,
         ),
         _info_table([

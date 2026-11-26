@@ -22,6 +22,7 @@ from app.modules.equipamentos.service import (
     list_drones_for_baterias,
     list_equipamentos_dashboard,
     list_equipamentos_manutencao,
+    maintenance_overview,
     list_historico_manutencoes,
     list_historico_pecas_usadas,
     list_imagens_manutencao,
@@ -309,13 +310,20 @@ def register_routes(bp):
     @login_required
     def equipamentos_manutencao():
         equipamentos = list_equipamentos_manutencao(user=current_user)
+        total = len(equipamentos)
+        busca = (request.args.get('q') or '').strip()
+        if busca:
+            term = busca.casefold()
+            equipamentos = [eq for eq in equipamentos if term in ' '.join(str(value or '') for value in (
+                eq.renomacao, eq.modelo, eq.numero_serie, eq.equipe.nome_equipe if eq.equipe else '',
+            )).casefold()]
         manutencoes = apply_prefeitura_scope(
             ManutencaoEquipamento.query.filter_by(status="aberta"), current_user, ManutencaoEquipamento.prefeitura_id
         ).order_by(ManutencaoEquipamento.aberta_em.asc()).all()
         return render_template(
             "equipamentos_manutencao.html",
             equipamentos=equipamentos,
-            total=len(equipamentos),
+            total=total, busca=busca, resumo=maintenance_overview(current_user),
             manutencoes_por_drone={m.drone_id: m for m in manutencoes},
             can_open_os=can_access_endpoint(current_user, "main.equipamento_manutencao_nova", legacy=_maintenance_legacy_access()),
         )

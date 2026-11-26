@@ -33,13 +33,13 @@
     <div class="col-md-3">
       <div class="card border-0 shadow-sm rounded-4 p-3 h-100 manutencao-resumo-card">
         <span class="text-muted small fw-bold">Abertura</span>
-        <span class="fw-bold">{{ manutencao.aberta_em.strftime('%d/%m/%Y %H:%M') if manutencao.aberta_em else '-' }}</span>
+        <span class="fw-bold">{{ (manutencao.aberta_em|maintenance_datetime) if manutencao.aberta_em else '-' }}</span>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card border-0 shadow-sm rounded-4 p-3 h-100 manutencao-resumo-card">
         <span class="text-muted small fw-bold">Encerramento</span>
-        <span class="fw-bold">{{ manutencao.encerrada_em.strftime('%d/%m/%Y %H:%M') if manutencao.encerrada_em else '-' }}</span>
+        <span class="fw-bold">{{ (manutencao.encerrada_em|maintenance_datetime) if manutencao.encerrada_em else '-' }}</span>
       </div>
     </div>
     <div class="col-md-3">
@@ -94,7 +94,7 @@
               </td>
               <td>{{ uso.quantidade_usada }}</td>
               <td>{{ uso.usuario.nome_uvis if uso.usuario else '-' }}</td>
-              <td class="text-muted small">{{ uso.criado_em.strftime('%d/%m/%Y %H:%M') if uso.criado_em else '-' }}</td>
+              <td class="text-muted small">{{ (uso.criado_em|maintenance_datetime) if uso.criado_em else '-' }}</td>
               <td class="text-muted small">{{ uso.observacoes or '-' }}</td>
             </tr>
             {% else %}

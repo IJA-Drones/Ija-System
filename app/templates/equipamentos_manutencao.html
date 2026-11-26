@@ -3,7 +3,7 @@
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamentos_manutencao.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamentos_manutencao.css', v='20261126-dashboard') }}">
 {% endblock %}
 
 {% block content %}
@@ -11,12 +11,12 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4 equipamentos-manutencao-toolbar">
         <div>
-            <h2 class="text-dark mb-0">
+            <span class="maintenance-eyebrow">CENTRAL DE MANUTENÇÃO</span><h2 class="text-dark mb-0">
                 <i class="bi bi-tools me-2 text-primary"></i>
                 OS de manutenção
             </h2>
             <p class="text-muted small mb-0">
-                Equipamentos em manutenção: <strong class="text-danger">{{ total }}</strong>
+                Acompanhe os atendimentos e a disponibilidade dos equipamentos.
             </p>
         </div>
 
@@ -37,6 +37,13 @@
         </div>
     </div>
 
+    <section class="maintenance-metrics" aria-label="Resumo da manutenção">
+      <article><span class="maintenance-metric-icon"><i class="bi bi-tools" aria-hidden="true"></i></span><span>Em manutenção</span><strong>{{ total }}</strong><small>Equipamentos em atendimento</small></article>
+      <article><span class="maintenance-metric-icon"><i class="bi bi-calendar-plus" aria-hidden="true"></i></span><span>Abertas hoje</span><strong>{{ resumo.abertas_hoje }}</strong><small>Novas OS de manutenção</small></article>
+      <article><span class="maintenance-metric-icon is-green"><i class="bi bi-check2-circle" aria-hidden="true"></i></span><span>Concluídas no mês</span><strong>{{ resumo.concluidas_mes }}</strong><small>Atendimentos finalizados</small></article>
+      <article><span class="maintenance-metric-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span><span>Peças utilizadas no mês</span><strong>{{ resumo.pecas_mes }}</strong><small>Unidades registradas nas OS</small></article>
+    </section>
+    <section class="maintenance-queue-heading"><div><h3>Fila de manutenção</h3><p>{{ equipamentos|length }} {{ 'equipamento encontrado' if equipamentos|length == 1 else 'equipamentos encontrados' }} · Horários de São Paulo</p></div><form method="get" class="maintenance-search"><label class="visually-hidden" for="maintenance-search">Buscar equipamento em manutenção</label><input id="maintenance-search" class="form-control" type="search" name="q" value="{{ busca }}" placeholder="Nome, modelo, série ou equipe"><button type="submit" class="btn btn-outline-primary">Buscar</button>{% if busca %}<a class="btn btn-link" href="{{ url_for('main.equipamentos_manutencao') }}">Limpar</a>{% endif %}</form></section>
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden equipamentos-manutencao-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -48,7 +55,7 @@
                             <th>Modelo</th>
                             <th>Nº de Série</th>
                             <th>Equipe</th>
-                            <th>OS de manutenção / Abertura</th>
+                            <th>OS / Abertura <span class="maintenance-time-label">São Paulo</span></th>
                             <th class="text-end pe-3">Ações</th>
                         </tr>
                     </thead>
@@ -91,7 +98,7 @@
                                 <td class="text-muted small" data-label="OS de manutenção / Abertura">
                                     {% set os = manutencoes_por_drone.get(eq.id) %}
                                     {% if os %}
-                                        <strong>{{ os.numero_os }}</strong><br>{{ os.aberta_em.strftime('%d/%m/%Y %H:%M') }}
+                                        <strong>{{ os.numero_os }}</strong><br>{{ (os.aberta_em|maintenance_datetime) }}
                                     {% else %}
                                         -
                                     {% endif %}
@@ -127,7 +134,7 @@
                         {% else %}
                             <tr>
                                 <td colspan="7" class="text-center py-4 text-muted">
-                                    Nenhum equipamento em manutenção no momento.
+                                    {{ 'Nenhum equipamento encontrado para esta busca.' if busca else 'Nenhum equipamento em manutenção no momento.' }}
                                 </td>
                             </tr>
                         {% endif %}

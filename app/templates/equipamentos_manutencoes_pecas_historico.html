@@ -61,7 +61,7 @@
                 {% endif %}
               </td>
               <td>{{ uso.usuario.nome_uvis if uso.usuario else '-' }}</td>
-              <td class="text-muted small">{{ uso.criado_em.strftime('%d/%m/%Y %H:%M') if uso.criado_em else '-' }}</td>
+              <td class="text-muted small">{{ (uso.criado_em|maintenance_datetime) if uso.criado_em else '-' }}</td>
               <td class="text-muted small">{{ uso.observacoes or '-' }}</td>
             </tr>
             {% else %}

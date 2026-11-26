@@ -74,3 +74,10 @@ body.dark-mode .stock-import-ready { background:#1d3937; border-color:#2e514b; c
 .stock-import-quantity-help .btn { white-space:nowrap; font-size:.8rem; }
 .stock-import-quantity { min-width:120px; max-width:160px; font-size:.85rem; }
 @media(max-width:767.98px) { .stock-import-quantity-help { flex-direction:column; align-items:stretch; } }
+.stock-import-pagination-controls { display:flex; align-items:center; flex-wrap:wrap; gap:18px; margin:20px 0 14px; font-size:.76rem; }
+.stock-import-pagination-controls .form-check { margin:0; }
+.stock-import-page-size { display:flex; align-items:center; gap:9px; }
+.stock-import-page-size select { width:72px; }
+.stock-import-pager { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin:16px 0 0; }
+.stock-import-pager .btn { font-size:.75rem; }
+.stock-import-table [data-import-row][hidden] { display:none!important; }

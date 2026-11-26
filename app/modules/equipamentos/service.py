@@ -2,7 +2,7 @@ import json
 import os
 import re
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from werkzeug.utils import secure_filename
 from sqlalchemy import case, update
@@ -10,6 +10,7 @@ from sqlalchemy import case, update
 from app.extensions import db
 from app.models import Baterias, Drones, Equipamentos, Equipe, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso
 from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
+from app.shared.maintenance_time import to_sao_paulo
 from app.shared.skybox import (
     SkyboxError,
     build_manutencao_media_remote_path,
@@ -20,6 +21,23 @@ from app.shared.skybox import (
 
 
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
+
+
+def maintenance_overview(user, now=None):
+    current = to_sao_paulo(now or datetime.now(timezone.utc))
+    day_start = current.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = day_start.replace(day=1)
+    utc_day = day_start.astimezone(timezone.utc).replace(tzinfo=None)
+    utc_month = month_start.astimezone(timezone.utc).replace(tzinfo=None)
+    utc_now = current.astimezone(timezone.utc).replace(tzinfo=None)
+    orders = apply_prefeitura_scope(ManutencaoEquipamento.query, user, ManutencaoEquipamento.prefeitura_id)
+    uses = apply_prefeitura_scope(ManutencaoPecaUso.query, user, ManutencaoPecaUso.prefeitura_id)
+    return dict(
+        abertas_hoje=orders.filter(ManutencaoEquipamento.aberta_em >= utc_day, ManutencaoEquipamento.aberta_em <= utc_now).count(),
+        concluidas_mes=orders.filter(ManutencaoEquipamento.encerrada_em >= utc_month, ManutencaoEquipamento.encerrada_em <= utc_now).count(),
+        pecas_mes=uses.with_entities(db.func.coalesce(db.func.sum(ManutencaoPecaUso.quantidade_usada), 0)).filter(
+            ManutencaoPecaUso.criado_em >= utc_month, ManutencaoPecaUso.criado_em <= utc_now).scalar(),
+    )
 MANUTENCAO_STATUS_ALIASES = (
     MANUTENCAO_STATUS,
     "Manuten\u00e7\u00e3o",
