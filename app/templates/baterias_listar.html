@@ -1,235 +1,60 @@
 {% extends "base.html" %}
-
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/baterias_listar.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/baterias_listar.css', v='20261126-inventario') }}">
 {% endblock %}
-
 {% block content %}
-{% if central_ti_profile_active|default(false) %}
-{% set can_manage = (central_ti_permission('prefeitura.equipamentos.editar')) %}
-{% endif %}
-
-<div class="container-fluid py-4" style="max-width: 1200px">
-
-    {# --- CABEÇALHO PADRONIZADO (BOTÕES NA DIREITA) --- #}
-    <div class="dashboard-header mb-4">
-        {# Esta div agrupa o título e descrição e empurra as ações para a direita #}
-        <div style="margin-right: auto !important;"> 
-            <h2 class="text-dark mb-0">
-                <i class="bi bi-battery-full me-2 text-primary"></i> Inventário de Baterias
-            </h2>
-            <p class="text-muted small mb-0">Controle de ciclos e rastreio de equipamentos.</p>
-        </div>
-
-        <div class="header-actions">
-            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary d-flex align-items-center" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipamentos')) if central_ti_url_allowed is defined else true) else 'false' }}">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-            {% if (central_ti_ui_guard(['main.cadastrar_bateria'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
-            <a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-success shadow-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_bateria')) if central_ti_url_allowed is defined else true) else 'false' }}">
-                <i class="bi bi-plus-lg"></i> Nova Bateria
-            </a>
-            {% endif %}
-        </div>
+<div class="container-fluid py-4 battery-page">
+    <div class="battery-header mb-4">
+        <div><p class="battery-eyebrow">EQUIPAMENTOS / BATERIAS</p><h2 class="text-dark mb-1">Inventário de Baterias</h2><p class="text-muted mb-0">Organização por equipamento, equipe e responsáveis.</p></div>
+        <div class="d-flex flex-wrap gap-2"><a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary">Voltar</a>{% if can_create %}<a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Nova bateria</a>{% endif %}</div>
     </div>
-
-    {% include "_equipamentos_busca.html" %}
-    <p class="small text-muted mb-3">Baterias vinculadas a um drone seguem a equipe dele. Responsáveis e veículos refletem o cadastro atual dessa equipe.</p>
-
-    {# --- LISTAGEM --- #}
-    <div class="card shadow-sm border-0 rounded-4 menu-actions-table-wrap">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 text-center">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4 text-start">Bateria</th>
-                            <th>n° Série</th>
-                            <th>Ciclos</th>
-                            <th>Drone, equipe e responsáveis</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for b in baterias %}
-                        <tr>
-                            <td class="ps-4 fw-bold text-dark text-start">{{ b.renomacao }}</td>
-                            <td class="text-muted small">{{ b.numero_serie or 'Não informado' }}</td>
-                            
-                            <td style="width: 180px;">
-                                <div class="d-flex flex-column ciclo-control-wrapper mx-auto" style="max-width: 140px; align-items: center;">
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <span class="badge bg-light text-success border rounded-pill" id="valCiclo{{ b.id }}">
-                                            {{ b.ciclo }} ciclos
-                                        </span>
-                                    </div>
-                                    {% if can_manage %}
-                                    <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
-                                        <button class="btn btn-outline-danger border-0 px-2" type="button" data-ti-allowed="{{ 'true' if (central_ti_permission('prefeitura.equipamentos.editar') if central_ti_profile_active|default(false) else can_manage) else 'false' }}" onclick="atualizarCiclo({{ b.id }}, 'sub', this)">
-                                            <i class="bi bi-dash-lg"></i>
-                                        </button>
-                                        <input type="number" id="inputCiclo{{ b.id }}" class="form-control border-0 text-center bg-white" style="font-size: 0.8rem; height: 30px;" placeholder="1">
-                                        <button class="btn btn-outline-success border-0 px-2" type="button" data-ti-allowed="{{ 'true' if (central_ti_permission('prefeitura.equipamentos.editar') if central_ti_profile_active|default(false) else can_manage) else 'false' }}" onclick="atualizarCiclo({{ b.id }}, 'add', this)">
-                                            <i class="bi bi-plus-lg"></i>
-                                        </button>
-                                    </div>
-                                    {% else %}
-                                    <div class="small text-muted mb-1">Somente leitura</div>
-                                    {% endif %}
-                                    <div class="progress rounded-pill w-100" style="height: 4px;">
-                                        <div id="progresso{{ b.id }}" class="progress-bar {% if b.ciclo > 200 %}bg-danger{% else %}bg-success{% endif %}" 
-                                             style="width: {{ (b.ciclo / 2.5) if b.ciclo <= 250 else 100 }}%"></div>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td>
-                                {% if b.drone_vinculado and ((b.prefeitura_id is not none and b.drone_vinculado.prefeitura_id == b.prefeitura_id) or responsabilidades.get(b.id)) %}
-                                    <span class="badge bg-primary-light text-primary border border-primary-subtle">
-                                        <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge text-muted border border-dashed">{{ 'Vínculo a revisar' if b.drone_id else 'Em Estoque' }}</span>
-                                {% endif %}
-                                <div class="mt-2">
-                                    {% set vinculo = responsabilidades.get(b.id) %}
-                                    {% include "_equipamento_equipe.html" %}
-                                </div>
-                            </td>
-
-                            <td>
-                                <span class="badge {% if b.status == 'Ativo' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
-                                    {{ b.status }}
-                                </span>
-                            </td>
-
-                            <td>
-                                <div class="dropup">
-                                    <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                        {% if (central_ti_ui_guard(['main.deletar_bateria', 'main.editar_bateria'], (can_manage)) if central_ti_ui_guard is defined else (can_manage)) %}
-                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_bateria', bateria_id=b.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.editar_bateria', bateria_id=b.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" class="form-deletar m-0" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.deletar_bateria', bateria_id=b.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-                                                <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Bateria</button>
-                                            </form>
-                                        </li>
-                                        {% else %}
-                                        <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="6" class="text-center py-4 text-muted">{{ 'Nenhuma bateria encontrada para esta busca.' if q else 'Nenhuma bateria cadastrada.' }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="battery-metrics mb-4">
+        {% for label, number, icon in [('Baterias cadastradas', counters.total, 'battery-full'), ('Linha Matrice', counters.matrice, 'airplane'), ('Agras T10', counters.agras_t10, 'airplane-engines'), ('Sem drone vinculado', counters.sem_drone, 'box-seam')] %}
+        <div class="battery-metric"><i class="bi bi-{{ icon }}" aria-hidden="true"></i><div><span>{{ label }}</span><strong>{{ number }}</strong></div></div>
+        {% endfor %}
+    </div>
+    <form method="get" class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4" role="search">
+        <div class="battery-primary-filters">
+            <div><label for="equipment-search" class="form-label">Buscar por número de série, nome ou modelo</label><input id="equipment-search" type="search" name="q" value="{{ filters.q }}" placeholder="Série, identificação ou modelo da bateria…" class="form-control"></div>
+            <div><label for="familia" class="form-label">Linha de equipamento</label><select name="familia" id="familia" class="form-select"><option value="">Todas as linhas</option>{% for value, label in [('matrice','Matrice'),('agras_t10','Agras T10'),('outros','Outros modelos')] %}<option value="{{ value }}" {{ 'selected' if filters.familia==value else '' }}>{{ label }}</option>{% endfor %}</select></div>
+            <div><label for="status" class="form-label">Status</label><select name="status" id="status" class="form-select"><option value="">Todos os status</option>{% for value in ['Ativo','Inativo','Em Manutenção'] %}<option value="{{ value }}" {{ 'selected' if filters.status==value else '' }}>{{ value }}</option>{% endfor %}</select></div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+        <details class="mt-3" {{ 'open' if filters.drone_id or filters.equipe_id or filters.responsavel_id or filters.veiculo_id or filters.vinculo else '' }}>
+            <summary class="text-primary fw-semibold">Filtrar por alocação e conferência</summary>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6 col-xl-4"><label for="drone_id" class="form-label">Drone</label><select id="drone_id" name="drone_id" class="form-select"><option value="">Todos os drones</option>{% for drone in filter_drones %}<option value="{{ drone.id }}" {{ 'selected' if filters.drone_id==drone.id|string else '' }}>{{ drone.renomacao }} · {{ drone.numero_serie or 'Série não informada' }}</option>{% endfor %}</select></div>
+                <div class="col-md-6 col-xl-4"><label for="equipe_id" class="form-label">Equipe</label><select id="equipe_id" name="equipe_id" class="form-select"><option value="">Todas as equipes</option>{% for equipe in filter_equipes %}<option value="{{ equipe.id }}" {{ 'selected' if filters.equipe_id==equipe.id|string else '' }}>{{ equipe.nome_equipe }}</option>{% endfor %}</select></div>
+                <div class="col-md-6 col-xl-4"><label for="responsavel_id" class="form-label">Responsável da equipe</label><select id="responsavel_id" name="responsavel_id" class="form-select"><option value="">Titulares e auxiliares</option>{% for piloto in filter_pilotos %}<option value="{{ piloto.id }}" {{ 'selected' if filters.responsavel_id==piloto.id|string else '' }}>{{ piloto.nome_piloto }}</option>{% endfor %}</select></div>
+                <div class="col-md-6 col-xl-4"><label for="veiculo_id" class="form-label">Veículo da equipe</label><select id="veiculo_id" name="veiculo_id" class="form-select"><option value="">Todos os veículos</option>{% for veiculo in filter_veiculos %}<option value="{{ veiculo.id }}" {{ 'selected' if filters.veiculo_id==veiculo.id|string else '' }}>{{ veiculo.placa }} · {{ veiculo.modelo }}</option>{% endfor %}</select></div>
+                <div class="col-md-6 col-xl-4"><label for="vinculo" class="form-label">Conferência e vínculo</label><select id="vinculo" name="vinculo" class="form-select"><option value="">Todos os registros</option><option value="sem_drone" {{ 'selected' if filters.vinculo=='sem_drone' else '' }}>Sem drone vinculado</option><option value="sem_atualizacao" {{ 'selected' if filters.vinculo=='sem_atualizacao' else '' }}>Sem atualização registrada</option></select></div>
             </div>
+        </details>
+        {% if filter_args %}<div class="mt-3"><a href="{{ url_for('main.listar_baterias') }}" class="text-decoration-none">Limpar filtros</a></div>{% endif %}
+    </form>
+    <div class="battery-explanation mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Equipe, responsáveis e veículos seguem o drone vinculado. O registro de ciclos é opcional e manual.</span></div>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="p-3 p-md-4 border-bottom d-flex flex-wrap gap-2 justify-content-between align-items-center"><strong>Baterias encontradas <span class="badge bg-light text-primary ms-1">{{ total }}</span></strong><span class="small text-muted">15 registros por página</span></div>
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle battery-table">
+                <thead class="table-light"><tr><th>Bateria</th><th>Drone, equipe e responsáveis</th><th>Ciclos opcionais</th><th>Última atualização</th><th>Ações</th></tr></thead>
+                <tbody>
+                    {% for b in baterias %}
+                    <tr><td><strong>{{ b.renomacao }}</strong><div class="small text-muted mt-1">{{ b.modelo }}</div><div class="small battery-serial mt-1">S/N: {{ b.numero_serie or 'Não informado' }}</div><div class="mt-2 d-flex flex-wrap gap-1"><span class="badge bg-light text-primary border">{{ {'matrice':'Matrice','agras_t10':'Agras T10','outros':'Outros modelos'}[familias[b.id]] }}</span><span class="badge {{ 'bg-success' if b.status=='Ativo' else 'bg-secondary' }}">{{ b.status or 'Não informado' }}</span></div></td>
+                        <td>{% if drones_seguros.get(b.id) %}<div class="mb-2"><span class="badge bg-light text-primary border">{{ drones_seguros[b.id].renomacao }}</span></div>{% elif b.drone_id %}<div class="small text-muted mb-2">Vínculo do drone a revisar</div>{% else %}<div class="small text-muted mb-2">Em estoque · sem drone</div>{% endif %}{% set vinculo=responsabilidades.get(b.id) %}{% include "_equipamento_equipe.html" %}</td>
+                        <td>{% if b.ciclo is not none %}<strong>{{ b.ciclo }}</strong><div class="small text-muted">ciclos cadastrados</div>{% else %}<span class="text-muted">Não informado</span>{% endif %}<div class="small text-muted mt-2">{{ ('Conferido em ' ~ (b.ciclos_atualizados_em|maintenance_datetime)) if b.ciclos_atualizados_em else 'Sem conferência registrada' }}</div></td>
+                        <td>{% if b.atualizado_em %}<strong class="small">{{ b.atualizado_em|maintenance_datetime }}</strong><div class="small text-muted mt-1">{{ (b.atualizado_por.nome_uvis or b.atualizado_por.login) if b.atualizado_por else 'Usuário não disponível' }}</div>{% else %}<span class="small text-muted">Sem atualização registrada</span>{% endif %}</td>
+                        <td><a href="{{ url_for('main.bateria_detalhe', bateria_id=b.id) }}" class="btn btn-outline-primary btn-sm">Detalhes e histórico</a></td>
+                    </tr>
+                    {% else %}<tr><td colspan="5" class="text-center py-5 text-muted">{{ 'Nenhuma bateria encontrada para estes filtros.' if counters.total else 'Nenhuma bateria cadastrada.' }}</td></tr>{% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% if pages>1 %}<nav class="p-3 d-flex flex-wrap gap-3 justify-content-between align-items-center border-top" aria-label="Páginas de baterias"><span class="small text-muted">Página {{ page }} de {{ pages }}</span><div class="d-flex gap-2">{% if page>1 %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.listar_baterias', **dict(filter_args, page=page-1)) }}">Anterior</a>{% endif %}{% if page<pages %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.listar_baterias', **dict(filter_args, page=page+1)) }}">Próxima</a>{% endif %}</div></nav>{% endif %}
     </div>
+    <p class="small text-muted mt-3">Horários exibidos no fuso de São Paulo. Os números de ciclos não representam uma avaliação automática da condição da bateria.</p>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function showBatteryCycleToast(icon, title) {
-    if (typeof Swal === 'undefined') return;
-
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon,
-        title,
-        showConfirmButton: false,
-        timer: 1800,
-        timerProgressBar: true
-    });
-}
-
-function setBatteryCycleLoading(inputGroup, triggerButton, isLoading) {
-    if (!inputGroup) return;
-
-    const input = inputGroup.querySelector('input');
-    const buttons = inputGroup.querySelectorAll('button');
-
-    buttons.forEach((button) => {
-        button.disabled = isLoading;
-    });
-
-    if (input) {
-        input.disabled = isLoading;
-    }
-
-    if (!triggerButton) return;
-
-    if (isLoading) {
-        triggerButton.dataset.originalHtml = triggerButton.innerHTML;
-        triggerButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-        inputGroup.classList.add('opacity-75');
-        return;
-    }
-
-    if (triggerButton.dataset.originalHtml) {
-        triggerButton.innerHTML = triggerButton.dataset.originalHtml;
-        delete triggerButton.dataset.originalHtml;
-    }
-
-    inputGroup.classList.remove('opacity-75');
-}
-
-function atualizarCiclo(id, operacao, triggerButton) {
-    const input = document.getElementById('inputCiclo' + id);
-    const inputGroup = input ? input.closest('.input-group') : null;
-    const valorInput = parseInt(input.value, 10);
-    const quantidade = Number.isNaN(valorInput) ? 1 : valorInput;
-
-    setBatteryCycleLoading(inputGroup, triggerButton, true);
-
-    fetch("{{ url_for('main.update_ciclos', id=0) }}".replace('0', id), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': "{{ csrf_token() if csrf_token else '' }}"
-        },
-        body: JSON.stringify({ quantidade: quantidade, operacao: operacao })
-    })
-    .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok || data.error) {
-            throw new Error(data.error || 'Nao foi possivel atualizar os ciclos.');
-        }
-
-        return data;
-    })
-    .then((data) => {
-        document.getElementById('valCiclo' + id).innerText = data.novo_ciclo + ' ciclos';
-        const barra = document.getElementById('progresso' + id);
-        const porcentagem = (data.novo_ciclo / 2.5) > 100 ? 100 : (data.novo_ciclo / 2.5);
-
-        barra.style.width = porcentagem + '%';
-        barra.classList.remove('bg-success', 'bg-danger');
-        barra.classList.add(data.cor);
-        input.value = '';
-
-        showBatteryCycleToast('success', 'Ciclo atualizado com sucesso.');
-    })
-    .catch((error) => {
-        showBatteryCycleToast('error', error.message || 'Erro ao atualizar os ciclos.');
-    })
-    .finally(() => {
-        setBatteryCycleLoading(inputGroup, triggerButton, false);
-    });
-}
-</script>
 {% endblock %}

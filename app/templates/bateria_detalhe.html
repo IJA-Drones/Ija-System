@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/baterias_listar.css', v='20261126-inventario') }}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 battery-page">
+    <div class="battery-header mb-4"><div><p class="battery-eyebrow">BATERIA / DETALHES E HISTÓRICO</p><h2 class="text-dark mb-1">{{ bateria.renomacao }}</h2><p class="text-muted mb-0">{{ bateria.modelo }} · S/N {{ bateria.numero_serie or 'Não informado' }}</p></div><div class="d-flex flex-wrap gap-2"><a href="{{ url_for('main.listar_baterias') }}" class="btn btn-outline-secondary">Voltar</a>{% if can_edit %}<a href="{{ url_for('main.editar_bateria', bateria_id=bateria.id) }}" class="btn btn-primary">Editar cadastro</a>{% endif %}</div></div>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 p-4 h-100"><h5 class="mb-3">Equipe e responsáveis</h5>{% set vinculo=responsabilidades.get(bateria.id) %}{% if vinculo and bateria.drone_vinculado %}<p class="small text-muted">Drone: {{ bateria.drone_vinculado.renomacao }} · {{ bateria.drone_vinculado.numero_serie or 'Série não informada' }}</p>{% endif %}{% include "_equipamento_equipe.html" %}<p class="small text-muted mt-3 mb-0">A alocação acompanha o cadastro da equipe do drone, dentro da prefeitura.</p></div></div>
+        <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 p-4 h-100"><h5 class="mb-3">Última atualização do cadastro</h5>{% if bateria.atualizado_em %}<strong>{{ bateria.atualizado_em|maintenance_datetime }}</strong><p class="small text-muted mt-1">Por {{ (bateria.atualizado_por.nome_uvis or bateria.atualizado_por.login) if bateria.atualizado_por else 'usuário não disponível' }}</p>{% else %}<p class="text-muted">Sem atualização registrada. O sistema não atribui datas aos cadastros antigos.</p>{% endif %}{% if can_edit %}<form method="post" action="{{ url_for('main.bateria_conferir', bateria_id=bateria.id) }}" class="mt-3"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-primary" type="submit">Confirmar conferência do cadastro</button><p class="form-text mb-0">Registra quem conferiu e quando. Não confirma nem altera os ciclos.</p></form>{% endif %}</div></div>
+    </div>
+    <details class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <summary class="fw-semibold text-primary">Controle de ciclos (opcional)</summary>
+        <div class="mt-3"><p>Leitura cadastrada: <strong>{{ bateria.ciclo if bateria.ciclo is not none else 'Não informada' }}</strong></p><p class="small text-muted">{{ ('Última conferência de ciclos: ' ~ (bateria.ciclos_atualizados_em|maintenance_datetime)) if bateria.ciclos_atualizados_em else 'Os ciclos ainda não têm conferência registrada.' }} O preenchimento é manual; registre somente uma leitura verificada.</p>
+            {% if can_edit %}<form method="post" action="{{ url_for('main.bateria_registrar_ciclos', bateria_id=bateria.id) }}" class="d-flex flex-wrap gap-2 align-items-end"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div><label for="ciclo" class="form-label">Leitura total de ciclos</label><input id="ciclo" type="number" name="ciclo" min="0" max="2147483647" step="1" required class="form-control" placeholder="Informe a leitura conferida"></div><button type="submit" class="btn btn-primary">Registrar leitura manual</button></form>{% endif %}
+        </div>
+    </details>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden"><div class="p-4 border-bottom"><h5 class="mb-1">Histórico da bateria</h5><p class="small text-muted mb-0">Registros feitos a partir desta funcionalidade. Até 100 atualizações mais recentes, em horário de São Paulo.</p></div>
+        <div class="table-responsive"><table class="table battery-history mb-0"><thead class="table-light"><tr><th>Quando / quem</th><th>Registro</th><th>Alterações</th></tr></thead><tbody>
+            {% for entry in historico %}<tr><td><strong class="small">{{ entry.criado_em|maintenance_datetime }}</strong><div class="small text-muted">{{ entry.usuario_nome }}</div></td><td>{{ {'cadastro':'Cadastro','edicao':'Edição do cadastro','ciclos':'Leitura manual de ciclos','conferencia':'Conferência do cadastro'}.get(entry.tipo, 'Atualização') }}</td><td>{% for key, change in entry.alteracoes.items() %}<div class="small mb-1"><strong>{{ field_labels.get(key, key) }}:</strong> {{ change.get('antes_texto', change.antes) if change.antes is not none else 'Não informado' }} → {{ change.get('depois_texto', change.depois) if change.depois is not none else 'Não informado' }}</div>{% else %}<span class="small text-muted">Conferência registrada sem alteração dos valores.</span>{% endfor %}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-muted py-5">Nenhuma atualização registrada para esta bateria.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div>
+</div>
+{% endblock %}

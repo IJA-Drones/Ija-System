@@ -2739,7 +2739,12 @@ class Baterias(Equipamentos):
 
     id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
 
-    ciclo = db.Column(db.Integer, default=0)
+    ciclo = db.Column(db.Integer, nullable=True)
+    atualizado_em = db.Column(db.DateTime, nullable=True, index=True)
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    atualizado_por = db.relationship("Usuario", foreign_keys=[atualizado_por_id], lazy="joined")
+    ciclos_atualizados_em = db.Column(db.DateTime, nullable=True)
+    atualizacoes = db.relationship("BateriaAtualizacao", back_populates="bateria", foreign_keys="[BateriaAtualizacao.bateria_id]", passive_deletes="all")
 
     # a qual Drone essa bateria pertence
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
@@ -2750,6 +2755,20 @@ class Baterias(Equipamentos):
     )
 
     __mapper_args__ = {"polymorphic_identity": "baterias"}
+
+
+class BateriaAtualizacao(db.Model):
+    __tablename__ = "bateria_atualizacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    bateria_id = db.Column(db.Integer, db.ForeignKey("baterias.id", ondelete="RESTRICT"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    usuario_nome = db.Column(db.String(200), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, index=True)
+    tipo = db.Column(db.String(30), nullable=False)
+    alteracoes = db.Column(db.JSON, nullable=False)
+    bateria = db.relationship("Baterias", back_populates="atualizacoes", foreign_keys=[bateria_id])
 
 
 class ControlesRemotos(Equipamentos):

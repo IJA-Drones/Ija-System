@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 from app.extensions import db
 from app.modules.equipamentos.exporters import XLSX_MIME, build_manutencao_pdf, build_manutencoes_excel, build_pecas_usadas_excel
 from app.shared.skybox import SkyboxError, stream_skybox_file
-from app.models import Baterias, Drones, ManutencaoEquipamento
+from app.models import Baterias, BateriaAtualizacao, Drones, ManutencaoEquipamento
 from app.modules.equipamentos.service import (
     build_bateria_edit_form,
     build_drone_edit_form,
@@ -100,16 +100,54 @@ def register_routes(bp):
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
     @login_required
     def listar_baterias_view():
-        baterias = list_baterias(user=current_user, q=request.args.get("q"))
-        tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
-        return render_template(
-            "baterias_listar.html",
-            baterias=baterias,
-            responsabilidades=equipment_team_assignments(baterias, user=current_user),
-            q=request.args.get("q", "").strip(),
-            is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
-            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
-        )
+        from app.modules.equipamentos.baterias import battery_inventory
+        filters = {key: request.args.get(key, "").strip() for key in (
+            "q", "familia", "drone_id", "equipe_id", "responsavel_id", "veiculo_id", "status", "vinculo", "page")}
+        legacy = normalize_role(current_user.tipo_usuario) in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "manutencao"} or is_veiculos_supervisor(current_user)
+        return render_template("baterias_listar.html", filters=filters, q=filters["q"],
+            filter_args={key:value for key,value in filters.items() if value and key!="page"},
+            can_create=can_access_endpoint(current_user, "main.cadastrar_bateria", legacy=legacy),
+            **battery_inventory(current_user, filters))
+
+    @bp.route("/equipamentos/baterias/<int:bateria_id>", methods=["GET"], endpoint="bateria_detalhe")
+    @login_required
+    def bateria_detalhe(bateria_id):
+        from app.modules.equipamentos.baterias import FIELD_LABELS
+        bateria = _get_scoped_bateria_or_404(bateria_id)
+        return render_template("bateria_detalhe.html", bateria=bateria,
+            responsabilidades=equipment_team_assignments([bateria], user=current_user),
+            historico=BateriaAtualizacao.query.filter_by(bateria_id=bateria.id).order_by(
+                BateriaAtualizacao.criado_em.desc(), BateriaAtualizacao.id.desc()).limit(100).all(),
+            field_labels=FIELD_LABELS,
+            can_edit=can_access_endpoint(current_user, "main.editar_bateria", legacy=_maintenance_legacy_access()))
+
+    @bp.route("/baterias/<int:bateria_id>/conferir", methods=["POST"], endpoint="bateria_conferir")
+    @login_required
+    def bateria_conferir(bateria_id):
+        _require_admin_or_operario()
+        from app.modules.equipamentos.baterias import battery_snapshot, record_battery_update
+        bateria = _get_scoped_bateria_or_404(bateria_id)
+        try:
+            record_battery_update(bateria, user=current_user, before=battery_snapshot(bateria), tipo="conferencia")
+            db.session.commit()
+            flash("Conferência do cadastro registrada. A leitura de ciclos não foi alterada.", "success")
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+        return redirect(url_for("main.bateria_detalhe", bateria_id=bateria.id))
+
+    @bp.route("/baterias/<int:bateria_id>/ciclos", methods=["POST"], endpoint="bateria_registrar_ciclos")
+    @login_required
+    def bateria_registrar_ciclos(bateria_id):
+        _require_admin_or_operario()
+        bateria = _get_scoped_bateria_or_404(bateria_id)
+        try:
+            update_bateria_ciclos(bateria, {"operacao": "definir", "quantidade": request.form.get("ciclo", "")}, user=current_user)
+            flash("Leitura manual de ciclos registrada.", "success")
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+        return redirect(url_for("main.bateria_detalhe", bateria_id=bateria.id))
 
     @bp.route("/drones/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_drone")
     @login_required
@@ -219,7 +257,7 @@ def register_routes(bp):
                 return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
 
             try:
-                create_bateria(cleaned, prefeitura_id=getattr(current_user, "prefeitura_id", None))
+                create_bateria(cleaned, prefeitura_id=getattr(current_user, "prefeitura_id", None), user=current_user)
                 flash("Bateria cadastrada com sucesso!", "success")
                 return redirect(url_for("main.listar_baterias"))
             except Exception:
@@ -256,7 +294,7 @@ def register_routes(bp):
                 )
 
             try:
-                update_bateria(bateria, cleaned)
+                update_bateria(bateria, cleaned, user=current_user)
                 flash("Bateria atualizada com sucesso!", "success")
                 return redirect(url_for("main.listar_baterias"))
             except Exception:
@@ -288,6 +326,9 @@ def register_routes(bp):
         try:
             delete_bateria(bateria)
             flash("Bateria removida com sucesso.", "success")
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao remover bateria %s.", bateria.id)
@@ -501,7 +542,11 @@ def register_routes(bp):
     def update_ciclos(id):
         _require_admin_or_operario()
         bateria = _get_scoped_bateria_or_404(id)
-        return jsonify(update_bateria_ciclos(bateria, request.get_json() or {}))
+        try:
+            return jsonify(update_bateria_ciclos(bateria, request.get_json(silent=True), user=current_user))
+        except ValueError as exc:
+            db.session.rollback()
+            return jsonify(error=str(exc)), 400
 
     @bp.route("/drones/<int:drone_id>/manutencao", methods=["POST"], endpoint="enviar_manutencao_drone")
     @login_required

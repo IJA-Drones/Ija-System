@@ -121,12 +121,12 @@
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-arrow-repeat me-1"></i> Ciclo
+              <i class="bi bi-arrow-repeat me-1"></i> Ciclos (opcional)
             </label>
             <input type="number"
                    name="ciclo"
                    class="form-control {% if errors.get('ciclo') %}is-invalid{% endif %}"
-                   value="{{ form.get('ciclo', bateria.ciclo) }}"
+                   value="{{ form.get('ciclo', bateria.ciclo if bateria.ciclo is not none else '') }}"
                    min="0">
             {% if errors.get('ciclo') %}
               <div class="invalid-feedback">{{ errors.get('ciclo') }}</div>
@@ -166,7 +166,7 @@
               <option value="">— Em estoque —</option>
               {% for d in drones %}
                 <option value="{{ d.id }}" {{ 'selected' if chosen and chosen|int == d.id else '' }}>
-                  {{ d.renomacao }} — {{ d.modelo }}
+                  {{ d.renomacao }} — {{ d.modelo }} · S/N {{ d.numero_serie or 'Não informado' }}
                 </option>
               {% endfor %}
             </select>

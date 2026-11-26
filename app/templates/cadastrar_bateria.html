@@ -127,18 +127,18 @@
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-arrow-repeat me-1 text-primary"></i> Ciclo
+              <i class="bi bi-arrow-repeat me-1 text-primary"></i> Ciclos (opcional)
             </label>
             <input type="number"
                    name="ciclo"
                    class="form-control {% if errors.get('ciclo') %}is-invalid{% endif %}"
-                   value="{{ form.get('ciclo','0') }}"
+                   value="{{ form.get('ciclo','') }}"
                    min="0"
-                   placeholder="Ex: 120">
+                   placeholder="Opcional: leitura conferida">
             {% if errors.get('ciclo') %}
               <div class="invalid-feedback">{{ errors.get('ciclo') }}</div>
             {% endif %}
-            <div class="form-text small">Quantidade de ciclos de carga.</div>
+            <div class="form-text small">Opcional. Preencha somente se a leitura de ciclos foi conferida.</div>
           </div>
 
           <div class="col-md-4">
@@ -174,7 +174,7 @@
               <option value="">— Sem vínculo —</option>
               {% for d in drones %}
                 <option value="{{ d.id }}" {{ 'selected' if chosen and chosen|int == d.id else '' }}>
-                  {{ d.renomacao }} — {{ d.modelo }}
+                  {{ d.renomacao }} — {{ d.modelo }} · S/N {{ d.numero_serie or 'Não informado' }}
                 </option>
               {% endfor %}
             </select>
