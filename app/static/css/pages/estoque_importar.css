@@ -81,3 +81,9 @@ body.dark-mode .stock-import-ready { background:#1d3937; border-color:#2e514b; c
 .stock-import-pager { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin:16px 0 0; }
 .stock-import-pager .btn { font-size:.75rem; }
 .stock-import-table [data-import-row][hidden] { display:none!important; }
+/* This document owns vertical scrolling; the shared shell must grow with the preview. */
+html:has(.stock-import-page) { height:auto; min-height:100%; overflow-x:clip; overflow-y:auto; }
+body:has(.stock-import-page) { height:auto; min-height:100dvh; }
+body:has(.stock-import-page):not(.modal-open) { overflow:visible; }
+body:has(.stock-import-page) .app-wrapper { height:auto; }
+body:has(.stock-import-page) .app-content { height:auto; min-height:calc(100dvh - var(--navbar-height)); margin-top:0!important; }

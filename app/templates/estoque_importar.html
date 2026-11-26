@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_importar.css') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_importar.css', v='20261126-single-scroll') }}">{% endblock %}
 {% block content %}
 <div class="container-fluid py-4 stock-import-page">
   <header class="stock-import-heading"><div><span class="stock-import-eyebrow">ESTOQUE DE PEÇAS</span><h2>Importar peças por Excel</h2><p>Envie sua planilha, confira a prévia e confirme os dados antes de salvar.</p></div><a href="{{ url_for('main.estoque_listar') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Voltar ao estoque</a></header>

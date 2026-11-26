@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_importar.css') }}">{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_importar.css', v='20261126-single-scroll') }}">{% endblock %}
 {% block content %}
 <div class="container-fluid py-4 stock-import-page stock-import-preview">
   <header class="stock-import-heading"><div><span class="stock-import-eyebrow">REVISÃO ANTES DO CADASTRO</span><h2>Prévia da importação</h2><p>{{ batch.arquivo_nome }} <span aria-hidden="true">·</span> {{ prefeitura.nome }}. Nenhuma peça deste envio foi salva ainda.</p></div><a href="{{ url_for('main.estoque_importar') }}" class="btn btn-outline-secondary">Enviar outra planilha</a></header>
