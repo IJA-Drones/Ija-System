@@ -95,11 +95,13 @@ def equipment_team_assignments(equipamentos, *, user):
     not a claim that one particular vehicle is transporting the equipment.
     """
     sources = {}
+    equipment_by_id = {equipment.id: equipment for equipment in equipamentos}
     for equipamento in equipamentos:
         source = equipamento
         if isinstance(equipamento, Baterias) and equipamento.drone_id is not None:
             source = equipamento.drone_vinculado
-        if source is not None and source.prefeitura_id == equipamento.prefeitura_id:
+        if source is not None and (source.prefeitura_id is None or equipamento.prefeitura_id is None
+                                   or source.prefeitura_id == equipamento.prefeitura_id):
             sources[equipamento.id] = source
     team_ids = {source.equipe_id for source in sources.values() if source.equipe_id is not None}
     if not team_ids:
@@ -114,12 +116,14 @@ def equipment_team_assignments(equipamentos, *, user):
     vehicles_by_team = {}
     for vehicle in vehicles:
         team = teams_by_id.get(vehicle.equipe_id)
-        if team is not None and vehicle.prefeitura_id == team.prefeitura_id:
+        if team is not None and vehicle.prefeitura_id in (None, team.prefeitura_id):
             vehicles_by_team.setdefault(team.id, []).append(vehicle)
     assignments = {}
     for equipment_id, source in sources.items():
         team = teams_by_id.get(source.equipe_id)
-        if team is None or team.prefeitura_id != source.prefeitura_id:
+        if team is None or source.prefeitura_id not in (None, team.prefeitura_id):
+            continue
+        if equipment_by_id[equipment_id].prefeitura_id not in (None, team.prefeitura_id):
             continue
         def team_member(role):
             return next((member.piloto for member in team.membros

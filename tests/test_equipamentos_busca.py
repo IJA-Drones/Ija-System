@@ -152,3 +152,32 @@ class EquipmentLookupTests(unittest.TestCase):
         self.drones[3].equipe_id = team.id
         db.session.commit()
         self.assertEqual(equipment_team_assignments([self.battery], user=self.user), {})
+
+    def test_legacy_equipment_and_vehicles_inherit_municipality_from_registered_team(self):
+        from app.models import Veiculos
+        from app.modules.equipamentos.service import equipment_team_assignments
+        team, pilot = self.make_team('Legado')
+        drone = self.drones[0]
+        drone.equipe_id = team.id
+        drone.prefeitura_id = None
+        self.battery.drone_id = drone.id
+        self.battery.equipe_id = team.id
+        self.battery.prefeitura_id = None
+        vehicle = Veiculos.query.filter_by(equipe_id=team.id).one()
+        vehicle.prefeitura_id = None
+        db.session.commit()
+        self.assertIn(drone, list_drones(self.user))
+        self.assertIn(self.battery, list_baterias(self.user))
+        assignments = equipment_team_assignments([drone, self.battery], user=self.user)
+        for equipment in (drone, self.battery):
+            self.assertEqual(assignments[equipment.id]['piloto'], pilot)
+            self.assertEqual(assignments[equipment.id]['veiculos'], [vehicle])
+        page = self.client.get('/equipamentos/baterias')
+        self.assertIn('Drone 0', page.text)
+        self.assertIn('Piloto Legado', page.text)
+        # An explicit conflicting municipality must never inherit the team scope.
+        drone.prefeitura_id = 2
+        vehicle.prefeitura_id = 2
+        db.session.commit()
+        self.assertNotIn(drone, list_drones(self.user))
+        self.assertEqual(equipment_team_assignments([drone, self.battery], user=self.users['dev']), {})

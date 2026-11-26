@@ -89,12 +89,12 @@
                             </td>
 
                             <td>
-                                {% if b.drone_vinculado and b.drone_vinculado.prefeitura_id == b.prefeitura_id %}
+                                {% if b.drone_vinculado and ((b.prefeitura_id is not none and b.drone_vinculado.prefeitura_id == b.prefeitura_id) or responsabilidades.get(b.id)) %}
                                     <span class="badge bg-primary-light text-primary border border-primary-subtle">
                                         <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
                                     </span>
                                 {% else %}
-                                    <span class="badge text-muted border border-dashed">Em Estoque</span>
+                                    <span class="badge text-muted border border-dashed">{{ 'Vínculo a revisar' if b.drone_id else 'Em Estoque' }}</span>
                                 {% endif %}
                                 <div class="mt-2">
                                     {% set vinculo = responsabilidades.get(b.id) %}
