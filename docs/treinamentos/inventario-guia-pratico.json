@@ -417,6 +417,11 @@
       "public_guide": true
     },
     {
+      "template": "bateria_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
       "template": "baterias_listar.html",
       "integration": "base.html",
       "public_guide": false
@@ -503,6 +508,16 @@
     },
     {
       "template": "consultas.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "controle_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "controles_listar.html",
       "integration": "base.html",
       "public_guide": false
     },
@@ -597,6 +612,11 @@
       "public_guide": false
     },
     {
+      "template": "equipamento_manutencao_nova.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
       "template": "equipamento_manutencao_pecas.html",
       "integration": "base.html",
       "public_guide": false
@@ -638,6 +658,16 @@
     },
     {
       "template": "estoque_form.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "estoque_importar.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "estoque_importar_previa.html",
       "integration": "base.html",
       "public_guide": false
     },
@@ -823,6 +853,16 @@
     },
     {
       "template": "portal_contatos.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "preventiva_detalhe.html",
+      "integration": "base.html",
+      "public_guide": false
+    },
+    {
+      "template": "preventivas.html",
       "integration": "base.html",
       "public_guide": false
     },
