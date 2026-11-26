@@ -60,3 +60,15 @@ Comando de regressão do escopo:
 ```sh
 python -m pytest tests/test_manutencao_os.py tests/test_manutencao_unificada.py tests/test_estoque_compatibilidade.py tests/test_estoque_importacao.py tests/test_preventivas.py tests/test_manutencao_veiculos_access.py tests/test_baterias_gestao.py tests/test_controles_remotos.py -q
 ```
+
+## Refinamento da interface e sidebar
+
+A tela foi reorganizada de acordo com a referência: resumo do drone, relato de entrada, diagnóstico com avarias e compatibilidade por peça, fotos/evidências, itens do reparo e conclusão. Os campos se redistribuem pela largura disponível do conteúdo, levando em conta a sidebar. Código DJI e identificação da peça aceitam textos longos sem expandir as colunas.
+
+As ações ficam no fim do formulário, sem cobrir campos. Foram adicionados controles de quantidade, prévia das fotos e remoção de fotos ainda não enviadas. Os nomes enviados ao servidor e as regras de estoque/rascunho/conclusão foram preservados.
+
+A sidebar passou a exibir **Manutenção → Ordens de serviço / Histórico de OS / Preventivas**. Cada link usa as permissões da sua rota; usuários personalizados também podem vê-los quando autorizados. Nenhuma permissão é concedida pela navegação. As sidebars Agro e Financeiro continuam separadas.
+
+Conferência visual com dados fictícios longos em 320, 390, 768, 1024 e 1440 px: nenhum controle saiu do conteúdo e não houve transbordamento horizontal nas medições finais. Foram exercitados os controles de quantidade, adição/remoção de fotos antes do envio, salvamento de rascunho e abertura do histórico pela sidebar. As validações são de navegador, sem teste em aparelho físico.
+
+Regressão específica do refinamento e da navegação: **76 testes e 555 subtestes aprovados**, incluindo retirada de acesso, consulta sem edição, usuário personalizado e separação das áreas. A prévia anterior foi reiniciada para remover o HTML antigo mantido em memória; o ambiente temporário passou a recarregar templates ao editar. O JavaScript também tolera a ausência dos novos controles em um formulário anterior.

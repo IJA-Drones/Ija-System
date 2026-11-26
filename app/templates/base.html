@@ -362,6 +362,7 @@
             </a>
           </li>
           {% endif %}
+          {% if current_user.tipo_usuario != 'manutencao' or is_agro_context or is_financeiro_context %}
           <li class="nav-item">
             <a
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
@@ -370,6 +371,8 @@
               <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-tools' if current_user.tipo_usuario == 'manutencao' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill')) }} me-2"></i><span>{{ ('Meus levantamentos' if vigilancia_ui_enabled else 'Início') if current_user.tipo_usuario == 'agente_endemias' else ('Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Manutenção' if current_user.tipo_usuario == 'manutencao' else ('Empresas' if is_financeiro_context else 'Dashboard'))) }}</span>
             </a>
           </li>
+          {% endif %}
+          {% include '_manutencao_nav.html' %}
           {% if azul_page_url|default(none) %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.azul_chat' %}active{% endif %}"

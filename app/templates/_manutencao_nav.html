@@ -1,0 +1,40 @@
+{# Same route guards as the screens. Navigation does not grant permissions. #}
+{% if not is_agro_context and not is_financeiro_context %}
+  {% set maintenance_legacy = current_user.tipo_usuario|lower in ['dev', 'diretor', 'admin', 'operario', 'operador', 'prefeitura_admin', 'manutencao', 'sup_veiculos', 'sup_veiculo'] %}
+  {% set maintenance_entries = [
+    ('main.equipamentos_manutencao', 'Ordens de serviço', 'bi-clipboard-check', ['main.equipamentos_manutencao', 'main.equipamento_manutencao_nova', 'main.equipamento_manutencao_pecas']),
+    ('main.equipamentos_manutencoes_historico', 'Histórico de OS', 'bi-clock-history', ['main.equipamentos_manutencoes_historico', 'main.equipamento_manutencao_detalhe', 'main.equipamentos_manutencoes_pecas_historico']),
+    ('main.preventivas', 'Preventivas', 'bi-calendar-check', ['main.preventivas', 'main.preventiva_detalhe'])
+  ] %}
+  {% set maintenance = namespace(entries=[], active=false) %}
+  {% for endpoint, title, icon, active_endpoints in maintenance_entries %}
+    {% if (central_ti_ui_guard([endpoint], maintenance_legacy) if central_ti_ui_guard is defined else maintenance_legacy) %}
+      {% set maintenance.entries = maintenance.entries + [(endpoint, title, icon, active_endpoints)] %}
+      {% if request.endpoint in active_endpoints %}{% set maintenance.active = true %}{% endif %}
+    {% endif %}
+  {% endfor %}
+  {% if maintenance.entries %}
+  {% set maintenance_expanded = maintenance.active or current_user.tipo_usuario == 'manutencao' %}
+  <li class="nav-item">
+    <button type="button" class="nav-link nav-link-toggle {% if maintenance.active %}active{% endif %}"
+            data-bs-toggle="collapse" data-bs-target="#menuManutencao"
+            aria-controls="menuManutencao" aria-expanded="{{ 'true' if maintenance_expanded else 'false' }}">
+      <span><i class="bi bi-tools me-2" aria-hidden="true"></i><span>Manutenção</span></span>
+      <i class="bi bi-chevron-down chevron" aria-hidden="true"></i>
+    </button>
+    <div id="menuManutencao" class="collapse {% if maintenance_expanded %}show{% endif %}">
+      <ul class="nav flex-column sub-nav">
+        {% for endpoint, title, icon, active_endpoints in maintenance.entries %}
+        <li class="nav-item">
+          <a class="nav-link sub-link {% if request.endpoint in active_endpoints %}active{% endif %}"
+             href="{{ url_for(endpoint) }}" {% if request.endpoint in active_endpoints %}aria-current="page"{% endif %}
+             data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
+            <i class="bi {{ icon }} me-2" aria-hidden="true"></i><span>{{ title }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </li>
+  {% endif %}
+{% endif %}

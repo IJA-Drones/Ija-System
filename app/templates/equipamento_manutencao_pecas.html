@@ -9,18 +9,19 @@
 </div>
 {%- endmacro %}
 {% macro damaged_row(row={}, index=1) -%}
-<div class="os-part-row os-damaged-row" data-part-row="damaged">
-  <label><span>Peça avariada <span data-row-number>{{ index }}</span></span>
+<div class="os-part-row os-damaged-row{% if row.get('peca_id') == 'manual' %} is-manual{% endif %}" data-part-row="damaged">
+  <label class="os-damaged-select"><span>Peça avariada <span data-row-number>{{ index }}</span></span>
     <select name="avariada_id" class="form-select" data-part-select>
       <option value="">Selecione a peça com defeito</option>
       {% for p in pecas %}<option value="{{ p.id }}" {% if row.get('peca_id')|string == p.id|string %}selected{% endif %}>{{ p.modelo_peca }}{% if p.codigo_dji %} · {{ p.codigo_dji }}{% endif %}{% if p.numero_serie %} · S/N {{ p.numero_serie }}{% endif %}</option>{% endfor %}
       {% if row.get('peca_id') and row.get('peca_id') != 'manual' and row.get('peca_id')|string not in pecas|map(attribute='id')|map('string')|list %}<option value="{{ row.peca_id }}" selected>Peça indisponível — selecione novamente</option>{% endif %}
       <option value="manual" {% if row.get('peca_id') == 'manual' %}selected{% endif %}>Outra peça (informar nome)</option>
-    </select>
+    </select><small class="os-selected-part" data-part-detail hidden></small>
     {% if row.get('peca_id') and row.get('peca_id') != 'manual' and row.get('peca_id')|string not in pecas|map(attribute='id')|map('string')|list %}<small class="os-error">Peça indisponível ou incompatível. Selecione novamente.</small>{% endif %}
   </label>
   <label data-manual-field {% if row.get('peca_id') != 'manual' %}hidden{% endif %}><span>Nome da peça</span><input name="avariada_nome" maxlength="120" class="form-control" value="{{ row.get('nome', '') }}" placeholder="Informe a peça com defeito"></label>
   <label class="os-part-description"><span>Descrição da avaria <span data-row-number>{{ index }}</span></span><textarea name="avariada_descricao" rows="2" maxlength="2000" class="form-control" placeholder="Descreva o dano ou a falha desta peça">{{ row.get('descricao', '') }}</textarea></label>
+  <div class="os-part-compatibility"><span>Compatibilidade</span><output data-part-compatibility>Selecione a peça</output></div>
   <button type="button" class="btn btn-outline-danger os-remove-part" data-remove-row aria-label="Remover peça avariada {{ index }}"><i class="bi bi-trash3" aria-hidden="true"></i></button>
 </div>
 {%- endmacro %}
@@ -30,37 +31,37 @@
     <option value="">Selecione uma peça do estoque</option>
     {% for p in pecas %}<option value="{{ p.id }}" {% if row.get('peca_id')|string == p.id|string %}selected{% endif %}>{{ p.modelo_peca }}{% if p.codigo_dji %} · {{ p.codigo_dji }}{% endif %}{% if p.numero_serie %} · S/N {{ p.numero_serie }}{% endif %}{% if p.quantidade == 0 %} · sem saldo{% elif p.status != 'disponivel_manutencao' %} · indisponível{% endif %}</option>{% endfor %}
     {% if row.get('peca_id') and row.get('peca_id')|string not in pecas|map(attribute='id')|map('string')|list %}<option value="{{ row.peca_id }}" selected>Peça indisponível — selecione novamente</option>{% endif %}
-  </select></label>
-  <label><span>Código DJI</span><input class="form-control os-readonly" data-part-code readonly value="" placeholder="Automático" aria-label="Código DJI da peça nova {{ index }}"></label>
-  <label><span>Quantidade <span data-row-number>{{ index }}</span></span><input class="form-control" type="number" name="reparo_quantidade" value="{{ row.get('quantidade', 1) }}" min="1" max="100000" step="1"></label>
+  </select><small class="os-selected-part" data-part-detail hidden></small></label>
+  <div class="os-repair-code"><span>Código DJI / Part Number</span><output class="os-readonly" data-part-code aria-label="Código DJI da peça nova {{ index }}">—</output></div>
+  <div class="os-repair-quantity"><label>Quantidade <span data-row-number>{{ index }}</span></label><div class="os-quantity-control"><button type="button" data-quantity-step="-1" aria-label="Diminuir quantidade da peça {{ index }}"><i class="bi bi-dash-lg" aria-hidden="true"></i></button><input class="form-control" type="number" name="reparo_quantidade" aria-label="Quantidade {{ index }}" value="{{ row.get('quantidade', 1) }}" min="1" max="100000" step="1"><button type="button" data-quantity-step="1" aria-label="Aumentar quantidade da peça {{ index }}"><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div></div>
   <div class="os-stock"><span>Saldo disponível</span><output data-part-balance>—</output><small data-part-warning></small></div>
-  <label class="os-repair-notes"><span>Observação da substituição <span data-row-number>{{ index }}</span></span><input class="form-control" name="reparo_observacoes" maxlength="2000" value="{{ row.get('observacoes', '') }}" placeholder="Detalhes da troca"></label>
+  <label class="os-repair-notes"><span>Observação da substituição <span data-row-number>{{ index }}</span></span><textarea class="form-control" name="reparo_observacoes" maxlength="2000" rows="2" placeholder="Detalhes da troca">{{ row.get('observacoes', '') }}</textarea></label>
   <button type="button" class="btn btn-outline-danger os-remove-part" data-remove-row aria-label="Remover peça do reparo {{ index }}"><i class="bi bi-trash3" aria-hidden="true"></i></button>
 </div>
 {%- endmacro %}
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_pecas.css', v='20261126-os-unificada-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_pecas.css', v='20261126-os-layout-3') }}">
 {% endblock %}
 {% block content %}
 <div class="container-fluid py-4 equipamento-manutencao-pecas-page">
   <div class="os-page-heading">
-    <div><a class="os-breadcrumb" href="{{ url_for('main.equipamentos_manutencao') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Manutenção / Ordens de serviço</a><h2>OS de manutenção {{ manutencao.numero_os if manutencao else '' }}</h2><p>Da entrada à conclusão, acompanhe todo o atendimento nesta página.</p></div>
+    <div class="os-title-group"><a class="os-breadcrumb" href="{{ url_for('main.equipamentos_manutencao') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Manutenção / Ordens de serviço</a><h2>OS de manutenção <span class="os-order-number">{{ manutencao.numero_os if manutencao else '' }}</span></h2><p>Da entrada à conclusão, acompanhe todo o atendimento nesta página.</p></div>
     <span class="os-draft-badge"><i class="bi bi-file-earmark-text" aria-hidden="true"></i> Rascunho</span>
   </div>
   <nav class="os-stage-nav" aria-label="Etapas da manutenção">
     {% for target, title in [('relato-entrada','Entrada'), ('diagnostico','Diagnóstico'), ('pecas-reparo','Peças do reparo'), ('conclusao','Conclusão')] %}<a href="#{{ target }}"><span>{{ loop.index }}</span>{{ title }}</a>{% endfor %}
   </nav>
-  {% if errors %}<div class="alert alert-danger os-validation-summary" role="alert" tabindex="-1"><strong>A OS ainda não foi salva.</strong><ul>{% for key, message in errors.items() %}<li><a href="#{{ 'diagnostico' if key == 'pecas_avariadas' else 'pecas-reparo' if key == 'pecas_reparo' else 'os-' ~ key }}">{{ message }}</a></li>{% endfor %}</ul>{% if errors.get('conflito') %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=drone.id) }}">Recarregar OS atualizada</a>{% endif %}</div>{% endif %}
+  {% if errors %}<div class="alert alert-danger os-validation-summary" role="alert" tabindex="-1"><strong>A OS ainda não foi salva.</strong><ul>{% for key, message in errors.items() %}<li><a href="#{{ 'diagnostico' if key == 'pecas_avariadas' else 'pecas-reparo' if key == 'pecas_reparo' else 'os-manutencao-form' if key in ['geral', 'conflito'] else 'os-assinaturas' if key.startswith('assinatura_') else 'os-' ~ key }}">{{ message }}</a></li>{% endfor %}</ul>{% if errors.get('conflito') %}<a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=drone.id) }}">Recarregar OS atualizada</a>{% endif %}</div>{% endif %}
   <section id="dados-drone" class="os-equipment os-panel" aria-labelledby="titulo-drone">
     <span class="os-equipment-icon"><i class="bi bi-airplane-engines" aria-hidden="true"></i></span>
-    <div><h3 id="titulo-drone">Dados do drone</h3><dl class="os-equipment-data">
+    <div><div class="os-equipment-heading"><h3 id="titulo-drone">Dados do drone</h3><span class="os-auto-badge"><i class="bi bi-check-circle" aria-hidden="true"></i> Cadastrado</span></div><dl class="os-equipment-data">
       <div><dt>Modelo</dt><dd>{{ drone.modelo }}</dd></div><div><dt>Número de série</dt><dd>{{ drone.numero_serie or 'Não informado' }}</dd></div><div><dt>Identificação</dt><dd>{{ drone.renomacao }} <small>#{{ drone.id }}</small></dd></div>
       <div><dt>Responsável / equipe</dt><dd>{% if alocacao.get('piloto') %}{{ alocacao.piloto.nome_piloto }}{% elif alocacao.get('equipe') %}{{ alocacao.equipe.nome_equipe }}{% else %}Sem responsável vinculado{% endif %}{% if alocacao.get('piloto') and alocacao.get('equipe') %}<small>{{ alocacao.equipe.nome_equipe }}</small>{% endif %}</dd></div>
-    </dl></div><span class="os-auto-badge">Dados cadastrados</span>
+    </dl></div>
   </section>
-  <form id="os-manutencao-form" class="form-no-loading" method="post" enctype="multipart/form-data" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+  <form id="os-manutencao-form" class="form-no-loading" data-equipment-model="{{ drone.modelo }}" method="post" enctype="multipart/form-data" novalidate data-ti-allowed="{{ 'true' if (central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
     {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
     <input type="hidden" name="manutencao_id" value="{{ form.manutencao_id }}"><input type="hidden" name="versao" value="{{ form.versao }}">
     <section id="relato-entrada" class="os-panel" aria-labelledby="titulo-entrada">
@@ -71,18 +72,29 @@
           <div class="os-field"><label for="os-condicao_chegada">Condição de chegada <span class="os-required">*</span></label><select id="os-condicao_chegada" name="condicao_chegada" class="form-select{% if errors.get('condicao_chegada') %} is-invalid{% endif %}"><option value="">Selecione a condição</option>{% for value, label in condicoes_chegada.items() %}<option value="{{ value }}" {% if form.condicao_chegada == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% if errors.get('condicao_chegada') %}<p class="os-error">{{ errors.condicao_chegada }}</p>{% endif %}</div>
           {{ field('avarias_identificadas', 'Relato da operação / problema informado', 3, true, 'Sintomas, condição do equipamento e problema relatado pela operação.') }}
         </div>
-        {% if reenviar_imagens %}<p class="os-error">As novas fotos ainda não foram salvas. Selecione os arquivos novamente antes de reenviar.</p>{% endif %}
-        <div class="os-photos"><label for="imagens-ocorrido"><i class="bi bi-camera" aria-hidden="true"></i> Fotos das avarias</label><input class="form-control" id="imagens-ocorrido" name="imagens_ocorrido" type="file" multiple accept="image/jpeg,image/png"><small>Até 10 novas imagens por envio, em JPG ou PNG, com até 12 MB cada.</small><div class="os-photo-grid" id="os-photo-preview">{% for image in imagens_manutencao %}<a href="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" target="_blank" rel="noopener"><img src="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" alt="Foto da avaria {{ loop.index }}" loading="lazy"></a>{% endfor %}</div><p id="os-upload-status" class="os-hint" aria-live="polite"></p></div>
+
       </div>
     </section>
     <section id="diagnostico" class="os-panel" aria-labelledby="titulo-diagnostico">
       <header class="os-section-heading"><span>2</span><div><h3 id="titulo-diagnostico">Diagnóstico e peças danificadas</h3><p>Descreva a análise técnica e identifique cada avaria.</p></div></header>
       <div class="os-panel-body">
-        <div class="os-diagnosis-grid">{{ field('diagnostico_tecnico', 'Diagnóstico técnico', 3, true, 'Descreva a causa da falha, a análise e os testes de diagnóstico.') }}<fieldset class="os-maintenance-type"><legend>Tipo de manutenção <span class="os-required">*</span></legend>{% for value, label in tipos_manutencao.items() %}<label><input type="radio" name="tipo_manutencao" value="{{ value }}" {% if form.tipo_manutencao == value %}checked{% endif %}> {{ label }}</label>{% endfor %}{% if errors.get('tipo_manutencao') %}<p class="os-error">{{ errors.tipo_manutencao }}</p>{% endif %}</fieldset></div>
+        <div class="os-diagnosis-grid">{{ field('diagnostico_tecnico', 'Diagnóstico técnico', 3, true, 'Descreva a causa da falha, a análise e os testes de diagnóstico.') }}<fieldset id="os-tipo_manutencao" class="os-maintenance-type"><legend>Tipo de manutenção <span class="os-required">*</span></legend>{% for value, label in tipos_manutencao.items() %}<label><input type="radio" name="tipo_manutencao" value="{{ value }}" {% if form.tipo_manutencao == value %}checked{% endif %}> {{ label }}</label>{% endfor %}{% if errors.get('tipo_manutencao') %}<p class="os-error">{{ errors.tipo_manutencao }}</p>{% endif %}</fieldset></div>
+        <div class="os-diagnosis-workspace"><div class="os-damaged-parts">
         <div class="os-subheading"><h4>Peças avariadas / com defeito</h4><span>Compatíveis com {{ drone.modelo }}</span></div><p class="os-hint">O registro de uma avaria não altera o estoque.</p>
         {% if errors.get('pecas_avariadas') %}<p class="os-error" role="alert">{{ errors.pecas_avariadas }}</p>{% endif %}
         <div id="os-damaged-rows">{% for row in form.pecas_avariadas %}{{ damaged_row(row, loop.index) }}{% else %}{{ damaged_row() }}{% endfor %}</div>
         <button type="button" class="btn btn-outline-primary btn-sm" data-add-row="damaged"><i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar peça danificada</button>
+        </div>
+        <aside class="os-evidence-panel" aria-labelledby="os-evidence-title">
+          <h4 id="os-evidence-title"><i class="bi bi-camera" aria-hidden="true"></i> Fotos e evidências</h4>
+          <p class="os-hint">Adicione fotos das avarias para documentar o diagnóstico.</p>
+          {% if reenviar_imagens %}<p class="os-error">As novas fotos ainda não foram salvas. Selecione os arquivos novamente antes de reenviar.</p>{% endif %}
+          <div class="os-photo-grid" id="os-photo-preview">{% for image in imagens_manutencao %}<a href="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" target="_blank" rel="noopener"><img src="{{ url_for('main.equipamento_manutencao_imagem', manutencao_id=manutencao.id, index=loop.index0) }}" alt="Foto da avaria {{ loop.index }}" loading="lazy"></a>{% endfor %}</div>
+          <div class="os-photo-picker"><button type="button" class="btn btn-outline-primary" data-choose-photos><i class="bi bi-camera" aria-hidden="true"></i> Adicionar fotos</button><input class="visually-hidden" id="imagens-ocorrido" tabindex="-1" name="imagens_ocorrido" type="file" multiple accept="image/jpeg,image/png" aria-label="Fotos das avarias" aria-describedby="os-photo-help"></div>
+          <small id="os-photo-help" class="os-hint">Até 10 novas imagens por envio. JPG ou PNG, até 12 MB cada.</small>
+          <p id="os-upload-status" class="os-hint" aria-live="polite"></p>
+        </aside>
+        </div>
       </div>
     </section>
     <section id="pecas-reparo" class="os-panel" aria-labelledby="titulo-reparo">
@@ -98,19 +110,19 @@
     <section id="conclusao" class="os-panel" aria-labelledby="titulo-conclusao">
       <header class="os-section-heading"><span>4</span><div><h3 id="titulo-conclusao">Conclusão da manutenção</h3><p>Registre o resultado do reparo antes de encerrar a OS.</p></div></header>
       <div class="os-panel-body"><div class="os-two-columns">{{ field('servicos_realizados', 'Serviços realizados', 3, true, 'Descreva os serviços e ajustes executados.') }}{{ field('observacoes_teste', 'Testes após o reparo', 3, true, 'Registre os testes e os resultados. Se não foi possível testar, explique o motivo.') }}</div>
-        <div class="os-two-columns os-final-grid"><div><label class="os-test-confirm"><input class="form-check-input" type="checkbox" name="drone_testado" value="1" {% if form.drone_testado %}checked{% endif %}> Confirmo que o equipamento foi testado após o reparo</label>{% if errors.get('drone_testado') %}<p class="os-error">{{ errors.drone_testado }}</p>{% endif %}</div><div class="os-field"><label for="os-condicao_final">Condição final <span class="os-required">*</span></label><select id="os-condicao_final" name="condicao_final" class="form-select{% if errors.get('condicao_final') %} is-invalid{% endif %}"><option value="">Selecione o resultado</option>{% for value, label in condicoes_finais.items() %}<option value="{{ value }}" {% if form.condicao_final == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><small id="os-final-status">A condição final define se o drone pode voltar à operação.</small>{% if errors.get('condicao_final') %}<p class="os-error">{{ errors.condicao_final }}</p>{% endif %}</div></div>
+        <div class="os-two-columns os-final-grid"><div><label class="os-test-confirm"><input class="form-check-input" type="checkbox" name="drone_testado" id="os-drone_testado" value="1" {% if form.drone_testado %}checked{% endif %}> Confirmo que o equipamento foi testado após o reparo</label>{% if errors.get('drone_testado') %}<p class="os-error">{{ errors.drone_testado }}</p>{% endif %}</div><div class="os-field"><label for="os-condicao_final">Condição final <span class="os-required">*</span></label><select id="os-condicao_final" name="condicao_final" class="form-select{% if errors.get('condicao_final') %} is-invalid{% endif %}"><option value="">Selecione o resultado</option>{% for value, label in condicoes_finais.items() %}<option value="{{ value }}" {% if form.condicao_final == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><small id="os-final-status">A condição final define se o drone pode voltar à operação.</small>{% if errors.get('condicao_final') %}<p class="os-error">{{ errors.condicao_final }}</p>{% endif %}</div></div>
         <div class="os-two-columns">{{ field('responsavel_manutencao', 'Responsável técnico pela manutenção', 0, true) }}{{ field('piloto_responsavel_avaria', 'Piloto responsável pela avaria') }}</div>
         <div class="os-two-columns">{{ field('responsavel_avaria', 'Responsável pela avaria') }}{{ field('observacoes', 'Observações gerais', 2) }}</div>
-        <details class="os-signatures"><summary>Assinaturas dos responsáveis <span>Opcional</span></summary><div class="os-two-columns">{% for key, fieldname, clearname, label in [('assinatura-tecnico','assinatura_responsavel_tecnico','limpar_assinatura_tecnico','Responsável técnico pela manutenção'), ('assinatura-avaria','assinatura_responsavel_avaria','limpar_assinatura_avaria','Responsável pela avaria')] %}<div><p>{{ label }}</p><div class="os-signature-pad"><canvas id="{{ key }}-pad" aria-label="Assinatura: {{ label }}"></canvas><input type="hidden" name="{{ fieldname }}" id="{{ key }}-data" value="{{ form.get(fieldname, '') }}"><input type="hidden" name="{{ clearname }}" id="{{ key }}-clear" value="{{ form.get(clearname, '0') }}"></div><button type="button" class="btn btn-outline-secondary btn-sm" data-clear-signature="{{ key }}">Limpar assinatura</button>{% if errors.get(fieldname) %}<p class="os-error">{{ errors[fieldname] }}</p>{% endif %}</div>{% endfor %}</div></details>
+        <details id="os-assinaturas" class="os-signatures" {% if errors.get('assinatura_responsavel_tecnico') or errors.get('assinatura_responsavel_avaria') %}open{% endif %}><summary>Assinaturas dos responsáveis <span>Opcional</span></summary><div class="os-two-columns">{% for key, fieldname, clearname, label in [('assinatura-tecnico','assinatura_responsavel_tecnico','limpar_assinatura_tecnico','Responsável técnico pela manutenção'), ('assinatura-avaria','assinatura_responsavel_avaria','limpar_assinatura_avaria','Responsável pela avaria')] %}<div><p>{{ label }}</p><div class="os-signature-pad"><canvas id="{{ key }}-pad" aria-label="Assinatura: {{ label }}"></canvas><input type="hidden" name="{{ fieldname }}" id="{{ key }}-data" value="{{ form.get(fieldname, '') }}"><input type="hidden" name="{{ clearname }}" id="{{ key }}-clear" value="{{ form.get(clearname, '0') }}"></div><button type="button" class="btn btn-outline-secondary btn-sm" data-clear-signature="{{ key }}">Limpar assinatura</button>{% if errors.get(fieldname) %}<p class="os-error">{{ errors[fieldname] }}</p>{% endif %}</div>{% endfor %}</div></details>
       </div>
     </section>
-    <footer class="os-save-bar"><div><strong id="os-save-status" aria-live="polite">{{ 'Salvo em ' ~ (manutencao.atualizada_em|maintenance_datetime) if manutencao and manutencao.atualizada_em else 'OS em andamento' }}</strong><small>Os campos com * são obrigatórios apenas para concluir.</small></div><div class="os-save-actions"><button type="submit" name="acao" value="rascunho" class="btn btn-outline-primary" data-save-action><i class="bi bi-floppy" aria-hidden="true"></i> Salvar rascunho</button><button type="submit" name="acao" value="concluir" class="btn btn-primary" data-save-action><i class="bi bi-check2-circle" aria-hidden="true"></i> Concluir Ordem de Serviço</button></div></footer>
+    <footer class="os-save-bar"><div><strong id="os-save-status" aria-live="polite">{{ 'Salvo em ' ~ (manutencao.atualizada_em|maintenance_datetime) if manutencao and manutencao.atualizada_em else 'OS em andamento' }}</strong><small>Os campos com * são obrigatórios apenas para concluir.</small><a class="os-back-link" href="{{ url_for('main.equipamentos_manutencao') }}">Voltar à lista</a></div><div class="os-save-actions"><button type="submit" name="acao" value="rascunho" class="btn btn-outline-primary" data-save-action><i class="bi bi-floppy" aria-hidden="true"></i> Salvar rascunho</button><button type="submit" name="acao" value="concluir" class="btn btn-primary" data-save-action><i class="bi bi-check2-circle" aria-hidden="true"></i> Concluir Ordem de Serviço</button></div></footer>
   </form>
 </div>
 <template id="os-damaged-template">{{ damaged_row() }}</template><template id="os-repair-template">{{ repair_row() }}</template>
 <script type="application/json" id="os-parts-catalog">{{ catalogo_pecas|tojson }}</script>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/manutencao-os.js', v='20261126-os-unificada-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/manutencao-assinaturas.js', v='20261126-os-unificada-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/manutencao-os.js', v='20261126-os-layout-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/manutencao-assinaturas.js', v='20261126-os-layout-3') }}" defer></script>
 {% endblock %}
