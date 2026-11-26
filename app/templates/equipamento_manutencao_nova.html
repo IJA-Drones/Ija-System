@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h2><i class="bi bi-tools me-2 text-primary"></i>Abrir OS de manutenção</h2>
+  <p class="text-muted">Registre a manutenção de um drone. Esta ordem é exclusiva da manutenção e possui identificação OSM.</p>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+    <form method="post">
+      {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+      <div class="mb-3">
+        <label for="drone_id" class="form-label">Drone *</label>
+        <select id="drone_id" name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}" required>
+          <option value="">Selecione o drone</option>
+          {% for drone in drones %}
+          <option value="{{ drone.id }}" {% if form.get('drone_id')|string == drone.id|string %}selected{% endif %}>{{ drone.renomacao }} — {{ drone.modelo }} — S/N {{ drone.numero_serie or 'Não informado' }} ({{ drone.status }})</option>
+          {% endfor %}
+        </select>
+        {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.drone_id }}</div>{% endif %}
+        <div class="form-text">Se o drone já estiver em manutenção, você será direcionado à OS existente.</div>
+      </div>
+      <div class="mb-3">
+        <label for="avarias_identificadas" class="form-label">Motivo da manutenção / avarias identificadas *</label>
+        <textarea id="avarias_identificadas" name="avarias_identificadas" class="form-control {% if errors.get('avarias_identificadas') %}is-invalid{% endif %}" rows="4" required>{{ form.get('avarias_identificadas', '') }}</textarea>
+        {% if errors.get('avarias_identificadas') %}<div class="invalid-feedback">{{ errors.avarias_identificadas }}</div>{% endif %}
+      </div>
+      <div class="mb-4">
+        <label for="responsavel_manutencao" class="form-label">Responsável técnico pela manutenção</label>
+        <input id="responsavel_manutencao" name="responsavel_manutencao" maxlength="120" class="form-control {% if errors.get('responsavel_manutencao') %}is-invalid{% endif %}" value="{{ form.get('responsavel_manutencao', '') }}">
+        {% if errors.get('responsavel_manutencao') %}<div class="invalid-feedback">{{ errors.responsavel_manutencao }}</div>{% endif %}
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-primary" type="submit">Abrir OS de manutenção</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('main.equipamentos_manutencao') }}">Voltar</a>
+      </div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

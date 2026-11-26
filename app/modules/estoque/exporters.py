@@ -76,25 +76,24 @@ def build_estoque_excel(pecas):
         "Nº de série",
         "Quantidade",
         "Status",
-        "Drone",
-        "Modelo drone",
-        "Equipe",
+        "Modelos compatíveis",
+        "Equipamentos compatíveis",
+        "Prateleira/Local",
         "Observações",
         "Criado em",
         "Atualizado em",
     ])
 
     for peca in pecas:
-        drone = peca.drone
         ws.append([
             peca.id,
             _safe(peca.modelo_peca),
             _safe(peca.numero_serie),
             peca.quantidade or 0,
             STATUS_LABELS.get(peca.status, _safe(peca.status)),
-            _safe(getattr(drone, "renomacao", None)),
-            _safe(getattr(drone, "modelo", None)),
-            _safe(getattr(getattr(drone, "equipe", None), "nome_equipe", None)),
+            _safe(peca.modelos_compativeis),
+            "; ".join(f"{e.renomacao} — {e.modelo} (S/N {e.numero_serie or '-'})" for e in peca.equipamentos_compativeis_exibicao),
+            _safe(peca.prateleira_local),
             _safe(peca.observacoes),
             _fmt_dt(peca.criado_em),
             _fmt_dt(peca.atualizado_em),

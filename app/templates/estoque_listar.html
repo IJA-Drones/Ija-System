@@ -1,110 +1,73 @@
 {% extends "base.html" %}
-
 {% block extra_styles %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_listar.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_listar.css') }}?v=20261125-multiplos">
 {% endblock %}
-
 {% block content %}
-{% set status_display = {
-  'disponivel_manutencao': 'Disponível para manutenção',
-  'reservada': 'Reservada',
-  'baixada': 'Baixada',
-  'indisponivel': 'Indisponível'
-} %}
+{% set status_display = {'disponivel_manutencao': 'Disponível', 'reservada': 'Reservada', 'baixada': 'Baixada', 'indisponivel': 'Indisponível'} %}
 <div class="container-fluid py-4 estoque-listar-page">
-  <div class="page-toolbar align-items-center estoque-listar-toolbar mb-4">
-    <div>
-      <h2 class="text-dark mb-1"><i class="bi bi-box-seam-fill me-2 text-primary"></i>Estoque</h2>
-      <p class="text-muted small mb-0">Peças vinculadas aos equipamentos e disponibilidade para manutenção.</p>
+  <header class="estoque-listar-toolbar">
+    <div class="stock-heading">
+      <span class="stock-heading-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
+      <div><h2>Estoque de peças</h2><p>Peças, compatibilidades e disponibilidade para manutenção.</p></div>
     </div>
-    <div class="page-toolbar-actions">
-      <a href="{{ url_for('main.estoque_export_excel') }}" class="btn btn-secondary fw-bold" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_export_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
-        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
-      </a>
-      <a href="{{ url_for('main.estoque_novo') }}" class="btn btn-primary fw-bold" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_novo')) if central_ti_url_allowed is defined else true) else 'false' }}">
-        <i class="bi bi-plus-lg me-1"></i> Nova peça
-      </a>
+    <div class="stock-toolbar-actions">
+      <a href="{{ url_for('main.estoque_export_excel') }}" class="btn btn-outline-secondary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_export_excel')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-download me-2" aria-hidden="true"></i>Exportar Excel</a>
+      <a href="{{ url_for('main.estoque_novo') }}" class="btn btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_novo')) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nova peça</a>
     </div>
-  </div>
+  </header>
 
-  <form method="get" class="row g-2 mb-3 align-items-end">
-    <div class="col-sm-6 col-md-4">
-      <label class="form-label small fw-bold" for="estoque-local">Filtrar por prateleira/local</label>
-      <input id="estoque-local" name="local" value="{{ local or '' }}" class="form-control" placeholder="Ex.: Armário A">
+  <section class="stock-overview" aria-label="Resumo do estoque">
+    <div class="stock-metric"><span class="stock-metric-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span><div><span>Itens cadastrados</span><strong>{{ resumo.itens }}</strong></div></div>
+    <div class="stock-metric"><span class="stock-metric-icon"><i class="bi bi-stack" aria-hidden="true"></i></span><div><span>Unidades no estoque</span><strong>{{ resumo.unidades }}</strong></div></div>
+    <div class="stock-metric stock-metric-available"><span class="stock-metric-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span><div><span>Unidades disponíveis</span><strong>{{ resumo.disponiveis }}</strong></div></div>
+    <div class="stock-metric{% if resumo.sem_saldo %} stock-metric-empty{% endif %}"><span class="stock-metric-icon"><i class="bi bi-box" aria-hidden="true"></i></span><div><span>Itens sem saldo</span><strong>{{ resumo.sem_saldo }}</strong></div></div>
+  </section>
+
+  <section class="estoque-listar-table-card" aria-label="Peças cadastradas">
+    <form method="get" class="stock-filters" role="search">
+      <div class="stock-search"><label for="estoque-busca">Buscar peça ou equipamento</label><div class="stock-search-field"><i class="bi bi-search" aria-hidden="true"></i><input id="estoque-busca" type="search" name="q" value="{{ q }}" placeholder="Nome, modelo ou número de série…"></div></div>
+      <div><label for="estoque-local">Prateleira / local</label><input id="estoque-local" name="local" value="{{ local or '' }}" class="form-control" placeholder="Todos os locais"></div>
+      <div><label for="estoque-status">Status</label><select id="estoque-status" name="status" class="form-select"><option value="">Todos os status</option>{% for code, label in status_display.items() %}<option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="stock-filter-actions"><button class="btn btn-primary" type="submit">Filtrar</button>{% if q or local or status %}<a class="stock-clear" href="{{ url_for('main.estoque_listar') }}">Limpar</a>{% endif %}</div>
+    </form>
+    <div class="stock-list-caption"><div><h3>Peças cadastradas <span>{{ pecas|length }}</span></h3><p>Um único saldo, compartilhado entre os equipamentos compatíveis.</p></div><span class="stock-sort"><i class="bi bi-sort-down me-1" aria-hidden="true"></i>Mais recentes primeiro</span></div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0 estoque-listar-table">
+        <thead><tr><th>Peça</th><th>Compatibilidade</th><th>Localização</th><th>Saldo e status</th><th class="text-end">Ações</th></tr></thead>
+        <tbody>
+        {% for peca in pecas %}
+        {% set modelos = (peca.modelos_compativeis or '').split(',')|map('trim')|reject('equalto', '')|list %}
+        {% set equipamentos = peca.equipamentos_compativeis_exibicao %}
+        <tr>
+          <td class="stock-piece-cell">
+            <div class="stock-piece"><span class="stock-piece-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span><div><span class="stock-piece-id">PEÇA #{{ peca.id }}</span><a class="stock-piece-name" href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_editar', peca_id=peca.id)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ peca.modelo_peca }}</a><span class="stock-serial">{{ 'S/N ' ~ peca.numero_serie if peca.numero_serie else 'Sem número de série' }}</span></div></div>
+            {% if peca.observacoes %}<p class="stock-note" title="{{ peca.observacoes }}">{{ peca.observacoes }}</p>{% endif %}
+          </td>
+          <td class="stock-compatibility" data-label="Compatibilidade">
+            {% if modelos %}<div class="stock-chip-row">{% for modelo in modelos[:3] %}<span class="stock-chip stock-chip-model">{{ modelo }}</span>{% endfor %}</div>{% endif %}
+            {% if modelos|length > 3 %}<details class="stock-more"><summary>+{{ modelos|length - 3 }} {{ "modelo" if modelos|length == 4 else "modelos" }}</summary><div class="stock-chip-row">{% for modelo in modelos[3:] %}<span class="stock-chip stock-chip-model">{{ modelo }}</span>{% endfor %}</div></details>{% endif %}
+            {% if equipamentos %}<div class="stock-chip-row stock-equipment-row">{% for equipamento in equipamentos[:2] %}<span class="stock-chip stock-chip-equipment" title="{{ equipamento.modelo }} · S/N {{ equipamento.numero_serie or 'Não informado' }}"><i class="bi bi-link-45deg" aria-hidden="true"></i>{{ equipamento.renomacao }}</span>{% endfor %}</div>{% endif %}
+            {% if equipamentos|length > 2 %}<details class="stock-more"><summary>+{{ equipamentos|length - 2 }} {{ "equipamento" if equipamentos|length == 3 else "equipamentos" }}</summary><div class="stock-chip-row">{% for equipamento in equipamentos[2:] %}<span class="stock-chip stock-chip-equipment" title="{{ equipamento.modelo }} · S/N {{ equipamento.numero_serie or 'Não informado' }}">{{ equipamento.renomacao }}</span>{% endfor %}</div></details>{% endif %}
+            {% if not modelos and not equipamentos %}<span class="stock-muted">Compatibilidade não definida</span>{% endif %}
+          </td>
+          <td class="stock-location" data-label="Localização"><i class="bi bi-geo-alt" aria-hidden="true"></i><span>{{ peca.prateleira_local or 'Local não informado' }}</span></td>
+          <td class="stock-balance-cell" data-label="Saldo e status"><div class="stock-balance{% if not peca.quantidade %} stock-balance-zero{% endif %}"><strong>{{ peca.quantidade }}</strong><span>un.</span></div><span class="stock-status stock-status-{{ peca.status }}{% if not peca.quantidade %} stock-status-sem-saldo{% endif %}"><span aria-hidden="true"></span>{{ 'Sem saldo' if peca.quantidade == 0 and peca.status == 'disponivel_manutencao' else status_display.get(peca.status, peca.status) }}</span></td>
+          <td class="stock-actions-cell"><div class="estoque-listar-actions">
+            <a href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar peça" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_editar', peca_id=peca.id)) if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar</a>
+            <button type="button" class="stock-delete" aria-label="Excluir peça" title="Excluir peça" data-bs-toggle="modal" data-bs-target="#excluirPeca{{ peca.id }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_deletar', peca_id=peca.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}"><i class="bi bi-trash3" aria-hidden="true"></i></button>
+          </div></td>
+        </tr>
+        {% else %}
+        <tr class="stock-empty-row"><td colspan="5"><div class="stock-empty"><i class="bi bi-box-seam" aria-hidden="true"></i><h4>{{ 'Nenhuma peça encontrada' if q or local or status else 'Seu estoque começa aqui' }}</h4><p>{{ 'Experimente outro termo ou limpe os filtros para ver todas as peças.' if q or local or status else 'Cadastre a primeira peça e defina os equipamentos compatíveis.' }}</p>{% if q or local or status %}<a href="{{ url_for('main.estoque_listar') }}">Limpar filtros</a>{% endif %}</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
-    <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filtrar</button></div>
-    {% if local %}<div class="col-auto"><a class="btn btn-link" href="{{ url_for('main.estoque_listar') }}">Limpar</a></div>{% endif %}
-  </form>
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden estoque-listar-table-card">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 estoque-listar-table">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Peça</th>
-              <th>Nº de série</th>
-              <th>Qtd</th>
-              <th>Compatível com</th>
-              <th>Prateleira/Local</th>
-              <th>Equipamento</th>
-              <th>Status</th>
-              <th class="text-end pe-3">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for peca in pecas %}
-            <tr>
-              <td class="ps-3">
-                <span class="fw-bold text-dark">{{ peca.modelo_peca }}</span>
-                {% if peca.observacoes %}
-                  <div class="text-muted small">{{ peca.observacoes }}</div>
-                {% endif %}
-              </td>
-              <td class="text-muted small">{{ peca.numero_serie or '-' }}</td>
-              <td><span class="badge bg-light text-dark border">{{ peca.quantidade }}</span></td>
-              <td><span class="fw-semibold">{{ peca.modelos_compativeis or (peca.drone.modelo if peca.drone else 'Todos / não informado') }}</span></td>
-              <td><span class="fw-semibold">{{ peca.prateleira_local or 'Não informado' }}</span></td>
-              <td>
-                {% set equipamento = peca.equipamento or peca.drone %}
-                {% if equipamento %}
-                  {% set tipo_equipamento = {'drones': 'Drone', 'baterias': 'Bateria', 'veiculos': 'Veículo', 'geradores': 'Gerador'}.get(equipamento.tipo_equipamento, equipamento.tipo_equipamento|replace('_', ' ')|title) %}
-                  <span class="fw-semibold">{{ tipo_equipamento }} · {{ equipamento.renomacao }}</span>
-                  <div class="text-muted small">{{ equipamento.modelo }}</div>
-                {% else %}
-                  <span class="text-muted">Sem vínculo</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if peca.status == 'disponivel_manutencao' %}
-                  <span class="badge bg-success-light text-success px-3"><i class="bi bi-check-circle me-1"></i>{{ status_display.get(peca.status, status_labels.get(peca.status, peca.status)) }}</span>
-                {% elif peca.status == 'baixada' %}
-                  <span class="badge bg-danger-light text-danger px-3"><i class="bi bi-box-arrow-down me-1"></i>{{ status_display.get(peca.status, status_labels.get(peca.status, peca.status)) }}</span>
-                {% else %}
-                  <span class="badge bg-light text-muted border px-3">{{ status_display.get(peca.status, status_labels.get(peca.status, peca.status)) }}</span>
-                {% endif %}
-              </td>
-              <td class="text-end pe-3">
-                <div class="estoque-listar-actions">
-                  <a href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar peça" title="Editar peça" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_editar', peca_id=peca.id)) if central_ti_url_allowed is defined else true) else 'false' }}">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <form method="post" action="{{ url_for('main.estoque_deletar', peca_id=peca.id) }}" onsubmit="return confirm('Remover esta peça do estoque?')" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_deletar', peca_id=peca.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Excluir peça" title="Excluir peça"><i class="bi bi-trash"></i></button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="8" class="text-center text-muted py-5">Nenhuma peça cadastrada no estoque.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+  </section>
 </div>
+{% for peca in pecas %}
+<div class="modal fade" id="excluirPeca{{ peca.id }}" tabindex="-1" aria-labelledby="excluirPecaTitulo{{ peca.id }}" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow"><div class="modal-header border-0 px-4 pt-4"><h5 class="modal-title fw-bold" id="excluirPecaTitulo{{ peca.id }}">Excluir peça do estoque?</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div><div class="modal-body px-4"><p class="fw-bold mb-2">{{ peca.modelo_peca }}</p><p class="text-muted mb-0">O cadastro e seus vínculos de compatibilidade serão removidos. Peças com uso registrado em manutenção não podem ser excluídas.</p></div><div class="modal-footer border-0 px-4 pb-4"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><form method="post" action="{{ url_for('main.estoque_deletar', peca_id=peca.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_deletar', peca_id=peca.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">{% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}<button type="submit" class="btn btn-danger">Excluir peça</button></form></div></div></div></div>
+{% endfor %}
 {% endblock %}

@@ -33,6 +33,10 @@ def create_app():
 
     app = Flask(__name__)
 
+    from app.shared.template_values import finalize_template_value
+
+    app.jinja_env.finalize = finalize_template_value
+
     from config import Config
 
     app.config.from_object(Config)

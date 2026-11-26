@@ -5,6 +5,7 @@ import uuid
 from datetime import date, datetime
 
 from werkzeug.utils import secure_filename
+from sqlalchemy import case, update
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipamentos, Equipe, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso
@@ -87,12 +88,14 @@ def list_pecas_disponiveis_manutencao(drone, user=None):
     query = EstoquePeca.query.filter(
         EstoquePeca.status == "disponivel_manutencao",
         EstoquePeca.quantidade > 0,
+        EstoquePeca.prefeitura_id == drone.prefeitura_id,
     )
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
     pecas = query.order_by(EstoquePeca.modelo_peca.asc(), EstoquePeca.numero_serie.asc()).all()
     modelo_drone = (getattr(drone, "modelo", "") or "").strip().casefold()
-    return [p for p in pecas if p.drone_id == drone.id or modelo_drone in {m.strip().casefold() for m in (p.modelos_compativeis or "").split(",") if m.strip()}]
+    return [p for p in pecas if drone.id in {e.id for e in p.equipamentos_compativeis_exibicao}
+            or modelo_drone in {m.strip().casefold() for m in (p.modelos_compativeis or "").split(",") if m.strip()}]
 
 
 def list_pecas_usadas_manutencao(drone, user=None):
@@ -183,7 +186,7 @@ def get_or_create_manutencao_aberta(drone, user=None):
         return manutencao
 
     manutencao = ManutencaoEquipamento(
-        prefeitura_id=getattr(user, "prefeitura_id", None) if user is not None else drone.prefeitura_id,
+        prefeitura_id=drone.prefeitura_id,
         drone_id=drone.id,
         aberta_por_id=getattr(user, "id", None),
         status="aberta",
@@ -218,6 +221,7 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
     pecas_disponiveis = list_pecas_disponiveis_manutencao(drone, user=user)
     pecas_por_id = {peca.id: peca for peca in pecas_disponiveis}
     selecionadas = []
+    ids_selecionados = set()
 
     for raw_peca_id in form_data.getlist("peca_id"):
         try:
@@ -225,6 +229,11 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
         except (TypeError, ValueError):
             errors["pecas"] = "Selecione pecas validas."
             continue
+
+        if peca_id in ids_selecionados:
+            errors["pecas"] = "Selecione cada peça uma única vez."
+            continue
+        ids_selecionados.add(peca_id)
 
         peca = pecas_por_id.get(peca_id)
         if not peca:
@@ -264,6 +273,22 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
     if errors:
         return None, errors
 
+    # Reserve the shared balance atomically. A competing OS cannot spend it twice.
+    for peca, quantidade in sorted(selecionadas, key=lambda item: item[0].id):
+        saldo = EstoquePeca.quantidade - quantidade
+        consumed = db.session.execute(
+            update(EstoquePeca).where(
+                EstoquePeca.id == peca.id,
+                EstoquePeca.prefeitura_id == drone.prefeitura_id,
+                EstoquePeca.status == "disponivel_manutencao",
+                EstoquePeca.quantidade >= quantidade,
+            ).values(quantidade=saldo, status=case((saldo == 0, "baixada"), else_=EstoquePeca.status))
+            .returning(EstoquePeca.id).execution_options(synchronize_session="fetch")
+        ).scalar_one_or_none()
+        if consumed is None:
+            db.session.rollback()
+            return None, {"pecas": "O saldo de uma peça mudou. Atualize a página e confira as quantidades disponíveis."}
+
     manutencao = get_or_create_manutencao_aberta(drone, user=user)
     manutencao.responsavel_avaria = (form_data.get("responsavel_avaria") or "").strip() or None
     manutencao.responsavel_manutencao = (form_data.get("responsavel_manutencao") or "").strip() or None
@@ -288,7 +313,7 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
     usos = []
     for peca, quantidade in selecionadas:
         uso = ManutencaoPecaUso(
-            prefeitura_id=getattr(user, "prefeitura_id", None) if user is not None else drone.prefeitura_id,
+            prefeitura_id=drone.prefeitura_id,
             manutencao=manutencao,
             drone_id=drone.id,
             peca_id=peca.id,
@@ -296,10 +321,6 @@ def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data
             quantidade_usada=quantidade,
             observacoes=observacoes or None,
         )
-        peca.quantidade -= quantidade
-        if peca.quantidade <= 0:
-            peca.quantidade = 0
-            peca.status = "baixada"
         db.session.add(uso)
         usos.append(uso)
 
@@ -561,13 +582,15 @@ def delete_drone(drone):
     db.session.commit()
 
 
-def send_drone_to_manutencao(drone, *, user=None):
+def send_drone_to_manutencao(drone, *, user=None, form_data=None):
     if (drone.status or "").strip() in MANUTENCAO_STATUS_ALIASES:
         return False
 
     drone.status = MANUTENCAO_STATUS
-    drone.ultima_manutencao = date.today()
-    get_or_create_manutencao_aberta(drone, user=user)
+    manutencao = get_or_create_manutencao_aberta(drone, user=user)
+    if form_data is not None:
+        manutencao.avarias_identificadas = (form_data.get("avarias_identificadas") or "").strip() or None
+        manutencao.responsavel_manutencao = (form_data.get("responsavel_manutencao") or "").strip() or None
     db.session.commit()
     return True
 
