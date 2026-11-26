@@ -2614,6 +2614,7 @@ class EstoquePeca(db.Model):
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
 
     numero_serie = db.Column(db.String(100), nullable=True)
+    codigo_dji = db.Column(db.String(120), nullable=True)
     modelo_peca = db.Column(db.String(120), nullable=False, index=True)
     prateleira_local = db.Column(db.String(120), nullable=True, index=True)
     modelos_compativeis = db.Column(db.Text, nullable=True)
@@ -2667,6 +2668,18 @@ class EstoqueImportacao(db.Model):
 class ManutencaoPecaUso(db.Model):
     __tablename__ = "manutencao_pecas_usadas"
 
+    @property
+    def nome_peca_historico(self):
+        return self.nome_peca_snapshot if self.nome_peca_snapshot is not None else self.peca.modelo_peca
+
+    @property
+    def codigo_dji_historico(self):
+        return self.codigo_dji_snapshot if self.codigo_dji_snapshot is not None else self.peca.codigo_dji
+
+    @property
+    def numero_serie_historico(self):
+        return self.numero_serie_snapshot if self.numero_serie_snapshot is not None else self.peca.numero_serie
+
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     manutencao_id = db.Column(db.Integer, db.ForeignKey("manutencoes_equipamentos.id"), nullable=True, index=True)
@@ -2675,6 +2688,9 @@ class ManutencaoPecaUso(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
 
     quantidade_usada = db.Column(db.Integer, nullable=False, default=1)
+    nome_peca_snapshot = db.Column(db.String(120), nullable=True)
+    codigo_dji_snapshot = db.Column(db.String(120), nullable=True)
+    numero_serie_snapshot = db.Column(db.String(100), nullable=True)
     observacoes = db.Column(db.Text, nullable=True)
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
@@ -2716,6 +2732,17 @@ class ManutencaoEquipamento(db.Model):
     observacoes_teste = db.Column(db.Text, nullable=True)
     assinatura_responsavel_tecnico = db.Column(db.Text, nullable=True)
     assinatura_responsavel_avaria = db.Column(db.Text, nullable=True)
+    recebido_em = db.Column(db.DateTime, nullable=True)
+    condicao_chegada = db.Column(db.String(40), nullable=True)
+    diagnostico_tecnico = db.Column(db.Text, nullable=True)
+    tipo_manutencao = db.Column(db.String(20), nullable=True)
+    servicos_realizados = db.Column(db.Text, nullable=True)
+    condicao_final = db.Column(db.String(40), nullable=True)
+    # Damaged components describe the diagnosis; repair items are an unspent draft.
+    pecas_avariadas = db.Column(db.JSON, nullable=True)
+    pecas_reparo = db.Column(db.JSON, nullable=True)
+    versao = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    atualizada_em = db.Column(db.DateTime, nullable=True)
 
     prefeitura = db.relationship("Prefeitura", back_populates="manutencoes_equipamentos", lazy="joined")
     drone = db.relationship("Drones", back_populates="manutencoes", lazy="joined", foreign_keys=[drone_id])

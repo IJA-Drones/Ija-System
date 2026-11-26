@@ -2,8 +2,9 @@ import base64
 import os
 import re
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
+from xml.sax.saxutils import escape
 
 from flask import current_app
 from openpyxl import Workbook
@@ -161,8 +162,13 @@ def _header_footer(canvas, doc):
     canvas.restoreState()
 
 
+def _pdf_cell(value, size=8):
+    style = ParagraphStyle("maintenance_cell", fontName="Helvetica", fontSize=size, leading=size + 3)
+    return Paragraph(escape(str(value)).replace("\n", "<br/>"), style)
+
+
 def _info_table(rows):
-    table = Table(rows, colWidths=[38 * mm, 55 * mm, 32 * mm, 55 * mm])
+    table = Table([[_pdf_cell(value) for value in row] for row in rows], colWidths=[32 * mm, 55 * mm, 32 * mm, 55 * mm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), OCEANO_BLUE_LIGHT),
         ("BOX", (0, 0), (-1, -1), 0.7, BORDER),
@@ -187,8 +193,8 @@ def _pecas_table(usos):
         peca = uso.peca
         usuario = uso.usuario
         rows.append([
-            _safe(getattr(peca, "modelo_peca", None)),
-            _safe(getattr(peca, "numero_serie", None)),
+            _safe(uso.nome_peca_historico) + ("\nDJI: " + uso.codigo_dji_historico if uso.codigo_dji_historico else ""),
+            _safe(uso.numero_serie_historico),
             str(uso.quantidade_usada or 0),
             _fmt_dt(uso.criado_em),
             _safe(getattr(usuario, "nome_uvis", None)),
@@ -198,7 +204,7 @@ def _pecas_table(usos):
     if len(rows) == 1:
         rows.append(["Nenhuma peça registrada.", "-", "-", "-", "-", "-"])
 
-    table = Table(rows, colWidths=[33 * mm, 28 * mm, 14 * mm, 27 * mm, 30 * mm, 38 * mm], repeatRows=1)
+    table = Table([rows[0]] + [[_pdf_cell(value, 7.5) for value in row] for row in rows[1:]], colWidths=[33 * mm, 28 * mm, 14 * mm, 27 * mm, 30 * mm, 38 * mm], repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), OCEANO_BLUE),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -261,6 +267,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
         textColor=OCEANO_BLUE,
         spaceBefore=12,
         spaceAfter=8,
+        keepWithNext=True,
     )
 
     total_pecas = sum((uso.quantidade_usada or 0) for uso in usos)
@@ -270,7 +277,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
     story = [
         Paragraph(f"OS de manutenção {getattr(manutencao, 'numero_os', '')}", title_style),
         Paragraph(
-            f"Peças usadas na manutenção do drone {drone.renomacao}. Emitido em {_fmt_dt(datetime.now())} (São Paulo).",
+            f"Peças usadas na manutenção do drone {escape(drone.renomacao or str(drone.id))}. Emitido em {_fmt_dt(datetime.now(timezone.utc))} (São Paulo).",
             subtitle_style,
         ),
         _info_table([
@@ -280,13 +287,36 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
             ["Abertura", aberta_em, "Encerramento", encerrada_em],
             ["Resp. técnico", _safe(getattr(manutencao, "responsavel_manutencao", None)), "Resp. avaria", _safe(getattr(manutencao, "responsavel_avaria", None))],
             ["Piloto responsável", _safe(getattr(manutencao, "piloto_responsavel_avaria", None)), "Drone testado", "Sim" if getattr(manutencao, "drone_testado", False) else "Não"],
-            ["Avarias identificadas", _safe(getattr(manutencao, "avarias_identificadas", None)), "Observações teste", _safe(getattr(manutencao, "observacoes_teste", None))],
+            ["Recebimento", _fmt_dt(getattr(manutencao, "recebido_em", None)), "Tipo", _safe(getattr(manutencao, "tipo_manutencao", None))],
             ["Total de itens usados", str(total_pecas), "Registros", str(len(usos))],
         ]),
         Spacer(1, 8 * mm),
-        Paragraph("Peças utilizadas", section_style),
-        _pecas_table(usos),
+
     ]
+
+    from app.modules.equipamentos.manutencao import CONDICOES_CHEGADA, CONDICOES_FINAIS
+    for title, value in (
+        ("Relato de entrada", getattr(manutencao, "avarias_identificadas", None)),
+        ("Condição de chegada", CONDICOES_CHEGADA.get(getattr(manutencao, "condicao_chegada", None))),
+        ("Diagnóstico técnico", getattr(manutencao, "diagnostico_tecnico", None)),
+        ("Serviços realizados", getattr(manutencao, "servicos_realizados", None)),
+        ("Testes após o reparo", getattr(manutencao, "observacoes_teste", None)),
+        ("Condição final", CONDICOES_FINAIS.get(getattr(manutencao, "condicao_final", None))),
+        ("Observações", getattr(manutencao, "observacoes", None)),
+    ):
+        story.extend([Paragraph(title, section_style), _pdf_cell(_safe(value), 9)])
+    damaged = getattr(manutencao, "pecas_avariadas", None) or []
+    if damaged:
+        story.append(Paragraph("Peças avariadas (sem baixa de estoque)", section_style))
+        for row in damaged:
+            label = row["nome"] + (" · DJI: " + row["codigo_dji"] if row.get("codigo_dji") else "")
+            story.extend([_pdf_cell(label, 9), _pdf_cell(row["descricao"], 9), Spacer(1, 3 * mm)])
+    pending = getattr(manutencao, "pecas_reparo", None) or []
+    if pending:
+        story.append(Paragraph("Rascunho de peças do reparo (sem baixa)", section_style))
+        for row in pending:
+            story.append(_pdf_cell(f"{row['nome']} · {row['quantidade']} un. · DJI: {row.get('codigo_dji') or '-'} · {row['observacoes']}", 9))
+    story.extend([Paragraph("Peças utilizadas - baixa registrada", section_style), _pecas_table(usos)])
 
     signature_rows = []
     for label, name, signature in (
@@ -333,7 +363,8 @@ def build_manutencoes_excel(manutencoes):
         "Encerrada por",
         "Total de peças",
         "Registros de peças",
-        "Observações",
+        "Observações", "Recebimento", "Condição de chegada", "Relato de entrada", "Diagnóstico técnico",
+        "Tipo de manutenção", "Serviços realizados", "Testes após reparo", "Condição final", "Peças avariadas",
     ])
 
     for manutencao in manutencoes:
@@ -352,7 +383,12 @@ def build_manutencoes_excel(manutencoes):
             _excel_safe(getattr(getattr(manutencao, "encerrada_por", None), "nome_uvis", None)),
             sum((uso.quantidade_usada or 0) for uso in usos),
             len(usos),
-            _excel_safe(manutencao.observacoes),
+            _excel_safe(manutencao.observacoes), _fmt_dt(manutencao.recebido_em),
+            _excel_safe(manutencao.condicao_chegada), _excel_safe(manutencao.avarias_identificadas),
+            _excel_safe(manutencao.diagnostico_tecnico), _excel_safe(manutencao.tipo_manutencao),
+            _excel_safe(manutencao.servicos_realizados), _excel_safe(manutencao.observacoes_teste),
+            _excel_safe(manutencao.condicao_final),
+            "; ".join(f"{row['nome']}: {row['descricao']}" for row in (manutencao.pecas_avariadas or [])),
         ])
 
     _style_worksheet(ws, title="Histórico de OS de manutenção")
@@ -376,7 +412,7 @@ def build_pecas_usadas_excel(usos):
         "Quantidade usada",
         "Registrado por",
         "Data do registro",
-        "Observações",
+        "Observações", "Código DJI / Part Number",
     ])
 
     for uso in usos:
@@ -389,12 +425,12 @@ def build_pecas_usadas_excel(usos):
             ("Aberta" if getattr(manutencao, "status", None) == "aberta" else "Encerrada") if manutencao else "",
             _excel_safe(getattr(drone, "renomacao", None)),
             _excel_safe(getattr(drone, "modelo", None)),
-            _excel_safe(getattr(peca, "modelo_peca", None)),
-            _excel_safe(getattr(peca, "numero_serie", None)),
+            _excel_safe(uso.nome_peca_historico),
+            _excel_safe(uso.numero_serie_historico),
             uso.quantidade_usada or 0,
             _excel_safe(getattr(getattr(uso, "usuario", None), "nome_uvis", None)),
             _fmt_dt(uso.criado_em),
-            _excel_safe(uso.observacoes),
+            _excel_safe(uso.observacoes), _excel_safe(uso.codigo_dji_historico),
         ])
 
     _style_worksheet(ws, title="Histórico geral de peças usadas em manutenções")

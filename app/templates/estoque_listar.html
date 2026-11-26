@@ -28,7 +28,7 @@
 
   <section class="estoque-listar-table-card" aria-label="Peças cadastradas">
     <form method="get" class="stock-filters" role="search">
-      <div class="stock-search"><label for="estoque-busca">Buscar peça ou equipamento</label><div class="stock-search-field"><i class="bi bi-search" aria-hidden="true"></i><input id="estoque-busca" type="search" name="q" value="{{ q }}" placeholder="Nome, modelo ou número de série…"></div></div>
+      <div class="stock-search"><label for="estoque-busca">Buscar peça ou modelo</label><div class="stock-search-field"><i class="bi bi-search" aria-hidden="true"></i><input id="estoque-busca" type="search" name="q" value="{{ q }}" placeholder="Nome, código DJI, modelo ou série…"></div></div>
       <div><label for="estoque-local">Prateleira / local</label><input id="estoque-local" name="local" value="{{ local or '' }}" class="form-control" placeholder="Todos os locais"></div>
       <div><label for="estoque-status">Status</label><select id="estoque-status" name="status" class="form-select"><option value="">Todos os status</option>{% for code, label in status_display.items() %}<option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="stock-filter-actions"><button class="btn btn-primary" type="submit">Filtrar</button>{% if q or local or status %}<a class="stock-clear" href="{{ url_for('main.estoque_listar') }}">Limpar</a>{% endif %}</div>
@@ -39,19 +39,17 @@
         <thead><tr><th>Peça</th><th>Compatibilidade</th><th>Localização</th><th>Saldo e status</th><th class="text-end">Ações</th></tr></thead>
         <tbody>
         {% for peca in pecas %}
-        {% set modelos = (peca.modelos_compativeis or '').split(',')|map('trim')|reject('equalto', '')|list %}
+        {% set modelos = modelos_por_peca[peca.id] %}
         {% set equipamentos = peca.equipamentos_compativeis_exibicao %}
         <tr>
           <td class="stock-piece-cell">
-            <div class="stock-piece"><span class="stock-piece-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span><div><span class="stock-piece-id">PEÇA #{{ peca.id }}</span><a class="stock-piece-name" href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_editar', peca_id=peca.id)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ peca.modelo_peca }}</a><span class="stock-serial">{{ 'S/N ' ~ peca.numero_serie if peca.numero_serie else 'Sem número de série' }}</span></div></div>
+            <div class="stock-piece"><span class="stock-piece-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span><div><span class="stock-piece-id">PEÇA #{{ peca.id }}</span><a class="stock-piece-name" href="{{ url_for('main.estoque_editar', peca_id=peca.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.estoque_editar', peca_id=peca.id)) if central_ti_url_allowed is defined else true) else 'false' }}">{{ peca.modelo_peca }}</a>{% if peca.codigo_dji %}<span class="stock-serial">DJI: {{ peca.codigo_dji }}</span>{% endif %}<span class="stock-serial">{{ 'S/N ' ~ peca.numero_serie if peca.numero_serie else 'Sem número de série' }}</span></div></div>
             {% if peca.observacoes %}<p class="stock-note" title="{{ peca.observacoes }}">{{ peca.observacoes }}</p>{% endif %}
           </td>
           <td class="stock-compatibility" data-label="Compatibilidade">
             {% if modelos %}<div class="stock-chip-row">{% for modelo in modelos[:3] %}<span class="stock-chip stock-chip-model">{{ modelo }}</span>{% endfor %}</div>{% endif %}
             {% if modelos|length > 3 %}<details class="stock-more"><summary>+{{ modelos|length - 3 }} {{ "modelo" if modelos|length == 4 else "modelos" }}</summary><div class="stock-chip-row">{% for modelo in modelos[3:] %}<span class="stock-chip stock-chip-model">{{ modelo }}</span>{% endfor %}</div></details>{% endif %}
-            {% if equipamentos %}<div class="stock-chip-row stock-equipment-row">{% for equipamento in equipamentos[:2] %}<span class="stock-chip stock-chip-equipment" title="{{ equipamento.modelo }} · S/N {{ equipamento.numero_serie or 'Não informado' }}"><i class="bi bi-link-45deg" aria-hidden="true"></i>{{ equipamento.renomacao }}</span>{% endfor %}</div>{% endif %}
-            {% if equipamentos|length > 2 %}<details class="stock-more"><summary>+{{ equipamentos|length - 2 }} {{ "equipamento" if equipamentos|length == 3 else "equipamentos" }}</summary><div class="stock-chip-row">{% for equipamento in equipamentos[2:] %}<span class="stock-chip stock-chip-equipment" title="{{ equipamento.modelo }} · S/N {{ equipamento.numero_serie or 'Não informado' }}">{{ equipamento.renomacao }}</span>{% endfor %}</div></details>{% endif %}
-            {% if not modelos and not equipamentos %}<span class="stock-muted">Compatibilidade não definida</span>{% endif %}
+            {% if not modelos %}<span class="stock-muted">Compatibilidade não definida</span>{% endif %}
           </td>
           <td class="stock-location" data-label="Localização"><i class="bi bi-geo-alt" aria-hidden="true"></i><span>{{ peca.prateleira_local or 'Local não informado' }}</span></td>
           <td class="stock-balance-cell" data-label="Saldo e status"><div class="stock-balance{% if not peca.quantidade %} stock-balance-zero{% endif %}"><strong>{{ peca.quantidade }}</strong><span>un.</span></div><span class="stock-status stock-status-{{ peca.status }}{% if not peca.quantidade %} stock-status-sem-saldo{% endif %}"><span aria-hidden="true"></span>{{ 'Sem saldo' if peca.quantidade == 0 and peca.status == 'disponivel_manutencao' else status_display.get(peca.status, peca.status) }}</span></td>
@@ -61,7 +59,7 @@
           </div></td>
         </tr>
         {% else %}
-        <tr class="stock-empty-row"><td colspan="5"><div class="stock-empty"><i class="bi bi-box-seam" aria-hidden="true"></i><h4>{{ 'Nenhuma peça encontrada' if q or local or status else 'Seu estoque começa aqui' }}</h4><p>{{ 'Experimente outro termo ou limpe os filtros para ver todas as peças.' if q or local or status else 'Cadastre a primeira peça e defina os equipamentos compatíveis.' }}</p>{% if q or local or status %}<a href="{{ url_for('main.estoque_listar') }}">Limpar filtros</a>{% endif %}</div></td></tr>
+        <tr class="stock-empty-row"><td colspan="5"><div class="stock-empty"><i class="bi bi-box-seam" aria-hidden="true"></i><h4>{{ 'Nenhuma peça encontrada' if q or local or status else 'Seu estoque começa aqui' }}</h4><p>{{ 'Experimente outro termo ou limpe os filtros para ver todas as peças.' if q or local or status else 'Cadastre a primeira peça e defina os modelos compatíveis.' }}</p>{% if q or local or status %}<a href="{{ url_for('main.estoque_listar') }}">Limpar filtros</a>{% endif %}</div></td></tr>
         {% endfor %}
         </tbody>
       </table>

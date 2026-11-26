@@ -76,7 +76,10 @@ class PreventivaTests(unittest.TestCase):
         self.config();plan=PreventivaPlano.query.one();before=plan.ultima_realizada_em
         from app.modules.equipamentos.service import send_drone_to_manutencao,encerrar_manutencao_drone
         send_drone_to_manutencao(self.drones[0],user=self.user)
-        encerrar_manutencao_drone(self.drones[0],user=self.user)
+        from tests.maintenance_helpers import worksheet_data
+        from app.modules.equipamentos.manutencao import salvar_atendimento_manutencao
+        order = ManutencaoEquipamento.query.filter_by(drone_id=self.drones[0].id, status='aberta').one()
+        salvar_atendimento_manutencao(self.drones[0], worksheet_data(order, complete=True), user=self.user)
         self.assertEqual(plan.ultima_realizada_em,before)
         order=ManutencaoEquipamento.query.one()
         self.client.post(f'/equipamentos/preventivas/{self.drones[0].id}',data={'acao':'concluir','versao':'1','realizada_em':TODAY.isoformat(),'descricao':'Preventiva com OS','manutencao_id':str(order.id)})

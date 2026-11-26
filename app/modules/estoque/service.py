@@ -2,6 +2,7 @@ from app.extensions import db
 from app.models import Drones, Equipamentos, EstoquePeca, Prefeitura
 from app.shared.access import apply_prefeitura_scope, can_access_prefeitura, is_admin_global_user, resolve_linked_prefeitura
 from sqlalchemy import or_
+from app.shared.equipment_models import canonical_equipment_model, equipment_model_key, compatible_model_names
 
 
 ESTOQUE_STATUS = {
@@ -25,6 +26,7 @@ def list_pecas(user=None, local=None, q=None, status=None):
         equipment_match = or_(Equipamentos.renomacao.ilike(like), Equipamentos.modelo.ilike(like), Equipamentos.numero_serie.ilike(like))
         query = query.filter(or_(
             EstoquePeca.modelo_peca.ilike(like), EstoquePeca.numero_serie.ilike(like),
+            EstoquePeca.codigo_dji.ilike(like),
             EstoquePeca.modelos_compativeis.ilike(like),
             EstoquePeca.equipamentos_compativeis.any(equipment_match),
             EstoquePeca.equipamento.has(equipment_match),
@@ -45,11 +47,11 @@ def list_equipamentos_for_estoque(user=None):
 def modelos_para_estoque(equipamentos, peca=None):
     modelos = {}
     for equipamento in equipamentos:
-        nome = (equipamento.modelo or "").strip()
+        nome = canonical_equipment_model(equipamento.modelo)
         if nome:
             modelos.setdefault(nome.casefold(), nome)
-    for nome in ((peca.modelos_compativeis or "").split(",") if peca else []):
-        nome = nome.strip()
+    for nome in (compatible_model_names(peca) if peca else []):
+        nome = canonical_equipment_model(nome)
         if nome:
             modelos.setdefault(nome.casefold(), nome)
     return sorted(modelos.values(), key=str.casefold)
@@ -63,9 +65,10 @@ def get_peca_scoped_or_404(peca_id, user):
 def build_peca_form(peca):
     return {
         "numero_serie": peca.numero_serie or "",
+        "codigo_dji": peca.codigo_dji or "",
         "modelo_peca": peca.modelo_peca or "",
         "prateleira_local": peca.prateleira_local or "",
-        "modelos_compativeis": [m.strip() for m in (peca.modelos_compativeis or "").split(",") if m.strip()],
+        "modelos_compativeis": compatible_model_names(peca),
         "quantidade": str(peca.quantidade if peca.quantidade is not None else 1),
         "equipamento_ids": [str(e.id) for e in peca.equipamentos_compativeis_exibicao],
         "prefeitura_id": str(peca.prefeitura_id or ""),
@@ -84,6 +87,7 @@ def _form_values(form, key):
 def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos_disponiveis=None, series_em_uso=None, modelos_adicionais=()):
     errors = {}
     numero_serie = (form_data.get("numero_serie") or "").strip()
+    codigo_dji = (form_data.get("codigo_dji") or "").strip()
     modelo_peca = (form_data.get("modelo_peca") or "").strip()
     prateleira_local = (form_data.get("prateleira_local") or "").strip()
     modelos = list(dict.fromkeys(m.strip() for value in _form_values(form_data, "modelos_compativeis")
@@ -97,12 +101,13 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos
     status = (form_data.get("status") or "disponivel_manutencao").strip()
     observacoes = (form_data.get("observacoes") or "").strip()
     prefeitura_raw = str(form_data.get("prefeitura_id") or "").strip()
-    form = dict(numero_serie=numero_serie, modelo_peca=modelo_peca, prateleira_local=prateleira_local,
+    form = dict(numero_serie=numero_serie, codigo_dji=codigo_dji, modelo_peca=modelo_peca, prateleira_local=prateleira_local,
                 modelos_compativeis=modelos, quantidade=quantidade_raw, equipamento_ids=ids,
                 prefeitura_id=prefeitura_raw, status=status, observacoes=observacoes)
     if not modelo_peca:
         errors["modelo_peca"] = "Informe o modelo da peça."
     for field, value, limit in (("modelo_peca", modelo_peca, 120), ("numero_serie", numero_serie, 100),
+                                ("codigo_dji", codigo_dji, 120),
                                 ("prateleira_local", prateleira_local, 120)):
         if len(value) > limit:
             errors[field] = f"Use até {limit} caracteres."
@@ -145,10 +150,15 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos
     form["prefeitura_id"] = str(prefeitura_id or prefeitura_raw)
     modelos_disponiveis = modelos_para_estoque([e for e in equipamentos_disponiveis if e.prefeitura_id == prefeitura_id], existing_peca)
     modelos_disponiveis.extend(modelos_adicionais)
-    canonicos = {m.casefold(): m for m in modelos_disponiveis}
-    if any(m.casefold() not in canonicos for m in modelos):
+    canonicos = {equipment_model_key(m): canonical_equipment_model(m) for m in modelos_disponiveis if equipment_model_key(m)}
+    if any(not equipment_model_key(m) or equipment_model_key(m) not in canonicos for m in modelos):
         errors["modelos_compativeis"] = "Selecione modelos disponíveis na prefeitura deste estoque."
-    modelos = list(dict.fromkeys(canonicos.get(m.casefold(), m) for m in modelos))
+    modelos = list(dict.fromkeys(canonicos.get(equipment_model_key(m), m) for m in modelos))
+    # Existing links are shown as models when editing. A deliberate model-only
+    # save replaces the legacy selection with the models chosen by the user.
+    model_only = form_data.get("compatibilidade_por_modelo") == "1"
+    if model_only:
+        equipamentos = []
     form["modelos_compativeis"] = modelos
     if numero_serie:
         if series_em_uso is None:
@@ -164,7 +174,7 @@ def validate_peca_form(form_data, *, existing_peca=None, user=None, equipamentos
         for legacy_field in ("equipamento_id", "drone_id"):
             if form_data.get(legacy_field):
                 errors[legacy_field] = errors["equipamento_ids"]
-    cleaned = dict(numero_serie=numero_serie or None, modelo_peca=modelo_peca,
+    cleaned = dict(numero_serie=numero_serie or None, codigo_dji=codigo_dji or None, modelo_peca=modelo_peca,
                    prateleira_local=prateleira_local or None, modelos_compativeis=", ".join(modelos) or None,
                    quantidade=quantidade, status=status, observacoes=observacoes or None,
                    equipamentos_compativeis=equipamentos, prefeitura_id=prefeitura_id)

@@ -15,6 +15,7 @@ from app.modules.gestao_ti.permissions import validate_route_policy
 from app.modules.gestao_ti.service import save_configurations
 from app.shared.template_values import finalize_template_value
 from tests import test_central_ti as fixture
+from tests.maintenance_helpers import worksheet_data
 
 
 class ManutencaoOsTests(unittest.TestCase):
@@ -114,9 +115,11 @@ class ManutencaoOsTests(unittest.TestCase):
         self.assertIn(os.numero_os, self.client.get('/equipamentos/em-manutencao').text)
         path = f'/equipamentos/{self.drones[0].id}/manutencao/pecas'
         self.assertIn(os.numero_os, self.client.get(path).text)
-        response = self.client.post(path, data={'peca_id': str(self.peca.id), f'quantidade_{self.peca.id}': '2',
-            'avarias_identificadas': os.avarias_identificadas, 'responsavel_manutencao': 'Fernando teste',
-            'drone_testado': '1', 'observacoes_teste': 'Teste aprovado'})
+        response = self.client.post(path, data=worksheet_data(os, [(self.peca, 2)]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.peca.quantidade, 3)
+        self.assertEqual(ManutencaoPecaUso.query.count(), 0)
+        response = self.client.post(path, data=worksheet_data(os, [(self.peca, 2)], complete=True))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.peca.quantidade, 1)
         uso = ManutencaoPecaUso.query.one()
@@ -145,7 +148,7 @@ class ManutencaoOsTests(unittest.TestCase):
         self.app.config['CENTRAL_TI_ENFORCE_PERMISSIONS'] = False
         self.assertIn('Abrir OS de manutenção', self.client.get('/equipamentos/drones').text)
         self.assertEqual(self.open_os().status_code, 302)
-        self.client.post(f'/equipamentos/{self.drones[0].id}/manutencao/encerrar')
+        self.client.post(f'/equipamentos/{self.drones[0].id}/manutencao/pecas', data=worksheet_data(ManutencaoEquipamento.query.one(), complete=True))
         response = self.client.post(f'/drones/{self.drones[0].id}/manutencao')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ManutencaoEquipamento.query.filter_by(status='aberta').count(), 1)
@@ -165,8 +168,9 @@ class ManutencaoOsTests(unittest.TestCase):
         self.assertIn('value="Fernando teste"', response.text)
         self.assertIn('>Hélice danificada</textarea>', response.text)
         self.assertEqual(self.client.post(f'/equipamentos/{self.drones[0].id}/manutencao/pecas',
-            data={'observacoes': 'Diagnóstico sem assinatura', 'assinatura_responsavel_tecnico': '',
-                  'assinatura_responsavel_avaria': ''}).status_code, 302)
+            data=worksheet_data(ManutencaoEquipamento.query.one(), observacoes='Diagnóstico sem assinatura',
+                assinatura_responsavel_tecnico='', assinatura_responsavel_avaria='')).status_code, 302)
+
 
     def test_global_template_fallback_preserves_zero_false_and_escaping(self):
         app = Flask(__name__)
@@ -182,10 +186,10 @@ class ManutencaoOsTests(unittest.TestCase):
         os = ManutencaoEquipamento.query.one()
         self.assertEqual(os.prefeitura_id, self.drones[0].prefeitura_id)
         path = f'/equipamentos/{self.drones[0].id}/manutencao/pecas'
-        self.assertEqual(self.client.post(path, data={'peca_id': self.peca.id}).status_code, 302)
+        self.assertEqual(self.client.post(path, data=worksheet_data(os, [(self.peca, 1)], complete=True)).status_code, 302)
         self.assertEqual(ManutencaoPecaUso.query.one().prefeitura_id, 1)
         self.login('manutencao')
-        self.assertIn(os.numero_os, self.client.get('/equipamentos/em-manutencao').text)
+        self.assertIn(os.numero_os, self.client.get('/equipamentos/manutencoes/historico').text)
         self.assertEqual(self.client.get(f'/equipamentos/manutencoes/{os.id}').status_code, 200)
 
     def test_opening_requires_authentication_and_csrf(self):
@@ -232,7 +236,7 @@ class ManutencaoOsTests(unittest.TestCase):
     def test_insufficient_stock_does_not_consume_parts(self):
         self.open_os()
         response = self.client.post(f'/equipamentos/{self.drones[0].id}/manutencao/pecas',
-            data={'peca_id': self.peca.id, f'quantidade_{self.peca.id}': 4})
-        self.assertIn('Quantidade maior que o estoque', response.text)
+            data=worksheet_data(ManutencaoEquipamento.query.one(), [(self.peca, 4)], complete=True))
+        self.assertIn('Saldo insuficiente', response.text)
         self.assertEqual(self.peca.quantidade, 3)
         self.assertEqual(ManutencaoPecaUso.query.count(), 0)

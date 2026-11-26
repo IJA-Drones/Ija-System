@@ -21,6 +21,7 @@ from app.modules.estoque.service import (
     validate_peca_form,
 )
 from app.shared.access import normalize_role, is_admin_global_user, can_access_prefeitura, get_user_prefeitura_id
+from app.shared.equipment_models import equipment_model_key, compatible_model_names
 
 
 def _require_estoque_access():
@@ -36,13 +37,13 @@ def _render_peca_form(form, errors, peca=None):
         prefeituras_query = prefeituras_query.filter_by(id=current_user.prefeitura_id)
     prefeituras = prefeituras_query.order_by(Prefeitura.nome.asc()).all()
     modelo_prefeituras = {
-        modelo: sorted({e.prefeitura_id for e in equipamentos if (e.modelo or '').strip().casefold() == modelo.casefold() and e.prefeitura_id is not None})
+        modelo: sorted({e.prefeitura_id for e in equipamentos if equipment_model_key(e.modelo) == equipment_model_key(modelo) and e.prefeitura_id is not None})
         for modelo in modelos
     }
     if peca is not None and peca.prefeitura_id is not None:
-        legados = {m.strip().casefold() for m in (peca.modelos_compativeis or '').split(',') if m.strip()}
+        legados = {equipment_model_key(m) for m in compatible_model_names(peca)}
         for modelo in modelos:
-            if modelo.casefold() in legados:
+            if equipment_model_key(modelo) in legados:
                 modelo_prefeituras[modelo] = sorted(set(modelo_prefeituras[modelo]) | {peca.prefeitura_id})
     return render_template('estoque_form.html', form=form, errors=errors, peca=peca,
                            equipamentos=equipamentos, modelos=modelos, modelo_prefeituras=modelo_prefeituras,
@@ -160,7 +161,7 @@ def register_routes(bp):
                       sem_saldo=sum(p.quantidade == 0 for p in todos))
         pecas = list_pecas(user=current_user, local=local, q=q, status=status)
         return render_template("estoque_listar.html", pecas=pecas, local=local, q=q, status=status,
-                               resumo=resumo, status_labels=ESTOQUE_STATUS)
+                               resumo=resumo, status_labels=ESTOQUE_STATUS, modelos_por_peca={p.id: compatible_model_names(p) for p in pecas})
 
     @bp.route("/estoque/export/excel", methods=["GET"], endpoint="estoque_export_excel")
     @login_required

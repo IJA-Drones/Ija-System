@@ -26,6 +26,7 @@ MAX_ROWS = 1000
 FIELDS = {
     'modelo_peca': ('Peça', 'Modelo da peça', 'Modelo peça'),
     'numero_serie': ('Número de série', 'Nº de série'),
+    'codigo_dji': ('Código DJI / Part Number', 'Código DJI', 'Part Number'),
     'quantidade': ('Quantidade',),
     'prateleira_local': ('Prateleira/Local', 'Localização física', 'Local'),
     'modelos_compativeis': ('Modelos compatíveis',),
@@ -236,7 +237,7 @@ def validate_rows(rows, user, prefeitura_id):
             errors.append('Quantidade: informe um número inteiro entre 0 e 2.147.483.647.')
             quantity = 'inválida'
         status = STATUS.get(normalized(raw.get('status', '')), 'disponivel_manutencao' if not raw.get('status') else 'inválido')
-        form = MultiDict({key: raw.get(key, '') for key in ('modelo_peca', 'numero_serie', 'prateleira_local', 'observacoes')})
+        form = MultiDict({key: raw.get(key, '') for key in ('modelo_peca', 'numero_serie', 'codigo_dji', 'prateleira_local', 'observacoes')})
         form.update({'quantidade': quantity, 'status': status, 'prefeitura_id': str(prefeitura_id), 'compatibilidade_multipla': '1'})
         form.setlist('modelos_compativeis', models)
         form.setlist('equipamento_ids', [str(e.id) for e in resolved])
@@ -256,7 +257,7 @@ def validate_rows(rows, user, prefeitura_id):
             if own_serial in seen_serials:
                 errors.append(f'Número de série repetido no arquivo (linha {seen_serials[own_serial]}).')
             seen_serials.setdefault(own_serial, source['numero'])
-        fingerprint = dict(modelo_peca=presented['modelo_peca'], numero_serie=own_serial,
+        fingerprint = dict(modelo_peca=presented['modelo_peca'], numero_serie=own_serial, codigo_dji=presented['codigo_dji'],
                            quantidade=quantity, prateleira_local=presented['prateleira_local'],
                            modelos=sorted(m.casefold() for m in presented['modelos_compativeis']),
                            equipamentos=sorted(e.id for e in resolved), status=status, observacoes=presented['observacoes'])

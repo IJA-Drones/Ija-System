@@ -13,7 +13,6 @@ from app.modules.equipamentos.service import (
     create_drone,
     delete_bateria,
     delete_drone,
-    encerrar_manutencao_drone,
     equipment_team_assignments,
     get_manutencao_aberta,
     get_manutencao_scoped_or_404,
@@ -27,9 +26,7 @@ from app.modules.equipamentos.service import (
     list_historico_manutencoes,
     list_historico_pecas_usadas,
     list_imagens_manutencao,
-    list_pecas_disponiveis_manutencao,
     list_pecas_usadas_manutencao,
-    registrar_pecas_usadas_manutencao,
     send_drone_to_manutencao,
     update_bateria,
     update_bateria_ciclos,
@@ -38,6 +35,11 @@ from app.modules.equipamentos.service import (
     validate_drone_form,
 )
 from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
+from app.modules.equipamentos.manutencao import (
+    build_manutencao_form, salvar_atendimento_manutencao,
+    CONDICOES_CHEGADA, CONDICOES_FINAIS, TIPOS_MANUTENCAO,
+)
+from app.modules.equipamentos.service import list_pecas_compativeis_manutencao
 
 
 def _require_admin_or_operario():
@@ -432,6 +434,7 @@ def register_routes(bp):
             manutencao=manutencao,
             imagens_manutencao=list_imagens_manutencao(manutencao),
             usos=manutencao.pecas_usadas,
+            condicoes_chegada=CONDICOES_CHEGADA, condicoes_finais=CONDICOES_FINAIS, tipos_manutencao=TIPOS_MANUTENCAO,
         )
 
     @bp.route("/equipamentos/<int:drone_id>/manutencao/pecas", methods=["GET", "POST"], endpoint="equipamento_manutencao_pecas")
@@ -440,6 +443,14 @@ def register_routes(bp):
         _require_maintenance_access()
         drone = _get_scoped_drone_or_404(drone_id)
 
+        if request.method == "POST" and request.form.get("manutencao_id", type=int):
+            submitted = get_manutencao_scoped_or_404(request.form.get("manutencao_id", type=int), current_user)
+            if submitted.drone_id != drone.id:
+                abort(404)
+            if submitted.status == "encerrada":
+                flash("Esta OS já foi concluída. O estoque não foi descontado novamente.", "info")
+                return redirect(url_for("main.equipamento_manutencao_detalhe", manutencao_id=submitted.id))
+
         if (drone.status or "").strip() not in {"Em Manutenção", "Manutenção", "Manutencao", "Em Manutencao"}:
             flash("Este drone nao esta em manutencao.", "warning")
             return redirect(url_for("main.equipamentos_manutencao"))
@@ -447,28 +458,38 @@ def register_routes(bp):
         errors = {}
         if request.method == "POST":
             try:
-                usos, errors = registrar_pecas_usadas_manutencao(
+                order, errors = salvar_atendimento_manutencao(
                     drone, request.form, user=current_user, files_data=request.files
                 )
                 if not errors:
-                    flash(f"Atendimento da OS de manutenção salvo: {len(usos)} peça(s) registrada(s).", "success")
-                    return redirect(url_for("main.equipamentos_manutencao"))
+                    if order.status == "encerrada":
+                        flash("OS concluída. Estoque e histórico do drone atualizados.", "success")
+                        return redirect(url_for("main.equipamento_manutencao_detalhe", manutencao_id=order.id))
+                    flash("Rascunho salvo. Nenhuma peça foi descontada do estoque.", "success")
+                    return redirect(url_for("main.equipamento_manutencao_pecas", drone_id=drone.id))
                 flash("Corrija os campos destacados.", "warning")
             except (ValueError, SkyboxError) as exc:
                 db.session.rollback()
-                flash(str(exc), "danger")
+                errors["geral"] = str(exc)
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception("Erro ao registrar pecas usadas na manutencao do drone %s.", drone.id)
-                flash("Erro interno ao registrar as pecas usadas.", "danger")
+                errors["geral"] = "Não foi possível salvar a OS. Suas alterações continuam no formulário; tente novamente."
 
         manutencao = get_manutencao_aberta(drone, user=current_user)
+        catalog = list_pecas_compativeis_manutencao(drone, user=current_user)
         return render_template(
             "equipamento_manutencao_pecas.html",
             drone=drone,
             manutencao=manutencao,
             imagens_manutencao=list_imagens_manutencao(manutencao),
-            pecas=list_pecas_disponiveis_manutencao(drone, user=current_user),
+            pecas=catalog,
+            reenviar_imagens=bool(errors and request.files.getlist("imagens_ocorrido")),
+            catalogo_pecas=[dict(id=p.id, nome=p.modelo_peca, codigo=p.codigo_dji or "", serie=p.numero_serie or "",
+                                saldo=p.quantidade, disponivel=p.status == "disponivel_manutencao") for p in catalog],
+            form=build_manutencao_form(manutencao, request.form if request.method == "POST" else None),
+            condicoes_chegada=CONDICOES_CHEGADA, condicoes_finais=CONDICOES_FINAIS, tipos_manutencao=TIPOS_MANUTENCAO,
+            alocacao=equipment_team_assignments([drone], user=current_user).get(drone.id, {}),
             usos=list_pecas_usadas_manutencao(drone, user=current_user),
             errors=errors,
         )
@@ -528,16 +549,11 @@ def register_routes(bp):
     def equipamento_manutencao_encerrar(drone_id):
         _require_maintenance_access()
         drone = _get_scoped_drone_or_404(drone_id)
-        try:
-            if not encerrar_manutencao_drone(drone, user=current_user):
-                flash("Este drone nao esta em manutencao.", "warning")
-            else:
-                flash(f"OS de manutenção do drone {drone.renomacao} encerrada com sucesso.", "success")
-        except Exception:
-            db.session.rollback()
-            current_app.logger.exception("Erro ao encerrar manutencao do drone %s.", drone.id)
-            flash("Erro ao encerrar a manutencao.", "danger")
-        return redirect(url_for("main.equipamentos_manutencao"))
+        # Old bookmarked forms cannot finalize a newer OS for the same drone.
+        # All completion data and the expected worksheet version go through the
+        # unified page, which is also where stock movements are validated.
+        flash("Confira os dados e conclua a OS na página de atendimento.", "info")
+        return redirect(url_for("main.equipamento_manutencao_pecas", drone_id=drone.id))
 
     @bp.route("/equipamentos/baterias/update_ciclos/<int:id>", methods=["POST"], endpoint="update_ciclos")
     @login_required

@@ -122,12 +122,7 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i>
                                             PDF
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-success"
-                                                data-bs-toggle="modal" data-bs-target="#encerrarOsModal{{ eq.id }}"
-                                                data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-                                            <i class="bi bi-check2-circle me-1"></i>
-                                            Encerrar OS de manutenção
-                                        </button>
+
                                       </div>
                                     {% else %}
                                         <span class="text-muted small">—</span>
@@ -149,37 +144,5 @@
     </div>
 </div>
 
-{% for eq in equipamentos if eq.tipo_equipamento == 'drones' %}
-{% set os = manutencoes_por_drone.get(eq.id) %}
-<div class="modal fade" id="encerrarOsModal{{ eq.id }}" tabindex="-1"
-     aria-labelledby="encerrarOsTitulo{{ eq.id }}" aria-describedby="encerrarOsDescricao{{ eq.id }}" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 rounded-4 shadow">
-      <div class="modal-header border-0 pb-0 px-4 pt-4">
-        <h5 class="modal-title fw-bold" id="encerrarOsTitulo{{ eq.id }}">
-          <i class="bi bi-check2-circle text-success me-2" aria-hidden="true"></i>Encerrar OS de manutenção?
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body px-4 pt-3">
-        <div class="bg-body-tertiary border rounded-3 p-3 mb-3">
-          <div class="fw-bold text-primary mb-1">{{ os.numero_os if os else 'OS de manutenção' }}</div>
-          <div class="fw-semibold">{{ eq.renomacao }} · {{ eq.modelo }}</div>
-          <div class="small text-muted">Nº de série: {{ eq.numero_serie or 'Não informado' }}</div>
-        </div>
-        <p id="encerrarOsDescricao{{ eq.id }}" class="mb-2">Ao confirmar, a OS será encerrada e o drone voltará ao status <strong>Ativo</strong>.</p>
-        <p class="small text-muted mb-0">A data de conclusão será registrada. O atendimento e as peças utilizadas continuarão disponíveis no histórico.</p>
-      </div>
-      <div class="modal-footer border-0 px-4 pb-4 pt-2">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <form method="post" action="{{ url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id) }}"
-              data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
-          {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
-          <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Encerrar OS de manutenção</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-{% endfor %}
+
 {% endblock %}

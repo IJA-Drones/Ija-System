@@ -5,3 +5,5 @@
 .equipamento-manutencao-detalhe-page {
   max-width: 1100px;
 }
+
+.os-history-text { white-space: pre-wrap; overflow-wrap: anywhere; }

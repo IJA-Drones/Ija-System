@@ -14,12 +14,13 @@ from sqlalchemy.orm.attributes import set_committed_value
 from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
-from app.models import Baterias, Drones, EstoquePeca, ManutencaoPecaUso, Prefeitura, Usuario
+from app.models import Baterias, Drones, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso, Prefeitura, Usuario
 from app.modules.estoque.service import build_peca_form, validate_peca_form
 from app.modules.estoque.service import list_pecas
 from app.modules.equipamentos.service import list_pecas_disponiveis_manutencao, registrar_pecas_usadas_manutencao, send_drone_to_manutencao
 from app.modules.gestao_ti.service import save_configurations
 from tests import test_central_ti as fixture
+from tests.maintenance_helpers import worksheet_data
 
 
 class EstoqueCompatibilidadeTests(unittest.TestCase):
@@ -70,14 +71,14 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         peca = self.create([self.drones[0].id, self.battery.id], ['MATRICE 4E', 'AGRAS T10'])
         form = build_peca_form(peca)
         self.assertEqual(set(form['equipamento_ids']), {str(self.drones[0].id), str(self.battery.id)})
-        self.assertEqual(set(form['modelos_compativeis']), {'MATRICE 4E', 'AGRAS T10'})
+        self.assertEqual(set(form['modelos_compativeis']), {'MATRICE 4E', 'AGRAS T10', 'TB TESTE'})
         self.assertEqual(peca.quantidade, 5)
         for drone in self.drones[:3]:
             self.assertIn(peca, self.available(drone))
         self.assertNotIn(peca, self.available(self.drones[3], self.users['dev']))
         page = self.client.get(f'/estoque/{peca.id}/editar')
         self.assertEqual(page.status_code, 200)
-        self.assertIn('Equipamentos compatíveis', page.text)
+        self.assertNotIn('Equipamentos compatíveis', page.text)
         self.assertIn('type="checkbox"', page.text)
         response = self.client.get('/estoque/export/excel')
         self.assertEqual(response.status_code, 200)
@@ -87,11 +88,11 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         self.assertTrue(any('Bateria compatível' in str(cell) and 'Drone 0' in str(cell) for cell in values[2]))
         self.assertIn('Armário A', values[2])
 
-    def test_specific_equipment_does_not_grant_compatibility_to_its_entire_model(self):
+    def test_legacy_equipment_links_now_resolve_to_model_compatibility(self):
         peca = self.create([self.drones[0].id, self.drones[1].id])
         self.assertIn(peca, self.available(self.drones[0]))
         self.assertIn(peca, self.available(self.drones[1]))
-        self.assertNotIn(peca, self.available(self.drones[2]))
+        self.assertIn(peca, self.available(self.drones[2]))
         self.assertIsNone(peca.modelos_compativeis)
 
     def test_shared_stock_consumption_records_each_drone_and_os(self):
@@ -99,7 +100,7 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         for drone, amount in ((self.drones[0], 2), (self.drones[1], 1)):
             send_drone_to_manutencao(drone, user=self.user)
             response = self.client.post(f'/equipamentos/{drone.id}/manutencao/pecas',
-                data={'peca_id': peca.id, f'quantidade_{peca.id}': amount, 'observacoes': 'Uso de estoque compartilhado'})
+                data=worksheet_data(ManutencaoEquipamento.query.filter_by(drone_id=drone.id, status='aberta').one(), [(peca, amount)], complete=True))
             self.assertEqual(response.status_code, 302)
         self.assertEqual(EstoquePeca.query.count(), 1)
         self.assertEqual(peca.quantidade, 2)
@@ -109,8 +110,8 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         self.assertNotEqual(usos[0].manutencao_id, usos[1].manutencao_id)
         self.assertTrue(all(u.manutencao.drone_id == u.drone_id and u.usuario_id == self.user.id for u in usos))
         send_drone_to_manutencao(self.drones[2], user=self.user)
-        denied = self.client.post(f'/equipamentos/{self.drones[2].id}/manutencao/pecas', data={'peca_id': peca.id})
-        self.assertIn('nao esta disponivel', denied.text)
+        saved = self.client.post(f'/equipamentos/{self.drones[2].id}/manutencao/pecas', data=worksheet_data(ManutencaoEquipamento.query.filter_by(drone_id=self.drones[2].id).one(), [(peca, 1)]))
+        self.assertEqual(saved.status_code, 302)
         self.assertEqual(peca.quantidade, 2)
 
     def test_removing_compatibility_clears_all_legacy_references(self):
@@ -129,7 +130,7 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         for drone, amount in ((self.drones[0], 3), (self.drones[1], 2)):
             send_drone_to_manutencao(drone, user=self.user)
             response = self.client.post(f'/equipamentos/{drone.id}/manutencao/pecas',
-                data={'peca_id': peca.id, f'quantidade_{peca.id}': amount})
+                data=worksheet_data(ManutencaoEquipamento.query.filter_by(drone_id=drone.id, status='aberta').one(), [(peca, amount)], complete=True))
             self.assertEqual(response.status_code, 302)
         self.assertEqual(peca.quantidade, 0)
         self.assertEqual(peca.status, 'baixada')
@@ -166,10 +167,10 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
     def test_duplicate_piece_selection_cannot_spend_twice(self):
         peca = self.create([self.drones[0].id])
         send_drone_to_manutencao(self.drones[0], user=self.user)
-        form = MultiDict([('peca_id', str(peca.id)), ('peca_id', str(peca.id)), (f'quantidade_{peca.id}', '4')])
+        form = worksheet_data(ManutencaoEquipamento.query.one(), [(peca, 2), (peca, 2)], complete=True)
         usos, errors = registrar_pecas_usadas_manutencao(self.drones[0], form, user=self.user)
         self.assertIsNone(usos)
-        self.assertIn('pecas', errors)
+        self.assertIn('pecas_reparo', errors)
         self.assertEqual(peca.quantidade, 5)
         self.assertEqual(ManutencaoPecaUso.query.count(), 0)
 
@@ -183,11 +184,10 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         db.session.execute(sa.update(EstoquePeca).where(EstoquePeca.id == other.id).values(quantidade=0))
         db.session.commit()
         set_committed_value(other, 'quantidade', 2)
-        with patch('app.modules.equipamentos.service.list_pecas_disponiveis_manutencao', return_value=[peca, other]):
-            usos, errors = registrar_pecas_usadas_manutencao(self.drones[0],
-                MultiDict([('peca_id', str(peca.id)), ('peca_id', str(other.id))]), user=self.user)
-        self.assertIsNone(usos)
-        self.assertIn('saldo', errors['pecas'])
+        with patch('app.modules.equipamentos.manutencao.list_pecas_compativeis_manutencao', return_value=[peca, other]):
+            with self.assertRaisesRegex(ValueError, 'saldo'):
+                usos, errors = registrar_pecas_usadas_manutencao(self.drones[0],
+                worksheet_data(ManutencaoEquipamento.query.one(), [(peca, 1), (other, 1)], complete=True), user=self.user)
         self.assertEqual(peca.quantidade, 5)
         self.assertEqual(other.quantidade, 0)
         self.assertEqual(ManutencaoPecaUso.query.count(), 0)

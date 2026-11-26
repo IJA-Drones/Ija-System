@@ -430,7 +430,9 @@ class EstoqueImportacaoTests(unittest.TestCase):
         item = EstoquePeca.query.one()
         send_drone_to_manutencao(self.drones[0], user=self.user)
         from werkzeug.datastructures import MultiDict
-        _, errors = registrar_pecas_usadas_manutencao(self.drones[0], MultiDict([('peca_id', str(item.id))]), user=self.user)
+        from tests.maintenance_helpers import worksheet_data
+        from app.models import ManutencaoEquipamento
+        _, errors = registrar_pecas_usadas_manutencao(self.drones[0], worksheet_data(ManutencaoEquipamento.query.filter_by(drone_id=self.drones[0].id, status='aberta').one(), [(item, 1)], complete=True), user=self.user)
         self.assertFalse(errors)
         item.arquivada_em = now()
         db.session.commit()

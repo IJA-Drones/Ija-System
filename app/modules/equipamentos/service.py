@@ -5,13 +5,14 @@ import uuid
 from datetime import date, datetime, timezone
 
 from werkzeug.utils import secure_filename
-from sqlalchemy import case, update
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import Baterias, ControlesRemotos, Drones, Equipamentos, Equipe, EquipePiloto, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso, Veiculos
 from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
 from app.shared.maintenance_time import to_sao_paulo
+from app.shared.equipment_models import part_matches_equipment
 from app.shared.skybox import (
     SkyboxError,
     build_manutencao_media_remote_path,
@@ -163,19 +164,20 @@ def list_equipamentos_manutencao(user=None):
     )
 
 
-def list_pecas_disponiveis_manutencao(drone, user=None):
+def list_pecas_compativeis_manutencao(drone, user=None):
     query = EstoquePeca.query.filter(
-        EstoquePeca.status == "disponivel_manutencao",
-        EstoquePeca.quantidade > 0,
         EstoquePeca.prefeitura_id == drone.prefeitura_id,
         EstoquePeca.arquivada_em.is_(None),
     )
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
     pecas = query.order_by(EstoquePeca.modelo_peca.asc(), EstoquePeca.numero_serie.asc()).all()
-    modelo_drone = (getattr(drone, "modelo", "") or "").strip().casefold()
-    return [p for p in pecas if drone.id in {e.id for e in p.equipamentos_compativeis_exibicao}
-            or modelo_drone in {m.strip().casefold() for m in (p.modelos_compativeis or "").split(",") if m.strip()}]
+    return [p for p in pecas if part_matches_equipment(p, drone)]
+
+
+def list_pecas_disponiveis_manutencao(drone, user=None):
+    return [p for p in list_pecas_compativeis_manutencao(drone, user=user)
+            if p.status == "disponivel_manutencao" and p.quantidade > 0]
 
 
 def list_pecas_usadas_manutencao(drone, user=None):
@@ -270,9 +272,18 @@ def get_or_create_manutencao_aberta(drone, user=None):
         drone_id=drone.id,
         aberta_por_id=getattr(user, "id", None),
         status="aberta",
+        aberta_em=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.session.add(manutencao)
     return manutencao
+
+
+def lock_maintenance_equipment(drone):
+    """Serialize opening/finalization, including old drones without an OS."""
+    row = db.session.execute(select(Equipamentos.id).where(Equipamentos.id == drone.id).with_for_update()).scalar_one_or_none()
+    if row is None:
+        raise ValueError("O equipamento não está mais disponível. Recarregue a página.")
+    db.session.refresh(drone, attribute_names=["status"])
 
 
 def list_historico_manutencoes(user=None):
@@ -297,116 +308,9 @@ def list_historico_pecas_usadas(user=None):
 
 
 def registrar_pecas_usadas_manutencao(drone, form_data, *, user=None, files_data=None):
-    errors = {}
-    pecas_disponiveis = list_pecas_disponiveis_manutencao(drone, user=user)
-    pecas_por_id = {peca.id: peca for peca in pecas_disponiveis}
-    selecionadas = []
-    ids_selecionados = set()
-
-    for raw_peca_id in form_data.getlist("peca_id"):
-        try:
-            peca_id = int(raw_peca_id)
-        except (TypeError, ValueError):
-            errors["pecas"] = "Selecione pecas validas."
-            continue
-
-        if peca_id in ids_selecionados:
-            errors["pecas"] = "Selecione cada peça uma única vez."
-            continue
-        ids_selecionados.add(peca_id)
-
-        peca = pecas_por_id.get(peca_id)
-        if not peca:
-            errors["pecas"] = "Uma das pecas selecionadas nao esta disponivel para este drone."
-            continue
-
-        raw_qtd = (form_data.get(f"quantidade_{peca_id}") or "1").strip()
-        try:
-            quantidade = int(raw_qtd)
-        except ValueError:
-            errors[f"quantidade_{peca_id}"] = "Quantidade invalida."
-            continue
-
-        if quantidade <= 0:
-            errors[f"quantidade_{peca_id}"] = "A quantidade deve ser maior que zero."
-            continue
-        if quantidade > peca.quantidade:
-            errors[f"quantidade_{peca_id}"] = "Quantidade maior que o estoque disponivel."
-            continue
-
-        selecionadas.append((peca, quantidade))
-
-    observacoes = (form_data.get("observacoes") or "").strip()
-    uploaded_images = files_data.getlist("imagens_ocorrido") if files_data is not None else []
-    has_report_data = bool(uploaded_images) or any((form_data.get(field) or "").strip() for field in (
-        "responsavel_avaria", "responsavel_manutencao", "piloto_responsavel_avaria",
-        "imagens_ocorrido", "avarias_identificadas", "observacoes_teste", "observacoes",
-    )) or form_data.get("drone_testado") == "1"
-    if not selecionadas and not has_report_data and not errors:
-        errors["pecas"] = "Registre uma peça usada ou preencha os dados do relato técnico."
-    assinatura_tecnico = _signature_value(
-        form_data.get("assinatura_responsavel_tecnico"), "assinatura_responsavel_tecnico", errors
-    )
-    assinatura_avaria = _signature_value(
-        form_data.get("assinatura_responsavel_avaria"), "assinatura_responsavel_avaria", errors
-    )
-    if errors:
-        return None, errors
-
-    # Reserve the shared balance atomically. A competing OS cannot spend it twice.
-    for peca, quantidade in sorted(selecionadas, key=lambda item: item[0].id):
-        saldo = EstoquePeca.quantidade - quantidade
-        consumed = db.session.execute(
-            update(EstoquePeca).where(
-                EstoquePeca.id == peca.id,
-                EstoquePeca.arquivada_em.is_(None),
-                EstoquePeca.prefeitura_id == drone.prefeitura_id,
-                EstoquePeca.status == "disponivel_manutencao",
-                EstoquePeca.quantidade >= quantidade,
-            ).values(quantidade=saldo, status=case((saldo == 0, "baixada"), else_=EstoquePeca.status))
-            .returning(EstoquePeca.id).execution_options(synchronize_session="fetch")
-        ).scalar_one_or_none()
-        if consumed is None:
-            db.session.rollback()
-            return None, {"pecas": "O saldo de uma peça mudou. Atualize a página e confira as quantidades disponíveis."}
-
-    manutencao = get_or_create_manutencao_aberta(drone, user=user)
-    manutencao.responsavel_avaria = (form_data.get("responsavel_avaria") or "").strip() or None
-    manutencao.responsavel_manutencao = (form_data.get("responsavel_manutencao") or "").strip() or None
-    manutencao.piloto_responsavel_avaria = (form_data.get("piloto_responsavel_avaria") or "").strip() or None
-    manutencao.observacoes = observacoes or manutencao.observacoes
-    manutencao.avarias_identificadas = (form_data.get("avarias_identificadas") or "").strip() or None
-    manutencao.drone_testado = form_data.get("drone_testado") == "1"
-    manutencao.observacoes_teste = (form_data.get("observacoes_teste") or "").strip() or None
-    if form_data.get("limpar_assinatura_tecnico") == "1":
-        manutencao.assinatura_responsavel_tecnico = None
-    elif assinatura_tecnico is not None:
-        manutencao.assinatura_responsavel_tecnico = assinatura_tecnico
-    if form_data.get("limpar_assinatura_avaria") == "1":
-        manutencao.assinatura_responsavel_avaria = None
-    elif assinatura_avaria is not None:
-        manutencao.assinatura_responsavel_avaria = assinatura_avaria
-    image_markers = _upload_maintenance_images(manutencao, uploaded_images)
-    if image_markers:
-        manutencao.imagens_ocorrido = json.dumps(
-            list_imagens_manutencao(manutencao) + image_markers, ensure_ascii=False
-        )
-    usos = []
-    for peca, quantidade in selecionadas:
-        uso = ManutencaoPecaUso(
-            prefeitura_id=drone.prefeitura_id,
-            manutencao=manutencao,
-            drone_id=drone.id,
-            peca_id=peca.id,
-            usuario_id=getattr(user, "id", None),
-            quantidade_usada=quantidade,
-            observacoes=observacoes or None,
-        )
-        db.session.add(uso)
-        usos.append(uso)
-
-    db.session.commit()
-    return usos, {}
+    """Compatibility entry point: the worksheet now controls draft/completion."""
+    from app.modules.equipamentos.manutencao import salvar_atendimento_manutencao
+    return salvar_atendimento_manutencao(drone, form_data, user=user, files_data=files_data)
 
 
 def _parse_int(raw_value, *, min_value=None, max_value=None, error_message):
@@ -666,6 +570,7 @@ def delete_drone(drone):
 
 
 def send_drone_to_manutencao(drone, *, user=None, form_data=None):
+    lock_maintenance_equipment(drone)
     if (drone.status or "").strip() in MANUTENCAO_STATUS_ALIASES:
         return False
 
@@ -679,18 +584,24 @@ def send_drone_to_manutencao(drone, *, user=None, form_data=None):
 
 
 def encerrar_manutencao_drone(drone, *, user=None):
-    if (drone.status or "").strip() not in MANUTENCAO_STATUS_ALIASES:
+    from app.modules.equipamentos.manutencao import build_manutencao_form, salvar_atendimento_manutencao
+    from werkzeug.datastructures import MultiDict
+    order = get_manutencao_aberta(drone, user=user)
+    if order is None:
         return False
-
-    manutencao = get_manutencao_aberta(drone, user=user)
-    if manutencao:
-        manutencao.status = "encerrada"
-        manutencao.encerrada_em = datetime.now()
-        manutencao.encerrada_por_id = getattr(user, "id", None)
-
-    drone.status = "Ativo"
-    drone.ultima_manutencao = date.today()
-    db.session.commit()
+    form = build_manutencao_form(order)
+    data = MultiDict({key: value for key, value in form.items() if key not in {"pecas_avariadas", "pecas_reparo"}})
+    data["drone_testado"] = "1" if form["drone_testado"] else "0"
+    data["acao"] = "concluir"
+    for row in form["pecas_avariadas"]:
+        for key, value in (("avariada_id", row["peca_id"]), ("avariada_nome", row["nome"]), ("avariada_descricao", row["descricao"])):
+            data.add(key, str(value))
+    for row in form["pecas_reparo"]:
+        for key, value in (("reparo_id", row["peca_id"]), ("reparo_quantidade", row["quantidade"]), ("reparo_observacoes", row["observacoes"])):
+            data.add(key, str(value))
+    _, errors = salvar_atendimento_manutencao(drone, data, user=user)
+    if errors:
+        raise ValueError("Preencha a OS antes de concluir: " + next(iter(errors.values())))
     return True
 
 
