@@ -181,3 +181,40 @@ class EquipmentLookupTests(unittest.TestCase):
         db.session.commit()
         self.assertNotIn(drone, list_drones(self.user))
         self.assertEqual(equipment_team_assignments([drone, self.battery], user=self.users['dev']), {})
+
+    def test_legacy_battery_without_team_inherits_only_its_own_drones_scope(self):
+        from app.shared.access import apply_prefeitura_scope
+        from unittest.mock import patch
+        team, _ = self.make_team('Origem')
+        other, _ = self.make_team('Outra', tenant=2)
+        self.drones[0].equipe_id = team.id
+        self.drones[0].prefeitura_id = None
+        self.drones[3].equipe_id = other.id
+        self.battery.equipe_id = None
+        self.battery.prefeitura_id = None
+        self.battery.drone_id = self.drones[0].id
+        db.session.commit()
+        self.assertIn(self.battery, list_baterias(self.user))
+        self.assertEqual(list_equipamentos_dashboard(self.user)['total_baterias'], 1)
+        self.assertIn(self.battery, list_equipamentos_dashboard(self.user, 'BAT-TESTE')['equipamentos'])
+        self.assertEqual(self.client.get('/equipamentos/baterias?q=BAT-TESTE').status_code, 200)
+        self.assertEqual(self.client.get(f'/baterias/{self.battery.id}/editar').status_code, 200)
+        with patch('app.shared.access.central_ti_team_ids', return_value=[other.id]):
+            self.assertEqual(list_baterias(self.user), [])
+            self.assertEqual(list_equipamentos_dashboard(self.user)['total_baterias'], 0)
+        with patch('app.shared.access.central_ti_team_ids', return_value=[team.id]):
+            self.assertIn(self.battery, list_baterias(self.user))
+        # A conflicting explicit municipality cannot inherit from a local drone.
+        self.battery.prefeitura_id = 2
+        db.session.commit()
+        self.assertEqual(list_baterias(self.user), [])
+        self.battery.prefeitura_id = None
+        self.battery.drone_id = self.drones[3].id
+        db.session.commit()
+        self.assertEqual(list_baterias(self.user), [])
+        self.assertEqual(self.client.get(f'/baterias/{self.battery.id}/editar').status_code, 404)
+        # An explicit foreign team cannot be bypassed through the drone either.
+        self.battery.drone_id = self.drones[0].id
+        self.battery.equipe_id = other.id
+        db.session.commit()
+        self.assertEqual(list_baterias(self.user), [])

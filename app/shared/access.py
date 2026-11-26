@@ -1,5 +1,5 @@
 from app.modules.gestao_ti.permissions import capability
-from sqlalchemy import false, func
+from sqlalchemy import false, func, select
 
 from app.models import Solicitacao, Usuario
 
@@ -232,7 +232,16 @@ def apply_prefeitura_scope(query, user, column):
                 & Solicitacao.origem_retorno.has(Solicitacao.equipe_id.in_(teams))
             ))
         elif model is not None and hasattr(model, "equipe_id"):
-            query = query.filter(model.equipe_id.in_(teams))
+            if model.__name__ in {"Baterias", "Equipamentos"}:
+                from app.models import Baterias, Drones
+                inherited_drone = Baterias.drone_vinculado.has(Drones.equipe_id.in_(teams))
+                if model.__name__ == "Equipamentos":
+                    inherited_drone = model.id.in_(select(Baterias.id).where(inherited_drone).correlate(None))
+                query = query.filter(model.equipe_id.in_(teams) | (
+                    model.equipe_id.is_(None) & inherited_drone
+                ))
+            else:
+                query = query.filter(model.equipe_id.in_(teams))
     if configured and role == "piloto_agro":
         pilot = getattr(user, "piloto_agro", None)
         team = getattr(pilot, "equipe_agro_id", None) if getattr(pilot, "ativo", False) else None
@@ -252,14 +261,25 @@ def apply_prefeitura_scope(query, user, column):
                 return query
         return query.filter(false())
 
-    from app.models import Equipamentos, Equipe
+    from app.models import Baterias, Drones, Equipamentos, Equipe
     model = getattr(column, "class_", None)
     if model is not None and issubclass(model, Equipamentos):
         # Legacy equipment may inherit a municipality from its registered team.
         # An explicit, conflicting municipality always wins and is denied.
-        return query.filter((column == prefeitura_id) | (
-            column.is_(None) & model.equipe.has(Equipe.prefeitura_id == prefeitura_id)
-        ))
+        inherited_team = model.equipe.has(Equipe.prefeitura_id == prefeitura_id)
+        if model is Equipamentos or issubclass(model, Baterias):
+            # A legacy battery without its own allocation follows its registered
+            # drone. Explicit municipality/team assignments never get overridden.
+            inherited_drone = Baterias.drone_vinculado.has(
+                (Drones.prefeitura_id == prefeitura_id) | (
+                    Drones.prefeitura_id.is_(None)
+                    & Drones.equipe.has(Equipe.prefeitura_id == prefeitura_id)
+                )
+            )
+            if model is Equipamentos:
+                inherited_drone = model.id.in_(select(Baterias.id).where(inherited_drone).correlate(None))
+            inherited_team = inherited_team | (model.equipe_id.is_(None) & inherited_drone)
+        return query.filter((column == prefeitura_id) | (column.is_(None) & inherited_team))
     return query.filter(column == prefeitura_id)
 
 
