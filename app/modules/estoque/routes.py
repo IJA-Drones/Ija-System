@@ -53,8 +53,15 @@ def register_routes(bp):
     def estoque_listar():
         _require_estoque_access()
         local = request.args.get("local", "")
-        pecas = list_pecas(user=current_user, local=local)
-        return render_template("estoque_listar.html", pecas=pecas, local=local, status_labels=ESTOQUE_STATUS)
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip()
+        todos = list_pecas(user=current_user)
+        resumo = dict(itens=len(todos), unidades=sum(p.quantidade for p in todos),
+                      disponiveis=sum(p.quantidade for p in todos if p.status == "disponivel_manutencao"),
+                      sem_saldo=sum(p.quantidade == 0 for p in todos))
+        pecas = list_pecas(user=current_user, local=local, q=q, status=status)
+        return render_template("estoque_listar.html", pecas=pecas, local=local, q=q, status=status,
+                               resumo=resumo, status_labels=ESTOQUE_STATUS)
 
     @bp.route("/estoque/export/excel", methods=["GET"], endpoint="estoque_export_excel")
     @login_required

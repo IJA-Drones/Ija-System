@@ -16,6 +16,7 @@ from werkzeug.datastructures import MultiDict
 from app.extensions import db
 from app.models import Baterias, Drones, EstoquePeca, ManutencaoPecaUso, Prefeitura, Usuario
 from app.modules.estoque.service import build_peca_form, validate_peca_form
+from app.modules.estoque.service import list_pecas
 from app.modules.equipamentos.service import list_pecas_disponiveis_manutencao, registrar_pecas_usadas_manutencao, send_drone_to_manutencao
 from app.modules.gestao_ti.service import save_configurations
 from tests import test_central_ti as fixture
@@ -190,6 +191,28 @@ class EstoqueCompatibilidadeTests(unittest.TestCase):
         self.assertEqual(peca.quantidade, 5)
         self.assertEqual(other.quantidade, 0)
         self.assertEqual(ManutencaoPecaUso.query.count(), 0)
+
+    def test_inventory_search_finds_linked_equipment_and_combines_filters(self):
+        peca = self.create([self.drones[0].id, self.battery.id], ['AGRAS T10'])
+        self.assertIn(peca, list_pecas(user=self.user, q='BAT-TESTE', local='Armário', status='disponivel_manutencao'))
+        self.assertIn(peca, list_pecas(user=self.user, q='AGRAS T10'))
+        self.assertNotIn(peca, list_pecas(user=self.user, q='DRONE-1'))
+        self.assertNotIn(peca, list_pecas(user=self.user, q='BAT-TESTE', status='reservada'))
+        response = self.client.get('/estoque?q=BAT-TESTE&local=Armário&status=disponivel_manutencao')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Peça compartilhada', response.text)
+        self.assertIn('Limpar', response.text)
+
+    def test_inventory_overview_and_search_never_include_other_municipality(self):
+        self.create([self.drones[0].id])
+        db.session.add(EstoquePeca(modelo_peca='Peça de outra prefeitura', prefeitura_id=2, quantidade=987))
+        db.session.commit()
+        self.assertEqual(len(list_pecas(user=self.user)), 1)
+        self.assertEqual(list_pecas(user=self.user, q='outra prefeitura'), [])
+        response = self.client.get('/estoque')
+        self.assertIn('Unidades disponíveis', response.text)
+        self.assertNotIn('987', response.text)
+        self.assertNotIn('Peça de outra prefeitura', response.text)
 
 
 class EstoqueCompatibilidadeMigrationTests(unittest.TestCase):

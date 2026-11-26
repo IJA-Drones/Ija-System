@@ -1,18 +1,758 @@
-/* =========================================
-   LISTAGEM DO ESTOQUE
-   ========================================= */
+/* Inventory: one balance per item, with compact compatibility labels. */
 
 .estoque-listar-page {
-  max-width: 1200px;
+  --stock-surface: #fff;
+  --stock-soft: #f7f9fc;
+  --stock-line: #e6edf4;
+  --stock-text: #243e5b;
+  --stock-muted: #61748b;
+  --stock-chip-bg: #edf4fc;
+  --stock-chip-text: #3d648c;
+  max-width: 1320px;
+  color: var(--stock-text);
+}
+
+.estoque-listar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.stock-heading {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.stock-heading-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid #dce9f6;
+  border-radius: 17px;
+  background: #eaf2fb;
+  color: #355d88;
+  font-size: 25px;
+}
+
+.stock-heading h2 {
+  margin: 0 0 5px;
+  font-weight: 700;
+  font-size: 1.8rem;
+  letter-spacing: -.6px;
+  color: var(--stock-text);
+}
+
+.stock-heading p {
+  margin: 0;
+  color: var(--stock-muted);
+  font-size: .85rem;
+}
+
+.stock-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.stock-toolbar-actions .btn {
+  font-size: .8rem;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.stock-overview {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 0;
+  border: 1px solid var(--stock-line);
+  border-radius: 18px;
+  background: var(--stock-surface);
+  margin-bottom: 24px;
+  padding: 21px 0;
+  box-shadow: 0 3px 12px #243e5b04;
+}
+
+.stock-metric {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 24px;
+  border-right: 1px solid var(--stock-line);
+}
+
+.stock-metric:last-child {
+  border: 0;
+}
+
+.stock-metric-icon {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--stock-soft);
+  color: #6e87a4;
+  font-size: 19px;
+}
+
+.stock-metric>div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stock-metric>div>span {
+  font-size: .7rem;
+  color: var(--stock-muted);
+}
+
+.stock-metric strong {
+  font-size: 1.65rem;
+  line-height: 1.2;
+  letter-spacing: -.5px;
+  color: var(--stock-text);
+  font-weight: 700;
+}
+
+.stock-metric-available .stock-metric-icon {
+  background: #eaf6f0;
+  color: #35826a;
+}
+
+.stock-metric-empty .stock-metric-icon {
+  background: #fff1ed;
+  color: #c08262;
+}
+
+.estoque-listar-table-card {
+  border: 1px solid var(--stock-line);
+  border-radius: 20px;
+  background: var(--stock-surface);
+  box-shadow: 0 5px 20px #243e5b05;
+  overflow: hidden;
+}
+
+.stock-filters {
+  display: grid;
+  grid-template-columns: minmax(220px,1.7fr) minmax(140px,1fr) minmax(140px,.85fr) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 23px 25px;
+  border-bottom: 1px solid var(--stock-line);
+  margin: 0;
+}
+
+.stock-filters label {
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--stock-muted);
+  margin-bottom: 8px;
+}
+
+.stock-filters .form-control,.stock-filters .form-select,.stock-search-field {
+  height: 42px;
+  font-size: .78rem;
+  border: 1px solid var(--stock-line);
+  border-radius: 10px;
+  background-color: var(--stock-surface);
+  color: var(--stock-text);
+}
+
+.stock-search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+}
+
+.stock-search-field i {
+  color: var(--stock-muted);
+  font-size: 14px;
+}
+
+.stock-search-field:focus-within {
+  outline: 2px solid #82a9d654;
+  outline-offset: 1px;
+}
+
+.stock-search-field input {
+  border: 0;
+  outline: 0;
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.stock-search-field input::placeholder {
+  color: #9aa7b6;
+}
+
+.stock-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+}
+
+.stock-filter-actions .btn {
+  font-size: .78rem;
+  min-height: 40px;
+}
+
+.stock-clear {
+  font-size: .75rem;
+  color: var(--stock-muted);
+}
+
+.stock-list-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 25px 18px;
+}
+
+.stock-list-caption h3 {
+  font-size: .95rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--stock-text);
+}
+
+.stock-list-caption h3 span {
+  display: inline-block;
+  font-size: .65rem;
+  padding: 4px 8px;
+  border-radius: 7px;
+  margin-left: 5px;
+  background: var(--stock-chip-bg);
+  color: var(--stock-chip-text);
+}
+
+.stock-list-caption p {
+  font-size: .78rem;
+  color: var(--stock-muted);
+  margin: 0;
+}
+
+.stock-sort {
+  color: var(--stock-muted);
+  font-size: .68rem;
+  white-space: nowrap;
+}
+
+.estoque-listar-page .table-responsive {
+  border-radius: 0;
+  background: transparent;
+}
+
+.estoque-listar-page .estoque-listar-table {
+  table-layout: fixed;
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--stock-text);
+}
+
+.estoque-listar-page .estoque-listar-table thead th {
+  padding: 14px 20px;
+  background: var(--stock-soft);
+  color: var(--stock-muted);
+  font-size: .68rem;
+  letter-spacing: .7px;
+  font-weight: 600;
+  border-top: 1px solid var(--stock-line);
+  border-bottom: 1px solid var(--stock-line);
+}
+
+.estoque-listar-table th:nth-child(1) {
+  width: 29%;
+}
+
+.estoque-listar-table th:nth-child(2) {
+  width: 28%;
+}
+
+.estoque-listar-table th:nth-child(3) {
+  width: 17%;
+}
+
+.estoque-listar-table th:nth-child(4) {
+  width: 12%;
+}
+
+.estoque-listar-table th:nth-child(5) {
+  width: 14%;
+}
+
+.estoque-listar-page .estoque-listar-table tbody td {
+  padding: 23px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--stock-line);
+  color: var(--stock-text);
+  background: var(--stock-surface);
+  vertical-align: middle;
+}
+
+.estoque-listar-page .estoque-listar-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.estoque-listar-page .estoque-listar-table tbody tr:hover td {
+  background: var(--stock-soft);
+}
+
+.stock-piece {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.stock-piece-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 41px;
+  border: 1px solid var(--stock-line);
+  border-radius: 11px;
+  color: #6d89a8;
+  background: var(--stock-soft);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.stock-piece>div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+
+.stock-piece-id {
+  color: var(--stock-muted);
+  font-size: .55rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.stock-piece-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--stock-text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.stock-piece-name:hover {
+  color: #3779ab;
+}
+
+.stock-serial {
+  font-size: .7rem;
+  color: var(--stock-muted);
+  overflow-wrap: anywhere;
+}
+
+.stock-note {
+  font-size: .72rem;
+  color: var(--stock-muted);
+  margin: 10px 0 0 50px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.6;
+}
+
+.stock-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stock-equipment-row {
+  margin-top: 8px;
+}
+
+.stock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: .68rem;
+  line-height: 1.35;
+  font-weight: 500;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.stock-chip-model {
+  background: var(--stock-chip-bg);
+  color: var(--stock-chip-text);
+}
+
+.stock-chip-equipment {
+  background: var(--stock-soft);
+  border: 1px solid var(--stock-line);
+  color: var(--stock-muted);
+}
+
+.stock-chip-equipment i {
+  font-size: 13px;
+}
+
+.stock-more {
+  font-size: .62rem;
+  color: var(--stock-chip-text);
+  margin-top: 8px;
+}
+
+.stock-more summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.stock-more[open] summary {
+  margin-bottom: 7px;
+}
+
+.stock-muted {
+  font-size: .7rem;
+  color: var(--stock-muted);
+}
+
+.stock-location {
+  font-size: .76rem;
+  overflow-wrap: anywhere;
+}
+
+.stock-location>i {
+  color: #92a6b9;
+  margin-right: 6px;
+}
+
+.stock-balance {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.stock-balance strong {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+
+.stock-balance>span {
+  color: var(--stock-muted);
+  font-size: .62rem;
+}
+
+.stock-balance-zero strong {
+  color: #ad7b72;
+}
+
+.stock-status {
+  font-size: .66rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: #758398;
+}
+
+.stock-status>span {
+  height: 5px;
+  width: 5px;
+  display: inline-block;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.stock-status-disponivel_manutencao {
+  color: #32866b;
+}
+
+.stock-status-reservada {
+  color: #ad873e;
+}
+
+.stock-status-baixada,.stock-status-indisponivel {
+  color: #a77870;
 }
 
 .estoque-listar-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 8px;
   white-space: nowrap;
 }
 
-.estoque-listar-actions form {
-  margin: 0;
+.estoque-listar-actions .btn {
+  font-size: .72rem;
+  min-height: 33px;
+  padding: 7px 11px!important;
+}
+
+.stock-delete {
+  width: 28px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: #9ba7b5;
+  border-radius: 7px;
+}
+
+.stock-delete:hover {
+  background: #fff0ef;
+  color: #b85c57;
+}
+
+.stock-empty {
+  text-align: center;
+  padding: 50px 15px 60px;
+}
+
+.stock-empty>i {
+  display: inline-grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  background: var(--stock-soft);
+  border-radius: 18px;
+  font-size: 27px;
+  color: #8ca2bb;
+  margin-bottom: 18px;
+}
+
+.stock-empty h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--stock-text);
+  margin-bottom: 10px;
+}
+
+.stock-empty p {
+  font-size: .78rem;
+  color: var(--stock-muted);
+  max-width: 360px;
+  margin: 0 auto 15px;
+}
+
+.stock-empty a {
+  font-size: .75rem;
+}
+
+body.dark-mode .estoque-listar-page {
+  --stock-surface: #142131;
+  --stock-soft: #192b3d;
+  --stock-line: #293e55;
+  --stock-text: #d8e5f4;
+  --stock-muted: #96a9bf;
+  --stock-chip-bg: #213b55;
+  --stock-chip-text: #a7cbea;
+}
+
+.dark-mode .stock-heading-icon {
+  background: #213b55;
+  border-color: #2d4964;
+  color: #a7cbea;
+}
+
+.dark-mode .stock-metric-available .stock-metric-icon {
+  background: #1d3937;
+  color: #85c8ad;
+}
+
+.dark-mode .stock-metric-empty .stock-metric-icon {
+  background: #42372f;
+  color: #d8b389;
+}
+
+@media(max-width:1100px) {
+  .stock-metric {
+    padding: 0 15px;
+    gap: 10px;
+  }
+  .stock-metric-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .stock-metric>div>span {
+    font-size: .64rem;
+  }
+  .estoque-listar-page .estoque-listar-table tbody td,.estoque-listar-page .estoque-listar-table thead th {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .stock-sort {
+    display: none;
+  }
+  .stock-heading h2 {
+    font-size: 1.6rem;
+  }
+}
+
+@media(max-width:767.98px) {
+  .estoque-listar-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .estoque-listar-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .stock-heading {
+    gap: 11px;
+  }
+  .stock-heading-icon {
+    height: 44px;
+    width: 44px;
+    font-size: 21px;
+    border-radius: 14px;
+  }
+  .stock-heading h2 {
+    font-size: 1.45rem;
+  }
+  .stock-heading p {
+    font-size: .72rem;
+  }
+  .stock-toolbar-actions {
+    width: 100%;
+  }
+  .stock-toolbar-actions .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: .72rem;
+  }
+  .stock-overview {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    padding: 0;
+  }
+  .stock-metric {
+    padding: 17px 13px;
+    gap: 9px;
+  }
+  .stock-metric:nth-child(2) {
+    border-right: 0;
+  }
+  .stock-metric:nth-child(-n+2) {
+    border-bottom: 1px solid var(--stock-line);
+  }
+  .stock-metric strong {
+    font-size: 1.4rem;
+  }
+  .stock-metric>div>span {
+    font-size: .58rem;
+  }
+  .stock-metric-icon {
+    width: 30px;
+    height: 32px;
+  }
+  .stock-filters {
+    grid-template-columns: 1fr 1fr;
+    padding: 18px 16px;
+    gap: 13px;
+  }
+  .stock-search {
+    grid-column: 1/-1;
+  }
+  .stock-filter-actions {
+    grid-column: 1/-1;
+  }
+  .stock-filter-actions .btn {
+    flex: 1;
+  }
+  .stock-list-caption {
+    padding: 20px 16px 12px;
+  }
+  .stock-list-caption p {
+    font-size: .65rem;
+  }
+  .estoque-listar-page .estoque-listar-table thead {
+    display: none;
+  }
+  .estoque-listar-page .estoque-listar-table,.estoque-listar-page .estoque-listar-table tbody {
+    display: block;
+  }
+  .estoque-listar-page .estoque-listar-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--stock-line);
+    gap: 18px 14px;
+  }
+  .estoque-listar-page .estoque-listar-table tbody tr:last-child {
+    border: 0;
+  }
+  .estoque-listar-page .estoque-listar-table tbody td {
+    display: block;
+    padding: 0!important;
+    border: 0!important;
+    background: transparent!important;
+  }
+  .stock-piece-cell,.stock-compatibility,.stock-actions-cell,.stock-empty-row td {
+    grid-column: 1/-1;
+  }
+  .stock-compatibility::before,.stock-location::before,.stock-balance-cell::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--stock-muted);
+    font-size: .58rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+  .stock-piece-name {
+    font-size: .85rem;
+  }
+  .stock-chip {
+    font-size: .63rem;
+  }
+  .stock-note {
+    font-size: .72rem;
+  }
+  .stock-actions-cell {
+    padding-top: 12px!important;
+  }
+  .estoque-listar-actions .btn {
+    flex: 1;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+  }
+  .stock-empty {
+    padding: 25px 8px;
+  }
+  .stock-location {
+    font-size: .74rem;
+  }
+  .estoque-listar-table-card {
+    border-radius: 17px;
+  }
+  .estoque-listar-actions {
+    gap: 14px;
+  }
+  .stock-delete {
+    width: 35px;
+  }
+}
+
+.stock-status-sem-saldo {
+  color: #a77870;
 }

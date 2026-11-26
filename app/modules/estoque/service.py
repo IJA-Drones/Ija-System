@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.models import Drones, Equipamentos, EstoquePeca, Prefeitura
 from app.shared.access import apply_prefeitura_scope, can_access_prefeitura, is_admin_global_user, resolve_linked_prefeitura
+from sqlalchemy import or_
 
 
 ESTOQUE_STATUS = {
@@ -11,11 +12,24 @@ ESTOQUE_STATUS = {
 }
 
 
-def list_pecas(user=None, local=None):
+def list_pecas(user=None, local=None, q=None, status=None):
     query = EstoquePeca.query
     local = (local or "").strip()
     if local:
         query = query.filter(EstoquePeca.prateleira_local.ilike(f"%{local}%"))
+    if status in ESTOQUE_STATUS:
+        query = query.filter(EstoquePeca.status == status)
+    q = (q or "").strip()
+    if q:
+        like = f"%{q}%"
+        equipment_match = or_(Equipamentos.renomacao.ilike(like), Equipamentos.modelo.ilike(like), Equipamentos.numero_serie.ilike(like))
+        query = query.filter(or_(
+            EstoquePeca.modelo_peca.ilike(like), EstoquePeca.numero_serie.ilike(like),
+            EstoquePeca.modelos_compativeis.ilike(like),
+            EstoquePeca.equipamentos_compativeis.any(equipment_match),
+            EstoquePeca.equipamento.has(equipment_match),
+            EstoquePeca.drone.has(or_(Drones.renomacao.ilike(like), Drones.modelo.ilike(like), Drones.numero_serie.ilike(like))),
+        ))
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
     return query.order_by(EstoquePeca.criado_em.desc()).all()
