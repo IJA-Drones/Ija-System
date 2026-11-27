@@ -17,6 +17,7 @@ from app.models import (
     Veiculos,
 )
 from app.modules.agenda_notificacoes import agora_brasilia_naive, criar_notificacao
+from app.modules.equipamentos.checklist_notificacoes import sync_vehicle_checklist_alerts
 from app.shared.access import is_veiculos_supervisor, apply_prefeitura_scope
 from app.shared.vehicle_supervisor import get_supervisor_equipe, supervisor_equipment_query
 
@@ -209,7 +210,7 @@ def save_piloto_checklist(user, form_data):
 
     try:
         if veiculo_id:
-            _save_vehicle_checklist(
+            checklist = _save_vehicle_checklist(
                 user=user,
                 veiculo_id=veiculo_id,
                 veiculos_equipe=state["veiculos_equipe"],
@@ -218,6 +219,7 @@ def save_piloto_checklist(user, form_data):
                 actor_filter=actor_filter,
                 week_bounds=week_bounds,
             )
+            sync_vehicle_checklist_alerts(checklist)
 
         if drone_id:
             _save_drone_checklist(
@@ -429,6 +431,7 @@ def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assina
         setattr(checklist, field, _clean_str(form_data.get(field)) if has_issue else None)
 
     checklist.assinatura_piloto = assinatura_piloto
+    return checklist
 
 
 def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinatura_piloto, nome_responsavel, actor_filter, week_bounds):
@@ -497,6 +500,8 @@ def sincronizar_pendencias_registro(checklist):
         actor_filter, inicio_dt, inicio_dt + timedelta(days=7),
     )
     _sincronizar_pendencias(SimpleNamespace(piloto_id=checklist.piloto_id), nome, pendencias, inicio)
+    if isinstance(checklist, ChecklistSemanalVeiculo):
+        sync_vehicle_checklist_alerts(checklist)
 
 
 def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inicio):

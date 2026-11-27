@@ -57,7 +57,7 @@
                             <th class="ps-3">Tipo</th>
                             <th>Renomação</th>
                             <th>Modelo</th>
-                            <th>Nº de Série</th>
+                            <th>Nº de série / Placa</th>
                             <th>Equipe</th>
                             <th>OS / Abertura <span class="maintenance-time-label">São Paulo</span></th>
                             <th class="text-end pe-3">Ações</th>
@@ -70,6 +70,8 @@
                                 <td class="ps-3" data-label="Tipo">
                                     {% if eq.tipo_equipamento == 'drones' %}
                                         <i class="bi bi-airplane-engines text-primary" title="Drone"></i>
+                                    {% elif eq.tipo_equipamento == 'veiculos' %}
+                                        <i class="bi bi-truck text-primary" title="Veículo"></i>
                                     {% elif eq.tipo_equipamento == 'baterias' %}
                                         <i class="bi bi-battery-half text-warning" title="Bateria"></i>
                                     {% else %}
@@ -85,8 +87,8 @@
                                     {{ eq.modelo }}
                                 </td>
 
-                                <td class="text-muted small" data-label="Nº de Série">
-                                    {{ eq.numero_serie or '-' }}
+                                <td class="text-muted small" data-label="Nº de série / Placa">
+                                    {{ eq.placa if eq.tipo_equipamento == 'veiculos' else (eq.numero_serie or '-') }}
                                 </td>
 
                                 <td data-label="Equipe">
@@ -100,7 +102,7 @@
                                 </td>
 
                                 <td class="text-muted small" data-label="OS de manutenção / Abertura">
-                                    {% set os = manutencoes_por_drone.get(eq.id) %}
+                                    {% set os = manutencoes_por_equipamento.get(eq.id) %}
                                     {% if os %}
                                         <strong>{{ os.numero_os }}</strong><br>{{ (os.aberta_em|maintenance_datetime) }}
                                     {% else %}
@@ -109,7 +111,7 @@
                                 </td>
 
                                 <td class="text-end pe-3" data-label="Ações">
-                                    {% if eq.tipo_equipamento == 'drones' %}
+                                    {% if eq.tipo_equipamento in ('drones', 'veiculos') %}
                                       <div class="manutencao-actions">
                                         <a href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=eq.id) }}"
                                            class="btn btn-sm btn-primary" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamento_manutencao_pecas', drone_id=eq.id)) if central_ti_url_allowed is defined else true) else 'false' }}">

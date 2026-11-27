@@ -5,6 +5,7 @@ ija_file_recovery_test. Each test owns a separate schema and local upload root.
 """
 import importlib.util
 from io import BytesIO
+import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -305,6 +306,25 @@ def test_json_image_reference_is_kept(app):
             with patch.object(db, 'metadatas', {None: fake_meta}):
                 assert recovery._referenced(conn, ['skybox://imagens/a.jpg'])
                 assert not recovery._referenced(conn, ['skybox://imagens/a.jp'])
+
+
+@pytest.mark.parametrize('ensure_ascii', [False, True])
+def test_maintenance_image_reference_is_kept(ensure_ascii, monkeypatch):
+    table = sa.Table(
+        'manutencoes_equipamentos', sa.MetaData(),
+        sa.Column('id', sa.Integer, primary_key=True), sa.Column('imagens_ocorrido', sa.Text),
+    )
+    engine = sa.create_engine('sqlite:///:memory:')
+    marker = 'skybox://manutencoes de equipamentos/1/avária_1.jpg'
+    try:
+        with engine.begin() as conn:
+            table.create(conn)
+            conn.execute(table.insert().values(id=1, imagens_ocorrido=json.dumps([marker], ensure_ascii=ensure_ascii)))
+            monkeypatch.setattr(db, 'metadatas', {None: table.metadata})
+            assert recovery._referenced(conn, [marker])
+            assert not recovery._referenced(conn, [marker.removesuffix('.jpg')])
+    finally:
+        engine.dispose()
 
 
 def test_two_recovery_workers_delete_once(app, monkeypatch):

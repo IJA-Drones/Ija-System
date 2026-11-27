@@ -224,7 +224,9 @@ def _pecas_table(usos):
     return table
 
 
-def build_manutencao_pdf(drone, usos, manutencao=None):
+def build_manutencao_pdf(equipment, usos, manutencao=None):
+    is_vehicle = equipment.tipo_equipamento == "veiculos"
+    name = equipment.renomacao or str(equipment.id)
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     path = tmp_pdf.name
     tmp_pdf.close()
@@ -236,7 +238,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
         rightMargin=18 * mm,
         topMargin=38 * mm,
         bottomMargin=28 * mm,
-        title=f"OS de manutenção {getattr(manutencao, 'numero_os', '')} - {drone.renomacao}",
+        title=f"OS de manutenção {getattr(manutencao, 'numero_os', '')} - {name}",
     )
 
     styles = getSampleStyleSheet()
@@ -274,19 +276,25 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
     aberta_em = _fmt_dt(getattr(manutencao, "aberta_em", None)) if manutencao else "-"
     encerrada_em = _fmt_dt(getattr(manutencao, "encerrada_em", None)) if manutencao else "-"
     status_manutencao = _safe(getattr(manutencao, "status", None)).capitalize() if manutencao else "Aberta"
+    identity_rows = [
+        ["Veículo" if is_vehicle else "Drone", _safe(name), "Modelo", _safe(equipment.modelo)],
+        ["Nº de série", _safe(equipment.numero_serie), "Status atual", _safe(equipment.status)],
+    ]
+    if is_vehicle:
+        km = getattr(manutencao, "km_recebimento", None)
+        identity_rows.append(["Placa", _safe(equipment.placa), "Km no recebimento", _safe(km)])
     story = [
         Paragraph(f"OS de manutenção {getattr(manutencao, 'numero_os', '')}", title_style),
         Paragraph(
-            f"Peças usadas na manutenção do drone {escape(drone.renomacao or str(drone.id))}. Emitido em {_fmt_dt(datetime.now(timezone.utc))} (São Paulo).",
+            f"{escape(name)}. Emitido em {_fmt_dt(datetime.now(timezone.utc))} (São Paulo).",
             subtitle_style,
         ),
         _info_table([
-            ["Drone", _safe(drone.renomacao), "Modelo", _safe(drone.modelo)],
-            ["Nº de série", _safe(drone.numero_serie), "Status atual", _safe(drone.status)],
-            ["Equipe", _safe(getattr(getattr(drone, "equipe", None), "nome_equipe", None)), "Status manutenção", status_manutencao],
+            *identity_rows,
+            ["Equipe", _safe(getattr(getattr(equipment, "equipe", None), "nome_equipe", None)), "Status manutenção", status_manutencao],
             ["Abertura", aberta_em, "Encerramento", encerrada_em],
             ["Resp. técnico", _safe(getattr(manutencao, "responsavel_manutencao", None)), "Resp. avaria", _safe(getattr(manutencao, "responsavel_avaria", None))],
-            ["Piloto responsável", _safe(getattr(manutencao, "piloto_responsavel_avaria", None)), "Drone testado", "Sim" if getattr(manutencao, "drone_testado", False) else "Não"],
+            ["Condutor responsável" if is_vehicle else "Piloto responsável", _safe(getattr(manutencao, "piloto_responsavel_avaria", None)), "Equipamento testado", "Sim" if getattr(manutencao, "drone_testado", False) else "Não"],
             ["Recebimento", _fmt_dt(getattr(manutencao, "recebido_em", None)), "Tipo", _safe(getattr(manutencao, "tipo_manutencao", None))],
             ["Total de itens usados", str(total_pecas), "Registros", str(len(usos))],
         ]),
@@ -341,7 +349,7 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
     story.extend([Paragraph("Assinaturas", section_style), signature_table])
 
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer,
-              canvasmaker=municipal_canvas(getattr(manutencao, "prefeitura_id", None) or getattr(drone, "prefeitura_id", None)))
+              canvasmaker=municipal_canvas(getattr(manutencao, "prefeitura_id", None) or equipment.prefeitura_id))
     return path
 
 
@@ -352,7 +360,7 @@ def build_manutencoes_excel(manutencoes):
     ws.append([""])
     ws.append([
         "OS de manutenção",
-        "Drone",
+        "Equipamento",
         "Modelo",
         "Nº de série",
         "Equipe",
@@ -365,17 +373,18 @@ def build_manutencoes_excel(manutencoes):
         "Registros de peças",
         "Observações", "Recebimento", "Condição de chegada", "Relato de entrada", "Diagnóstico técnico",
         "Tipo de manutenção", "Serviços realizados", "Testes após reparo", "Condição final", "Peças avariadas",
+        "Tipo de equipamento", "Placa", "Km no recebimento",
     ])
 
     for manutencao in manutencoes:
-        drone = manutencao.drone
+        equipment = manutencao.equipamento
         usos = list(manutencao.pecas_usadas)
         ws.append([
             manutencao.numero_os,
-            _excel_safe(getattr(drone, "renomacao", None)),
-            _excel_safe(getattr(drone, "modelo", None)),
-            _excel_safe(getattr(drone, "numero_serie", None)),
-            _excel_safe(getattr(getattr(drone, "equipe", None), "nome_equipe", None)),
+            _excel_safe(equipment.renomacao),
+            _excel_safe(equipment.modelo),
+            _excel_safe(equipment.numero_serie),
+            _excel_safe(getattr(equipment.equipe, "nome_equipe", None)),
             "Aberta" if manutencao.status == "aberta" else "Encerrada",
             _fmt_dt(manutencao.aberta_em),
             _fmt_dt(manutencao.encerrada_em),
@@ -389,6 +398,9 @@ def build_manutencoes_excel(manutencoes):
             _excel_safe(manutencao.servicos_realizados), _excel_safe(manutencao.observacoes_teste),
             _excel_safe(manutencao.condicao_final),
             "; ".join(f"{row['nome']}: {row['descricao']}" for row in (manutencao.pecas_avariadas or [])),
+            "Veículo" if manutencao.veiculo_id else "Drone",
+            _excel_safe(getattr(equipment, "placa", None)),
+            manutencao.km_recebimento,
         ])
 
     _style_worksheet(ws, title="Histórico de OS de manutenção")
@@ -405,32 +417,33 @@ def build_pecas_usadas_excel(usos):
         "ID",
         "OS de manutenção",
         "Status manutenção",
-        "Drone",
-        "Modelo drone",
+        "Equipamento",
+        "Modelo",
         "Peça",
         "Nº de série peça",
         "Quantidade usada",
         "Registrado por",
         "Data do registro",
-        "Observações", "Código DJI / Part Number",
+        "Observações", "Código DJI / Part Number", "Placa",
     ])
 
     for uso in usos:
         manutencao = uso.manutencao
-        drone = uso.drone
+        equipment = uso.equipamento
         peca = uso.peca
         ws.append([
             uso.id,
             getattr(manutencao, "numero_os", None) or "",
             ("Aberta" if getattr(manutencao, "status", None) == "aberta" else "Encerrada") if manutencao else "",
-            _excel_safe(getattr(drone, "renomacao", None)),
-            _excel_safe(getattr(drone, "modelo", None)),
+            _excel_safe(equipment.renomacao),
+            _excel_safe(equipment.modelo),
             _excel_safe(uso.nome_peca_historico),
             _excel_safe(uso.numero_serie_historico),
             uso.quantidade_usada or 0,
             _excel_safe(getattr(getattr(uso, "usuario", None), "nome_uvis", None)),
             _fmt_dt(uso.criado_em),
             _excel_safe(uso.observacoes), _excel_safe(uso.codigo_dji_historico),
+            _excel_safe(getattr(equipment, "placa", None)),
         ])
 
     _style_worksheet(ws, title="Histórico geral de peças usadas em manutenções")

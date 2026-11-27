@@ -14,7 +14,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario, Veiculos
+from app.models import Baterias, ChecklistSemanalVeiculo, Drones, Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario, Veiculos
 from app.shared.access import (
     VEICULOS_SUPERVISOR_USER_TYPES,
     apply_prefeitura_scope,
@@ -1126,10 +1126,16 @@ def _build_veiculo_review_label(veiculo):
 
 
 def _visible_notification_query(user, plano_ids):
+    from app.modules.equipamentos.checklist_notificacoes import receives_checklist_alerts, visible_vehicle_checklists
+
     own = Notificacao.usuario_id == user.id
-    regular = Notificacao.preventiva_plano_id.is_(None)
+    regular = Notificacao.preventiva_plano_id.is_(None) & Notificacao.checklist_veiculo_id.is_(None)
     preventive = own & Notificacao.preventiva_plano_id.in_(plano_ids)
-    return Notificacao.query.filter((regular if can_view_all_notifications(user) else own & regular) | preventive)
+    visible = (regular if can_view_all_notifications(user) else own & regular) | preventive
+    if receives_checklist_alerts(user):
+        checklist_ids = visible_vehicle_checklists(user).with_entities(ChecklistSemanalVeiculo.id)
+        visible = visible | (own & Notificacao.checklist_veiculo_id.in_(checklist_ids))
+    return Notificacao.query.filter(visible)
 
 
 def get_notificacao_or_404(user, notif_id):

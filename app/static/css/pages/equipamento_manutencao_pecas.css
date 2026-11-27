@@ -327,6 +327,8 @@ body.dark-mode .equipamento-manutencao-pecas-page {
   .os-equipment-data { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .os-entry-grid { grid-template-columns: minmax(10rem, 1fr) minmax(0, 1fr) minmax(0, 2.3fr); }
   .os-entry-grid > :last-child { grid-column: auto; }
+  .os-entry-grid--vehicle { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .os-entry-grid--vehicle > :last-child { grid-column: 1 / -1; }
   .os-repair-row {
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.15fr) minmax(6.2rem, .65fr) minmax(5.6rem, .7fr) minmax(0, 1.65fr) 2.65rem;
     grid-template-areas: 'piece code quantity stock notes action';

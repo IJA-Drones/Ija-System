@@ -1163,6 +1163,7 @@ class Notificacao(db.Model):
     link = db.Column(db.String(255))
     preventiva_plano_id = db.Column(db.Integer, db.ForeignKey("preventiva_planos.id", ondelete="CASCADE"), index=True)
     chave_preventiva = db.Column(db.String(100), unique=True, index=True)
+    checklist_veiculo_id = db.Column(db.Integer, db.ForeignKey("checklists_semanais_veiculo.id", ondelete="CASCADE"), index=True)
 
     criada_em = db.Column(
         db.DateTime,
@@ -1173,6 +1174,8 @@ class Notificacao(db.Model):
 
     lida_em = db.Column(db.DateTime, index=True)
     apagada_em = db.Column(db.DateTime, index=True)
+
+    __table_args__ = (db.UniqueConstraint("usuario_id", "checklist_veiculo_id", name="uq_notificacao_usuario_checklist_veiculo"),)
 
 
 # -------------------------------------------------------------
@@ -2682,10 +2685,15 @@ class ManutencaoPecaUso(db.Model):
     def numero_serie_historico(self):
         return self.numero_serie_snapshot if self.numero_serie_snapshot is not None else self.peca.numero_serie
 
+    @property
+    def equipamento(self):
+        return self.veiculo if self.veiculo_id else self.drone
+
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     manutencao_id = db.Column(db.Integer, db.ForeignKey("manutencoes_equipamentos.id"), nullable=True, index=True)
-    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=True, index=True)
     peca_id = db.Column(db.Integer, db.ForeignKey("estoque_pecas.id"), nullable=False, index=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
 
@@ -2699,10 +2707,12 @@ class ManutencaoPecaUso(db.Model):
     prefeitura = db.relationship("Prefeitura", back_populates="manutencao_pecas_usadas", lazy="joined")
     manutencao = db.relationship("ManutencaoEquipamento", back_populates="pecas_usadas", lazy="joined")
     drone = db.relationship("Drones", back_populates="manutencoes_pecas_usadas", lazy="joined", foreign_keys=[drone_id])
+    veiculo = db.relationship("Veiculos", lazy="joined", foreign_keys=[veiculo_id])
     peca = db.relationship("EstoquePeca", back_populates="usos_manutencao", lazy="joined")
     usuario = db.relationship("Usuario", lazy="joined")
 
     __table_args__ = (
+        db.CheckConstraint("(drone_id IS NOT NULL) <> (veiculo_id IS NOT NULL)", name="ck_manutencao_peca_equipamento"),
         db.CheckConstraint("quantidade_usada > 0", name="ck_manutencao_pecas_usadas_quantidade_positiva"),
         db.Index("ix_manutencao_pecas_usadas_drone_criado", "drone_id", "criado_em"),
     )
@@ -2715,9 +2725,16 @@ class ManutencaoEquipamento(db.Model):
     def numero_os(self):
         return f"OSM-{self.id:06d}" if self.id is not None else "OS de manutenção"
 
+    @property
+    def equipamento(self):
+        return self.veiculo if self.veiculo_id else self.drone
+
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
-    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=True, index=True)
+    checklist_veiculo_id = db.Column(db.Integer, db.ForeignKey("checklists_semanais_veiculo.id", ondelete="SET NULL"))
+    km_recebimento = db.Column(db.Float, nullable=True)
     aberta_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
     encerrada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
 
@@ -2748,6 +2765,8 @@ class ManutencaoEquipamento(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="manutencoes_equipamentos", lazy="joined")
     drone = db.relationship("Drones", back_populates="manutencoes", lazy="joined", foreign_keys=[drone_id])
+    veiculo = db.relationship("Veiculos", lazy="joined", foreign_keys=[veiculo_id])
+    checklist_veiculo = db.relationship("ChecklistSemanalVeiculo", foreign_keys=[checklist_veiculo_id])
     aberta_por = db.relationship("Usuario", foreign_keys=[aberta_por_id], lazy="joined")
     encerrada_por = db.relationship("Usuario", foreign_keys=[encerrada_por_id], lazy="joined")
     pecas_usadas = db.relationship(
@@ -2758,6 +2777,9 @@ class ManutencaoEquipamento(db.Model):
     )
 
     __table_args__ = (
+        db.UniqueConstraint("checklist_veiculo_id", name="uq_manutencao_checklist_veiculo"),
+        db.CheckConstraint("(drone_id IS NOT NULL) <> (veiculo_id IS NOT NULL)", name="ck_manutencao_equipamento"),
+        db.CheckConstraint("checklist_veiculo_id IS NULL OR veiculo_id IS NOT NULL", name="ck_manutencao_checklist_veiculo"),
         db.Index("ix_manutencoes_equipamentos_drone_status", "drone_id", "status"),
         db.Index("ix_manutencoes_equipamentos_periodo", "aberta_em", "encerrada_em"),
     )

@@ -136,11 +136,12 @@
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_pecas.css', v='20261126-os-referencia-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_pecas.css', v='20261127-veiculos') }}">
 {% endblock %}
 
 {% block content %}
 {% set pode_editar = central_ti_url_allowed(request.full_path, 'POST') if central_ti_url_allowed is defined else true %}
+{% set is_vehicle = equipamento.tipo_equipamento == 'veiculos' %}
 <div class="equipamento-manutencao-pecas-page os-workspace">
   <div class="os-scroll">
     <div class="os-sheet">
@@ -181,32 +182,34 @@
           {% endfor %}
         </ul>
         {% if errors.get('conflito') %}
-        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=drone.id) }}">Recarregar OS atualizada</a>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=equipamento.id) }}">Recarregar OS atualizada</a>
         {% endif %}
       </div>
       {% endif %}
 
-      <section id="dados-drone" class="os-equipment os-panel" aria-labelledby="titulo-drone">
+      <section class="os-equipment os-panel" aria-labelledby="titulo-equipamento">
         <div class="os-equipment-visual">
           {% if foto_modelo %}
-          <img src="{{ url_for('static', filename=foto_modelo) }}" alt="Imagem do modelo {{ drone.modelo }}" decoding="async">
+          <img src="{{ url_for('static', filename=foto_modelo) }}" alt="Imagem do modelo {{ equipamento.modelo }}" decoding="async">
           {% else %}
-          <span class="os-equipment-icon"><i class="bi bi-airplane-engines" aria-hidden="true"></i></span>
+          <span class="os-equipment-icon"><i class="bi {{ 'bi-truck' if is_vehicle else 'bi-airplane-engines' }}" aria-hidden="true"></i></span>
           {% endif %}
         </div>
         <div class="os-equipment-info">
           <div class="os-equipment-heading">
-            <h3 id="titulo-drone">Dados do drone</h3>
+            <h3 id="titulo-equipamento">{{ 'Dados do veículo' if is_vehicle else 'Dados do drone' }}</h3>
             <span class="os-result-badge"><i class="bi bi-check-circle" aria-hidden="true"></i> Cadastrado</span>
           </div>
           <dl class="os-equipment-data">
-            <div><dt>Modelo</dt><dd>{{ drone.modelo }}</dd></div>
-            <div><dt>Nº de série</dt><dd>{{ drone.numero_serie or 'Não informado' }}</dd></div>
-            <div><dt>Patrimônio / ID</dt><dd>{{ drone.renomacao }} <small>#{{ drone.id }}</small></dd></div>
+            <div><dt>Modelo</dt><dd>{{ equipamento.modelo }}</dd></div>
+            <div><dt>{{ 'Placa' if is_vehicle else 'Nº de série' }}</dt><dd>{{ equipamento.placa if is_vehicle else (equipamento.numero_serie or 'Não informado') }}</dd></div>
+            <div><dt>Patrimônio / ID</dt><dd>{{ equipamento.renomacao }} <small>#{{ equipamento.id }}</small></dd></div>
             <div>
               <dt>Responsável</dt>
               <dd>
-                {% if alocacao.get('piloto') %}
+                {% if is_vehicle and equipamento.responsavel_exibicao %}
+                {{ equipamento.responsavel_exibicao }}
+                {% elif alocacao.get('piloto') %}
                 {{ alocacao.piloto.nome_piloto }}
                 {% if alocacao.get('equipe') %}<small>{{ alocacao.equipe.nome_equipe }}</small>{% endif %}
                 {% elif alocacao.get('equipe') %}
@@ -220,7 +223,7 @@
         </div>
       </section>
 
-      <form id="os-manutencao-form" class="form-no-loading" data-equipment-model="{{ drone.modelo }}"
+      <form id="os-manutencao-form" class="form-no-loading" data-equipment-model="{{ equipamento.modelo }}"
             method="post" enctype="multipart/form-data" novalidate
             data-ti-allowed="{{ 'true' if pode_editar else 'false' }}">
         {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
@@ -228,8 +231,8 @@
         <input type="hidden" name="versao" value="{{ form.versao }}">
 
         <details id="relato-entrada" class="os-panel" data-os-stage open>
-          {{ section_title(1, 'titulo-entrada', 'Relato de entrada', '(como o drone chegou)') }}
-          <div class="os-panel-body os-entry-grid">
+          {{ section_title(1, 'titulo-entrada', 'Relato de entrada', '(como o veículo chegou)' if is_vehicle else '(como o drone chegou)') }}
+          <div class="os-panel-body os-entry-grid{{ ' os-entry-grid--vehicle' if is_vehicle else '' }}">
             <div class="os-field">
               <label for="os-recebido_em">Data e hora do recebimento{{ required_mark() }}</label>
               <input id="os-recebido_em" name="recebido_em" type="datetime-local" value="{{ form.recebido_em }}"
@@ -238,7 +241,18 @@
               {% if errors.get('recebido_em') %}<p class="os-error">{{ errors.recebido_em }}</p>{% endif %}
             </div>
             {{ select_field('condicao_chegada', 'Condição de chegada', condicoes_chegada, 'Selecione a condição') }}
-            {{ field('avarias_identificadas', 'Relato do cliente / operação', 2, true, 'Descreva os sintomas e as condições em que o drone chegou.') }}
+            {% if is_vehicle %}
+            <div class="os-field">
+              <label for="os-km_recebimento">Quilometragem no recebimento{{ required_mark() }}</label>
+              <input id="os-km_recebimento" name="km_recebimento" type="number" min="0" step="any"
+                     value="{{ form.km_recebimento }}" class="form-control{% if errors.get('km_recebimento') %} is-invalid{% endif %}">
+              {% if manutencao and manutencao.checklist_veiculo %}
+              <small>Leitura do checklist de {{ manutencao.checklist_veiculo.data_registro.strftime('%d/%m/%Y') }}.</small>
+              {% endif %}
+              {% if errors.get('km_recebimento') %}<p class="os-error">{{ errors.km_recebimento }}</p>{% endif %}
+            </div>
+            {% endif %}
+            {{ field('avarias_identificadas', 'Relato do cliente / operação', 2, true, 'Descreva os sintomas e as condições de chegada.') }}
           </div>
         </details>
 
@@ -299,7 +313,7 @@
           {{ section_title(3, 'titulo-reparo', 'Peças utilizadas no reparo') }}
           <div class="os-panel-body">
             {% if errors.get('pecas_reparo') %}<p class="os-error" role="alert">{{ errors.pecas_reparo }}</p>{% endif %}
-            {% if not pecas %}<p class="os-hint">Nenhuma peça compatível cadastrada. Vincule a peça ao modelo deste drone no estoque.</p>{% endif %}
+            {% if not pecas %}<p class="os-hint">Para selecionar uma peça, cadastre a compatibilidade com este modelo no estoque.</p>{% endif %}
             <div id="os-repair-rows">
               {% for row in form.pecas_reparo %}{{ repair_row(row, loop.index) }}{% else %}{{ repair_row() }}{% endfor %}
             </div>
@@ -339,7 +353,7 @@
             </div>
             <div class="os-two-columns">
               {{ field('responsavel_manutencao', 'Responsável técnico pela manutenção', 0, true) }}
-              {{ field('piloto_responsavel_avaria', 'Piloto responsável pela avaria') }}
+              {{ field('piloto_responsavel_avaria', 'Condutor responsável pela avaria' if is_vehicle else 'Piloto responsável pela avaria') }}
               {{ field('responsavel_avaria', 'Responsável pela avaria') }}
               {{ field('observacoes', 'Observações gerais', 2) }}
             </div>
@@ -394,6 +408,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/manutencao-os.js', v='20261126-os-referencia') }}" defer></script>
+<script src="{{ url_for('static', filename='js/manutencao-os.js', v='20261127-veiculos') }}" defer></script>
 <script src="{{ url_for('static', filename='js/manutencao-assinaturas.js', v='20261126-os-layout-3') }}" defer></script>
 {% endblock %}

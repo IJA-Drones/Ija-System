@@ -5,6 +5,7 @@ locks fence recovery while the caller is writing; committed references are the
 source of truth, including after an ambiguous COMMIT or a process crash.
 """
 import hashlib
+import json
 import os
 from pathlib import Path
 import socket
@@ -152,15 +153,15 @@ def remove_file(path):
 def _referenced(conn, aliases):
     # All persisted file paths currently use these columns. JSON lists are
     # conservatively matched as quoted strings; no arbitrary audit text counts.
+    image_list_columns = {'outras_imagens', 'imagens_ocorrido'}
+    path_columns = image_list_columns | {'imagem_principal', 'video', 'stored_path'}
     queries = []
     for table in db.metadata.sorted_tables:
         if table.name.startswith(('auditoria_', 'arquivo_operacoes')):
             continue
-        cols = [c for c in table.c if c.name.endswith('_path') or
-                c.name in {'imagem_principal', 'video', 'outras_imagens', 'stored_path'}]
+        cols = [c for c in table.c if c.name.endswith('_path') or c.name in path_columns]
         for col in cols:
-            if col.name == 'outras_imagens':
-                import json
+            if col.name in image_list_columns:
                 conditions = [col.contains(json.dumps(a, ensure_ascii=False), autoescape=True) for a in aliases]
                 conditions += [col.contains(json.dumps(a, ensure_ascii=True), autoescape=True) for a in aliases]
             else:

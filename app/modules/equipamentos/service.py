@@ -10,7 +10,9 @@ from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import Baterias, ControlesRemotos, Drones, Equipamentos, Equipe, EquipePiloto, EstoquePeca, ManutencaoEquipamento, ManutencaoPecaUso, Veiculos
-from app.shared.access import apply_prefeitura_scope, resolve_linked_prefeitura
+from app.modules.gestao_ti.permissions import can_access_endpoint
+from app.modules.veiculos.service import VEICULOS_ALLOWED_TYPES, vehicle_listing_scope
+from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role, resolve_linked_prefeitura
 from app.shared.maintenance_time import to_sao_paulo
 from app.shared.equipment_models import part_matches_equipment
 from app.shared.skybox import (
@@ -25,6 +27,46 @@ from app.shared.skybox import (
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
 
 
+def maintenance_legacy_access(user):
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {
+        "dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "manutencao",
+    } or is_veiculos_supervisor(user)
+
+
+def maintenance_vehicles_query(user):
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    if user is None or not can_access_endpoint(user, "main.listar_veiculos", legacy=role in VEICULOS_ALLOWED_TYPES):
+        return Veiculos.query.filter(db.false())
+    try:
+        return vehicle_listing_scope(role, user)
+    except PermissionError:
+        return Veiculos.query.filter(db.false())
+
+
+def can_open_maintenance_os(user):
+    legacy = maintenance_legacy_access(user)
+    return (
+        can_access_endpoint(user, "main.equipamento_manutencao_nova", method="POST", legacy=legacy)
+        and can_access_endpoint(user, "main.equipamento_manutencao_pecas", legacy=legacy)
+    )
+
+
+def scope_maintenance_records(query, model, user):
+    scoped = apply_prefeitura_scope(query, user, model.prefeitura_id)
+    vehicle_ids = maintenance_vehicles_query(user).with_entities(Veiculos.id)
+    return scoped.filter(db.or_(model.veiculo_id.is_(None), model.veiculo_id.in_(vehicle_ids)))
+
+
+def maintenance_equipment_key(equipment):
+    return "veiculo_id" if isinstance(equipment, Veiculos) else "drone_id"
+
+
+def maintenance_prefeitura_id(equipment):
+    if isinstance(equipment, Veiculos) and equipment.prefeitura_id is None and equipment.equipe:
+        return equipment.equipe.prefeitura_id
+    return equipment.prefeitura_id
+
+
 def maintenance_overview(user, now=None):
     current = to_sao_paulo(now or datetime.now(timezone.utc))
     day_start = current.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -32,8 +74,8 @@ def maintenance_overview(user, now=None):
     utc_day = day_start.astimezone(timezone.utc).replace(tzinfo=None)
     utc_month = month_start.astimezone(timezone.utc).replace(tzinfo=None)
     utc_now = current.astimezone(timezone.utc).replace(tzinfo=None)
-    orders = apply_prefeitura_scope(ManutencaoEquipamento.query, user, ManutencaoEquipamento.prefeitura_id)
-    uses = apply_prefeitura_scope(ManutencaoPecaUso.query, user, ManutencaoPecaUso.prefeitura_id)
+    orders = scope_maintenance_records(ManutencaoEquipamento.query, ManutencaoEquipamento, user)
+    uses = scope_maintenance_records(ManutencaoPecaUso.query, ManutencaoPecaUso, user)
     return dict(
         abertas_hoje=orders.filter(ManutencaoEquipamento.aberta_em >= utc_day, ManutencaoEquipamento.aberta_em <= utc_now).count(),
         concluidas_mes=orders.filter(ManutencaoEquipamento.encerrada_em >= utc_month, ManutencaoEquipamento.encerrada_em <= utc_now).count(),
@@ -155,7 +197,10 @@ def list_drones_for_baterias(user=None):
 def list_equipamentos_manutencao(user=None):
     query = Equipamentos.query
     if user is not None:
-        query = apply_prefeitura_scope(query, user, Equipamentos.prefeitura_id)
+        vehicle_ids = maintenance_vehicles_query(user).with_entities(Veiculos.id)
+        query = apply_prefeitura_scope(query, user, Equipamentos.prefeitura_id).filter(db.or_(
+            Equipamentos.tipo_equipamento != "veiculos", Equipamentos.id.in_(vehicle_ids),
+        ))
     return (
         query
         .filter(Equipamentos.status.in_(MANUTENCAO_STATUS_ALIASES))
@@ -164,15 +209,15 @@ def list_equipamentos_manutencao(user=None):
     )
 
 
-def list_pecas_compativeis_manutencao(drone, user=None):
+def list_pecas_compativeis_manutencao(equipment, user=None):
     query = EstoquePeca.query.filter(
-        EstoquePeca.prefeitura_id == drone.prefeitura_id,
+        EstoquePeca.prefeitura_id == maintenance_prefeitura_id(equipment),
         EstoquePeca.arquivada_em.is_(None),
     )
     if user is not None:
         query = apply_prefeitura_scope(query, user, EstoquePeca.prefeitura_id)
     pecas = query.order_by(EstoquePeca.modelo_peca.asc(), EstoquePeca.numero_serie.asc()).all()
-    return [p for p in pecas if part_matches_equipment(p, drone)]
+    return [p for p in pecas if part_matches_equipment(p, equipment)]
 
 
 def list_pecas_disponiveis_manutencao(drone, user=None):
@@ -180,9 +225,9 @@ def list_pecas_disponiveis_manutencao(drone, user=None):
             if p.status == "disponivel_manutencao" and p.quantidade > 0]
 
 
-def list_pecas_usadas_manutencao(drone, user=None):
-    manutencao = get_manutencao_aberta(drone, user=user)
-    query = ManutencaoPecaUso.query.filter(ManutencaoPecaUso.drone_id == drone.id)
+def list_pecas_usadas_manutencao(equipment, user=None):
+    manutencao = get_manutencao_aberta(equipment, user=user)
+    query = ManutencaoPecaUso.query.filter_by(**{maintenance_equipment_key(equipment): equipment.id})
     if manutencao:
         query = query.filter(ManutencaoPecaUso.manutencao_id == manutencao.id)
     else:
@@ -252,60 +297,60 @@ def _upload_maintenance_images(manutencao, uploads):
     return markers
 
 
-def get_manutencao_aberta(drone, user=None):
-    query = ManutencaoEquipamento.query.filter(
-        ManutencaoEquipamento.drone_id == drone.id,
-        ManutencaoEquipamento.status == "aberta",
-    )
+def get_manutencao_aberta(equipment, user=None):
+    query = ManutencaoEquipamento.query.filter_by(status="aberta", **{maintenance_equipment_key(equipment): equipment.id})
     if user is not None:
         query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
     return query.order_by(ManutencaoEquipamento.aberta_em.desc()).first()
 
 
-def get_or_create_manutencao_aberta(drone, user=None):
-    manutencao = get_manutencao_aberta(drone, user=user)
+def get_or_create_manutencao_aberta(equipment, user=None):
+    manutencao = get_manutencao_aberta(equipment, user=user)
     if manutencao:
         return manutencao
 
     manutencao = ManutencaoEquipamento(
-        prefeitura_id=drone.prefeitura_id,
-        drone_id=drone.id,
+        prefeitura_id=maintenance_prefeitura_id(equipment),
         aberta_por_id=getattr(user, "id", None),
         status="aberta",
         aberta_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        km_recebimento=equipment.km_atual if isinstance(equipment, Veiculos) else None,
+        **{maintenance_equipment_key(equipment): equipment.id},
     )
     db.session.add(manutencao)
     return manutencao
 
 
-def lock_maintenance_equipment(drone):
-    """Serialize opening/finalization, including old drones without an OS."""
-    row = db.session.execute(select(Equipamentos.id).where(Equipamentos.id == drone.id).with_for_update()).scalar_one_or_none()
+def lock_maintenance_equipment(equipment):
+    """Serialize opening and finalization for the same equipment."""
+    row = db.session.execute(select(Equipamentos.id).where(Equipamentos.id == equipment.id).with_for_update()).scalar_one_or_none()
     if row is None:
         raise ValueError("O equipamento não está mais disponível. Recarregue a página.")
-    db.session.refresh(drone, attribute_names=["status"])
+    db.session.refresh(equipment, attribute_names=["status"])
 
 
-def list_historico_manutencoes(user=None, *, drone_id=None):
+def list_historico_manutencoes(user=None, *, drone_id=None, veiculo_id=None):
     query = ManutencaoEquipamento.query
     if user is not None:
-        query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
+        query = scope_maintenance_records(query, ManutencaoEquipamento, user)
     if drone_id is not None:
         query = query.filter(ManutencaoEquipamento.drone_id == drone_id)
+    if veiculo_id is not None:
+        query = query.filter(ManutencaoEquipamento.veiculo_id == veiculo_id)
     return query.order_by(ManutencaoEquipamento.aberta_em.desc(), ManutencaoEquipamento.id.desc()).all()
 
 
 def get_manutencao_scoped_or_404(manutencao_id, user=None):
     query = ManutencaoEquipamento.query
     if user is not None:
-        query = apply_prefeitura_scope(query, user, ManutencaoEquipamento.prefeitura_id)
+        query = scope_maintenance_records(query, ManutencaoEquipamento, user)
     return query.filter(ManutencaoEquipamento.id == manutencao_id).first_or_404()
 
 
 def list_historico_pecas_usadas(user=None):
     query = ManutencaoPecaUso.query
     if user is not None:
-        query = apply_prefeitura_scope(query, user, ManutencaoPecaUso.prefeitura_id)
+        query = scope_maintenance_records(query, ManutencaoPecaUso, user)
     return query.order_by(ManutencaoPecaUso.criado_em.desc(), ManutencaoPecaUso.id.desc()).all()
 
 
@@ -571,18 +616,36 @@ def delete_drone(drone):
     db.session.commit()
 
 
-def send_drone_to_manutencao(drone, *, user=None, form_data=None):
-    lock_maintenance_equipment(drone)
-    if (drone.status or "").strip() in MANUTENCAO_STATUS_ALIASES:
-        return False
+def open_equipment_maintenance(equipment, *, user, form_data=None, checklist=None):
+    if checklist and (not isinstance(equipment, Veiculos) or checklist.veiculo_id != equipment.id):
+        raise ValueError("O checklist deve pertencer ao veículo selecionado.")
+    lock_maintenance_equipment(equipment)
+    if checklist:
+        existing = ManutencaoEquipamento.query.filter_by(
+            checklist_veiculo_id=checklist.id, veiculo_id=equipment.id,
+            prefeitura_id=maintenance_prefeitura_id(equipment),
+        ).first()
+        if existing:
+            return existing, False
+    existing = get_manutencao_aberta(equipment, user=user)
+    if existing or (isinstance(equipment, Drones) and (equipment.status or "").strip() in MANUTENCAO_STATUS_ALIASES):
+        return existing, False
 
-    drone.status = MANUTENCAO_STATUS
-    manutencao = get_or_create_manutencao_aberta(drone, user=user)
+    equipment.status = MANUTENCAO_STATUS
+    manutencao = get_or_create_manutencao_aberta(equipment, user=user)
     if form_data is not None:
         manutencao.avarias_identificadas = (form_data.get("avarias_identificadas") or "").strip() or None
         manutencao.responsavel_manutencao = (form_data.get("responsavel_manutencao") or "").strip() or None
+        manutencao.tipo_manutencao = form_data.get("tipo_manutencao") or None
+    if checklist:
+        manutencao.checklist_veiculo_id = checklist.id
+        manutencao.km_recebimento = checklist.km_leitura
     db.session.commit()
-    return True
+    return manutencao, True
+
+
+def send_drone_to_manutencao(drone, *, user=None, form_data=None):
+    return open_equipment_maintenance(drone, user=user, form_data=form_data)[1]
 
 
 def encerrar_manutencao_drone(drone, *, user=None):

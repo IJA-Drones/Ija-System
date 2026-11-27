@@ -169,8 +169,8 @@
   const finalCondition = document.getElementById('os-condicao_final');
   function updateFinalStatus() {
     document.getElementById('os-final-status').textContent = finalCondition.value === 'inapto'
-      ? 'Ao concluir, o drone ficará Inativo, sem liberação para operação.'
-      : finalCondition.value ? 'Ao concluir, o drone voltará ao status Ativo.' : 'A condição final define se o drone pode voltar à operação.';
+      ? 'Ao concluir, o equipamento ficará Inativo.'
+      : finalCondition.value ? 'Ao concluir, o equipamento voltará ao status Ativo.' : 'Indique se o equipamento está apto para operação.';
   }
   finalCondition.addEventListener('change', updateFinalStatus);
   photoInput.addEventListener('change', event => {

@@ -228,9 +228,9 @@ class ManutencaoOsTests(unittest.TestCase):
             stored.clear()
         self.assertEqual(self.client.get('/equipamentos/manutencoes/nova').status_code, 302)
 
-    def test_requires_drone_and_reason_without_changing_equipment(self):
+    def test_requires_equipment_and_reason_without_changing_equipment(self):
         response = self.client.post('/equipamentos/manutencoes/nova', data={})
-        self.assertIn('Selecione o drone.', response.text)
+        self.assertIn('Selecione o drone ou veículo.', response.text)
         self.assertIn('Informe o motivo', response.text)
         self.assertEqual(ManutencaoEquipamento.query.count(), 0)
         self.assertEqual(self.drones[0].status, 'Ativo')

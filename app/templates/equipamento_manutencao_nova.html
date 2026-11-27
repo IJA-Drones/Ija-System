@@ -24,29 +24,46 @@
 
     <form method="post" id="os-opening-form">
       {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+      {% if checklist %}
+      <input type="hidden" name="checklist_veiculo_id" value="{{ checklist.id }}">
+      <div class="alert alert-info">
+        <strong>Checklist semanal</strong>
+        de {{ checklist.data_registro.strftime('%d/%m/%Y') }} · {{ checklist.veiculo.placa }} · {{ checklist.km_leitura }} km.
+        <a class="alert-link" href="{{ url_for('main.equipamento_manutencao_nova') }}">Escolher outro equipamento</a>
+      </div>
+      {% endif %}
       <section class="os-panel" aria-labelledby="os-select-title">
-        <header class="os-section-heading os-static-heading"><h3 id="os-select-title">Selecionar drone</h3></header>
+        <header class="os-section-heading os-static-heading"><h3 id="os-select-title">Selecionar equipamento</h3></header>
         <div class="os-panel-body">
           <div class="os-field">
-            <label for="drone_id" class="form-label">Drone *</label>
-            <select id="drone_id" name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}" required>
-              <option value="">Selecione o drone</option>
-              {% for equipment in drones %}
-              {% set assignment = alocacoes.get(equipment.id, {}) %}
-              {% set pilot = assignment.get('piloto') %}
-              {% set team = assignment.get('equipe') %}
-              <option value="{{ equipment.id }}" data-model="{{ equipment.modelo }}"
-                      data-serial="{{ equipment.numero_serie or 'Não informado' }}"
-                      data-identification="{{ equipment.renomacao }}"
-                      data-responsible="{{ pilot.nome_piloto if pilot else team.nome_equipe if team else 'Sem responsável vinculado' }}"
-                      data-photo="{{ url_for('static', filename=fotos_modelo[equipment.id]) if fotos_modelo[equipment.id] else '' }}"
-                      {% if form.get('drone_id')|string == equipment.id|string %}selected{% endif %}>
-                {{ equipment.renomacao }} — {{ equipment.modelo }} — S/N {{ equipment.numero_serie or 'Não informado' }} ({{ equipment.status }})
-              </option>
+            <label for="equipamento_id" class="form-label">Equipamento *</label>
+            <select id="equipamento_id" name="equipamento_id" class="form-select {% if errors.get('equipamento_id') %}is-invalid{% endif %}" required>
+              {% if not checklist %}<option value="">Selecione o equipamento</option>{% endif %}
+              {% for group, items in [('Drones', drones), ('Veículos', veiculos)] if items %}
+              <optgroup label="{{ group }}">
+                {% for equipment in items %}
+                {% set is_vehicle = equipment.tipo_equipamento == 'veiculos' %}
+                {% set assignment = alocacoes.get(equipment.id, {}) %}
+                {% set pilot = assignment.get('piloto') %}
+                {% set team = assignment.get('equipe') %}
+                {% set photo = fotos_modelo.get(equipment.id) %}
+                {% set responsible = equipment.responsavel_exibicao if is_vehicle else none %}
+                <option value="{{ equipment.id }}" data-model="{{ equipment.modelo }}"
+                        data-vehicle="{{ 'true' if is_vehicle else 'false' }}"
+                        data-serial="{{ equipment.placa if is_vehicle else (equipment.numero_serie or 'Não informado') }}"
+                        data-identification="{{ equipment.renomacao }}"
+                        data-responsible="{{ responsible or (pilot.nome_piloto if pilot else team.nome_equipe if team else 'Sem responsável vinculado') }}"
+                        data-photo="{{ url_for('static', filename=photo) if photo else '' }}"
+                        {% if form.get('equipamento_id')|string == equipment.id|string %}selected{% endif %}>
+                  {% if is_vehicle %}{{ equipment.placa }} — {{ equipment.modelo }}{% else %}{{ equipment.renomacao }} — {{ equipment.modelo }} — S/N {{ equipment.numero_serie or 'Não informado' }}{% endif %}
+                  ({{ equipment.status }})
+                </option>
+                {% endfor %}
+              </optgroup>
               {% endfor %}
             </select>
-            {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.drone_id }}</div>{% endif %}
-            <small>Se o drone já estiver em manutenção, será aberta a OS existente.</small>
+            {% if errors.get('equipamento_id') %}<div class="invalid-feedback">{{ errors.equipamento_id }}</div>{% endif %}
+            <small>Se o equipamento já estiver em manutenção, a ficha da OS existente será aberta.</small>
           </div>
         </div>
       </section>
@@ -58,14 +75,16 @@
         </div>
         <div class="os-equipment-info">
           <div class="os-equipment-heading">
-            <h3 id="os-selected-title">Dados do drone</h3>
-            <button type="button" class="btn btn-outline-primary btn-sm" data-change-drone>
-              <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Alterar drone
+            <h3 id="os-selected-title">Dados do equipamento</h3>
+            {% if not checklist %}
+            <button type="button" class="btn btn-outline-primary btn-sm" data-change-equipment>
+              <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Alterar equipamento
             </button>
+            {% endif %}
           </div>
           <dl class="os-equipment-data" aria-live="polite">
             <div><dt>Modelo</dt><dd data-os-equipment-field="model"></dd></div>
-            <div><dt>Nº de série</dt><dd data-os-equipment-field="serial"></dd></div>
+            <div><dt data-os-serial-label>Nº de série</dt><dd data-os-equipment-field="serial"></dd></div>
             <div><dt>Patrimônio / ID</dt><dd data-os-equipment-field="identification"></dd></div>
             <div><dt>Responsável</dt><dd data-os-equipment-field="responsible"></dd></div>
           </dl>
@@ -79,14 +98,26 @@
             <div class="os-field">
               <label for="avarias_identificadas">Motivo da manutenção / avarias identificadas *</label>
               <textarea id="avarias_identificadas" name="avarias_identificadas" class="form-control {% if errors.get('avarias_identificadas') %}is-invalid{% endif %}"
-                        rows="3" required>{{ form.get('avarias_identificadas', '') }}</textarea>
+                        rows="3" maxlength="20000" required>{{ form.get('avarias_identificadas', '') }}</textarea>
               {% if errors.get('avarias_identificadas') %}<div class="invalid-feedback">{{ errors.avarias_identificadas }}</div>{% endif %}
             </div>
-            <div class="os-field">
-              <label for="responsavel_manutencao">Responsável técnico pela manutenção</label>
-              <input id="responsavel_manutencao" name="responsavel_manutencao" maxlength="120"
-                     class="form-control {% if errors.get('responsavel_manutencao') %}is-invalid{% endif %}" value="{{ form.get('responsavel_manutencao', '') }}">
-              {% if errors.get('responsavel_manutencao') %}<div class="invalid-feedback">{{ errors.responsavel_manutencao }}</div>{% endif %}
+            <div class="d-grid gap-2">
+              <div class="os-field">
+                <label for="tipo_manutencao">Tipo de manutenção</label>
+                <select id="tipo_manutencao" name="tipo_manutencao" class="form-select {% if errors.get('tipo_manutencao') %}is-invalid{% endif %}">
+                  <option value="">Definir no diagnóstico</option>
+                  {% for value, description in tipos_manutencao.items() %}
+                  <option value="{{ value }}" {% if form.get('tipo_manutencao') == value %}selected{% endif %}>{{ description }}</option>
+                  {% endfor %}
+                </select>
+                {% if errors.get('tipo_manutencao') %}<div class="invalid-feedback">{{ errors.tipo_manutencao }}</div>{% endif %}
+              </div>
+              <div class="os-field">
+                <label for="responsavel_manutencao">Responsável técnico pela manutenção</label>
+                <input id="responsavel_manutencao" name="responsavel_manutencao" maxlength="120"
+                       class="form-control {% if errors.get('responsavel_manutencao') %}is-invalid{% endif %}" value="{{ form.get('responsavel_manutencao', '') }}">
+                {% if errors.get('responsavel_manutencao') %}<div class="invalid-feedback">{{ errors.responsavel_manutencao }}</div>{% endif %}
+              </div>
             </div>
           </div>
         </div>
@@ -102,5 +133,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/manutencao-nova.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/manutencao-nova.js', v='20261127-veiculos') }}" defer></script>
 {% endblock %}

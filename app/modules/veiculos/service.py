@@ -100,6 +100,19 @@ class VeiculoTurnoError(Exception):
         self.category = category
 
 
+def vehicle_listing_scope(tipo_usuario, user):
+    query = Veiculos.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
+
+    if tipo_usuario == EQUIPE_OCEANO_USER_TYPE:
+        equipe = _equipe_oceano_logada(user)
+        if not equipe:
+            raise PermissionError
+        query = query.filter(_veiculo_equipe_operacional_filter(equipe, user))
+    return query
+
+
 def list_veiculos(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
     if not route_access(user, tipo_usuario in VEICULOS_ALLOWED_TYPES):
@@ -110,15 +123,7 @@ def list_veiculos(tipo_usuario, args, user=None):
     frota = (args.get("frota") or "").strip().upper()
     status = (args.get("status") or "").strip()
 
-    query = Veiculos.query
-    if user is not None:
-        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
-
-    if tipo_usuario == EQUIPE_OCEANO_USER_TYPE:
-        equipe = _equipe_oceano_logada(user)
-        if not equipe:
-            raise PermissionError
-        query = query.filter(_veiculo_equipe_operacional_filter(equipe, user))
+    query = vehicle_listing_scope(tipo_usuario, user)
 
     if q:
         like = f"%{q}%"

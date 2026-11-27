@@ -1,6 +1,7 @@
 """A single maintenance worksheet; draft saves never move inventory."""
 from datetime import datetime, timezone
 from itertools import zip_longest
+from math import isfinite
 
 from sqlalchemy import case, select, update
 
@@ -12,7 +13,8 @@ from app.shared.skybox import delete_skybox_file
 from app.modules.equipamentos.service import (
     MANUTENCAO_STATUS_ALIASES, _signature_value, _upload_maintenance_images,
     get_manutencao_aberta, get_or_create_manutencao_aberta, list_imagens_manutencao,
-    list_pecas_compativeis_manutencao, lock_maintenance_equipment,
+    list_pecas_compativeis_manutencao, lock_maintenance_equipment, maintenance_equipment_key,
+    maintenance_prefeitura_id,
 )
 
 CONDICOES_CHEGADA = {
@@ -39,7 +41,7 @@ def _values(data, key):
 def build_manutencao_form(order, data=None):
     if data is not None:
         form = {key: str(data.get(key) or "").strip() for key in TEXT_FIELDS}
-        for key in ("manutencao_id", "versao", "recebido_em", "assinatura_responsavel_tecnico", "assinatura_responsavel_avaria",
+        for key in ("manutencao_id", "versao", "recebido_em", "km_recebimento", "assinatura_responsavel_tecnico", "assinatura_responsavel_avaria",
                     "limpar_assinatura_tecnico", "limpar_assinatura_avaria"):
             form[key] = str(data.get(key) or "").strip()
         form["drone_testado"] = data.get("drone_testado") == "1"
@@ -52,6 +54,7 @@ def build_manutencao_form(order, data=None):
     form.update(
         manutencao_id=str(order.id if order else 0), versao=str(order.versao if order else 0),
         recebido_em=to_sao_paulo(order.recebido_em).strftime("%Y-%m-%dT%H:%M") if order and order.recebido_em else "",
+        km_recebimento=str(order.km_recebimento) if order and order.km_recebimento is not None else "",
         drone_testado=bool(order and order.drone_testado),
         pecas_avariadas=list(order.pecas_avariadas or []) if order else [],
         pecas_reparo=list(order.pecas_reparo or []) if order else [],
@@ -62,7 +65,7 @@ def build_manutencao_form(order, data=None):
     return form
 
 
-def _validate(order, form, compatible, *, complete):
+def _validate(form, compatible, *, complete):
     errors = {}
     received = None
     raw = form["recebido_em"]
@@ -120,7 +123,7 @@ def _validate(order, form, compatible, *, complete):
             continue
         part = compatible.get(int(raw_id)) if raw_id.isdecimal() else None
         if part is None:
-            errors["pecas_reparo"] = "Esta peça não está disponível para o modelo e a prefeitura deste drone."
+            errors["pecas_reparo"] = "Esta peça não está disponível para o modelo e a prefeitura deste equipamento."
             continue
         if part.id in seen:
             errors["pecas_reparo"] = "Selecione cada peça uma única vez e ajuste a quantidade."
@@ -141,7 +144,7 @@ def _validate(order, form, compatible, *, complete):
     return errors, received, damaged, repairs, signatures
 
 
-def salvar_atendimento_manutencao(drone, data, *, user, files_data=None):
+def salvar_atendimento_manutencao(equipment, data, *, user, files_data=None):
     """Claim a worksheet version, then finalize all stock movements in one commit."""
     form = build_manutencao_form(None, data)
     action = data.get("acao", "rascunho")
@@ -154,18 +157,28 @@ def salvar_atendimento_manutencao(drone, data, *, user, files_data=None):
             raise ValueError
     except (TypeError, ValueError):
         return None, {"conflito": "Recarregue a OS antes de salvar. Não foi possível identificar a versão do formulário."}
-    lock_maintenance_equipment(drone)
-    order = get_manutencao_aberta(drone, user=user)
+    lock_maintenance_equipment(equipment)
+    order = get_manutencao_aberta(equipment, user=user)
     if not order or order.id != order_id:
         # Old equipment may be in maintenance without an associated worksheet.
-        if order is None and order_id == 0 and version == 0 and drone.status in MANUTENCAO_STATUS_ALIASES:
-            order = get_or_create_manutencao_aberta(drone, user=user)
+        if order is None and order_id == 0 and version == 0 and equipment.status in MANUTENCAO_STATUS_ALIASES:
+            order = get_or_create_manutencao_aberta(equipment, user=user)
             db.session.flush()
         else:
             db.session.rollback()
             return None, {"conflito": "Esta OS foi concluída ou substituída. Recarregue a página para conferir o estado atual."}
-    compatible = {p.id: p for p in list_pecas_compativeis_manutencao(drone, user=user)}
-    errors, received, damaged, repairs, signatures = _validate(order, form, compatible, complete=complete)
+    compatible = {p.id: p for p in list_pecas_compativeis_manutencao(equipment, user=user)}
+    errors, received, damaged, repairs, signatures = _validate(form, compatible, complete=complete)
+    km = order.km_recebimento
+    if order.veiculo_id and "km_recebimento" in data:
+        try:
+            km = float(form["km_recebimento"]) if form["km_recebimento"] else None
+            if km is not None and (not isfinite(km) or km < 0):
+                raise ValueError
+        except ValueError:
+            errors["km_recebimento"] = "Informe uma quilometragem válida e maior ou igual a zero."
+    if complete and order.veiculo_id and km is None:
+        errors["km_recebimento"] = "Informe a quilometragem de recebimento."
     if errors:
         db.session.rollback()
         return None, errors
@@ -182,6 +195,7 @@ def salvar_atendimento_manutencao(drone, data, *, user, files_data=None):
         for key in TEXT_FIELDS:
             setattr(order, key, form[key] or None)
         order.recebido_em = received
+        order.km_recebimento = km
         order.drone_testado = form["drone_testado"]
         order.pecas_avariadas, order.pecas_reparo = damaged, repairs
         for field, flag in (("assinatura_responsavel_tecnico", "limpar_assinatura_tecnico"), ("assinatura_responsavel_avaria", "limpar_assinatura_avaria")):
@@ -190,32 +204,34 @@ def salvar_atendimento_manutencao(drone, data, *, user, files_data=None):
             elif signatures[field] is not None:
                 setattr(order, field, signatures[field])
         if complete:
+            prefeitura_id = maintenance_prefeitura_id(equipment)
             for row in sorted(repairs, key=lambda row: row["peca_id"]):
                 # Refresh under a lock: compatibility and availability may have changed since rendering.
                 part = db.session.execute(select(EstoquePeca).where(EstoquePeca.id == row["peca_id"])
                     .with_for_update(of=EstoquePeca).execution_options(populate_existing=True)).unique().scalar_one()
-                if part.prefeitura_id != drone.prefeitura_id or part.arquivada_em or not part_matches_equipment(part, drone):
+                if part.prefeitura_id != prefeitura_id or part.arquivada_em or not part_matches_equipment(part, equipment):
                     raise ValueError("A compatibilidade de uma peça mudou. Confira as peças do reparo antes de concluir.")
                 balance = EstoquePeca.quantidade - row["quantidade"]
                 spent = db.session.execute(update(EstoquePeca).where(
                     EstoquePeca.id == part.id, EstoquePeca.quantidade >= row["quantidade"],
                     EstoquePeca.status == "disponivel_manutencao", EstoquePeca.arquivada_em.is_(None),
-                    EstoquePeca.prefeitura_id == drone.prefeitura_id,
+                    EstoquePeca.prefeitura_id == prefeitura_id,
                 ).values(quantidade=balance, status=case((balance == 0, "baixada"), else_=EstoquePeca.status),
                          atualizado_em=datetime.now(timezone.utc).replace(tzinfo=None))
                     .returning(EstoquePeca.id).execution_options(synchronize_session="fetch")).scalar_one_or_none()
                 if spent is None:
                     raise ValueError("O saldo de uma peça mudou. Confira o estoque; nenhuma peça desta conclusão foi descontada.")
-                db.session.add(ManutencaoPecaUso(prefeitura_id=drone.prefeitura_id, manutencao=order, drone_id=drone.id,
+                db.session.add(ManutencaoPecaUso(prefeitura_id=prefeitura_id, manutencao=order,
                     peca_id=part.id, usuario_id=getattr(user, "id", None), quantidade_usada=row["quantidade"],
                     criado_em=datetime.now(timezone.utc).replace(tzinfo=None),
                     observacoes=row["observacoes"] or None, nome_peca_snapshot=part.modelo_peca,
-                    codigo_dji_snapshot=part.codigo_dji or "", numero_serie_snapshot=part.numero_serie or ""))
+                    codigo_dji_snapshot=part.codigo_dji or "", numero_serie_snapshot=part.numero_serie or "",
+                    **{maintenance_equipment_key(equipment): equipment.id}))
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             order.status, order.encerrada_em, order.encerrada_por_id = "encerrada", now, getattr(user, "id", None)
             order.pecas_reparo = []
-            drone.status = "Inativo" if order.condicao_final == "inapto" else "Ativo"
-            drone.ultima_manutencao = to_sao_paulo(now).date()
+            equipment.status = "Inativo" if order.condicao_final == "inapto" else "Ativo"
+            equipment.ultima_manutencao = to_sao_paulo(now).date()
         files = files_data.getlist("imagens_ocorrido") if files_data is not None else []
         uploaded = _upload_maintenance_images(order, files)
         if uploaded:

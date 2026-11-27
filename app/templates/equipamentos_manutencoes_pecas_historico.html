@@ -11,7 +11,7 @@
   <div class="page-toolbar align-items-center pecas-historico-toolbar mb-4">
     <div>
       <h2 class="text-dark mb-1"><i class="bi bi-box-seam me-2 text-primary"></i>Histórico de peças usadas</h2>
-      <p class="text-muted small mb-0">Controle de baixas feitas nas manutenções dos drones.</p>
+      <p class="text-muted small mb-0">Peças utilizadas nas ordens de serviço de drones e veículos.</p>
     </div>
     <div class="page-toolbar-actions">
       <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico_excel') }}" class="btn btn-outline-success btn-sm" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.equipamentos_manutencoes_pecas_historico_excel')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -31,7 +31,7 @@
             <tr>
               <th class="ps-3">Peça</th>
               <th>Qtd.</th>
-              <th>Drone</th>
+              <th>Equipamento</th>
               <th>Manutenção</th>
               <th>Registrado por</th>
               <th>Data</th>
@@ -47,8 +47,8 @@
               </td>
               <td>{{ uso.quantidade_usada }}</td>
               <td>
-                <span class="fw-semibold">{{ uso.drone.renomacao }}</span>
-                <div class="text-muted small">{{ uso.drone.modelo }}</div>
+                <span class="fw-semibold">{{ uso.veiculo.placa if uso.veiculo_id else uso.equipamento.renomacao }}</span>
+                <div class="text-muted small">{{ uso.equipamento.modelo }}</div>
               </td>
               <td>
                 {% if uso.manutencao %}

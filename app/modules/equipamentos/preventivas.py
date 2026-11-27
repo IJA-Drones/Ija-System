@@ -12,7 +12,10 @@ from app.shared.access import apply_prefeitura_scope
 from app.modules.equipamentos.preventivas_access import can_use_preventivas
 from app.shared.maintenance_time import to_sao_paulo
 from app.modules.equipamentos.controles import drone_prefeitura
-from app.modules.equipamentos.service import equipment_team_assignments
+from app.modules.equipamentos.service import (
+    can_open_maintenance_os, equipment_team_assignments, maintenance_equipment_key, maintenance_legacy_access,
+    scope_maintenance_records,
+)
 
 LABELS = {'atrasada':'Atrasada', 'hoje':'Vence hoje', 'proxima':'Próxima do vencimento', 'em_dia':'Em dia', 'sem_configuracao':'Sem configuração'}
 
@@ -65,6 +68,15 @@ def plan_matches_equipment(plan, equipment):
         return False
 
 
+def completed_equipment_orders(equipment, user):
+    query = scope_maintenance_records(ManutencaoEquipamento.query, ManutencaoEquipamento, user)
+    if not can_access_endpoint(user, "main.equipamentos_manutencoes_historico", legacy=maintenance_legacy_access(user)):
+        return query.filter(db.false())
+    return query.filter_by(
+        status="encerrada", **{maintenance_equipment_key(equipment): equipment.id},
+    )
+
+
 def save_plan(equipment, data, user):
     plan = PreventivaPlano.query.filter_by(equipamento_id=equipment.id).first()
     try:
@@ -114,10 +126,9 @@ def save_plan(equipment, data, user):
                 maintenance_id = int(raw)
             except ValueError:
                 raise ValueError('Selecione uma OS de manutenção válida.')
-            query = apply_prefeitura_scope(ManutencaoEquipamento.query,user,ManutencaoEquipamento.prefeitura_id)
-            order = query.filter_by(id=maintenance_id,drone_id=equipment.id,status='encerrada').first() if isinstance(equipment,Drones) else None
+            order = completed_equipment_orders(equipment, user).filter_by(id=maintenance_id).first()
             if not order or order.prefeitura_id != tenant:
-                raise ValueError('A OS deve ser de manutenção, concluída e deste drone e prefeitura.')
+                raise ValueError('Selecione uma OS concluída deste equipamento e prefeitura.')
     else:
         raise ValueError('Ação inválida.')
     if plan:
@@ -193,7 +204,10 @@ def register_preventiva_routes(bp):
             abort(404)
         history = PreventivaRegistro.query.filter_by(plano_id=plan.id).order_by(PreventivaRegistro.id.desc()).limit(50).all() if plan else []
         has_conclusion = bool(plan and PreventivaRegistro.query.filter_by(plano_id=plan.id, tipo='conclusao').first())
-        orders = apply_prefeitura_scope(ManutencaoEquipamento.query,current_user,ManutencaoEquipamento.prefeitura_id).filter_by(drone_id=equipment.id,status='encerrada').all() if model is Drones else []
+        orders = completed_equipment_orders(equipment, current_user).filter_by(prefeitura_id=drone_prefeitura(equipment)).order_by(
+            ManutencaoEquipamento.encerrada_em.desc(), ManutencaoEquipamento.id.desc(),
+        ).all() if plan and can_edit else []
         return render_template('preventiva_detalhe.html',equipment=equipment,plan=plan,state=situation(plan),labels=LABELS,
             can_edit=can_edit,error=error,history=history,today=today_local(),orders=orders,has_conclusion=has_conclusion,
+            can_open_os=can_open_maintenance_os(current_user),
             responsabilidades=equipment_team_assignments([equipment],user=current_user))
